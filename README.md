@@ -78,50 +78,50 @@ Examples are runnable using [scala-cli](https://scala-cli.virtuslab.org).
 
 ### Basic Usage (OpenAI)
 
-```scala mdoc:compile-only 
+```scala mdoc:compile-only
 //> using dep com.softwaremill.sttp.openai::core:0.3.10
 
 import sttp.openai.OpenAISyncClient
 import sttp.openai.requests.completions.chat.ChatRequestResponseData.ChatResponse
 import sttp.openai.requests.completions.chat.ChatRequestBody.{ChatBody, ChatCompletionModel}
-import sttp.openai.requests.completions.chat.message._
+import sttp.openai.requests.completions.chat.message.*
 
-object Main extends App {
-  val apiKey = System.getenv("OPENAI_KEY")
-  val openAI = OpenAISyncClient(apiKey)
+object Main:
+  def main(args: Array[String]): Unit =
+    val apiKey = System.getenv("OPENAI_KEY")
+    val openAI = OpenAISyncClient(apiKey)
 
-  // Create body of Chat Completions Request
-  val bodyMessages: Seq[Message] = Seq(
-    Message.UserMessage(
-      content = Content.TextContent("Hello!"),
+    // Create body of Chat Completions Request
+    val bodyMessages: Seq[Message] = Seq(
+      Message.UserMessage(
+        content = Content.TextContent("Hello!"),
+      )
     )
-  )
 
-  // use ChatCompletionModel.CustomChatCompletionModel("gpt-some-future-version") 
-  // for models not yet supported here
-  val chatRequestBody: ChatBody = ChatBody(
-    model = ChatCompletionModel.GPT4oMini,
-    messages = bodyMessages
-  )
+    // use ChatCompletionModel.CustomChatCompletionModel("gpt-some-future-version")
+    // for models not yet supported here
+    val chatRequestBody: ChatBody = ChatBody(
+      model = ChatCompletionModel.GPT4oMini,
+      messages = bodyMessages
+    )
 
-  // be aware that calling `createChatCompletion` may throw an OpenAIException
-  // e.g. AuthenticationException, RateLimitException and many more
-  val chatResponse: ChatResponse = openAI.createChatCompletion(chatRequestBody)
+    // be aware that calling `createChatCompletion` may throw an OpenAIException
+    // e.g. AuthenticationException, RateLimitException and many more
+    val chatResponse: ChatResponse = openAI.createChatCompletion(chatRequestBody)
 
-  println(chatResponse)
-  /*
-      ChatResponse(
-       chatcmpl-79shQITCiqTHFlI9tgElqcbMTJCLZ,chat.completion,
-       1682589572,
-       gpt-4o-mini,
-       Usage(10,10,20),
-       List(
-         Choices(
-           Message(assistant, Hello there! How can I assist you today?), stop, 0)
+    println(chatResponse)
+    /*
+        ChatResponse(
+         chatcmpl-79shQITCiqTHFlI9tgElqcbMTJCLZ,chat.completion,
+         1682589572,
+         gpt-4o-mini,
+         Usage(10,10,20),
+         List(
+           Choices(
+             Message(assistant, Hello there! How can I assist you today?), stop, 0)
+           )
          )
-       )
-  */
-}
+    */
 ```
 
 ## Claude API
@@ -147,46 +147,46 @@ This module provides **native support for Anthropic's Claude API** within the st
 ```scala mdoc:compile-only
 //> using dep com.softwaremill.sttp.openai::claude:0.3.10
 
-import sttp.ai.claude._
+import sttp.ai.claude.*
 import sttp.ai.claude.config.ClaudeConfig
 import sttp.ai.claude.models.{ContentBlock, Message}
 import sttp.ai.claude.requests.MessageRequest
-import sttp.client4._
+import sttp.client4.*
 
-object Main extends App {
-  // Create an instance of ClaudeClient using your Anthropic API key
-  // Set ANTHROPIC_API_KEY environment variable or pass it directly
-  val config = ClaudeConfig.fromEnv  // reads ANTHROPIC_API_KEY
-  val backend: SyncBackend = DefaultSyncBackend()
-  val client = ClaudeClient(config)
+object Main:
+  def main(args: Array[String]): Unit =
+    // Create an instance of ClaudeClient using your Anthropic API key
+    // Set ANTHROPIC_API_KEY environment variable or pass it directly
+    val config = ClaudeConfig.fromEnv  // reads ANTHROPIC_API_KEY
+    val backend: SyncBackend = DefaultSyncBackend()
+    val client = ClaudeClient(config)
 
-  // Create a simple message
-  val messages = List(
-    Message.user(List(ContentBlock.TextContent("Hello Claude! What's the weather like today?")))
-  )
+    // Create a simple message
+    val messages = List(
+      Message.user(List(ContentBlock.TextContent("Hello Claude! What's the weather like today?")))
+    )
 
-  val request = MessageRequest.simple(
-    model = "claude-3-haiku-20240307",  // Fast, cost-effective model
-    messages = messages,
-    maxTokens = 500
-  )
+    val request = MessageRequest.simple(
+      model = "claude-3-haiku-20240307",  // Fast, cost-effective model
+      messages = messages,
+      maxTokens = 500
+    )
 
-  // Send the request (returns Either[ClaudeException, MessageResponse])
-  val response = client.createMessage(request).send(backend)
+    // Send the request (returns Either[ClaudeException, MessageResponse])
+    val response = client.createMessage(request).send(backend)
 
-  response.body match {
-    case Right(messageResponse) =>
-      messageResponse.content.foreach {
-        case ContentBlock.TextContent(text) => println(text)
-        case _ => // Handle other content types if needed
-      }
-      println(s"Usage: ${messageResponse.usage}")
-    case Left(error) =>
-      println(s"Claude API Error: ${error.getMessage}")
-  }
+    response.body match {
+      case Right(messageResponse) =>
+        messageResponse.content.foreach {
+          case ContentBlock.TextContent(text) => println(text)
+          case _ => // Handle other content types if needed
+        }
+        println(s"Usage: ${messageResponse.usage}")
+      case Left(error) =>
+        println(s"Claude API Error: ${error.getMessage}")
+    }
 
-  backend.close()
-}
+    backend.close()
 ```
 
 **Key differences from OpenAI:**
@@ -477,35 +477,36 @@ Ollama with sync backend:
 ```scala mdoc:compile-only
 //> using dep com.softwaremill.sttp.openai::core:0.3.10
 
-import sttp.model.Uri._
+import sttp.model.Uri.*
 import sttp.openai.OpenAISyncClient
 import sttp.openai.requests.completions.chat.ChatRequestResponseData.ChatResponse
 import sttp.openai.requests.completions.chat.ChatRequestBody.{ChatBody, ChatCompletionModel}
-import sttp.openai.requests.completions.chat.message._
+import sttp.openai.requests.completions.chat.message.*
 
-object Main extends App {
-  // Create an instance of OpenAISyncClient providing any api key 
-  // and a base url of locally running instance of ollama
-  val openAI: OpenAISyncClient = OpenAISyncClient("ollama", uri"http://localhost:11434/v1")
+object Main:
+  def main(args: Array[String]): Unit =
+    // Create an instance of OpenAISyncClient providing any api key
+    // and a base url of locally running instance of ollama
+    val openAI: OpenAISyncClient = OpenAISyncClient("ollama", uri"http://localhost:11434/v1")
 
-  // Create body of Chat Completions Request
-  val bodyMessages: Seq[Message] = Seq(
-    Message.UserMessage(
-      content = Content.TextContent("Hello!"),
+    // Create body of Chat Completions Request
+    val bodyMessages: Seq[Message] = Seq(
+      Message.UserMessage(
+        content = Content.TextContent("Hello!"),
+      )
     )
-  )
-  
-  val chatRequestBody: ChatBody = ChatBody(
-    // assuming one has already executed `ollama pull mistral` in console
-    model = ChatCompletionModel.CustomChatCompletionModel("mistral"),
-    messages = bodyMessages
-  )
 
-  // be aware that calling `createChatCompletion` may throw an OpenAIException
-  // e.g. AuthenticationException, RateLimitException and many more
-  val chatResponse: ChatResponse = openAI.createChatCompletion(chatRequestBody)
+    val chatRequestBody: ChatBody = ChatBody(
+      // assuming one has already executed `ollama pull mistral` in console
+      model = ChatCompletionModel.CustomChatCompletionModel("mistral"),
+      messages = bodyMessages
+    )
 
-  println(chatResponse)
+    // be aware that calling `createChatCompletion` may throw an OpenAIException
+    // e.g. AuthenticationException, RateLimitException and many more
+    val chatResponse: ChatResponse = openAI.createChatCompletion(chatRequestBody)
+
+    println(chatResponse)
   /*
     ChatResponse(
       chatcmpl-650,
@@ -523,7 +524,6 @@ object Main extends App {
       Some("fp_ollama")
     )
   */
-}
 ```
 
 Grok with cats-effect based backend:
@@ -532,18 +532,18 @@ Grok with cats-effect based backend:
 //> using dep com.softwaremill.sttp.openai::core:0.3.10
 //> using dep com.softwaremill.sttp.client4::cats:4.0.0-M17
 
-import cats.effect.{ExitCode, IO, IOApp}
+import cats.effect.IO
+import cats.effect.unsafe.implicits.global
 import sttp.client4.httpclient.cats.HttpClientCatsBackend
-
-import sttp.model.Uri._
+import sttp.model.Uri.*
 import sttp.openai.OpenAI
 import sttp.openai.OpenAIExceptions.OpenAIException
 import sttp.openai.requests.completions.chat.ChatRequestResponseData.ChatResponse
 import sttp.openai.requests.completions.chat.ChatRequestBody.{ChatBody, ChatCompletionModel}
-import sttp.openai.requests.completions.chat.message._
+import sttp.openai.requests.completions.chat.message.*
 
-object Main extends IOApp {
-  override def run(args: List[String]): IO[ExitCode] = {
+object Main:
+  def main(args: Array[String]): Unit =
     val apiKey = System.getenv("OPENAI_KEY")
     val openAI = new OpenAI(apiKey, uri"https://api.groq.com/openai/v1")
 
@@ -557,8 +557,8 @@ object Main extends IOApp {
       model = ChatCompletionModel.CustomChatCompletionModel("gemma-7b-it"),
       messages = bodyMessages
     )
-    
-    HttpClientCatsBackend.resource[IO]().use { backend =>
+
+    val program = HttpClientCatsBackend.resource[IO]().use { backend =>
       val response: IO[Either[OpenAIException, ChatResponse]] =
         openAI
           .createChatCompletion(chatRequestBody)
@@ -570,9 +570,9 @@ object Main extends IOApp {
         chatResponse => chatResponse.toString
       )
       redeemedResponse.flatMap(IO.println)
-        .as(ExitCode.Success)
     }
-  } 
+
+    program.unsafeRunSync()
   /*
     ChatResponse(
       "chatcmpl-e0f9f78c-5e74-494c-9599-da02fa495ff8",
@@ -590,7 +590,6 @@ object Main extends IOApp {
       Some("fp_f0c35fc854")
     )
   */
-}
 ```
 
 #### Available client implementations:
@@ -609,17 +608,17 @@ or use backend of your choice.
 //> using dep com.softwaremill.sttp.openai::core:0.3.10
 //> using dep com.softwaremill.sttp.client4::cats:4.0.0-M17
 
-import cats.effect.{ExitCode, IO, IOApp}
+import cats.effect.IO
+import cats.effect.unsafe.implicits.global
 import sttp.client4.httpclient.cats.HttpClientCatsBackend
-
 import sttp.openai.OpenAI
 import sttp.openai.OpenAIExceptions.OpenAIException
 import sttp.openai.requests.completions.chat.ChatRequestResponseData.ChatResponse
 import sttp.openai.requests.completions.chat.ChatRequestBody.{ChatBody, ChatCompletionModel}
-import sttp.openai.requests.completions.chat.message._
+import sttp.openai.requests.completions.chat.message.*
 
-object Main extends IOApp {
-  override def run(args: List[String]): IO[ExitCode] = {
+object Main:
+  def main(args: Array[String]): Unit =
     val apiKey = System.getenv("OPENAI_KEY")
     val openAI = new OpenAI(apiKey)
 
@@ -633,8 +632,8 @@ object Main extends IOApp {
       model = ChatCompletionModel.GPT35Turbo,
       messages = bodyMessages
     )
-    
-    HttpClientCatsBackend.resource[IO]().use { backend =>
+
+    val program = HttpClientCatsBackend.resource[IO]().use { backend =>
       val response: IO[Either[OpenAIException, ChatResponse]] =
         openAI
           .createChatCompletion(chatRequestBody)
@@ -646,9 +645,9 @@ object Main extends IOApp {
         chatResponse => chatResponse.toString
       )
       redeemedResponse.flatMap(IO.println)
-        .as(ExitCode.Success)
     }
-  } 
+
+    program.unsafeRunSync()
   /*
     ChatResponse(
       chatcmpl-79shQITCiqTHFlI9tgElqcbMTJCLZ,chat.completion,
@@ -662,7 +661,6 @@ object Main extends IOApp {
       )
     )
   */
-}
 ```
 
 ### Streaming (OpenAI)
@@ -687,19 +685,19 @@ Example below uses `HttpClientFs2Backend` as a backend:
 ```scala mdoc:compile-only
 //> using dep com.softwaremill.sttp.openai::fs2:0.3.10
 
-import cats.effect.{ExitCode, IO, IOApp}
+import cats.effect.IO
+import cats.effect.unsafe.implicits.global
 import fs2.Stream
 import sttp.client4.httpclient.fs2.HttpClientFs2Backend
-
 import sttp.openai.OpenAI
-import sttp.openai.streaming.fs2._
+import sttp.openai.streaming.fs2.*
 import sttp.openai.OpenAIExceptions.OpenAIException
 import sttp.openai.requests.completions.chat.ChatChunkRequestResponseData.ChatChunkResponse
 import sttp.openai.requests.completions.chat.ChatRequestBody.{ChatBody, ChatCompletionModel}
-import sttp.openai.requests.completions.chat.message._
+import sttp.openai.requests.completions.chat.message.*
 
-object Main extends IOApp {
-  override def run(args: List[String]): IO[ExitCode] = {
+object Main:
+  def main(args: Array[String]): Unit =
     val apiKey = System.getenv("OPENAI_KEY")
     val openAI = new OpenAI(apiKey)
 
@@ -714,7 +712,7 @@ object Main extends IOApp {
       messages = bodyMessages
     )
 
-    HttpClientFs2Backend.resource[IO]().use { backend =>
+    val program = HttpClientFs2Backend.resource[IO]().use { backend =>
       val response: IO[Either[OpenAIException, Stream[IO, ChatChunkResponse]]] =
         openAI
           .createStreamedChatCompletion[IO](chatRequestBody)
@@ -726,9 +724,9 @@ object Main extends IOApp {
           case Left(exception) => IO.println(exception.getMessage)
           case Right(stream)   => stream.evalTap(IO.println).compile.drain
         }
-        .as(ExitCode.Success)
     }
-  }
+
+    program.unsafeRunSync()
   /*
     ...
     ChatChunkResponse(
@@ -760,7 +758,6 @@ object Main extends IOApp {
     )
     ...
    */
-}
 ```
 
 To use direct-style streaming (requires Scala 3) add the following dependency & import:
@@ -830,50 +827,51 @@ import sttp.apispec.{Schema, SchemaType}
 import sttp.openai.OpenAISyncClient
 import sttp.openai.requests.completions.chat.ChatRequestResponseData.ChatResponse
 import sttp.openai.requests.completions.chat.ChatRequestBody.{ChatBody, ChatCompletionModel, ResponseFormat}
-import sttp.openai.requests.completions.chat.message._
+import sttp.openai.requests.completions.chat.message.*
 
-object Main extends App {
-  val apiKey = System.getenv("OPENAI_KEY")
-  val openAI = OpenAISyncClient(apiKey)
+object Main:
+  def main(args: Array[String]): Unit =
+    val apiKey = System.getenv("OPENAI_KEY")
+    val openAI = OpenAISyncClient(apiKey)
 
-  val jsonSchema: Schema =
-    Schema(SchemaType.Object).copy(properties =
-      ListMap(
-        "steps" -> Schema(SchemaType.Array).copy(items =
-          Some(Schema(SchemaType.Object).copy(properties =
-            ListMap(
-              "explanation" -> Schema(SchemaType.String),
-              "output" -> Schema(SchemaType.String)
-            )
-          ))
+    val jsonSchema: Schema =
+      Schema(SchemaType.Object).copy(properties =
+        ListMap(
+          "steps" -> Schema(SchemaType.Array).copy(items =
+            Some(Schema(SchemaType.Object).copy(properties =
+              ListMap(
+                "explanation" -> Schema(SchemaType.String),
+                "output" -> Schema(SchemaType.String)
+              )
+            ))
+          ),
+          "finalAnswer" -> Schema(SchemaType.String)
         ),
-        "finalAnswer" -> Schema(SchemaType.String)
-      ),
+      )
+
+    val responseFormat: ResponseFormat.JsonSchema =
+      ResponseFormat.JsonSchema(
+        name = "mathReasoning",
+        strict = Some(true),
+        schema = Some(jsonSchema),
+        description = None
+      )
+
+    val bodyMessages: Seq[Message] = Seq(
+      Message.SystemMessage(content = "You are a helpful math tutor. Guide the user through the solution step by step."),
+      Message.UserMessage(content = Content.TextContent("How can I solve 8x + 7 = -23"))
     )
 
-  val responseFormat: ResponseFormat.JsonSchema =
-    ResponseFormat.JsonSchema(
-      name = "mathReasoning",
-      strict = Some(true),
-      schema = Some(jsonSchema),
-      description = None
+    // Create body of Chat Completions Request, using our JSON Schema as the `responseFormat`
+    val chatRequestBody: ChatBody = ChatBody(
+      model = ChatCompletionModel.GPT4oMini,
+      messages = bodyMessages,
+      responseFormat = Some(responseFormat)
     )
 
-  val bodyMessages: Seq[Message] = Seq(
-    Message.SystemMessage(content = "You are a helpful math tutor. Guide the user through the solution step by step."),
-    Message.UserMessage(content = Content.TextContent("How can I solve 8x + 7 = -23"))
-  )
+    val chatResponse: ChatResponse = openAI.createChatCompletion(chatRequestBody)
 
-  // Create body of Chat Completions Request, using our JSON Schema as the `responseFormat`
-  val chatRequestBody: ChatBody = ChatBody(
-    model = ChatCompletionModel.GPT4oMini,
-    messages = bodyMessages,
-    responseFormat = Some(responseFormat)
-  )
-
-  val chatResponse: ChatResponse = openAI.createChatCompletion(chatRequestBody)
-
-  println(chatResponse.choices)
+    println(chatResponse.choices)
   /*
     List(
       Choices(
@@ -897,7 +895,6 @@ object Main extends App {
       )
     )
   */
-}
 ```
 
 ##### Deriving a JSON Schema with tapir
@@ -911,7 +908,7 @@ To derive the same math reasoning schema used above, you can use
 import sttp.apispec.{Schema => ASchema}
 import sttp.tapir.Schema
 import sttp.tapir.docs.apispec.schema.TapirSchemaToJsonSchema
-import sttp.tapir.generic.auto._
+import sttp.tapir.generic.auto.*
 
 case class Step(
   explanation: String,
@@ -959,123 +956,118 @@ import sttp.openai.requests.completions.chat.ToolCall.FunctionToolCall
 import sttp.openai.requests.completions.chat.message.Content.TextContent
 import sttp.openai.requests.completions.chat.message.Message.{AssistantMessage, ToolMessage, UserMessage}
 import sttp.openai.requests.completions.chat.message.Tool.FunctionTool
-import sttp.tapir.generic.auto._
+import sttp.tapir.generic.auto.*
 
 case class Passenger(name: String, age: Int)
 
-object Passenger {
-  implicit val passengerR: SnakePickle.Reader[Passenger] = SnakePickle.macroR[Passenger]
-}
+object Passenger:
+  given SnakePickle.Reader[Passenger] = SnakePickle.macroR[Passenger]
 
 case class FlightDetails(passenger: Passenger, departureCity: String, destinationCity: String)
 
-object FlightDetails {
-  implicit val flightDetailsR: SnakePickle.Reader[FlightDetails] = SnakePickle.macroR[FlightDetails]
-}
+object FlightDetails:
+  given SnakePickle.Reader[FlightDetails] = SnakePickle.macroR[FlightDetails]
 
 case class BookedFlight(confirmationNumber: String, status: String)
 
-object BookedFlight {
-  implicit val bookedFlightW: SnakePickle.Writer[BookedFlight] = SnakePickle.macroW[BookedFlight]
-}
+object BookedFlight:
+  given SnakePickle.Writer[BookedFlight] = SnakePickle.macroW[BookedFlight]
 
-object Main extends App {
-  val apiKey = System.getenv("OPENAI_KEY")
-  val openAI = OpenAISyncClient(apiKey)
+object Main:
+  def main(args: Array[String]): Unit =
+    val apiKey = System.getenv("OPENAI_KEY")
+    val openAI = OpenAISyncClient(apiKey)
 
-  val initialRequestMessage = Seq(UserMessage(content = TextContent("I want to book a flight from London to Tokyo for Jane Doe, age 34")))
+    val initialRequestMessage = Seq(UserMessage(content = TextContent("I want to book a flight from London to Tokyo for Jane Doe, age 34")))
 
-  // Request created using FunctionTool.withSchema, all we need to do here is just define the type. The schema is automatically generated using a macro, available via the `sttp.tapir.generic.auto._` import.
-  val givenRequest = ChatBody(
-    model = GPT4oMini,
-    messages = initialRequestMessage,
-    tools = Some(Seq(
-      FunctionTool.withSchema[FlightDetails](
-        name = "book_flight",
-        description = Some("Books a flight for a passenger with full details")))
+    // Request created using FunctionTool.withSchema, all we need to do here is just define the type. The schema is automatically generated using a macro, available via the `sttp.tapir.generic.auto.*` import.
+    val givenRequest = ChatBody(
+      model = GPT4oMini,
+      messages = initialRequestMessage,
+      tools = Some(Seq(
+        FunctionTool.withSchema[FlightDetails](
+          name = "book_flight",
+          description = Some("Books a flight for a passenger with full details")))
+      )
     )
-  )
 
-  val initialRequestResult = openAI.createChatCompletion(givenRequest)
+    val initialRequestResult = openAI.createChatCompletion(givenRequest)
 
-  println(initialRequestResult.choices)
-  /*
-    List(
-      Choices(
-        Message(
-          null,
-          None,
-          List(
-            FunctionToolCall(
-              Some(call_XZNvfldLQTa1f7aMInswpTMS),
-              FunctionCall(
-                {
-                  "passenger": {
-                    "name": "Jane Doe",
-                    "age": 34
+    println(initialRequestResult.choices)
+    /*
+      List(
+        Choices(
+          Message(
+            null,
+            None,
+            List(
+              FunctionToolCall(
+                Some(call_XZNvfldLQTa1f7aMInswpTMS),
+                FunctionCall(
+                  {
+                    "passenger": {
+                      "name": "Jane Doe",
+                      "age": 34
+                    },
+                    "departureCity": "London",
+                    "destinationCity": "Tokyo"
                   },
-                  "departureCity": "London",
-                  "destinationCity": "Tokyo"
-                },
-                Some(book_flight)
+                  Some(book_flight)
+                )
               )
-            )
+            ),
+            Assistant,
+            None,
+            None
           ),
-          Assistant,
-          None,
+          tool_calls,
+          0,
           None
-        ),
-        tool_calls,
-        0,
-        None
+        )
       )
+      */
+
+    // Helper function that mimics external function definition
+    def bookFlight(flightDetails: FlightDetails): BookedFlight =
+      println(flightDetails)
+      BookedFlight(confirmationNumber = "123456", status = "confirmed")
+
+    // Tool calls list (in this example it is just single tool call, but there may be multiple), which is necessary to build message list for second request.
+    val toolCalls = initialRequestResult.choices.head.message.toolCalls
+
+    val functionToolCall = toolCalls.head match
+      case functionToolCall: FunctionToolCall => functionToolCall
+
+    // Function arguments are manually deserialized, 'bookFlight' function mimic external function definition.
+    val bookedFlight = bookFlight(SnakePickle.read[FlightDetails](functionToolCall.function.arguments))
+
+    val secondRequest = givenRequest.copy(
+      messages = initialRequestMessage
+        :+ AssistantMessage(content = "", toolCalls = toolCalls)
+        // ToolMessage created using object instead of String with Json representation of object.
+        :+ ToolMessage(toolCallId = functionToolCall.id.get, content = bookedFlight)
     )
-    */
 
-  // Tool calls list (in this example it is just single tool call, but there may be multiple), which is necessary to build message list for second request.
-  val toolCalls = initialRequestResult.choices.head.message.toolCalls
+    val finalResult = openAI.createChatCompletion(secondRequest)
 
-  val functionToolCall = toolCalls.head match {
-    case functionToolCall: FunctionToolCall => functionToolCall
-  }
-
-  // Function arguments are manually deserialized, 'bookFlight' function mimic external function definition.
-  val bookedFlight = bookFlight(SnakePickle.read[FlightDetails](functionToolCall.function.arguments))
-
-  val secondRequest = givenRequest.copy(
-    messages = initialRequestMessage
-      :+ AssistantMessage(content = "", toolCalls = toolCalls)
-      // ToolMessage created using object instead of String with Json representation of object.
-      :+ ToolMessage(toolCallId = functionToolCall.id.get, content = bookedFlight)
-  )
-
-  val finalResult = openAI.createChatCompletion(secondRequest)
-
-  println(finalResult.choices)
-  /*
-    List(
-      Choices(
-        Message(
-          "The flight from London to Tokyo for Jane Doe, age 34, has been successfully booked. The confirmation number is **123456** and the status is **confirmed**.",
-          None,
-          List(),
-          Assistant,
-          None,
+    println(finalResult.choices)
+    /*
+      List(
+        Choices(
+          Message(
+            "The flight from London to Tokyo for Jane Doe, age 34, has been successfully booked. The confirmation number is **123456** and the status is **confirmed**.",
+            None,
+            List(),
+            Assistant,
+            None,
+            None
+          ),
+          stop,
+          0,
           None
-        ),
-        stop,
-        0,
-        None
+        )
       )
-    )
-    */
-
-  def bookFlight(flightDetails: FlightDetails): BookedFlight = {
-    println(flightDetails)
-    BookedFlight(confirmationNumber = "123456", status = "confirmed")
-  }
-
-}
+      */
 ```
 
 ## Contributing
