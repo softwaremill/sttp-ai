@@ -11,10 +11,10 @@ package examples
 object StrictStructuredFunctionCallingExample extends App {
   import ujson.{Arr, Bool, Obj, Str}
   import sttp.client4.{DefaultSyncBackend, SyncBackend}
-  import sttp.openai.OpenAI
-  import sttp.openai.requests.completions.chat.ChatRequestBody.{ChatBody, ChatCompletionModel, ResponseFormat}
-  import sttp.openai.requests.completions.chat.message.{Content, Message, ToolChoice}
-  import sttp.openai.requests.completions.chat.message.Tool.FunctionTool
+  import sttp.ai.openai.OpenAI
+  import sttp.ai.openai.requests.completions.chat.ChatRequestBody.{ChatBody, ChatCompletionModel, ResponseFormat}
+  import sttp.ai.openai.requests.completions.chat.message.{Content, Message, ToolChoice}
+  import sttp.ai.openai.requests.completions.chat.message.Tool.FunctionTool
 
   val apiKey = sys.env.getOrElse("OPENAI_API_KEY", sys.error("OPENAI_API_KEY env variable not set"))
 
@@ -54,7 +54,7 @@ object StrictStructuredFunctionCallingExample extends App {
       val choice = resp.choices.head
 
       val maybeArgsRaw: Option[String] = choice.message.toolCalls.collectFirst {
-        case sttp.openai.requests.completions.chat.ToolCall.FunctionToolCall(_, fn) => fn.arguments
+        case sttp.ai.openai.requests.completions.chat.ToolCall.FunctionToolCall(_, fn) => fn.arguments
       }
 
       maybeArgsRaw match {

@@ -4,12 +4,12 @@ import org.scalatest.EitherValues
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
 import sttp.client4.IsOption._
-import sttp.openai.fixtures
-import sttp.openai.json.SnakePickle
-import sttp.openai.requests.assistants.Tool.{CodeInterpreterTool, FileSearchTool}
-import sttp.openai.requests.completions.chat.message.ToolResource.FileSearchToolResource
-import sttp.openai.requests.completions.chat.message.ToolResources
-import sttp.openai.utils.JsonUtils
+import sttp.ai.openai.fixtures
+import sttp.ai.openai.json.SnakePickle
+import sttp.ai.openai.requests.assistants.Tool.{CodeInterpreterTool, FileSearchTool}
+import sttp.ai.openai.requests.completions.chat.message.ToolResource.FileSearchToolResource
+import sttp.ai.openai.requests.completions.chat.message.ToolResources
+import sttp.ai.openai.utils.JsonUtils
 
 class AssistantsDataSpec extends AnyFlatSpec with Matchers with EitherValues {
 
@@ -35,8 +35,8 @@ class AssistantsDataSpec extends AnyFlatSpec with Matchers with EitherValues {
   }
 
   "Given create assistant response as Json" should "be properly deserialized to case class" in {
-    import sttp.openai.requests.assistants.AssistantsResponseData.AssistantData._
-    import sttp.openai.requests.assistants.AssistantsResponseData._
+    import sttp.ai.openai.requests.assistants.AssistantsResponseData.AssistantData._
+    import sttp.ai.openai.requests.assistants.AssistantsResponseData._
 
     // given
     val jsonResponse = fixtures.AssistantsFixture.jsonCreateAssistantResponse
@@ -64,8 +64,8 @@ class AssistantsDataSpec extends AnyFlatSpec with Matchers with EitherValues {
   }
 
   "Given list assistants response as Json" should "be properly deserialized to case class" in {
-    import sttp.openai.requests.assistants.AssistantsResponseData.ListAssistantsResponse._
-    import sttp.openai.requests.assistants.AssistantsResponseData._
+    import sttp.ai.openai.requests.assistants.AssistantsResponseData.ListAssistantsResponse._
+    import sttp.ai.openai.requests.assistants.AssistantsResponseData._
 
     // given
     val jsonResponse = fixtures.AssistantsFixture.jsonListAssistantsResponse
@@ -122,8 +122,8 @@ class AssistantsDataSpec extends AnyFlatSpec with Matchers with EitherValues {
   }
 
   "Given list assistant files response as Json" should "be properly deserialized to case class" in {
-    import sttp.openai.requests.assistants.AssistantsResponseData.ListAssistantsResponse._
-    import sttp.openai.requests.assistants.AssistantsResponseData._
+    import sttp.ai.openai.requests.assistants.AssistantsResponseData.ListAssistantsResponse._
+    import sttp.ai.openai.requests.assistants.AssistantsResponseData._
 
     // given
     val jsonResponse = fixtures.AssistantsFixture.jsonListAssistantsResponse
@@ -180,8 +180,8 @@ class AssistantsDataSpec extends AnyFlatSpec with Matchers with EitherValues {
   }
 
   "Given retrieve assistant response as Json" should "be properly deserialized to case class" in {
-    import sttp.openai.requests.assistants.AssistantsResponseData.AssistantData._
-    import sttp.openai.requests.assistants.AssistantsResponseData._
+    import sttp.ai.openai.requests.assistants.AssistantsResponseData.AssistantData._
+    import sttp.ai.openai.requests.assistants.AssistantsResponseData._
 
     // given
     val jsonResponse = fixtures.AssistantsFixture.jsonRetrieveAssistantResponse
@@ -231,8 +231,8 @@ class AssistantsDataSpec extends AnyFlatSpec with Matchers with EitherValues {
   }
 
   "Given modify assistant response as Json" should "be properly deserialized to case class" in {
-    import sttp.openai.requests.assistants.AssistantsResponseData.AssistantData._
-    import sttp.openai.requests.assistants.AssistantsResponseData._
+    import sttp.ai.openai.requests.assistants.AssistantsResponseData.AssistantData._
+    import sttp.ai.openai.requests.assistants.AssistantsResponseData._
 
     // given
     val jsonResponse = fixtures.AssistantsFixture.jsonModifyAssistantResponse
@@ -259,8 +259,8 @@ class AssistantsDataSpec extends AnyFlatSpec with Matchers with EitherValues {
   }
 
   "Given delete assistant response as Json" should "be properly deserialized to case class" in {
-    import sttp.openai.requests.assistants.AssistantsResponseData.DeleteAssistantResponse._
-    import sttp.openai.requests.assistants.AssistantsResponseData._
+    import sttp.ai.openai.requests.assistants.AssistantsResponseData.DeleteAssistantResponse._
+    import sttp.ai.openai.requests.assistants.AssistantsResponseData._
 
     // given
     val jsonResponse = fixtures.AssistantsFixture.jsonDeleteAssistantResponse

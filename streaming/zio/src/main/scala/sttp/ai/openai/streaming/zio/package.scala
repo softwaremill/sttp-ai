@@ -7,12 +7,12 @@ import sttp.client4.StreamRequest
 import sttp.client4.impl.zio.ZioServerSentEvents
 import sttp.model.ResponseMetadata
 import sttp.model.sse.ServerSentEvent
-import sttp.openai.OpenAI
-import sttp.openai.OpenAIExceptions.OpenAIException
-import sttp.openai.json.SttpUpickleApiExtension.deserializeJsonSnake
-import sttp.openai.requests.audio.speech.SpeechRequestBody
-import sttp.openai.requests.completions.chat.ChatChunkRequestResponseData.ChatChunkResponse
-import sttp.openai.requests.completions.chat.ChatRequestBody.ChatBody
+import sttp.ai.openai.OpenAI
+import sttp.ai.openai.OpenAIExceptions.OpenAIException
+import sttp.ai.openai.json.SttpUpickleApiExtension.deserializeJsonSnake
+import sttp.ai.openai.requests.audio.speech.SpeechRequestBody
+import sttp.ai.openai.requests.completions.chat.ChatChunkRequestResponseData.ChatChunkResponse
+import sttp.ai.openai.requests.completions.chat.ChatRequestBody.ChatBody
 
 package object zio {
   import ChatChunkResponse.DoneEvent

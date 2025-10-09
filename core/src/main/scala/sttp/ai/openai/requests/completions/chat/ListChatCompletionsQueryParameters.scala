@@ -1,6 +1,6 @@
 package sttp.ai.openai.requests.completions.chat
 
-import sttp.openai.requests.completions.chat.ChatRequestBody.ChatCompletionModel
+import sttp.ai.openai.requests.completions.chat.ChatRequestBody.ChatCompletionModel
 
 /** @param model
   *   The model used to generate the chat completions.

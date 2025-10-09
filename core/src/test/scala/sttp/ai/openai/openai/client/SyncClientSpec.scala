@@ -7,10 +7,10 @@ import sttp.client4._
 import sttp.client4.testing.ResponseStub
 import sttp.model.StatusCode
 import sttp.model.StatusCode._
-import sttp.openai.OpenAIExceptions.OpenAIException
-import sttp.openai.fixtures.ErrorFixture
-import sttp.openai.requests.models.ModelsResponseData._
-import sttp.openai.{CustomizeOpenAIRequest, OpenAISyncClient}
+import sttp.ai.openai.OpenAIExceptions.OpenAIException
+import sttp.ai.openai.fixtures.ErrorFixture
+import sttp.ai.openai.requests.models.ModelsResponseData._
+import sttp.ai.openai.{CustomizeOpenAIRequest, OpenAISyncClient}
 
 import java.util.concurrent.atomic.AtomicReference
 

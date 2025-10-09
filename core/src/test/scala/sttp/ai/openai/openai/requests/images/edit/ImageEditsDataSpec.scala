@@ -4,8 +4,8 @@ import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
 import sttp.client4.{BasicBodyPart, BodyPart, FileBody, MultipartBody, StringBody}
 import sttp.model.{Part, Uri}
-import sttp.openai.OpenAI
-import sttp.openai.fixtures.ImageEditsFixture
+import sttp.ai.openai.OpenAI
+import sttp.ai.openai.fixtures.ImageEditsFixture
 
 class ImageEditsDataSpec extends AnyFlatSpec with Matchers with ImageEditsFixture {
   val openAI = new OpenAI("test-key", Uri.unsafeParse("https://api.openai.com/v1"))

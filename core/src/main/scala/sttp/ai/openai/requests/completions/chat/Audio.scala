@@ -1,6 +1,6 @@
 package sttp.ai.openai.requests.completions.chat
 
-import sttp.openai.json.SnakePickle
+import sttp.ai.openai.json.SnakePickle
 
 /** @param id
   *   Unique identifier for this audio response.

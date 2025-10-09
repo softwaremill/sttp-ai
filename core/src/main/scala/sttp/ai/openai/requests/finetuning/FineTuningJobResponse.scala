@@ -1,6 +1,6 @@
 package sttp.ai.openai.requests.finetuning
 
-import sttp.openai.json.SnakePickle
+import sttp.ai.openai.json.SnakePickle
 import ujson.Str
 
 /** The fine_tuning.job object represents a fine-tuning job that has been created through the API.

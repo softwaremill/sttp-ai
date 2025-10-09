@@ -3,56 +3,56 @@ package sttp.ai.openai
 import sttp.capabilities.Streams
 import sttp.client4._
 import sttp.model.{Header, Uri}
-import sttp.openai.OpenAIExceptions.OpenAIException
-import sttp.openai.json.SttpUpickleApiExtension._
-import sttp.openai.requests.admin.{QueryParameters => _, _}
-import sttp.openai.requests.assistants.AssistantsRequestBody.{CreateAssistantBody, ModifyAssistantBody}
-import sttp.openai.requests.assistants.AssistantsResponseData.{AssistantData, DeleteAssistantResponse, ListAssistantsResponse}
-import sttp.openai.requests.audio.AudioResponseData.AudioResponse
-import sttp.openai.requests.audio.speech.SpeechRequestBody
-import sttp.openai.requests.audio.transcriptions.{TranscriptionConfig, TranscriptionModel}
-import sttp.openai.requests.audio.translations.{TranslationConfig, TranslationModel}
-import sttp.openai.requests.batch.{QueryParameters => _, _}
-import sttp.openai.requests.completions.CompletionsRequestBody.CompletionsBody
-import sttp.openai.requests.completions.CompletionsResponseData.CompletionsResponse
-import sttp.openai.requests.completions.chat
-import sttp.openai.requests.completions.chat.ChatRequestBody.{ChatBody, UpdateChatCompletionRequestBody}
-import sttp.openai.requests.completions.chat.ChatRequestResponseData.{
+import sttp.ai.openai.OpenAIExceptions.OpenAIException
+import sttp.ai.openai.json.SttpUpickleApiExtension._
+import sttp.ai.openai.requests.admin.{QueryParameters => _, _}
+import sttp.ai.openai.requests.assistants.AssistantsRequestBody.{CreateAssistantBody, ModifyAssistantBody}
+import sttp.ai.openai.requests.assistants.AssistantsResponseData.{AssistantData, DeleteAssistantResponse, ListAssistantsResponse}
+import sttp.ai.openai.requests.audio.AudioResponseData.AudioResponse
+import sttp.ai.openai.requests.audio.speech.SpeechRequestBody
+import sttp.ai.openai.requests.audio.transcriptions.{TranscriptionConfig, TranscriptionModel}
+import sttp.ai.openai.requests.audio.translations.{TranslationConfig, TranslationModel}
+import sttp.ai.openai.requests.batch.{QueryParameters => _, _}
+import sttp.ai.openai.requests.completions.CompletionsRequestBody.CompletionsBody
+import sttp.ai.openai.requests.completions.CompletionsResponseData.CompletionsResponse
+import sttp.ai.openai.requests.completions.chat
+import sttp.ai.openai.requests.completions.chat.ChatRequestBody.{ChatBody, UpdateChatCompletionRequestBody}
+import sttp.ai.openai.requests.completions.chat.ChatRequestResponseData.{
   ChatResponse,
   DeleteChatCompletionResponse,
   ListChatResponse,
   ListMessageResponse
 }
-import sttp.openai.requests.completions.chat.{ListMessagesQueryParameters => _}
-import sttp.openai.requests.embeddings.EmbeddingsRequestBody.EmbeddingsBody
-import sttp.openai.requests.embeddings.EmbeddingsResponseBody.EmbeddingResponse
-import sttp.openai.requests.files.FilesResponseData._
-import sttp.openai.requests.finetuning._
-import sttp.openai.requests.images.ImageResponseData.ImageResponse
-import sttp.openai.requests.images.creation.ImageCreationRequestBody.ImageCreationBody
-import sttp.openai.requests.images.edit.ImageEditsConfig
-import sttp.openai.requests.images.variations.ImageVariationsConfig
-import sttp.openai.requests.models.ModelsResponseData.{DeletedModelData, ModelData, ModelsResponse}
-import sttp.openai.requests.moderations.ModerationsRequestBody.ModerationsBody
-import sttp.openai.requests.moderations.ModerationsResponseData.ModerationData
-import sttp.openai.requests.responses._
-import sttp.openai.requests.threads.QueryParameters
-import sttp.openai.requests.threads.ThreadsRequestBody.CreateThreadBody
-import sttp.openai.requests.threads.ThreadsResponseData.{DeleteThreadResponse, ThreadData}
-import sttp.openai.requests.threads.messages.ThreadMessagesRequestBody.CreateMessage
-import sttp.openai.requests.threads.messages.ThreadMessagesResponseData.{DeleteMessageResponse, ListMessagesResponse, MessageData}
-import sttp.openai.requests.threads.runs.ThreadRunsRequestBody._
-import sttp.openai.requests.threads.runs.ThreadRunsResponseData.{ListRunStepsResponse, ListRunsResponse, RunData, RunStepData}
-import sttp.openai.requests.upload.{CompleteUploadRequestBody, UploadPartResponse, UploadRequestBody, UploadResponse}
-import sttp.openai.requests.vectorstore.VectorStoreRequestBody.{CreateVectorStoreBody, ModifyVectorStoreBody}
-import sttp.openai.requests.vectorstore.VectorStoreResponseData.{DeleteVectorStoreResponse, ListVectorStoresResponse, VectorStore}
-import sttp.openai.requests.vectorstore.file.VectorStoreFileRequestBody.{CreateVectorStoreFileBody, ListVectorStoreFilesBody}
-import sttp.openai.requests.vectorstore.file.VectorStoreFileResponseData.{
+import sttp.ai.openai.requests.completions.chat.{ListMessagesQueryParameters => _}
+import sttp.ai.openai.requests.embeddings.EmbeddingsRequestBody.EmbeddingsBody
+import sttp.ai.openai.requests.embeddings.EmbeddingsResponseBody.EmbeddingResponse
+import sttp.ai.openai.requests.files.FilesResponseData._
+import sttp.ai.openai.requests.finetuning._
+import sttp.ai.openai.requests.images.ImageResponseData.ImageResponse
+import sttp.ai.openai.requests.images.creation.ImageCreationRequestBody.ImageCreationBody
+import sttp.ai.openai.requests.images.edit.ImageEditsConfig
+import sttp.ai.openai.requests.images.variations.ImageVariationsConfig
+import sttp.ai.openai.requests.models.ModelsResponseData.{DeletedModelData, ModelData, ModelsResponse}
+import sttp.ai.openai.requests.moderations.ModerationsRequestBody.ModerationsBody
+import sttp.ai.openai.requests.moderations.ModerationsResponseData.ModerationData
+import sttp.ai.openai.requests.responses._
+import sttp.ai.openai.requests.threads.QueryParameters
+import sttp.ai.openai.requests.threads.ThreadsRequestBody.CreateThreadBody
+import sttp.ai.openai.requests.threads.ThreadsResponseData.{DeleteThreadResponse, ThreadData}
+import sttp.ai.openai.requests.threads.messages.ThreadMessagesRequestBody.CreateMessage
+import sttp.ai.openai.requests.threads.messages.ThreadMessagesResponseData.{DeleteMessageResponse, ListMessagesResponse, MessageData}
+import sttp.ai.openai.requests.threads.runs.ThreadRunsRequestBody._
+import sttp.ai.openai.requests.threads.runs.ThreadRunsResponseData.{ListRunStepsResponse, ListRunsResponse, RunData, RunStepData}
+import sttp.ai.openai.requests.upload.{CompleteUploadRequestBody, UploadPartResponse, UploadRequestBody, UploadResponse}
+import sttp.ai.openai.requests.vectorstore.VectorStoreRequestBody.{CreateVectorStoreBody, ModifyVectorStoreBody}
+import sttp.ai.openai.requests.vectorstore.VectorStoreResponseData.{DeleteVectorStoreResponse, ListVectorStoresResponse, VectorStore}
+import sttp.ai.openai.requests.vectorstore.file.VectorStoreFileRequestBody.{CreateVectorStoreFileBody, ListVectorStoreFilesBody}
+import sttp.ai.openai.requests.vectorstore.file.VectorStoreFileResponseData.{
   DeleteVectorStoreFileResponse,
   ListVectorStoreFilesResponse,
   VectorStoreFile
 }
-import sttp.openai.requests.{admin, batch, finetuning}
+import sttp.ai.openai.requests.{admin, batch, finetuning}
 
 import java.io.{File, InputStream}
 import java.nio.file.Paths

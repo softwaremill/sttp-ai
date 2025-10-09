@@ -7,14 +7,14 @@ import ox.{supervised, Ox}
 import sttp.client4.DefaultSyncBackend
 import sttp.client4.testing.ResponseStub
 import sttp.model.sse.ServerSentEvent
-import sttp.openai.OpenAI
-import sttp.openai.OpenAIExceptions.OpenAIException.DeserializationOpenAIException
-import sttp.openai.fixtures.ErrorFixture
-import sttp.openai.json.SnakePickle.*
-import sttp.openai.requests.completions.chat.ChatChunkRequestResponseData.ChatChunkResponse
-import sttp.openai.requests.completions.chat.ChatChunkRequestResponseData.ChatChunkResponse.DoneEvent
-import sttp.openai.requests.completions.chat.ChatRequestBody.{ChatBody, ChatCompletionModel}
-import sttp.openai.utils.JsonUtils.compactJson
+import sttp.ai.openai.OpenAI
+import sttp.ai.openai.OpenAIExceptions.OpenAIException.DeserializationOpenAIException
+import sttp.ai.openai.fixtures.ErrorFixture
+import sttp.ai.openai.json.SnakePickle.*
+import sttp.ai.openai.requests.completions.chat.ChatChunkRequestResponseData.ChatChunkResponse
+import sttp.ai.openai.requests.completions.chat.ChatChunkRequestResponseData.ChatChunkResponse.DoneEvent
+import sttp.ai.openai.requests.completions.chat.ChatRequestBody.{ChatBody, ChatCompletionModel}
+import sttp.ai.openai.utils.JsonUtils.compactJson
 
 import java.io.{ByteArrayInputStream, InputStream}
 

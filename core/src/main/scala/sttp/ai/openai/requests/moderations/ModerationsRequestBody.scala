@@ -1,6 +1,6 @@
 package sttp.ai.openai.requests.moderations
 
-import sttp.openai.json.SnakePickle
+import sttp.ai.openai.json.SnakePickle
 import ujson.Str
 object ModerationsRequestBody {
 

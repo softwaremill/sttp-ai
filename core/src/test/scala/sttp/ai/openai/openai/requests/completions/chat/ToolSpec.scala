@@ -3,9 +3,9 @@ package sttp.ai.openai.requests.completions.chat
 import org.scalatest.EitherValues
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
-import sttp.openai.fixtures.ToolFixture
-import sttp.openai.json.SnakePickle
-import sttp.openai.requests.completions.chat.message.Tool.FunctionTool
+import sttp.ai.openai.fixtures.ToolFixture
+import sttp.ai.openai.json.SnakePickle
+import sttp.ai.openai.requests.completions.chat.message.Tool.FunctionTool
 
 class ToolSpec extends AnyFlatSpec with Matchers with EitherValues {
   case class Passenger(name: String, age: Int)
@@ -27,7 +27,7 @@ class ToolSpec extends AnyFlatSpec with Matchers with EitherValues {
   }
 
   "Given FunctionTool with strict flag" should "serialize and deserialize properly" in {
-    import sttp.openai.requests.completions.chat.message.Tool.FunctionTool
+    import sttp.ai.openai.requests.completions.chat.message.Tool.FunctionTool
     // given
     val funcTool = FunctionTool(
       description = Some("Return greeting"),
@@ -66,7 +66,7 @@ class ToolSpec extends AnyFlatSpec with Matchers with EitherValues {
   }
 
   "Given CustomTool" should "serialize properly" in {
-    import sttp.openai.requests.completions.chat.message.ToolChoice.CustomTool
+    import sttp.ai.openai.requests.completions.chat.message.ToolChoice.CustomTool
 
     // given
     val customTool = CustomTool(name = "my_custom_tool")

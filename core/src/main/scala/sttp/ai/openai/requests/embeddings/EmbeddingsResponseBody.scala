@@ -1,7 +1,7 @@
 package sttp.ai.openai.requests.embeddings
 
-import sttp.openai.json.SnakePickle
-import sttp.openai.requests.embeddings.EmbeddingsRequestBody.EmbeddingsModel
+import sttp.ai.openai.json.SnakePickle
+import sttp.ai.openai.requests.embeddings.EmbeddingsRequestBody.EmbeddingsModel
 
 object EmbeddingsResponseBody {
   case class EmbeddingData(

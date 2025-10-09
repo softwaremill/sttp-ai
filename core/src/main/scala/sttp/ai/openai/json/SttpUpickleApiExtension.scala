@@ -7,8 +7,8 @@ import sttp.client4.json._
 import sttp.client4.upicklejson.SttpUpickleApi
 import sttp.model.ResponseMetadata
 import sttp.model.StatusCode._
-import sttp.openai.OpenAIExceptions.OpenAIException
-import sttp.openai.OpenAIExceptions.OpenAIException._
+import sttp.ai.openai.OpenAIExceptions.OpenAIException
+import sttp.ai.openai.OpenAIExceptions.OpenAIException._
 
 import java.io.InputStream
 

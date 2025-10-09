@@ -1,9 +1,9 @@
 package sttp.ai.openai.requests.completions.chat
 
 import sttp.apispec.Schema
-import sttp.openai.json.{SerializationHelpers, SnakePickle}
-import sttp.openai.requests.completions.Stop
-import sttp.openai.requests.completions.chat.message.{Message, Tool, ToolChoice}
+import sttp.ai.openai.json.{SerializationHelpers, SnakePickle}
+import sttp.ai.openai.requests.completions.Stop
+import sttp.ai.openai.requests.completions.chat.message.{Message, Tool, ToolChoice}
 import sttp.tapir.docs.apispec.schema.TapirSchemaToJsonSchema
 import sttp.tapir.{Schema => TSchema}
 import ujson._

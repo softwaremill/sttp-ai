@@ -1,7 +1,7 @@
 package sttp.ai.openai.requests.responses
 
-import sttp.openai.json.SnakePickle
-import sttp.openai.requests.completions.chat.SchemaSupport
+import sttp.ai.openai.json.SnakePickle
+import sttp.ai.openai.requests.completions.chat.SchemaSupport
 import sttp.tapir.docs.apispec.schema.TapirSchemaToJsonSchema
 import sttp.tapir.{Schema => TSchema}
 import ujson.Value

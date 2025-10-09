@@ -4,8 +4,8 @@ import sttp.client4.ResponseException.UnexpectedStatusCode
 import sttp.client4.testing.ResponseStub
 import sttp.model.StatusCode
 import sttp.model.StatusCode._
-import sttp.openai.OpenAIExceptions.OpenAIException
-import sttp.openai.OpenAIExceptions.OpenAIException._
+import sttp.ai.openai.OpenAIExceptions.OpenAIException
+import sttp.ai.openai.OpenAIExceptions.OpenAIException._
 
 object ErrorFixture {
   private val (message, errorType, param, code) = ("Some error message.", "error_type", "null", "invalid_api_key")

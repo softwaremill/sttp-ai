@@ -3,11 +3,11 @@ package sttp.ai.openai.requests.vectorstore
 import org.scalatest.EitherValues
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
-import sttp.openai.fixtures.VectorStoreFixture
-import sttp.openai.json.SnakePickle
-import sttp.openai.requests.vectorstore.VectorStoreRequestBody.{CreateVectorStoreBody, ModifyVectorStoreBody}
-import sttp.openai.requests.vectorstore.VectorStoreResponseData._
-import sttp.openai.utils.JsonUtils
+import sttp.ai.openai.fixtures.VectorStoreFixture
+import sttp.ai.openai.json.SnakePickle
+import sttp.ai.openai.requests.vectorstore.VectorStoreRequestBody.{CreateVectorStoreBody, ModifyVectorStoreBody}
+import sttp.ai.openai.requests.vectorstore.VectorStoreResponseData._
+import sttp.ai.openai.utils.JsonUtils
 
 class VectorStoreDataSpec extends AnyFlatSpec with Matchers with EitherValues {
 
@@ -61,7 +61,7 @@ class VectorStoreDataSpec extends AnyFlatSpec with Matchers with EitherValues {
   }
 
   "Vector store object" should "be properly deserialized from Json" in {
-    import sttp.openai.requests.vectorstore.VectorStoreResponseData.VectorStore._
+    import sttp.ai.openai.requests.vectorstore.VectorStoreResponseData.VectorStore._
     // given
     val givenResponse = VectorStore(
       id = "vs_1",
@@ -86,7 +86,7 @@ class VectorStoreDataSpec extends AnyFlatSpec with Matchers with EitherValues {
   }
 
   "List of vector stores" should "be properly deserialized from Json" in {
-    import sttp.openai.requests.vectorstore.VectorStoreResponseData.ListVectorStoresResponse._
+    import sttp.ai.openai.requests.vectorstore.VectorStoreResponseData.ListVectorStoresResponse._
     // given
 
     val first = VectorStore(
@@ -126,7 +126,7 @@ class VectorStoreDataSpec extends AnyFlatSpec with Matchers with EitherValues {
   }
 
   "Delete of vector stores response" should "be properly deserialized from Json" in {
-    import sttp.openai.requests.vectorstore.VectorStoreResponseData.DeleteVectorStoreResponse._
+    import sttp.ai.openai.requests.vectorstore.VectorStoreResponseData.DeleteVectorStoreResponse._
     // given
 
     val givenResponse = DeleteVectorStoreResponse(

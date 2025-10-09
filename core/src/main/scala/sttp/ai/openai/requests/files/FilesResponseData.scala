@@ -1,6 +1,6 @@
 package sttp.ai.openai.requests.files
 
-import sttp.openai.json.SnakePickle
+import sttp.ai.openai.json.SnakePickle
 
 object FilesResponseData {
   case class FileData(

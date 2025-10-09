@@ -1,9 +1,9 @@
 package sttp.ai.openai.requests.threads.runs
 
-import sttp.openai.json.SnakePickle
-import sttp.openai.requests.assistants.Tool
-import sttp.openai.requests.completions.chat.message.ToolResources
-import sttp.openai.requests.threads.ThreadsRequestBody.CreateThreadBody
+import sttp.ai.openai.json.SnakePickle
+import sttp.ai.openai.requests.assistants.Tool
+import sttp.ai.openai.requests.completions.chat.message.ToolResources
+import sttp.ai.openai.requests.threads.ThreadsRequestBody.CreateThreadBody
 
 object ThreadRunsRequestBody {
 

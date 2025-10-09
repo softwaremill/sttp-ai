@@ -1,6 +1,6 @@
 package sttp.ai.openai.requests.completions.chat.message
 
-import sttp.openai.json.{SerializationHelpers, SnakePickle}
+import sttp.ai.openai.json.{SerializationHelpers, SnakePickle}
 import ujson._
 
 sealed trait ToolChoice

@@ -1,6 +1,6 @@
 package sttp.ai.openai.requests.batch
 
-import sttp.openai.json.SnakePickle
+import sttp.ai.openai.json.SnakePickle
 
 /** @param inputFileId
   *   The ID of an uploaded file that contains requests for the new batch. Your input file must be formatted as a JSONL file, and must be

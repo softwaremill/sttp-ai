@@ -3,10 +3,10 @@ package sttp.ai.openai.requests.completions.chat
 import org.scalatest.EitherValues
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
-import sttp.openai.fixtures
-import sttp.openai.requests.completions.Stop.SingleStop
-import sttp.openai.utils.ChatCompletionFixtures._
-import sttp.openai.utils.JsonUtils
+import sttp.ai.openai.fixtures
+import sttp.ai.openai.requests.completions.Stop.SingleStop
+import sttp.ai.openai.utils.ChatCompletionFixtures._
+import sttp.ai.openai.utils.JsonUtils
 
 class ChatChunkDataSpec extends AnyFlatSpec with Matchers with EitherValues {
 
@@ -54,7 +54,7 @@ class ChatChunkDataSpec extends AnyFlatSpec with Matchers with EitherValues {
 
   "Given completions request with streaming enabled as case class" should "be properly serialized to Json" in {
     import ChatRequestBody._
-    import sttp.openai.requests.completions.chat.message._
+    import sttp.ai.openai.requests.completions.chat.message._
 
     // given
     val givenRequest = ChatRequestBody.ChatBody(
@@ -84,7 +84,7 @@ class ChatChunkDataSpec extends AnyFlatSpec with Matchers with EitherValues {
 
   "Given chat chunk with usage data" should "properly deserialize usage field" in {
     import ChatChunkRequestResponseData._
-    import sttp.openai.requests.completions.Usage
+    import sttp.ai.openai.requests.completions.Usage
 
     // given
     val jsonWithUsage = """{

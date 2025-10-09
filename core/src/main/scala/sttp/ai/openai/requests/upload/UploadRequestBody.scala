@@ -1,6 +1,6 @@
 package sttp.ai.openai.requests.upload
 
-import sttp.openai.json.SnakePickle
+import sttp.ai.openai.json.SnakePickle
 
 /** Represents the request body for uploading a file.
   *

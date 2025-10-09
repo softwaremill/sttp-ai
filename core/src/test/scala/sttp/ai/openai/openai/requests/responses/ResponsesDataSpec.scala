@@ -4,19 +4,19 @@ import org.scalatest.EitherValues
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
 import sttp.apispec.{Schema, SchemaType}
-import sttp.openai.fixtures.ResponsesFixture
-import sttp.openai.json.SnakePickle
-import sttp.openai.requests.responses.ResponsesModel.GPT4o20240806
-import sttp.openai.requests.responses.ResponsesRequestBody.Format.JsonSchema
-import sttp.openai.requests.responses.ResponsesRequestBody.{
+import sttp.ai.openai.fixtures.ResponsesFixture
+import sttp.ai.openai.json.SnakePickle
+import sttp.ai.openai.requests.responses.ResponsesModel.GPT4o20240806
+import sttp.ai.openai.requests.responses.ResponsesRequestBody.Format.JsonSchema
+import sttp.ai.openai.requests.responses.ResponsesRequestBody.{
   Format => RequestFormat,
   PromptConfig => RequestPromptConfig,
   ReasoningConfig => RequestReasoningConfig,
   TextConfig => RequestTextConfig,
   _
 }
-import sttp.openai.requests.responses.ResponsesResponseBody._
-import sttp.openai.requests.responses.ToolChoice.ToolChoiceObject
+import sttp.ai.openai.requests.responses.ResponsesResponseBody._
+import sttp.ai.openai.requests.responses.ToolChoice.ToolChoiceObject
 import ujson.{Obj, Str}
 
 class ResponsesDataSpec extends AnyFlatSpec with Matchers with EitherValues {

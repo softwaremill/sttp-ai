@@ -3,15 +3,15 @@ package sttp.ai.openai.requests.completions.chat
 import org.scalatest.EitherValues
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
-import sttp.openai.fixtures
-import sttp.openai.json.SnakePickle
-import sttp.openai.requests.completions.Stop.SingleStop
-import sttp.openai.requests.completions.chat.ChatRequestBody.Format.Mp3
-import sttp.openai.requests.completions.chat.ChatRequestBody.Voice.Ash
-import sttp.openai.requests.completions.chat.Role.Assistant
-import sttp.openai.requests.completions.{CompletionTokensDetails, PromptTokensDetails, Usage}
-import sttp.openai.utils.ChatCompletionFixtures._
-import sttp.openai.utils.JsonUtils
+import sttp.ai.openai.fixtures
+import sttp.ai.openai.json.SnakePickle
+import sttp.ai.openai.requests.completions.Stop.SingleStop
+import sttp.ai.openai.requests.completions.chat.ChatRequestBody.Format.Mp3
+import sttp.ai.openai.requests.completions.chat.ChatRequestBody.Voice.Ash
+import sttp.ai.openai.requests.completions.chat.Role.Assistant
+import sttp.ai.openai.requests.completions.{CompletionTokensDetails, PromptTokensDetails, Usage}
+import sttp.ai.openai.utils.ChatCompletionFixtures._
+import sttp.ai.openai.utils.JsonUtils
 
 class ChatDataSpec extends AnyFlatSpec with Matchers with EitherValues {
 
@@ -158,7 +158,7 @@ class ChatDataSpec extends AnyFlatSpec with Matchers with EitherValues {
 
   "Given completions request as case class" should "be properly serialized to Json" in {
     import ChatRequestBody._
-    import sttp.openai.requests.completions.chat.message._
+    import sttp.ai.openai.requests.completions.chat.message._
 
     // given
     val givenRequest = ChatRequestBody.ChatBody(

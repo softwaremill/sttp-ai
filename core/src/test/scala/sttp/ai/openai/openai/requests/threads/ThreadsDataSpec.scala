@@ -4,12 +4,12 @@ import org.scalatest.EitherValues
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
 import sttp.client4.IsOption._
-import sttp.openai.fixtures
-import sttp.openai.json.SnakePickle
-import sttp.openai.requests.assistants.Tool.{CodeInterpreterTool, FileSearchTool}
-import sttp.openai.requests.completions.chat.message.Attachment
-import sttp.openai.requests.threads.messages.ThreadMessagesRequestBody.CreateMessage
-import sttp.openai.utils.JsonUtils
+import sttp.ai.openai.fixtures
+import sttp.ai.openai.json.SnakePickle
+import sttp.ai.openai.requests.assistants.Tool.{CodeInterpreterTool, FileSearchTool}
+import sttp.ai.openai.requests.completions.chat.message.Attachment
+import sttp.ai.openai.requests.threads.messages.ThreadMessagesRequestBody.CreateMessage
+import sttp.ai.openai.utils.JsonUtils
 class ThreadsDataSpec extends AnyFlatSpec with Matchers with EitherValues {
 
   "Given empty create thread request as case class" should "be properly serialized to Json" in {
@@ -111,8 +111,8 @@ class ThreadsDataSpec extends AnyFlatSpec with Matchers with EitherValues {
   }
 
   "Given create empty thread response as Json" should "be properly deserialized to case class" in {
-    import sttp.openai.requests.threads.ThreadsResponseData.ThreadData._
-    import sttp.openai.requests.threads.ThreadsResponseData._
+    import sttp.ai.openai.requests.threads.ThreadsResponseData.ThreadData._
+    import sttp.ai.openai.requests.threads.ThreadsResponseData._
 
     // given
     val jsonResponse = fixtures.ThreadsFixture.jsonCreateEmptyThreadResponse
@@ -130,8 +130,8 @@ class ThreadsDataSpec extends AnyFlatSpec with Matchers with EitherValues {
   }
 
   "Given create thread with messages and metadata response as Json" should "be properly deserialized to case class" in {
-    import sttp.openai.requests.threads.ThreadsResponseData.ThreadData._
-    import sttp.openai.requests.threads.ThreadsResponseData._
+    import sttp.ai.openai.requests.threads.ThreadsResponseData.ThreadData._
+    import sttp.ai.openai.requests.threads.ThreadsResponseData._
 
     // given
     val jsonResponse = fixtures.ThreadsFixture.jsonCreateThreadWithMessagesAndMetadataResponse
@@ -150,8 +150,8 @@ class ThreadsDataSpec extends AnyFlatSpec with Matchers with EitherValues {
   }
 
   "Given delete thread response as Json" should "be properly deserialized to case class" in {
-    import sttp.openai.requests.threads.ThreadsResponseData.DeleteThreadResponse._
-    import sttp.openai.requests.threads.ThreadsResponseData._
+    import sttp.ai.openai.requests.threads.ThreadsResponseData.DeleteThreadResponse._
+    import sttp.ai.openai.requests.threads.ThreadsResponseData._
 
     // given
     val jsonResponse = fixtures.ThreadsFixture.jsonDeleteThreadResponse

@@ -1,7 +1,7 @@
 package sttp.ai.openai.requests.threads.messages
 
-import sttp.openai.json.SnakePickle
-import sttp.openai.requests.completions.chat.message.Attachment
+import sttp.ai.openai.json.SnakePickle
+import sttp.ai.openai.requests.completions.chat.message.Attachment
 
 object ThreadMessagesResponseData {
 

@@ -1,7 +1,7 @@
 package sttp.ai.openai.fixtures
 
-import sttp.openai.requests.images.edit.{ImageEditsConfig, ImageEditsModel}
-import sttp.openai.requests.images.{ResponseFormat, Size}
+import sttp.ai.openai.requests.images.edit.{ImageEditsConfig, ImageEditsModel}
+import sttp.ai.openai.requests.images.{ResponseFormat, Size}
 
 import java.io.File
 import java.nio.file.Files

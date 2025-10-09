@@ -1,6 +1,6 @@
 package sttp.ai.openai.fixtures
 
-import sttp.openai.requests.admin.{AdminApiKeyResponse, Owner}
+import sttp.ai.openai.requests.admin.{AdminApiKeyResponse, Owner}
 
 object AdminFixture {
 

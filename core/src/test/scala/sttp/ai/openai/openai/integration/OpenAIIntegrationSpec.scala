@@ -5,14 +5,14 @@ import org.scalatest.concurrent.Eventually
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.time.{Millis, Seconds, Span}
-import sttp.openai.OpenAIExceptions.OpenAIException
-import sttp.openai.OpenAISyncClient
-import sttp.openai.requests.completions.chat.ChatRequestBody.{ChatBody, ChatCompletionModel}
-import sttp.openai.requests.completions.chat.message.{Content, Message}
-import sttp.openai.requests.embeddings.EmbeddingsRequestBody.{EmbeddingsBody, EmbeddingsInput, EmbeddingsModel}
-import sttp.openai.requests.moderations.ModerationsRequestBody.ModerationsBody
-import sttp.openai.requests.responses.ResponsesModel.GPT4oMini
-import sttp.openai.requests.responses.{GetResponseQueryParameters, ListInputItemsQueryParameters, ResponsesRequestBody}
+import sttp.ai.openai.OpenAIExceptions.OpenAIException
+import sttp.ai.openai.OpenAISyncClient
+import sttp.ai.openai.requests.completions.chat.ChatRequestBody.{ChatBody, ChatCompletionModel}
+import sttp.ai.openai.requests.completions.chat.message.{Content, Message}
+import sttp.ai.openai.requests.embeddings.EmbeddingsRequestBody.{EmbeddingsBody, EmbeddingsInput, EmbeddingsModel}
+import sttp.ai.openai.requests.moderations.ModerationsRequestBody.ModerationsBody
+import sttp.ai.openai.requests.responses.ResponsesModel.GPT4oMini
+import sttp.ai.openai.requests.responses.{GetResponseQueryParameters, ListInputItemsQueryParameters, ResponsesRequestBody}
 
 // Suppress warnings for unused assertions - these are test assertions that verify behavior
 //noinspection ScalaUnusedSymbol

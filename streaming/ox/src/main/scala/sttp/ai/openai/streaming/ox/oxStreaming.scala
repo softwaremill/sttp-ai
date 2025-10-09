@@ -5,12 +5,12 @@ import sttp.client4.Request
 import sttp.client4.impl.ox.sse.OxServerSentEvents
 import sttp.model.ResponseMetadata
 import sttp.model.sse.ServerSentEvent
-import sttp.openai.OpenAI
-import sttp.openai.OpenAIExceptions.OpenAIException
-import sttp.openai.json.SttpUpickleApiExtension.deserializeJsonSnake
-import sttp.openai.requests.completions.chat.ChatChunkRequestResponseData.ChatChunkResponse
-import sttp.openai.requests.completions.chat.ChatChunkRequestResponseData.ChatChunkResponse.DoneEvent
-import sttp.openai.requests.completions.chat.ChatRequestBody.ChatBody
+import sttp.ai.openai.OpenAI
+import sttp.ai.openai.OpenAIExceptions.OpenAIException
+import sttp.ai.openai.json.SttpUpickleApiExtension.deserializeJsonSnake
+import sttp.ai.openai.requests.completions.chat.ChatChunkRequestResponseData.ChatChunkResponse
+import sttp.ai.openai.requests.completions.chat.ChatChunkRequestResponseData.ChatChunkResponse.DoneEvent
+import sttp.ai.openai.requests.completions.chat.ChatRequestBody.ChatBody
 
 import java.io.InputStream
 

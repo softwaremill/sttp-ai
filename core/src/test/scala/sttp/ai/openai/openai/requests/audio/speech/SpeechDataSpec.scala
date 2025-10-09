@@ -3,9 +3,9 @@ package sttp.ai.openai.requests.audio.speech
 import org.scalatest.EitherValues
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
-import sttp.openai.fixtures.AudioFixture
-import sttp.openai.json.SnakePickle
-import sttp.openai.requests.audio.speech.SpeechModel.TTS1
+import sttp.ai.openai.fixtures.AudioFixture
+import sttp.ai.openai.json.SnakePickle
+import sttp.ai.openai.requests.audio.speech.SpeechModel.TTS1
 
 class SpeechDataSpec extends AnyFlatSpec with Matchers with EitherValues {
 

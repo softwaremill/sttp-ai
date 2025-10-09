@@ -1,7 +1,7 @@
 package sttp.ai.openai.requests.completions.chat.message
 
-import sttp.openai.json.SnakePickle
-import sttp.openai.requests.completions.chat.message.ToolResource.{CodeInterpreterToolResource, FileSearchToolResource}
+import sttp.ai.openai.json.SnakePickle
+import sttp.ai.openai.requests.completions.chat.message.ToolResource.{CodeInterpreterToolResource, FileSearchToolResource}
 import ujson._
 
 case class ToolResources(

@@ -1,6 +1,6 @@
 package sttp.ai.openai.requests.batch
 
-import sttp.openai.json.SnakePickle
+import sttp.ai.openai.json.SnakePickle
 
 /** @param id
   *   The ID of the batch.

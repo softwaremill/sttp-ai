@@ -3,10 +3,10 @@ package sttp.ai.openai.requests.moderations
 import org.scalatest.EitherValues
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
-import sttp.openai.fixtures
-import sttp.openai.requests.moderations.ModerationsRequestBody.ModerationModel
-import sttp.openai.requests.moderations.ModerationsResponseData._
-import sttp.openai.utils.JsonUtils
+import sttp.ai.openai.fixtures
+import sttp.ai.openai.requests.moderations.ModerationsRequestBody.ModerationModel
+import sttp.ai.openai.requests.moderations.ModerationsResponseData._
+import sttp.ai.openai.utils.JsonUtils
 
 class ModerationsDataSpec extends AnyFlatSpec with Matchers with EitherValues {
   "Given create moderation response as Json" should "be properly deserialized to case class" in {

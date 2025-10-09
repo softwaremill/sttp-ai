@@ -3,10 +3,10 @@ package sttp.ai.openai.requests
 import org.scalatest.EitherValues
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
-import sttp.openai.fixtures.BatchFixture
-import sttp.openai.json.SnakePickle
-import sttp.openai.requests.batch.{BatchRequestBody, BatchResponse, ListBatchResponse}
-import sttp.openai.utils.JsonUtils
+import sttp.ai.openai.fixtures.BatchFixture
+import sttp.ai.openai.json.SnakePickle
+import sttp.ai.openai.requests.batch.{BatchRequestBody, BatchResponse, ListBatchResponse}
+import sttp.ai.openai.utils.JsonUtils
 
 class BatchDataSpec extends AnyFlatSpec with Matchers with EitherValues {
 

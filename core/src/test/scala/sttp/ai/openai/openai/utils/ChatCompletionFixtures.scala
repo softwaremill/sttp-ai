@@ -1,9 +1,9 @@
 package sttp.ai.openai.utils
 
-import sttp.openai.requests.completions.chat.ToolCall.FunctionToolCall
-import sttp.openai.requests.completions.chat.message.Tool.FunctionTool
-import sttp.openai.requests.completions.chat.message._
-import sttp.openai.requests.completions.chat.{FunctionCall, ToolCall}
+import sttp.ai.openai.requests.completions.chat.ToolCall.FunctionToolCall
+import sttp.ai.openai.requests.completions.chat.message.Tool.FunctionTool
+import sttp.ai.openai.requests.completions.chat.message._
+import sttp.ai.openai.requests.completions.chat.{FunctionCall, ToolCall}
 import ujson._
 
 object ChatCompletionFixtures {

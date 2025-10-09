@@ -1,5 +1,5 @@
 //> using repository ivy2Local
-//> using dep com.softwaremill.sttp.openai::claude:0.3.10
+//> using dep com.softwaremill.sttp.ai::claude:0.3.10
 //> using dep ch.qos.logback:logback-classic:1.5.18
 
 // remember to set the ANTHROPIC_API_KEY env variable!

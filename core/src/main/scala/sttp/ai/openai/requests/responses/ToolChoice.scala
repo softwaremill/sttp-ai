@@ -1,6 +1,6 @@
 package sttp.ai.openai.requests.responses
 
-import sttp.openai.json.SnakePickle
+import sttp.ai.openai.json.SnakePickle
 
 sealed trait ToolChoice
 

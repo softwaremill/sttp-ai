@@ -2,7 +2,7 @@ package sttp.ai.openai.json
 
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
-import sttp.openai.json.SerializationHelpersSpec.TestObject
+import sttp.ai.openai.json.SerializationHelpersSpec.TestObject
 import ujson._
 
 object SerializationHelpersSpec {

@@ -1,7 +1,7 @@
 package sttp.ai.openai.fixtures
 
-import sttp.openai.requests.finetuning.Status.Running
-import sttp.openai.requests.finetuning.{
+import sttp.ai.openai.requests.finetuning.Status.Running
+import sttp.ai.openai.requests.finetuning.{
   Dpo,
   Error,
   FineTuningJobResponse,

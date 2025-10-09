@@ -1,6 +1,6 @@
 package sttp.ai.openai.requests.admin
 
-import sttp.openai.json.SnakePickle
+import sttp.ai.openai.json.SnakePickle
 
 /** Create an organization admin API key
   */

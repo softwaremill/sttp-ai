@@ -1,6 +1,6 @@
 package sttp.ai.openai.requests.threads
 
-import sttp.openai.json.SnakePickle
+import sttp.ai.openai.json.SnakePickle
 
 object ThreadsResponseData {
 

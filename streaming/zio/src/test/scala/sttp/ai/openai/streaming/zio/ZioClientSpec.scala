@@ -6,16 +6,16 @@ import org.scalatest.matchers.should.Matchers
 import sttp.client4.httpclient.zio.HttpClientZioBackend
 import sttp.client4.testing.ResponseStub
 import sttp.model.sse.ServerSentEvent
-import sttp.openai.OpenAIExceptions.OpenAIException.DeserializationOpenAIException
-import sttp.openai.fixtures.ErrorFixture
-import sttp.openai.json.SnakePickle._
-import sttp.openai.requests.audio.speech.SpeechModel.TTS1
-import sttp.openai.requests.audio.speech.{SpeechRequestBody, Voice}
-import sttp.openai.requests.completions.chat.ChatChunkRequestResponseData.ChatChunkResponse
-import sttp.openai.requests.completions.chat.ChatChunkRequestResponseData.ChatChunkResponse.DoneEvent
-import sttp.openai.requests.completions.chat.ChatRequestBody.{ChatBody, ChatCompletionModel}
-import sttp.openai.utils.JsonUtils.compactJson
-import sttp.openai.{OpenAI, OpenAIExceptions}
+import sttp.ai.openai.OpenAIExceptions.OpenAIException.DeserializationOpenAIException
+import sttp.ai.openai.fixtures.ErrorFixture
+import sttp.ai.openai.json.SnakePickle._
+import sttp.ai.openai.requests.audio.speech.SpeechModel.TTS1
+import sttp.ai.openai.requests.audio.speech.{SpeechRequestBody, Voice}
+import sttp.ai.openai.requests.completions.chat.ChatChunkRequestResponseData.ChatChunkResponse
+import sttp.ai.openai.requests.completions.chat.ChatChunkRequestResponseData.ChatChunkResponse.DoneEvent
+import sttp.ai.openai.requests.completions.chat.ChatRequestBody.{ChatBody, ChatCompletionModel}
+import sttp.ai.openai.utils.JsonUtils.compactJson
+import sttp.ai.openai.{OpenAI, OpenAIExceptions}
 import zio._
 import zio.stream._
 

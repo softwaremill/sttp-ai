@@ -1,6 +1,6 @@
 package sttp.ai.openai.requests.audio.translations
 
-import sttp.openai.requests.images.ResponseFormat
+import sttp.ai.openai.requests.images.ResponseFormat
 
 import java.io.File
 

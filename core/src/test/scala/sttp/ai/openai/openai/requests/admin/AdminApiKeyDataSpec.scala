@@ -3,9 +3,9 @@ package sttp.ai.openai.requests.admin
 import org.scalatest.EitherValues
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
-import sttp.openai.fixtures.AdminFixture
-import sttp.openai.json.SnakePickle
-import sttp.openai.utils.JsonUtils
+import sttp.ai.openai.fixtures.AdminFixture
+import sttp.ai.openai.json.SnakePickle
+import sttp.ai.openai.utils.JsonUtils
 
 class AdminApiKeyDataSpec extends AnyFlatSpec with Matchers with EitherValues {
   "Given create admin api key request as case class" should "be properly serialized to Json" in {

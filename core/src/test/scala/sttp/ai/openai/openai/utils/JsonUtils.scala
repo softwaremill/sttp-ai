@@ -1,8 +1,8 @@
 package sttp.ai.openai.utils
 
 import sttp.client4.{IsOption, JsonInput}
-import sttp.openai.json.SnakePickle.{read, write}
-import sttp.openai.json.SttpUpickleApiExtension.upickleApi
+import sttp.ai.openai.json.SnakePickle.{read, write}
+import sttp.ai.openai.json.SttpUpickleApiExtension.upickleApi
 
 object JsonUtils {
   def compactJson(json: String): String = write(read[ujson.Value](json))

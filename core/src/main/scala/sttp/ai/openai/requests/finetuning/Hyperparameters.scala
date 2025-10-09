@@ -1,6 +1,6 @@
 package sttp.ai.openai.requests.finetuning
 
-import sttp.openai.json.SnakePickle
+import sttp.ai.openai.json.SnakePickle
 
 /** @param batchSize
   *   Number of examples in each batch. A larger batch size means that model parameters are updated less frequently, but with lower

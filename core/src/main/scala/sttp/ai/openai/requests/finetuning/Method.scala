@@ -1,6 +1,6 @@
 package sttp.ai.openai.requests.finetuning
 
-import sttp.openai.json.SnakePickle
+import sttp.ai.openai.json.SnakePickle
 
 /** @param `type`
   *   The type of method. Is either supervised or dpo.

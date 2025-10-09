@@ -1,6 +1,6 @@
 package sttp.ai.openai.fixtures
 
-import sttp.openai.requests.batch.{BatchResponse, RequestCounts}
+import sttp.ai.openai.requests.batch.{BatchResponse, RequestCounts}
 
 object BatchFixture {
 

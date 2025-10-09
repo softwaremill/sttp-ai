@@ -3,9 +3,9 @@ package sttp.ai.openai.requests.upload
 import org.scalatest.EitherValues
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
-import sttp.openai.fixtures.UploadFixture
-import sttp.openai.json.SnakePickle
-import sttp.openai.utils.JsonUtils
+import sttp.ai.openai.fixtures.UploadFixture
+import sttp.ai.openai.json.SnakePickle
+import sttp.ai.openai.utils.JsonUtils
 
 class UploadDataSpec extends AnyFlatSpec with Matchers with EitherValues {
 

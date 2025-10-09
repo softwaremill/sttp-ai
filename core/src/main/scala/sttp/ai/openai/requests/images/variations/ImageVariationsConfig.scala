@@ -1,6 +1,6 @@
 package sttp.ai.openai.requests.images.variations
 
-import sttp.openai.requests.images.{ResponseFormat, Size}
+import sttp.ai.openai.requests.images.{ResponseFormat, Size}
 
 import java.io.File
 import java.nio.file.Paths

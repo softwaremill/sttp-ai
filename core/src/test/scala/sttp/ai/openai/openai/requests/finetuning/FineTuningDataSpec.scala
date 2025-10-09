@@ -3,10 +3,10 @@ package sttp.ai.openai.requests.finetuning
 import org.scalatest.EitherValues
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
-import sttp.openai.fixtures.FineTuningJobFixture
-import sttp.openai.json.SnakePickle
-import sttp.openai.requests.finetuning.FineTuningModel.GPT35Turbo0125
-import sttp.openai.utils.JsonUtils
+import sttp.ai.openai.fixtures.FineTuningJobFixture
+import sttp.ai.openai.json.SnakePickle
+import sttp.ai.openai.requests.finetuning.FineTuningModel.GPT35Turbo0125
+import sttp.ai.openai.utils.JsonUtils
 import ujson.Str
 
 class FineTuningDataSpec extends AnyFlatSpec with Matchers with EitherValues {

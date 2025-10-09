@@ -2,8 +2,8 @@ package sttp.ai.openai.requests.responses
 
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
-import sttp.openai.json.SnakePickle
-import sttp.openai.requests.responses.InputItemsListResponseBody.InputItem
+import sttp.ai.openai.json.SnakePickle
+import sttp.ai.openai.requests.responses.InputItemsListResponseBody.InputItem
 
 class InputItemsListDataSpec extends AnyFlatSpec with Matchers {
 

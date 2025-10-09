@@ -1,7 +1,7 @@
 package sttp.ai.openai.requests.moderations
 
-import sttp.openai.json.SnakePickle
-import sttp.openai.requests.moderations.ModerationsRequestBody.ModerationModel
+import sttp.ai.openai.json.SnakePickle
+import sttp.ai.openai.requests.moderations.ModerationsRequestBody.ModerationModel
 
 object ModerationsResponseData {
   case class CategoryScores(

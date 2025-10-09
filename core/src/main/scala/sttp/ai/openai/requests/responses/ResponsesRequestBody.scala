@@ -1,10 +1,10 @@
 package sttp.ai.openai.requests.responses
 
 import sttp.apispec.Schema
-import sttp.openai.json.SnakePickle
-import sttp.openai.requests.completions.chat.SchemaSupport
-import sttp.openai.requests.responses.ResponsesRequestBody.Input
-import sttp.openai.requests.responses.ResponsesRequestBody.Input.OutputContentItem.OutputText.{Annotation, LogProb}
+import sttp.ai.openai.json.SnakePickle
+import sttp.ai.openai.requests.completions.chat.SchemaSupport
+import sttp.ai.openai.requests.responses.ResponsesRequestBody.Input
+import sttp.ai.openai.requests.responses.ResponsesRequestBody.Input.OutputContentItem.OutputText.{Annotation, LogProb}
 import sttp.tapir.docs.apispec.schema.TapirSchemaToJsonSchema
 import sttp.tapir.{Schema => TSchema}
 import ujson.Value

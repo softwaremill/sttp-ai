@@ -3,11 +3,11 @@ package sttp.ai.openai.requests.vectorstore.file
 import org.scalatest.EitherValues
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
-import sttp.openai.fixtures.VectorStoreFileFixture
-import sttp.openai.json.SnakePickle
-import sttp.openai.requests.vectorstore.file.VectorStoreFileRequestBody.{CreateVectorStoreFileBody, ListVectorStoreFilesBody}
-import sttp.openai.requests.vectorstore.file.VectorStoreFileResponseData._
-import sttp.openai.utils.JsonUtils
+import sttp.ai.openai.fixtures.VectorStoreFileFixture
+import sttp.ai.openai.json.SnakePickle
+import sttp.ai.openai.requests.vectorstore.file.VectorStoreFileRequestBody.{CreateVectorStoreFileBody, ListVectorStoreFilesBody}
+import sttp.ai.openai.requests.vectorstore.file.VectorStoreFileResponseData._
+import sttp.ai.openai.utils.JsonUtils
 
 class VectorStoreFileDataSpec extends AnyFlatSpec with Matchers with EitherValues {
 
@@ -46,7 +46,7 @@ class VectorStoreFileDataSpec extends AnyFlatSpec with Matchers with EitherValue
   }
 
   "Vector store file response" should "be properly deserialized from Json" in {
-    import sttp.openai.requests.vectorstore.file.VectorStoreFileResponseData.VectorStoreFile._
+    import sttp.ai.openai.requests.vectorstore.file.VectorStoreFileResponseData.VectorStoreFile._
     // given
     val givenResponse = VectorStoreFile(
       id = "vsf_1",
@@ -66,7 +66,7 @@ class VectorStoreFileDataSpec extends AnyFlatSpec with Matchers with EitherValue
   }
 
   "Vector store file response with error" should "be properly deserialized from Json" in {
-    import sttp.openai.requests.vectorstore.file.VectorStoreFileResponseData.VectorStoreFile._
+    import sttp.ai.openai.requests.vectorstore.file.VectorStoreFileResponseData.VectorStoreFile._
     // given
     val givenResponse = VectorStoreFile(
       id = "vsf_1",
@@ -87,7 +87,7 @@ class VectorStoreFileDataSpec extends AnyFlatSpec with Matchers with EitherValue
   }
 
   "Vector store file list response" should "be properly deserialized from Json" in {
-    import sttp.openai.requests.vectorstore.file.VectorStoreFileResponseData.ListVectorStoreFilesResponse._
+    import sttp.ai.openai.requests.vectorstore.file.VectorStoreFileResponseData.ListVectorStoreFilesResponse._
     // given
     val one = VectorStoreFile(
       id = "vsf_1",
@@ -126,7 +126,7 @@ class VectorStoreFileDataSpec extends AnyFlatSpec with Matchers with EitherValue
   }
 
   "Delete of vector store file response" should "be properly deserialized from Json" in {
-    import sttp.openai.requests.vectorstore.file.VectorStoreFileResponseData.DeleteVectorStoreFileResponse._
+    import sttp.ai.openai.requests.vectorstore.file.VectorStoreFileResponseData.DeleteVectorStoreFileResponse._
     // given
 
     val givenResponse = DeleteVectorStoreFileResponse(
