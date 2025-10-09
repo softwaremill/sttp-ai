@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-sttp-openai is a Scala library providing a non-official client wrapper for OpenAI, Claude (Anthropic), and OpenAI-compatible APIs. It's built on top of the sttp HTTP client library and supports both sync and async operations with various effect systems (cats-effect, ZIO, Akka/Pekko Streams, Ox).
+sttp-ai is a Scala library providing a non-official client wrapper for OpenAI, Claude (Anthropic), and OpenAI-compatible APIs. It's built on top of the sttp HTTP client library and supports both sync and async operations with various effect systems (cats-effect, ZIO, Akka/Pekko Streams, Ox).
 
 **Key Features:**
 - Native OpenAI API support (Chat, Completions, Embeddings, Audio, Images, etc.)
@@ -17,7 +17,7 @@ sttp-openai is a Scala library providing a non-official client wrapper for OpenA
 
 ### Root Directory Layout
 ```
-sttp-openai/
+sttp-ai/
 ├── core/                    # OpenAI API client library
 ├── claude/                  # Claude (Anthropic) API client library
 ├── streaming/               # Effect-system specific streaming implementations
@@ -35,7 +35,7 @@ sttp-openai/
 
 ### Core Module Structure (`core/src/main/scala/sttp/openai/`)
 ```
-sttp.openai/
+sttp.ai.openai/
 ├── OpenAI.scala                 # Raw sttp requests returning Either[OpenAIException, A]
 ├── OpenAISyncClient.scala       # High-level sync client that may throw exceptions
 ├── OpenAIExceptions.scala       # Exception hierarchy for API errors
@@ -408,7 +408,7 @@ Scratch files (`.sc` extension) are powerful debugging tools for rapid prototypi
 **Examples from Claude API implementation:**
 ```scala
 // debug_tool_schema.sc - Test ToolInputSchema JSON serialization
-//> using dep com.softwaremill.sttp.openai::claude:0.3.10+SNAPSHOT
+//> using dep com.softwaremill.sttp.ai.openai::claude:0.3.10+SNAPSHOT
 import sttp.ai.claude.models._
 import sttp.ai.claude.json.SnakePickle._
 
@@ -438,7 +438,7 @@ println(s"JSON: $json") // Reveals if default values are omitted
 #### 2. API Request Structure Validation
 ```scala
 // validate_request.sc
-//> using dep com.softwaremill.sttp.openai::claude:SNAPSHOT
+//> using dep com.softwaremill.sttp.ai.openai::claude:SNAPSHOT
 import sttp.ai.claude.models._
 
 val request = MessageRequest.simple(...)

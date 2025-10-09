@@ -3,7 +3,7 @@
 [![Ideas, suggestions, problems, questions](https://img.shields.io/badge/Discourse-ask%20question-blue)](https://softwaremill.community/c/open-source)
 [![CI](https://github.com/softwaremill/sttp-ai/workflows/CI/badge.svg)](https://github.com/softwaremill/sttp-ai/actions?query=workflow%3ACI+branch%3Amaster)
 
-[//]: # ([![Maven Central]&#40;https://maven-badges.herokuapp.com/maven-central/com.softwaremill.sttp.openai.svg&#41;&#40;https://maven-badges.herokuapp.com/maven-central/com.softwaremill.sttp.openai&#41;)
+[//]: # ([![Maven Central]&#40;https://maven-badges.herokuapp.com/maven-central/com.softwaremill.sttp.ai.svg&#41;&#40;https://maven-badges.herokuapp.com/maven-central/com.softwaremill.sttp.ai&#41;)
 
 sttp is a family of Scala HTTP-related projects, and currently includes:
 
@@ -50,7 +50,7 @@ sttp-ai uses sttp client to describe requests and responses used in OpenAI, Clau
 Add the following dependency:
 
 ```sbt
-"com.softwaremill.sttp.openai" %% "core" % "0.3.10"
+"com.softwaremill.sttp.ai" %% "core" % "0.3.10"
 ```
 
 ### For Claude (Anthropic) API
@@ -58,14 +58,14 @@ Add the following dependency:
 Add the following dependency:
 
 ```sbt
-"com.softwaremill.sttp.openai" %% "claude" % "0.3.10"
+"com.softwaremill.sttp.ai" %% "claude" % "0.3.10"
 
 // For streaming support, add one or more:
-"com.softwaremill.sttp.openai" %% "claude-streaming-fs2" % "0.3.10"    // cats-effect/fs2
-"com.softwaremill.sttp.openai" %% "claude-streaming-zio" % "0.3.10"    // ZIO
-"com.softwaremill.sttp.openai" %% "claude-streaming-akka" % "0.3.10"   // Akka Streams (Scala 2.13 only)
-"com.softwaremill.sttp.openai" %% "claude-streaming-pekko" % "0.3.10"  // Pekko Streams
-"com.softwaremill.sttp.openai" %% "claude-streaming-ox" % "0.3.10"    // Ox direct-style (Scala 3 only)
+"com.softwaremill.sttp.ai" %% "claude-streaming-fs2" % "0.3.10"    // cats-effect/fs2
+"com.softwaremill.sttp.ai" %% "claude-streaming-zio" % "0.3.10"    // ZIO
+"com.softwaremill.sttp.ai" %% "claude-streaming-akka" % "0.3.10"   // Akka Streams (Scala 2.13 only)
+"com.softwaremill.sttp.ai" %% "claude-streaming-pekko" % "0.3.10"  // Pekko Streams
+"com.softwaremill.sttp.ai" %% "claude-streaming-ox" % "0.3.10"    // Ox direct-style (Scala 3 only)
 ```
 
 sttp-openai is available for Scala 2.13 and Scala 3
@@ -79,12 +79,12 @@ Examples are runnable using [scala-cli](https://scala-cli.virtuslab.org).
 ### Basic Usage (OpenAI)
 
 ```scala mdoc:compile-only
-//> using dep com.softwaremill.sttp.openai::core:0.3.10
+//> using dep com.softwaremill.sttp.ai::core:0.3.10
 
-import sttp.openai.OpenAISyncClient
-import sttp.openai.requests.completions.chat.ChatRequestResponseData.ChatResponse
-import sttp.openai.requests.completions.chat.ChatRequestBody.{ChatBody, ChatCompletionModel}
-import sttp.openai.requests.completions.chat.message.*
+import sttp.ai.openai.OpenAISyncClient
+import sttp.ai.openai.requests.completions.chat.ChatRequestResponseData.ChatResponse
+import sttp.ai.openai.requests.completions.chat.ChatRequestBody.{ChatBody, ChatCompletionModel}
+import sttp.ai.openai.requests.completions.chat.message.*
 
 object Main:
   def main(args: Array[String]): Unit =
@@ -145,7 +145,7 @@ This module provides **native support for Anthropic's Claude API** within the st
 ### Basic Usage (Claude)
 
 ```scala mdoc:compile-only
-//> using dep com.softwaremill.sttp.openai::claude:0.3.10
+//> using dep com.softwaremill.sttp.ai::claude:0.3.10
 
 import sttp.ai.claude.*
 import sttp.ai.claude.config.ClaudeConfig
@@ -475,13 +475,13 @@ try {
 Ollama with sync backend:
 
 ```scala mdoc:compile-only
-//> using dep com.softwaremill.sttp.openai::core:0.3.10
+//> using dep com.softwaremill.sttp.ai::core:0.3.10
 
 import sttp.model.Uri.*
-import sttp.openai.OpenAISyncClient
-import sttp.openai.requests.completions.chat.ChatRequestResponseData.ChatResponse
-import sttp.openai.requests.completions.chat.ChatRequestBody.{ChatBody, ChatCompletionModel}
-import sttp.openai.requests.completions.chat.message.*
+import sttp.ai.openai.OpenAISyncClient
+import sttp.ai.openai.requests.completions.chat.ChatRequestResponseData.ChatResponse
+import sttp.ai.openai.requests.completions.chat.ChatRequestBody.{ChatBody, ChatCompletionModel}
+import sttp.ai.openai.requests.completions.chat.message.*
 
 object Main:
   def main(args: Array[String]): Unit =
@@ -529,18 +529,18 @@ object Main:
 Grok with cats-effect based backend:
 
 ```scala mdoc:compile-only
-//> using dep com.softwaremill.sttp.openai::core:0.3.10
+//> using dep com.softwaremill.sttp.ai::core:0.3.10
 //> using dep com.softwaremill.sttp.client4::cats:4.0.0-M17
 
 import cats.effect.IO
 import cats.effect.unsafe.implicits.global
 import sttp.client4.httpclient.cats.HttpClientCatsBackend
 import sttp.model.Uri.*
-import sttp.openai.OpenAI
-import sttp.openai.OpenAIExceptions.OpenAIException
-import sttp.openai.requests.completions.chat.ChatRequestResponseData.ChatResponse
-import sttp.openai.requests.completions.chat.ChatRequestBody.{ChatBody, ChatCompletionModel}
-import sttp.openai.requests.completions.chat.message.*
+import sttp.ai.openai.OpenAI
+import sttp.ai.openai.OpenAIExceptions.OpenAIException
+import sttp.ai.openai.requests.completions.chat.ChatRequestResponseData.ChatResponse
+import sttp.ai.openai.requests.completions.chat.ChatRequestBody.{ChatBody, ChatCompletionModel}
+import sttp.ai.openai.requests.completions.chat.message.*
 
 object Main:
   def main(args: Array[String]): Unit =
@@ -605,17 +605,17 @@ Example below uses `HttpClientCatsBackend` as a backend, make sure to [add it to
 or use backend of your choice.
 
 ```scala mdoc:compile-only
-//> using dep com.softwaremill.sttp.openai::core:0.3.10
+//> using dep com.softwaremill.sttp.ai::core:0.3.10
 //> using dep com.softwaremill.sttp.client4::cats:4.0.0-M17
 
 import cats.effect.IO
 import cats.effect.unsafe.implicits.global
 import sttp.client4.httpclient.cats.HttpClientCatsBackend
-import sttp.openai.OpenAI
-import sttp.openai.OpenAIExceptions.OpenAIException
-import sttp.openai.requests.completions.chat.ChatRequestResponseData.ChatResponse
-import sttp.openai.requests.completions.chat.ChatRequestBody.{ChatBody, ChatCompletionModel}
-import sttp.openai.requests.completions.chat.message.*
+import sttp.ai.openai.OpenAI
+import sttp.ai.openai.OpenAIExceptions.OpenAIException
+import sttp.ai.openai.requests.completions.chat.ChatRequestResponseData.ChatResponse
+import sttp.ai.openai.requests.completions.chat.ChatRequestBody.{ChatBody, ChatCompletionModel}
+import sttp.ai.openai.requests.completions.chat.message.*
 
 object Main:
   def main(args: Array[String]): Unit =
@@ -674,27 +674,27 @@ For example, to use `fs2` add the following dependency & import:
 
 ```scala
 // sbt dependency
-"com.softwaremill.sttp.openai" %% "fs2" % "0.3.10"
+"com.softwaremill.sttp.ai" %% "fs2" % "0.3.10"
 
 // import 
-import sttp.openai.streaming.fs2._
+import sttp.ai.openai.streaming.fs2._
 ```
 
 Example below uses `HttpClientFs2Backend` as a backend:
 
 ```scala mdoc:compile-only
-//> using dep com.softwaremill.sttp.openai::fs2:0.3.10
+//> using dep com.softwaremill.sttp.ai::fs2:0.3.10
 
 import cats.effect.IO
 import cats.effect.unsafe.implicits.global
 import fs2.Stream
 import sttp.client4.httpclient.fs2.HttpClientFs2Backend
-import sttp.openai.OpenAI
-import sttp.openai.streaming.fs2.*
-import sttp.openai.OpenAIExceptions.OpenAIException
-import sttp.openai.requests.completions.chat.ChatChunkRequestResponseData.ChatChunkResponse
-import sttp.openai.requests.completions.chat.ChatRequestBody.{ChatBody, ChatCompletionModel}
-import sttp.openai.requests.completions.chat.message.*
+import sttp.ai.openai.OpenAI
+import sttp.ai.openai.streaming.fs2.*
+import sttp.ai.openai.OpenAIExceptions.OpenAIException
+import sttp.ai.openai.requests.completions.chat.ChatChunkRequestResponseData.ChatChunkResponse
+import sttp.ai.openai.requests.completions.chat.ChatRequestBody.{ChatBody, ChatCompletionModel}
+import sttp.ai.openai.requests.completions.chat.message.*
 
 object Main:
   def main(args: Array[String]): Unit =
@@ -764,24 +764,24 @@ To use direct-style streaming (requires Scala 3) add the following dependency & 
 
 ```scala
 // sbt dependency
-"com.softwaremill.sttp.openai" %% "ox" % "0.3.10"
+"com.softwaremill.sttp.ai" %% "ox" % "0.3.10"
 
 // import 
-import sttp.openai.streaming.ox.*
+import sttp.ai.openai.streaming.ox.*
 ```
 
 Example code:
 
 ```scala
-//> using dep com.softwaremill.sttp.openai::ox:0.3.10
+//> using dep com.softwaremill.sttp.ai::ox:0.3.10
 
 import ox.*
 import ox.either.orThrow
 import sttp.client4.DefaultSyncBackend
-import sttp.openai.OpenAI
-import sttp.openai.requests.completions.chat.ChatRequestBody.{ChatBody, ChatCompletionModel}
-import sttp.openai.requests.completions.chat.message.*
-import sttp.openai.streaming.ox.*
+import sttp.ai.openai.OpenAI
+import sttp.ai.openai.requests.completions.chat.ChatRequestBody.{ChatBody, ChatCompletionModel}
+import sttp.ai.openai.requests.completions.chat.message.*
+import sttp.ai.openai.streaming.ox.*
 
 object Main extends OxApp:
   override def run(args: Vector[String])(using Ox): ExitCode =
@@ -820,14 +820,14 @@ and support for JSON Schema, you can use `ResponseFormat.JsonSchema` when creati
 The example below produces a JSON object:
 
 ```scala mdoc:compile-only
-//> using dep com.softwaremill.sttp.openai::core:0.3.10
+//> using dep com.softwaremill.sttp.ai::core:0.3.10
 
 import scala.collection.immutable.ListMap
 import sttp.apispec.{Schema, SchemaType}
-import sttp.openai.OpenAISyncClient
-import sttp.openai.requests.completions.chat.ChatRequestResponseData.ChatResponse
-import sttp.openai.requests.completions.chat.ChatRequestBody.{ChatBody, ChatCompletionModel, ResponseFormat}
-import sttp.openai.requests.completions.chat.message.*
+import sttp.ai.openai.OpenAISyncClient
+import sttp.ai.openai.requests.completions.chat.ChatRequestResponseData.ChatResponse
+import sttp.ai.openai.requests.completions.chat.ChatRequestBody.{ChatBody, ChatCompletionModel, ResponseFormat}
+import sttp.ai.openai.requests.completions.chat.message.*
 
 object Main:
   def main(args: Array[String]): Unit =
@@ -946,16 +946,16 @@ Another helpful feature is adding possibility to create ToolMessage object passi
 With all this in mind please remember that it is still required to deserialized arguments, which are sent back by Assistant to call our function.
 
 ```scala mdoc:compile-only
-//> using dep com.softwaremill.sttp.openai::core:0.3.10
+//> using dep com.softwaremill.sttp.ai::core:0.3.10
 
-import sttp.openai.OpenAISyncClient
-import sttp.openai.json.SnakePickle
-import sttp.openai.requests.completions.chat.ChatRequestBody.ChatBody
-import sttp.openai.requests.completions.chat.ChatRequestBody.ChatCompletionModel.GPT4oMini
-import sttp.openai.requests.completions.chat.ToolCall.FunctionToolCall
-import sttp.openai.requests.completions.chat.message.Content.TextContent
-import sttp.openai.requests.completions.chat.message.Message.{AssistantMessage, ToolMessage, UserMessage}
-import sttp.openai.requests.completions.chat.message.Tool.FunctionTool
+import sttp.ai.openai.OpenAISyncClient
+import sttp.ai.openai.json.SnakePickle
+import sttp.ai.openai.requests.completions.chat.ChatRequestBody.ChatBody
+import sttp.ai.openai.requests.completions.chat.ChatRequestBody.ChatCompletionModel.GPT4oMini
+import sttp.ai.openai.requests.completions.chat.ToolCall.FunctionToolCall
+import sttp.ai.openai.requests.completions.chat.message.Content.TextContent
+import sttp.ai.openai.requests.completions.chat.message.Message.{AssistantMessage, ToolMessage, UserMessage}
+import sttp.ai.openai.requests.completions.chat.message.Tool.FunctionTool
 import sttp.tapir.generic.auto.*
 
 case class Passenger(name: String, age: Int)
