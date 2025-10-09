@@ -9,12 +9,12 @@ def dependenciesFor(version: String)(deps: (Option[(Long, Long)] => ModuleID)*):
   deps.map(_.apply(CrossVersion.partialVersion(version)))
 
 lazy val commonSettings = commonSmlBuildSettings ++ ossPublishSettings ++ Seq(
-  organization := "com.softwaremill.sttp.openai"
+  organization := "com.softwaremill.sttp.ai"
 )
 
 lazy val root = (project in file("."))
   .settings(commonSettings: _*)
-  .settings(publish / skip := true, name := "sttp-openai", scalaVersion := scala2.head)
+  .settings(publish / skip := true, name := "sttp-ai", scalaVersion := scala2.head)
   .aggregate(allAgregates: _*)
 
 lazy val allAgregates = core.projectRefs ++
@@ -119,14 +119,14 @@ lazy val examples = (projectMatrix in file("examples"))
 
 val compileDocumentation: TaskKey[Unit] = taskKey[Unit]("Compiles docs module throwing away its output")
 compileDocumentation :=
-  (docs.jvm(scala3.head) / mdoc).toTask(" --out target/sttp-openai-docs").value
+  (docs.jvm(scala3.head) / mdoc).toTask(" --out target/sttp-ai-docs").value
 
 lazy val docs = (projectMatrix in file("generated-docs")) // important: it must not be docs/
   .enablePlugins(MdocPlugin)
   .settings(commonSettings)
   .settings(
     mdocIn := file("README.md"),
-    moduleName := "sttp-openai-docs",
+    moduleName := "sttp-ai-docs",
     mdocOut := file("generated-docs/README.md"),
     mdocExtraArguments := Seq("--clean-target", "--disable-using-directives"),
     publishArtifact := false,
