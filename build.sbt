@@ -119,7 +119,7 @@ lazy val examples = (projectMatrix in file("examples"))
 
 val compileDocumentation: TaskKey[Unit] = taskKey[Unit]("Compiles docs module throwing away its output")
 compileDocumentation :=
-  (docs.jvm(scala2.head) / mdoc).toTask(" --out target/sttp-openai-docs").value
+  (docs.jvm(scala3.head) / mdoc).toTask(" --out target/sttp-openai-docs").value
 
 lazy val docs = (projectMatrix in file("generated-docs")) // important: it must not be docs/
   .enablePlugins(MdocPlugin)
@@ -133,5 +133,5 @@ lazy val docs = (projectMatrix in file("generated-docs")) // important: it must 
     name := "docs",
     evictionErrorLevel := Level.Info
   )
-  .dependsOn(core, fs2, zio, akka, pekko)
-  .jvmPlatform(scalaVersions = scala2)
+  .dependsOn(core, fs2, zio, ox, pekko)
+  .jvmPlatform(scalaVersions = scala3)
