@@ -1,4 +1,4 @@
-package sttp.openai.requests.images.edit
+package sttp.ai.openai.requests.images.edit
 
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers

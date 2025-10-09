@@ -1,4 +1,4 @@
-package sttp.openai.requests.finetuning
+package sttp.ai.openai.requests.finetuning
 
 import org.scalatest.EitherValues
 import org.scalatest.flatspec.AnyFlatSpec

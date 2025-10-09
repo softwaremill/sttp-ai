@@ -1,4 +1,4 @@
-package sttp.openai.utils
+package sttp.ai.openai.utils
 
 import sttp.openai.requests.completions.chat.ToolCall.FunctionToolCall
 import sttp.openai.requests.completions.chat.message.Tool.FunctionTool

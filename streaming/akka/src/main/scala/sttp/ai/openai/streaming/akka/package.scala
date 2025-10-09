@@ -1,4 +1,4 @@
-package sttp.openai.streaming
+package sttp.ai.openai.streaming
 
 import _root_.akka.stream.scaladsl.{Flow, Source}
 import _root_.akka.util.ByteString

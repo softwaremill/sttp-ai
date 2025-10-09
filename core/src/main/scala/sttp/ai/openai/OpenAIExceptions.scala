@@ -1,4 +1,4 @@
-package sttp.openai
+package sttp.ai.openai
 
 import sttp.client4.ResponseException
 import sttp.client4.ResponseException.{DeserializationException, UnexpectedStatusCode}

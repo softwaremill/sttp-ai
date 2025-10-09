@@ -1,4 +1,4 @@
-package sttp.openai.requests.responses
+package sttp.ai.openai.requests.responses
 
 /** Query parameters for listing input items for a response.
   *

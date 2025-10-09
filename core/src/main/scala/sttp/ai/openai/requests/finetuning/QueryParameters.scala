@@ -1,4 +1,4 @@
-package sttp.openai.requests.finetuning
+package sttp.ai.openai.requests.finetuning
 
 /** @param after
   *   Identifier for the last job from the previous pagination request.

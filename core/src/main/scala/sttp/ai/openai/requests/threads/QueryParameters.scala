@@ -1,4 +1,4 @@
-package sttp.openai.requests.threads
+package sttp.ai.openai.requests.threads
 
 /** @param limit
   *   Defaults to 20 A limit on the number of objects to be returned. Limit can range between 1 and 100, and the default is 20.

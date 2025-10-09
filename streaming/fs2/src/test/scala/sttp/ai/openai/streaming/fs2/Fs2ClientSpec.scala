@@ -1,4 +1,4 @@
-package sttp.openai.streaming.fs2
+package sttp.ai.openai.streaming.fs2
 
 import cats.effect.IO
 import cats.effect.testing.scalatest.AsyncIOSpec

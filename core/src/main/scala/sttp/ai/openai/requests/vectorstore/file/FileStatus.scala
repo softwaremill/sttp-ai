@@ -1,4 +1,4 @@
-package sttp.openai.requests.vectorstore.file
+package sttp.ai.openai.requests.vectorstore.file
 
 import sttp.openai.json.SnakePickle
 import ujson.Value

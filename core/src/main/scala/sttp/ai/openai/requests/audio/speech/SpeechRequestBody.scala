@@ -1,4 +1,4 @@
-package sttp.openai.requests.audio.speech
+package sttp.ai.openai.requests.audio.speech
 
 import sttp.openai.json.SnakePickle
 

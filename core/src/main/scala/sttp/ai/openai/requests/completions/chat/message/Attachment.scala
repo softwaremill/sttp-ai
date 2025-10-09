@@ -1,4 +1,4 @@
-package sttp.openai.requests.completions.chat.message
+package sttp.ai.openai.requests.completions.chat.message
 
 import sttp.openai.json.SnakePickle
 import sttp.openai.requests.assistants.Tool

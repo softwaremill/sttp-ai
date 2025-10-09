@@ -1,4 +1,4 @@
-package sttp.openai.streaming.ox
+package sttp.ai.openai.streaming.ox
 
 import ox.flow.Flow
 import sttp.client4.Request

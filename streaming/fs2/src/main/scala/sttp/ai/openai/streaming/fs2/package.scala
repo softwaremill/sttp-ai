@@ -1,4 +1,4 @@
-package sttp.openai.streaming
+package sttp.ai.openai.streaming
 
 import _root_.fs2.{Pipe, RaiseThrowable, Stream}
 import sttp.capabilities.fs2.Fs2Streams

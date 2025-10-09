@@ -1,4 +1,4 @@
-package sttp.openai.requests.vectorstore
+package sttp.ai.openai.requests.vectorstore
 
 import org.scalatest.EitherValues
 import org.scalatest.flatspec.AnyFlatSpec

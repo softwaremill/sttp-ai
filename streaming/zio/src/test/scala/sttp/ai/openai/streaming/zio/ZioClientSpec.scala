@@ -1,4 +1,4 @@
-package sttp.openai.streaming.zio
+package sttp.ai.openai.streaming.zio
 
 import org.scalatest.EitherValues
 import org.scalatest.flatspec.AnyFlatSpec

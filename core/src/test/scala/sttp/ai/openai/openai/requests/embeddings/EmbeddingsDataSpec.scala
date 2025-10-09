@@ -1,4 +1,4 @@
-package sttp.openai.requests.embeddings
+package sttp.ai.openai.requests.embeddings
 
 import org.scalatest.EitherValues
 import org.scalatest.flatspec.AnyFlatSpec

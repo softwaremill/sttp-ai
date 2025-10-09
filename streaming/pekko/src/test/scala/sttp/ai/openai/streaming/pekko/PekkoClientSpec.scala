@@ -1,4 +1,4 @@
-package sttp.openai.streaming.pekko
+package sttp.ai.openai.streaming.pekko
 
 import org.apache.pekko.NotUsed
 import org.apache.pekko.actor.ActorSystem

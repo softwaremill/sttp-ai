@@ -1,4 +1,4 @@
-package sttp.openai.requests.images.variations
+package sttp.ai.openai.requests.images.variations
 
 import sttp.openai.requests.images.{ResponseFormat, Size}
 

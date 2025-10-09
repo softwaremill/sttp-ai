@@ -1,4 +1,4 @@
-package sttp.openai
+package sttp.ai.openai
 
 import sttp.client4.{DefaultSyncBackend, Request, SyncBackend}
 import sttp.model.Uri

@@ -1,4 +1,4 @@
-package sttp.openai.client
+package sttp.ai.openai.client
 
 import org.scalatest.EitherValues
 import org.scalatest.flatspec.AnyFlatSpec

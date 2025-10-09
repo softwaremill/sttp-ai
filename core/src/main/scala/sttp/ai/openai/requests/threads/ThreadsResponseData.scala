@@ -1,4 +1,4 @@
-package sttp.openai.requests.threads
+package sttp.ai.openai.requests.threads
 
 import sttp.openai.json.SnakePickle
 

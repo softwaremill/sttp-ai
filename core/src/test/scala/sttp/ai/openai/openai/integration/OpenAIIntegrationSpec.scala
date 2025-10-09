@@ -1,4 +1,4 @@
-package sttp.openai.integration
+package sttp.ai.openai.integration
 
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.concurrent.Eventually

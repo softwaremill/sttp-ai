@@ -1,4 +1,4 @@
-package sttp.openai.requests.completions.chat
+package sttp.ai.openai.requests.completions.chat
 
 import cats.implicits.catsSyntaxOptionId
 import org.scalatest.EitherValues

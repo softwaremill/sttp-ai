@@ -1,4 +1,4 @@
-package sttp.openai.requests.audio.translations
+package sttp.ai.openai.requests.audio.translations
 
 import sttp.openai.requests.images.ResponseFormat
 

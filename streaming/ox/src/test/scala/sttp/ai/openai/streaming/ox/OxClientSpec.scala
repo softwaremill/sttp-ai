@@ -1,4 +1,4 @@
-package sttp.openai.streaming.ox
+package sttp.ai.openai.streaming.ox
 
 import org.scalatest.EitherValues
 import org.scalatest.flatspec.AnyFlatSpec

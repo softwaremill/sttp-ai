@@ -1,4 +1,4 @@
-package sttp.openai.requests.completions
+package sttp.ai.openai.requests.completions
 
 import sttp.openai.json.SnakePickle
 import sttp.openai.requests.completions.CompletionsRequestBody.CompletionModel

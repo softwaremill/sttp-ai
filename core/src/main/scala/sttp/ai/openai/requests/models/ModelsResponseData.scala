@@ -1,4 +1,4 @@
-package sttp.openai.requests.models
+package sttp.ai.openai.requests.models
 
 import sttp.openai.json.SnakePickle
 

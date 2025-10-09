@@ -1,4 +1,4 @@
-package sttp.openai.requests.completions.chat
+package sttp.ai.openai.requests.completions.chat
 
 import io.circe.syntax._
 import io.circe.{DecodingFailure, Json, JsonNumber, JsonObject}

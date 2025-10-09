@@ -1,4 +1,4 @@
-package sttp.openai.streaming
+package sttp.ai.openai.streaming
 
 import org.apache.pekko.stream.scaladsl.{Flow, Source}
 import org.apache.pekko.util.ByteString

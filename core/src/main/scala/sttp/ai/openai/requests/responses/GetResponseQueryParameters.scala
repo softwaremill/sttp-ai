@@ -1,4 +1,4 @@
-package sttp.openai.requests.responses
+package sttp.ai.openai.requests.responses
 
 /** @param include
   *   Additional fields to include in the response. See the include parameter for Response creation for more information.

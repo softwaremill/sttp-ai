@@ -1,4 +1,4 @@
-package sttp.openai.requests.embeddings
+package sttp.ai.openai.requests.embeddings
 
 import sttp.openai.json.SnakePickle
 import sttp.openai.requests.embeddings.EmbeddingsRequestBody.EmbeddingsModel

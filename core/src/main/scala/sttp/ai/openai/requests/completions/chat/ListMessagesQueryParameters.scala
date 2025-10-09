@@ -1,4 +1,4 @@
-package sttp.openai.requests.completions.chat
+package sttp.ai.openai.requests.completions.chat
 
 /** @param after
   *   Identifier for the last message from the previous pagination request.

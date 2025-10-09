@@ -1,4 +1,4 @@
-package sttp.openai.requests.admin
+package sttp.ai.openai.requests.admin
 
 /** @param after
   *   Identifier for the last job from the previous pagination request.

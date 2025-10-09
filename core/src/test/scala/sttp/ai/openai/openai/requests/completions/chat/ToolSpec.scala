@@ -1,4 +1,4 @@
-package sttp.openai.requests.completions.chat
+package sttp.ai.openai.requests.completions.chat
 
 import org.scalatest.EitherValues
 import org.scalatest.flatspec.AnyFlatSpec

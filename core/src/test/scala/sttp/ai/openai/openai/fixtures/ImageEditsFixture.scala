@@ -1,4 +1,4 @@
-package sttp.openai.fixtures
+package sttp.ai.openai.fixtures
 
 import sttp.openai.requests.images.edit.{ImageEditsConfig, ImageEditsModel}
 import sttp.openai.requests.images.{ResponseFormat, Size}

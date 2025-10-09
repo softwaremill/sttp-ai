@@ -1,4 +1,4 @@
-package sttp.openai.requests.responses
+package sttp.ai.openai.requests.responses
 import sttp.openai.json.SnakePickle
 import ujson.Str
 

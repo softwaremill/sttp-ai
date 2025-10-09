@@ -1,4 +1,4 @@
-package sttp.openai.streaming
+package sttp.ai.openai.streaming
 
 import _root_.zio.ZIO
 import _root_.zio.stream._

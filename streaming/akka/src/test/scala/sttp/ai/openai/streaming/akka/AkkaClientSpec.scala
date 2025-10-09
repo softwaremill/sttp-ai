@@ -1,4 +1,4 @@
-package sttp.openai.streaming.akka
+package sttp.ai.openai.streaming.akka
 
 import akka.NotUsed
 import akka.actor.ActorSystem

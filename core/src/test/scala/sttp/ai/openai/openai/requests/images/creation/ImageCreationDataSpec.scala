@@ -1,4 +1,4 @@
-package sttp.openai.requests.images.creation
+package sttp.ai.openai.requests.images.creation
 
 import org.scalatest.EitherValues
 import org.scalatest.flatspec.AnyFlatSpec

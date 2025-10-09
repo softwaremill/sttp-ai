@@ -1,4 +1,4 @@
-package sttp.openai.fixtures
+package sttp.ai.openai.fixtures
 
 import sttp.openai.requests.finetuning.Status.Running
 import sttp.openai.requests.finetuning.{

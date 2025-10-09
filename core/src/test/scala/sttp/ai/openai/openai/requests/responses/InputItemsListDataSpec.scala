@@ -1,4 +1,4 @@
-package sttp.openai.requests.responses
+package sttp.ai.openai.requests.responses
 
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers

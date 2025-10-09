@@ -1,4 +1,4 @@
-package sttp.openai.fixtures
+package sttp.ai.openai.fixtures
 
 import sttp.client4.ResponseException.UnexpectedStatusCode
 import sttp.client4.testing.ResponseStub

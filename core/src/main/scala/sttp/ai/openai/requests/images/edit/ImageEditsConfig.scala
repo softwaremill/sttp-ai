@@ -1,4 +1,4 @@
-package sttp.openai.requests.images.edit
+package sttp.ai.openai.requests.images.edit
 
 import sttp.openai.json.SnakePickle
 import sttp.openai.requests.images.{ResponseFormat, Size}

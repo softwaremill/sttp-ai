@@ -1,4 +1,4 @@
-package sttp.openai.fixtures
+package sttp.ai.openai.fixtures
 
 object ModerationsFixture {
 

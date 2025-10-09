@@ -1,4 +1,4 @@
-package sttp.openai.requests.finetuning
+package sttp.ai.openai.requests.finetuning
 
 import sttp.openai.json.SnakePickle
 import ujson.Str

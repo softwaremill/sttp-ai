@@ -1,4 +1,4 @@
-package sttp.openai.requests.moderations
+package sttp.ai.openai.requests.moderations
 
 import org.scalatest.EitherValues
 import org.scalatest.flatspec.AnyFlatSpec

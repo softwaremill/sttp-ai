@@ -1,4 +1,4 @@
-package sttp.openai.requests.batch
+package sttp.ai.openai.requests.batch
 
 /** @param after
   *   A cursor for use in pagination. after is an object ID that defines your place in the list. For instance, if you make a list request

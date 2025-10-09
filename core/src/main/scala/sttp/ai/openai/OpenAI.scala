@@ -1,4 +1,4 @@
-package sttp.openai
+package sttp.ai.openai
 
 import sttp.capabilities.Streams
 import sttp.client4._

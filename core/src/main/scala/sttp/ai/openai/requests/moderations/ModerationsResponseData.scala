@@ -1,4 +1,4 @@
-package sttp.openai.requests.moderations
+package sttp.ai.openai.requests.moderations
 
 import sttp.openai.json.SnakePickle
 import sttp.openai.requests.moderations.ModerationsRequestBody.ModerationModel

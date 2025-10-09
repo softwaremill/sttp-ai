@@ -1,4 +1,4 @@
-package sttp.openai.requests.threads.messages
+package sttp.ai.openai.requests.threads.messages
 
 import org.scalatest.EitherValues
 import org.scalatest.flatspec.AnyFlatSpec

@@ -1,4 +1,4 @@
-package sttp.openai.utils
+package sttp.ai.openai.utils
 
 import sttp.client4.{IsOption, JsonInput}
 import sttp.openai.json.SnakePickle.{read, write}
