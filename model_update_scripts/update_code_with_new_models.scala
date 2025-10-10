@@ -3,7 +3,7 @@
 //> using dep org.typelevel::log4cats-slf4j::2.7.1
 //> using dep ch.qos.logback:logback-classic:1.5.19
 //> using dep com.github.scopt::scopt::4.1.0
-//> using dep com.github.plokhotnyuk.jsoniter-scala::jsoniter-scala-core::2.37.6
+//> using dep com.github.plokhotnyuk.jsoniter-scala::jsoniter-scala-core::2.37.11
 //> using dep com.github.plokhotnyuk.jsoniter-scala::jsoniter-scala-macros::2.37.11
 //> using dep org.virtuslab::scala-yaml::0.3.0
 
