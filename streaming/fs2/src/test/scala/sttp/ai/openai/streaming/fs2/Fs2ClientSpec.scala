@@ -101,7 +101,7 @@ class Fs2ClientSpec extends AsyncFlatSpec with AsyncIOSpec with Matchers with Ei
 
   "Creating chat completions with successful response" should "ignore empty events and return properly deserialized list of chunks" in {
     // given
-    val chatChunks = Seq.fill(3)(sttp.openai.fixtures.ChatChunkFixture.jsonResponse).map(compactJson)
+    val chatChunks = Seq.fill(3)(sttp.ai.openai.fixtures.ChatChunkFixture.jsonResponse).map(compactJson)
 
     val eventsToProcess = chatChunks.map(data => ServerSentEvent(Some(data)))
     val emptyEvent = ServerSentEvent()
@@ -120,7 +120,7 @@ class Fs2ClientSpec extends AsyncFlatSpec with AsyncIOSpec with Matchers with Ei
 
   "Creating chat completions with successful response" should "stop listening after [DONE] event and return properly deserialized list of chunks" in {
     // given
-    val chatChunks = Seq.fill(3)(sttp.openai.fixtures.ChatChunkFixture.jsonResponse).map(compactJson)
+    val chatChunks = Seq.fill(3)(sttp.ai.openai.fixtures.ChatChunkFixture.jsonResponse).map(compactJson)
 
     val eventsToProcess = chatChunks.map(data => ServerSentEvent(Some(data)))
     val events = (eventsToProcess :+ DoneEvent) ++ eventsToProcess

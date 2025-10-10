@@ -208,7 +208,7 @@ class OpenAIIntegrationSpec extends AnyFlatSpec with Matchers with BeforeAndAfte
       createdResponse.`object` shouldBe "response"
       createdResponse.status shouldBe "completed"
       createdResponse.output should not be empty
-      createdResponse.output.head should be(a[sttp.openai.requests.responses.ResponsesResponseBody.OutputItem.OutputMessage])
+      createdResponse.output.head should be(a[sttp.ai.openai.requests.responses.ResponsesResponseBody.OutputItem.OutputMessage])
       createdResponse.createdAt should be > 0L
 
       // Verify that usage is reported (helpful for cost tracking)
@@ -245,19 +245,20 @@ class OpenAIIntegrationSpec extends AnyFlatSpec with Matchers with BeforeAndAfte
 
       // Should contain the original user input message with our text "Hi"
       val userInputMessage =
-        inputItems.data.find(_.isInstanceOf[sttp.openai.requests.responses.InputItemsListResponseBody.InputItem.InputMessage])
+        inputItems.data.find(_.isInstanceOf[sttp.ai.openai.requests.responses.InputItemsListResponseBody.InputItem.InputMessage])
       userInputMessage should be(defined)
 
-      val inputMessage = userInputMessage.get.asInstanceOf[sttp.openai.requests.responses.InputItemsListResponseBody.InputItem.InputMessage]
+      val inputMessage =
+        userInputMessage.get.asInstanceOf[sttp.ai.openai.requests.responses.InputItemsListResponseBody.InputItem.InputMessage]
       inputMessage.role shouldBe "user"
 
       // Validate that the input content contains our original text "Hi"
       val textContent = inputMessage.content.find(
-        _.isInstanceOf[sttp.openai.requests.responses.InputItemsListResponseBody.InputItem.InputContent.InputText]
+        _.isInstanceOf[sttp.ai.openai.requests.responses.InputItemsListResponseBody.InputItem.InputContent.InputText]
       )
       textContent should be(defined)
       val inputText =
-        textContent.get.asInstanceOf[sttp.openai.requests.responses.InputItemsListResponseBody.InputItem.InputContent.InputText]
+        textContent.get.asInstanceOf[sttp.ai.openai.requests.responses.InputItemsListResponseBody.InputItem.InputContent.InputText]
       inputText.text shouldBe "Hi"
 
       // when - Step 4: Delete response
@@ -314,7 +315,7 @@ class OpenAIIntegrationSpec extends AnyFlatSpec with Matchers with BeforeAndAfte
   "OpenAI Client Integration" should "work with custom request modifications" in
     withClient { client =>
       // given
-      val customClient = client.customizeRequest(new sttp.openai.CustomizeOpenAIRequest {
+      val customClient = client.customizeRequest(new sttp.ai.openai.CustomizeOpenAIRequest {
         override def apply[A](request: sttp.client4.Request[Either[OpenAIException, A]]): sttp.client4.Request[Either[OpenAIException, A]] =
           request.header("X-Custom-Header", "integration-test")
       })

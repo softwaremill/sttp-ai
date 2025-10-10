@@ -35,7 +35,7 @@ class SyncClientSpec extends AnyFlatSpec with Matchers with EitherValues {
 
   "Fetching models with successful response" should "return properly deserialized list of available models" in {
     // given
-    val modelsResponse = sttp.openai.fixtures.ModelsGetResponse.singleModelResponse
+    val modelsResponse = sttp.ai.openai.fixtures.ModelsGetResponse.singleModelResponse
     val syncBackendStub = DefaultSyncBackend.stub.whenAnyRequest.thenRespondAdjust(modelsResponse, Ok)
     val syncClient = OpenAISyncClient(authToken = "test-token", backend = syncBackendStub)
     val deserializedModels = ModelsResponse(
@@ -59,7 +59,7 @@ class SyncClientSpec extends AnyFlatSpec with Matchers with EitherValues {
     val capturedRequest = new AtomicReference[GenericRequest[_, _]](null)
     val syncBackendStub = DefaultSyncBackend.stub.whenAnyRequest.thenRespondF { request =>
       capturedRequest.set(request)
-      ResponseStub.adjust(sttp.openai.fixtures.ModelsGetResponse.singleModelResponse, StatusCode.Ok)
+      ResponseStub.adjust(sttp.ai.openai.fixtures.ModelsGetResponse.singleModelResponse, StatusCode.Ok)
     }
     val syncClient = OpenAISyncClient(authToken = "test-token", backend = syncBackendStub)
 
