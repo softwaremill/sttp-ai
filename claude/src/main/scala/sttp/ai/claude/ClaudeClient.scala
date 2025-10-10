@@ -138,5 +138,20 @@ class ClaudeUris(baseUri: Uri) {
 }
 
 object ClaudeClient {
+
+  /** Creates a ClaudeClient using ClaudeConfig.
+    *
+    * @param config
+    *   Claude configuration
+    * @return
+    *   ClaudeClient instance
+    */
   def apply(config: ClaudeConfig): ClaudeClientImpl = new ClaudeClientImpl(config)
+
+  /** Creates a ClaudeClient from environment variables using ClaudeConfig.fromEnv.
+    *
+    * @return
+    *   ClaudeClient instance
+    */
+  def fromEnv: ClaudeClientImpl = apply(ClaudeConfig.fromEnv)
 }

@@ -24,6 +24,40 @@ class ClaudeSyncClient(config: ClaudeConfig, backend: SyncBackend = DefaultSyncB
 }
 
 object ClaudeSyncClient {
+
+  /** Creates a ClaudeSyncClient using ClaudeConfig.
+    *
+    * @param config
+    *   Claude configuration
+    * @return
+    *   ClaudeSyncClient instance
+    */
   def apply(config: ClaudeConfig): ClaudeSyncClient = new ClaudeSyncClient(config)
+
+  /** Creates a ClaudeSyncClient using ClaudeConfig and custom backend.
+    *
+    * @param config
+    *   Claude configuration
+    * @param backend
+    *   Custom sync backend
+    * @return
+    *   ClaudeSyncClient instance
+    */
   def apply(config: ClaudeConfig, backend: SyncBackend): ClaudeSyncClient = new ClaudeSyncClient(config, backend)
+
+  /** Creates a ClaudeSyncClient from environment variables using ClaudeConfig.fromEnv.
+    *
+    * @return
+    *   ClaudeSyncClient instance
+    */
+  def fromEnv: ClaudeSyncClient = apply(ClaudeConfig.fromEnv)
+
+  /** Creates a ClaudeSyncClient from environment variables with custom backend.
+    *
+    * @param backend
+    *   Custom sync backend
+    * @return
+    *   ClaudeSyncClient instance
+    */
+  def fromEnv(backend: SyncBackend): ClaudeSyncClient = apply(ClaudeConfig.fromEnv, backend)
 }
