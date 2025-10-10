@@ -4,9 +4,10 @@ import sttp.ai.claude.ClaudeExceptions.ClaudeException
 import sttp.ai.claude.config.ClaudeConfig
 import sttp.ai.claude.requests.MessageRequest
 import sttp.ai.claude.responses.{MessageResponse, ModelsResponse}
+import sttp.ai.core.http.ResponseHandlers
 import sttp.capabilities.Streams
 import sttp.client4._
-import sttp.model.Uri
+import sttp.model.{ResponseMetadata, Uri}
 import sttp.ai.core.json.SnakePickle._
 import java.io.InputStream
 
@@ -22,7 +23,7 @@ trait ClaudeClient {
   def createMessageAsInputStream(messageRequest: MessageRequest): Request[Either[ClaudeException, java.io.InputStream]]
 }
 
-class ClaudeClientImpl(config: ClaudeConfig) extends ClaudeClient {
+class ClaudeClientImpl(config: ClaudeConfig) extends ClaudeClient with ResponseHandlers[ClaudeException, Reader] {
 
   private val claudeUris = new ClaudeUris(config.baseUrl)
 
@@ -32,35 +33,24 @@ class ClaudeClientImpl(config: ClaudeConfig) extends ClaudeClient {
       .header("anthropic-version", config.anthropicVersion)
       .header("content-type", "application/json")
 
-  private def asJson_parseErrors[T: Reader]: ResponseAs[Either[ClaudeException, T]] =
-    asString.mapWithMetadata { (responseBody, metadata) =>
-      responseBody match {
-        case Left(error) =>
-          Left(
-            ClaudeException.DeserializationClaudeException(
-              new Exception(error),
-              metadata
-            )
-          )
-        case Right(body) =>
-          try
-            Right(read[T](body))
-          catch {
-            case e: Exception =>
-              try {
-                val errorResponse = read[sttp.ai.claude.responses.ErrorResponse](body)
-                Left(mapErrorToException(errorResponse, metadata))
-              } catch {
-                case _: Exception =>
-                  Left(ClaudeException.DeserializationClaudeException(e, metadata))
-              }
-          }
-      }
+  // Implementation of ResponseHandlers methods
+  override def read[T: Reader](s: String): T = sttp.ai.core.json.SnakePickle.read[T](s)
+
+  override def deserializationException(cause: Exception, metadata: ResponseMetadata): ClaudeException =
+    ClaudeException.DeserializationClaudeException(cause, metadata)
+
+  override def mapErrorToException(errorResponse: String, metadata: ResponseMetadata): ClaudeException =
+    try {
+      val errorResp = read[sttp.ai.claude.responses.ErrorResponse](errorResponse)
+      mapErrorResponseToException(errorResp, metadata)
+    } catch {
+      case e: Exception =>
+        ClaudeException.DeserializationClaudeException(e, metadata)
     }
 
-  private def mapErrorToException(
+  private def mapErrorResponseToException(
       errorResponse: sttp.ai.claude.responses.ErrorResponse,
-      metadata: sttp.model.ResponseMetadata
+      metadata: ResponseMetadata
   ): ClaudeException = {
     val error = errorResponse.error
     val cause = ResponseException.UnexpectedStatusCode(error.message, metadata)
@@ -129,32 +119,7 @@ class ClaudeClientImpl(config: ClaudeConfig) extends ClaudeClient {
     claudeAuthRequest
       .post(claudeUris.Messages)
       .body(write(streamingRequest))
-      .response(
-        asStreamUnsafe(streams).mapWithMetadata { (streamResponse, metadata) =>
-          if (metadata.isSuccess) {
-            streamResponse match {
-              case Right(stream) => Right(stream)
-              case Left(error) =>
-                Left(
-                  ClaudeException.DeserializationClaudeException(
-                    new Exception(error),
-                    metadata
-                  )
-                )
-            }
-          } else {
-            Left(
-              new ClaudeException.APIException(
-                Some(s"HTTP ${metadata.code}"),
-                None,
-                Some(metadata.code.toString),
-                None,
-                ResponseException.UnexpectedStatusCode(metadata.statusText, metadata)
-              )
-            )
-          }
-        }
-      )
+      .response(asStreamUnsafe_parseErrors(streams))
   }
 
   override def createMessageAsInputStream(messageRequest: MessageRequest): Request[Either[ClaudeException, InputStream]] = {
@@ -163,30 +128,7 @@ class ClaudeClientImpl(config: ClaudeConfig) extends ClaudeClient {
     claudeAuthRequest
       .post(claudeUris.Messages)
       .body(write(streamingRequest))
-      .response(asInputStreamUnsafe.mapWithMetadata { (body, meta) =>
-        if (meta.isSuccess) {
-          body match {
-            case Right(stream) => Right(stream)
-            case Left(error) =>
-              Left(
-                ClaudeException.DeserializationClaudeException(
-                  new Exception(error),
-                  meta
-                )
-              )
-          }
-        } else {
-          Left(
-            new ClaudeException.APIException(
-              Some(s"HTTP ${meta.code}"),
-              None,
-              Some(meta.code.toString),
-              None,
-              ResponseException.UnexpectedStatusCode(meta.statusText, meta)
-            )
-          )
-        }
-      })
+      .response(asInputStreamUnsafe_parseErrors)
   }
 }
 

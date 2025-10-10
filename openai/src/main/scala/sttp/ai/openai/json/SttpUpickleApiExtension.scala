@@ -1,6 +1,5 @@
 package sttp.ai.openai.json
 
-import sttp.capabilities.Streams
 import sttp.client4.ResponseException.UnexpectedStatusCode
 import sttp.client4._
 import sttp.client4.json._
@@ -9,24 +8,22 @@ import sttp.model.ResponseMetadata
 import sttp.model.StatusCode._
 import sttp.ai.openai.OpenAIExceptions.OpenAIException
 import sttp.ai.openai.OpenAIExceptions.OpenAIException._
-
-import java.io.InputStream
+import sttp.ai.core.http.ResponseHandlers
 
 /** An sttp upickle api extension that deserializes JSON with snake_case keys into case classes with fields corresponding to keys in
   * camelCase and maps errors to OpenAIException subclasses.
   */
-object SttpUpickleApiExtension extends SttpUpickleApi {
+object SttpUpickleApiExtension extends SttpUpickleApi with ResponseHandlers[OpenAIException, sttp.ai.core.json.SnakePickle.Reader] {
   override val upickleApi: sttp.ai.core.json.SnakePickle.type = sttp.ai.core.json.SnakePickle
 
-  def asStreamUnsafe_parseErrors[S](s: Streams[S]): StreamResponseAs[Either[OpenAIException, s.BinaryStream], S] =
-    asStreamUnsafe(s).mapWithMetadata { (body, meta) =>
-      body.left.map(errorBody => httpToOpenAIError(UnexpectedStatusCode(errorBody, meta)))
-    }
+  // Implementation of ResponseHandlers methods
+  override def read[T: sttp.ai.core.json.SnakePickle.Reader](s: String): T = upickleApi.read[T](s)
 
-  def asInputStreamUnsafe_parseErrors: ResponseAs[Either[OpenAIException, InputStream]] =
-    asInputStreamUnsafe.mapWithMetadata { (body, meta) =>
-      body.left.map(errorBody => httpToOpenAIError(UnexpectedStatusCode(errorBody, meta)))
-    }
+  override def deserializationException(cause: Exception, metadata: ResponseMetadata): OpenAIException =
+    DeserializationOpenAIException(cause, metadata)
+
+  override def mapErrorToException(errorResponse: String, metadata: ResponseMetadata): OpenAIException =
+    httpToOpenAIError(UnexpectedStatusCode(errorResponse, metadata))
 
   def asJson_parseErrors[B: upickleApi.Reader: IsOption]: ResponseAs[Either[OpenAIException, B]] =
     asString.mapWithMetadata(deserializeRightWithMappedExceptions(deserializeJsonSnake)).showAsJson

@@ -42,31 +42,21 @@ trait ResponseHandlers[E <: AIException, Reader[_]] {
       }
     }
 
-  /** Handle binary stream responses with error mapping */
+  /** Handle binary stream responses with error mapping
+    *
+    * This method provides error handling for streaming responses. It maps HTTP errors to API-specific exceptions.
+    */
   def asStreamUnsafe_parseErrors[S](s: Streams[S]): StreamResponseAs[Either[E, s.BinaryStream], S] =
     asStreamUnsafe(s).mapWithMetadata { (streamResponse, metadata) =>
-      if (metadata.isSuccess) {
-        streamResponse match {
-          case Right(stream) => Right(stream)
-          case Left(error) =>
-            Left(deserializationException(new Exception(error), metadata))
-        }
-      } else {
-        Left(mapErrorToException(metadata.statusText, metadata))
-      }
+      streamResponse.left.map(errorBody => mapErrorToException(errorBody, metadata))
     }
 
-  /** Handle input stream responses with error mapping */
+  /** Handle input stream responses with error mapping
+    *
+    * This method provides error handling for InputStream responses. It maps HTTP errors to API-specific exceptions.
+    */
   def asInputStreamUnsafe_parseErrors: ResponseAs[Either[E, InputStream]] =
     asInputStreamUnsafe.mapWithMetadata { (body, meta) =>
-      if (meta.isSuccess) {
-        body match {
-          case Right(stream) => Right(stream)
-          case Left(error) =>
-            Left(deserializationException(new Exception(error), meta))
-        }
-      } else {
-        Left(mapErrorToException(meta.statusText, meta))
-      }
+      body.left.map(errorBody => mapErrorToException(errorBody, meta))
     }
 }
