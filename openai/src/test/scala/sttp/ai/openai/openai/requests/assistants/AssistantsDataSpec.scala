@@ -5,7 +5,7 @@ import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
 import sttp.client4.IsOption._
 import sttp.ai.openai.fixtures
-import sttp.ai.openai.json.SnakePickle
+import sttp.ai.core.json.SnakePickle
 import sttp.ai.openai.requests.assistants.Tool.{CodeInterpreterTool, FileSearchTool}
 import sttp.ai.openai.requests.completions.chat.message.ToolResource.FileSearchToolResource
 import sttp.ai.openai.requests.completions.chat.message.ToolResources

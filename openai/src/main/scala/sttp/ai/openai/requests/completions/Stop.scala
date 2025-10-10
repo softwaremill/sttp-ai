@@ -1,6 +1,6 @@
 package sttp.ai.openai.requests.completions
 
-import sttp.ai.openai.json.SnakePickle
+import sttp.ai.core.json.SnakePickle
 
 sealed trait Stop
 object Stop {

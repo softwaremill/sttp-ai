@@ -1,6 +1,6 @@
 package sttp.ai.claude.models
 
-import sttp.ai.claude.json.SnakePickle.{macroRW, ReadWriter}
+import sttp.ai.core.json.SnakePickle.{macroRW, ReadWriter}
 
 case class Message(
     role: String,

@@ -9,7 +9,7 @@ import sttp.client4.Request
 import sttp.client4.impl.ox.sse.OxServerSentEvents
 import sttp.model.ResponseMetadata
 import sttp.model.sse.ServerSentEvent
-import sttp.ai.claude.json.SnakePickle._
+import sttp.ai.core.json.SnakePickle._
 
 import java.io.InputStream
 

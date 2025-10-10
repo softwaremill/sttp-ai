@@ -24,6 +24,12 @@ class ClaudeSyncClient(config: ClaudeConfig, backend: SyncBackend = DefaultSyncB
 }
 
 object ClaudeSyncClient {
+
   def apply(config: ClaudeConfig): ClaudeSyncClient = new ClaudeSyncClient(config)
+
   def apply(config: ClaudeConfig, backend: SyncBackend): ClaudeSyncClient = new ClaudeSyncClient(config, backend)
+
+  def fromEnv: ClaudeSyncClient = apply(ClaudeConfig.fromEnv)
+
+  def fromEnv(backend: SyncBackend): ClaudeSyncClient = apply(ClaudeConfig.fromEnv, backend)
 }

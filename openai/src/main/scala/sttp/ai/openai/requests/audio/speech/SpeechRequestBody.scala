@@ -1,6 +1,6 @@
 package sttp.ai.openai.requests.audio.speech
 
-import sttp.ai.openai.json.SnakePickle
+import sttp.ai.core.json.SnakePickle
 
 /** Represents the request body for generating speech from text.
   *

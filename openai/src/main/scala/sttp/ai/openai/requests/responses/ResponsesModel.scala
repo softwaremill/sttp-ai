@@ -1,5 +1,5 @@
 package sttp.ai.openai.requests.responses
-import sttp.ai.openai.json.SnakePickle
+import sttp.ai.core.json.SnakePickle
 import ujson.Str
 
 sealed abstract class ResponsesModel(val value: String)

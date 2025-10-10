@@ -1,7 +1,7 @@
 package sttp.ai.openai.requests.responses
 
 import sttp.apispec.Schema
-import sttp.ai.openai.json.SnakePickle
+import sttp.ai.core.json.SnakePickle
 import sttp.ai.openai.requests.completions.chat.SchemaSupport
 import sttp.ai.openai.requests.responses.ResponsesRequestBody.Input
 import sttp.ai.openai.requests.responses.ResponsesRequestBody.Input.OutputContentItem.OutputText.{Annotation, LogProb}

@@ -3,6 +3,7 @@ package sttp.ai.openai
 import sttp.client4.{DefaultSyncBackend, Request, SyncBackend}
 import sttp.model.Uri
 import sttp.ai.openai.OpenAIExceptions.OpenAIException
+import sttp.ai.openai.config.OpenAIConfig
 import sttp.ai.openai.requests.admin.{QueryParameters => _, _}
 import sttp.ai.openai.requests.assistants.AssistantsRequestBody.{CreateAssistantBody, ModifyAssistantBody}
 import sttp.ai.openai.requests.assistants.AssistantsResponseData.{AssistantData, DeleteAssistantResponse, ListAssistantsResponse}
@@ -58,10 +59,11 @@ class OpenAISyncClient private (
     backend: SyncBackend,
     closeClient: Boolean,
     baseUri: Uri,
-    customizeRequest: CustomizeOpenAIRequest
+    customizeRequest: CustomizeOpenAIRequest,
+    organization: Option[String] = None
 ) {
 
-  private val openAI = new OpenAI(authToken, baseUri)
+  private val openAI = new OpenAI(authToken, baseUri, organization)
 
   /** Lists the currently available models, and provides basic information about each one such as the owner and availability.
     *
@@ -1179,6 +1181,23 @@ object OpenAISyncClient {
     new OpenAISyncClient(authToken, backend, false, baseUrl, CustomizeOpenAIRequest.Identity)
   def apply(authToken: String, baseUrl: Uri) =
     new OpenAISyncClient(authToken, DefaultSyncBackend(), true, baseUrl, CustomizeOpenAIRequest.Identity)
+
+  def apply(config: OpenAIConfig): OpenAISyncClient =
+    new OpenAISyncClient(
+      config.apiKey,
+      DefaultSyncBackend(),
+      true,
+      config.baseUrl,
+      CustomizeOpenAIRequest.Identity,
+      config.organization
+    )
+
+  def apply(config: OpenAIConfig, backend: SyncBackend): OpenAISyncClient =
+    new OpenAISyncClient(config.apiKey, backend, false, config.baseUrl, CustomizeOpenAIRequest.Identity, config.organization)
+
+  def fromEnv: OpenAISyncClient = apply(OpenAIConfig.fromEnv)
+
+  def fromEnv(backend: SyncBackend): OpenAISyncClient = apply(OpenAIConfig.fromEnv, backend)
 }
 
 trait CustomizeOpenAIRequest {

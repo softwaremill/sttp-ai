@@ -4,7 +4,7 @@ import org.scalatest.EitherValues
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
 import sttp.ai.openai.fixtures
-import sttp.ai.openai.json.SnakePickle
+import sttp.ai.core.json.SnakePickle
 import sttp.ai.openai.requests.completions.Stop.SingleStop
 import sttp.ai.openai.requests.completions.chat.ChatRequestBody.Format.Mp3
 import sttp.ai.openai.requests.completions.chat.ChatRequestBody.Voice.Ash

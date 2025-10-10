@@ -4,7 +4,7 @@ import org.scalatest.EitherValues
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
 import sttp.ai.openai.fixtures.BatchFixture
-import sttp.ai.openai.json.SnakePickle
+import sttp.ai.core.json.SnakePickle
 import sttp.ai.openai.requests.batch.{BatchRequestBody, BatchResponse, ListBatchResponse}
 import sttp.ai.openai.utils.JsonUtils
 

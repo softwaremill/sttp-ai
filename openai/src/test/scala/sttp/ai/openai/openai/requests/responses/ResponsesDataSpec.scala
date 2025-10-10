@@ -5,7 +5,7 @@ import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
 import sttp.apispec.{Schema, SchemaType}
 import sttp.ai.openai.fixtures.ResponsesFixture
-import sttp.ai.openai.json.SnakePickle
+import sttp.ai.core.json.SnakePickle
 import sttp.ai.openai.requests.responses.ResponsesModel.GPT4o20240806
 import sttp.ai.openai.requests.responses.ResponsesRequestBody.Format.JsonSchema
 import sttp.ai.openai.requests.responses.ResponsesRequestBody.{

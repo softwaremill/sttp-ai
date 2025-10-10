@@ -56,8 +56,9 @@ import sttp.ai.openai.requests.{admin, batch, finetuning}
 
 import java.io.{File, InputStream}
 import java.nio.file.Paths
+import sttp.ai.openai.config.OpenAIConfig
 
-class OpenAI(authToken: String, baseUri: Uri = OpenAIUris.OpenAIBaseUri) {
+class OpenAI(authToken: String, baseUri: Uri = OpenAIUris.OpenAIBaseUri, organization: Option[String] = None) {
 
   private val openAIUris = new OpenAIUris(baseUri)
 
@@ -1606,11 +1607,24 @@ class OpenAI(authToken: String, baseUri: Uri = OpenAIUris.OpenAIBaseUri) {
       .delete(openAIUris.adminApiKey(keyId))
       .response(asJson_parseErrors[DeleteAdminApiKeyResponse])
 
-  protected def openAIAuthRequest: PartialRequest[Either[String, String]] = basicRequest.auth
-    .bearer(authToken)
+  protected def openAIAuthRequest: PartialRequest[Either[String, String]] = {
+    val baseReq = basicRequest.auth.bearer(authToken)
+    organization match {
+      case Some(org) => baseReq.header("OpenAI-Organization", org)
+      case None      => baseReq
+    }
+  }
 
   protected def betaOpenAIAuthRequest: PartialRequest[Either[String, String]] =
     openAIAuthRequest.withHeaders(openAIAuthRequest.headers :+ Header("OpenAI-Beta", "assistants=v2"))
+}
+
+object OpenAI {
+
+  def apply(config: OpenAIConfig): OpenAI =
+    new OpenAI(config.apiKey, config.baseUrl, config.organization)
+
+  def fromEnv: OpenAI = apply(OpenAIConfig.fromEnv)
 }
 
 private class OpenAIUris(val baseUri: Uri) {

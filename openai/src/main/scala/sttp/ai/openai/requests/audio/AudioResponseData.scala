@@ -1,6 +1,6 @@
 package sttp.ai.openai.requests.audio
 
-import sttp.ai.openai.json.SnakePickle
+import sttp.ai.core.json.SnakePickle
 
 object AudioResponseData {
 

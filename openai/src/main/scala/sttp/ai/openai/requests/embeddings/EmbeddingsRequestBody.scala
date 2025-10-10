@@ -1,6 +1,6 @@
 package sttp.ai.openai.requests.embeddings
 
-import sttp.ai.openai.json.SnakePickle
+import sttp.ai.core.json.SnakePickle
 import ujson.Str
 
 object EmbeddingsRequestBody {

@@ -1,6 +1,6 @@
 package sttp.ai.openai.requests.admin
 
-import sttp.ai.openai.json.SnakePickle
+import sttp.ai.core.json.SnakePickle
 
 case class AdminApiKeyResponse(
     `object`: String = "organization.admin_api_key",

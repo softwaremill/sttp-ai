@@ -1,17 +1,18 @@
 package sttp.ai.openai
 
+import sttp.ai.core.error.AIException
 import sttp.client4.ResponseException
 import sttp.client4.ResponseException.{DeserializationException, UnexpectedStatusCode}
 import sttp.model.ResponseMetadata
 
 object OpenAIExceptions {
   sealed abstract class OpenAIException(
-      val message: Option[String],
-      val `type`: Option[String],
-      val param: Option[String],
-      val code: Option[String],
-      val cause: ResponseException[String]
-  ) extends Exception(cause.getMessage, cause)
+      message: Option[String],
+      `type`: Option[String],
+      param: Option[String],
+      code: Option[String],
+      cause: ResponseException[String]
+  ) extends AIException(message, `type`, param, code, cause)
 
   object OpenAIException {
     class DeserializationOpenAIException(

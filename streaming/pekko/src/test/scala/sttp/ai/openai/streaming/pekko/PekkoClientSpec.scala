@@ -13,7 +13,7 @@ import sttp.model.sse.ServerSentEvent
 import sttp.ai.openai.OpenAI
 import sttp.ai.openai.OpenAIExceptions.OpenAIException.DeserializationOpenAIException
 import sttp.ai.openai.fixtures.ErrorFixture
-import sttp.ai.openai.json.SnakePickle._
+import sttp.ai.core.json.SnakePickle._
 import sttp.ai.openai.requests.audio.speech.SpeechModel.TTS1
 import sttp.ai.openai.requests.audio.speech.{SpeechRequestBody, Voice}
 import sttp.ai.openai.requests.completions.chat.ChatChunkRequestResponseData.ChatChunkResponse

@@ -1,4 +1,4 @@
-package sttp.ai.openai.json
+package sttp.ai.core.json
 
 import ujson._
 
