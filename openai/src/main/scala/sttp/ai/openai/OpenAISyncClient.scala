@@ -1182,13 +1182,6 @@ object OpenAISyncClient {
   def apply(authToken: String, baseUrl: Uri) =
     new OpenAISyncClient(authToken, DefaultSyncBackend(), true, baseUrl, CustomizeOpenAIRequest.Identity)
 
-  /** Creates an OpenAISyncClient using OpenAIConfig.
-    *
-    * @param config
-    *   OpenAI configuration
-    * @return
-    *   OpenAISyncClient instance
-    */
   def apply(config: OpenAIConfig): OpenAISyncClient =
     new OpenAISyncClient(
       config.apiKey,
@@ -1199,32 +1192,11 @@ object OpenAISyncClient {
       config.organization
     )
 
-  /** Creates an OpenAISyncClient using OpenAIConfig with custom backend.
-    *
-    * @param config
-    *   OpenAI configuration
-    * @param backend
-    *   Custom sync backend
-    * @return
-    *   OpenAISyncClient instance
-    */
   def apply(config: OpenAIConfig, backend: SyncBackend): OpenAISyncClient =
     new OpenAISyncClient(config.apiKey, backend, false, config.baseUrl, CustomizeOpenAIRequest.Identity, config.organization)
 
-  /** Creates an OpenAISyncClient from environment variables using OpenAIConfig.fromEnv.
-    *
-    * @return
-    *   OpenAISyncClient instance
-    */
   def fromEnv: OpenAISyncClient = apply(OpenAIConfig.fromEnv)
 
-  /** Creates an OpenAISyncClient from environment variables with custom backend.
-    *
-    * @param backend
-    *   Custom sync backend
-    * @return
-    *   OpenAISyncClient instance
-    */
   def fromEnv(backend: SyncBackend): OpenAISyncClient = apply(OpenAIConfig.fromEnv, backend)
 }
 

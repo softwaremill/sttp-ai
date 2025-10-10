@@ -1621,21 +1621,9 @@ class OpenAI(authToken: String, baseUri: Uri = OpenAIUris.OpenAIBaseUri, organiz
 
 object OpenAI {
 
-  /** Creates an OpenAI client using OpenAIConfig.
-    *
-    * @param config
-    *   OpenAI configuration
-    * @return
-    *   OpenAI client instance
-    */
   def apply(config: OpenAIConfig): OpenAI =
     new OpenAI(config.apiKey, config.baseUrl, config.organization)
 
-  /** Creates an OpenAI client from environment variables using OpenAIConfig.fromEnv.
-    *
-    * @return
-    *   OpenAI client instance
-    */
   def fromEnv: OpenAI = apply(OpenAIConfig.fromEnv)
 }
 

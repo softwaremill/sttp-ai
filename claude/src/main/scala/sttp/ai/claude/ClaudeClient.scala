@@ -33,7 +33,6 @@ class ClaudeClientImpl(config: ClaudeConfig) extends ClaudeClient with ResponseH
       .header("anthropic-version", config.anthropicVersion)
       .header("content-type", "application/json")
 
-  // Implementation of ResponseHandlers methods
   override def read[T: Reader](s: String): T = sttp.ai.core.json.SnakePickle.read[T](s)
 
   override def deserializationException(cause: Exception, metadata: ResponseMetadata): ClaudeException =

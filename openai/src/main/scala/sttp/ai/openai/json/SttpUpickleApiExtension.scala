@@ -16,7 +16,6 @@ import sttp.ai.core.http.ResponseHandlers
 object SttpUpickleApiExtension extends SttpUpickleApi with ResponseHandlers[OpenAIException, sttp.ai.core.json.SnakePickle.Reader] {
   override val upickleApi: sttp.ai.core.json.SnakePickle.type = sttp.ai.core.json.SnakePickle
 
-  // Implementation of ResponseHandlers methods
   override def read[T: sttp.ai.core.json.SnakePickle.Reader](s: String): T = upickleApi.read[T](s)
 
   override def deserializationException(cause: Exception, metadata: ResponseMetadata): OpenAIException =
