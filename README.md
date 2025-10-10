@@ -50,7 +50,7 @@ sttp-ai uses sttp client to describe requests and responses used in OpenAI, Clau
 Add the following dependency:
 
 ```sbt
-"com.softwaremill.sttp.ai" %% "core" % "0.3.10"
+"com.softwaremill.sttp.ai" %% "openai" % "0.3.10"
 ```
 
 ### For Claude (Anthropic) API
@@ -79,7 +79,7 @@ Examples are runnable using [scala-cli](https://scala-cli.virtuslab.org).
 ### Basic Usage (OpenAI)
 
 ```scala mdoc:compile-only
-//> using dep com.softwaremill.sttp.ai::core:0.3.10
+//> using dep com.softwaremill.sttp.ai::openai:0.3.10
 
 import sttp.ai.openai.OpenAISyncClient
 import sttp.ai.openai.requests.completions.chat.ChatRequestResponseData.ChatResponse
@@ -475,7 +475,7 @@ try {
 Ollama with sync backend:
 
 ```scala mdoc:compile-only
-//> using dep com.softwaremill.sttp.ai::core:0.3.10
+//> using dep com.softwaremill.sttp.ai::openai:0.3.10
 
 import sttp.model.Uri.*
 import sttp.ai.openai.OpenAISyncClient
@@ -529,7 +529,7 @@ object Main:
 Grok with cats-effect based backend:
 
 ```scala mdoc:compile-only
-//> using dep com.softwaremill.sttp.ai::core:0.3.10
+//> using dep com.softwaremill.sttp.ai::openai:0.3.10
 //> using dep com.softwaremill.sttp.client4::cats:4.0.0-M17
 
 import cats.effect.IO
@@ -605,7 +605,7 @@ Example below uses `HttpClientCatsBackend` as a backend, make sure to [add it to
 or use backend of your choice.
 
 ```scala mdoc:compile-only
-//> using dep com.softwaremill.sttp.ai::core:0.3.10
+//> using dep com.softwaremill.sttp.ai::openai:0.3.10
 //> using dep com.softwaremill.sttp.client4::cats:4.0.0-M17
 
 import cats.effect.IO
@@ -820,7 +820,7 @@ and support for JSON Schema, you can use `ResponseFormat.JsonSchema` when creati
 The example below produces a JSON object:
 
 ```scala mdoc:compile-only
-//> using dep com.softwaremill.sttp.ai::core:0.3.10
+//> using dep com.softwaremill.sttp.ai::openai:0.3.10
 
 import scala.collection.immutable.ListMap
 import sttp.apispec.{Schema, SchemaType}
@@ -946,7 +946,7 @@ Another helpful feature is adding possibility to create ToolMessage object passi
 With all this in mind please remember that it is still required to deserialized arguments, which are sent back by Assistant to call our function.
 
 ```scala mdoc:compile-only
-//> using dep com.softwaremill.sttp.ai::core:0.3.10
+//> using dep com.softwaremill.sttp.ai::openai:0.3.10
 
 import sttp.ai.openai.OpenAISyncClient
 import sttp.ai.openai.json.SnakePickle

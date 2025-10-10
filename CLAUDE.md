@@ -19,7 +19,7 @@ sttp-ai is a Scala library providing a non-official client wrapper for OpenAI, C
 ```bash
 # Compile
 sbt compile                              # All modules
-sbt core/compile                         # OpenAI module
+sbt openai/compile                       # OpenAI module
 sbt claude/compile                       # Claude module
 
 # Test
@@ -53,7 +53,7 @@ sbt scalafmtAll                                                           # 3. F
 
 **Core Differences:**
 
-| Aspect | OpenAI (`core/`) | Claude (`claude/`) |
+| Aspect | OpenAI (`openai/`) | Claude (`claude/`) |
 |--------|-----------------|-------------------|
 | **Client** | `OpenAI` / `OpenAISyncClient` | `ClaudeClient` / `ClaudeSyncClient` |
 | **Return Type** | `Either[OpenAIException, A]` | `Either[ClaudeException, A]` |
@@ -83,9 +83,9 @@ Each streaming module (`streaming/{effect-system}/`) provides extensions for **b
 
 ### Key Navigation Tips
 
-- **OpenAI API endpoints**: `core/src/main/scala/sttp/ai/openai/requests/{api-category}/`
+- **OpenAI API endpoints**: `openai/src/main/scala/sttp/ai/openai/requests/{api-category}/`
 - **Claude API code**: `claude/src/main/scala/sttp/ai/claude/`
-- **OpenAI models**: Search for `ChatCompletionModel`, `EmbeddingModel` in `core/` request bodies
+- **OpenAI models**: Search for `ChatCompletionModel`, `EmbeddingModel` in `openai/` request bodies
 - **Claude models**: `claude/src/main/scala/sttp/ai/claude/models/ClaudeModel.scala`
 - **Streaming implementations**: `streaming/{effect-system}/src/main/scala/`
 - **Examples**: `examples/src/main/scala/examples/` (runnable with scala-cli)
