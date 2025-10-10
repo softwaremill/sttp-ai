@@ -1,6 +1,6 @@
 # Integration Testing Guide
 
-This document explains how to run integration tests for the sttp-openai library against the real OpenAI API.
+This document explains how to run integration tests for the sttp-ai library against the real OpenAI API or Claude API.
 
 ## Overview
 
@@ -10,15 +10,17 @@ The integration tests are designed to be **cost-efficient** while providing comp
 
 ### Prerequisites
 
-1. **OpenAI API Key**: You need a valid OpenAI API key with sufficient credits
-2. **Internet Connection**: Tests make real API calls to OpenAI
+1. **OPENAI_API_KEY**: You need a valid OpenAI API key with sufficient credits
+2. **ANTHROPIC_API_KEY**: You need a valid Anthropic API key with sufficient credits
+3. **Internet Connection**: Tests make real API calls to OpenAI
 
 ### Setup
 
-Set your OpenAI API key as an environment variable:
+Set your OpenAI & Anthropic API keys as environment variables:
 
 ```bash
-export OPENAI_API_KEY=your-api-key-here
+export OPENAI_API_KEY=your-openai-api-key-here
+export ANTHROPIC_API_KEY=your-anthropic-api-key-here
 ```
 
 ### Running Tests
@@ -26,17 +28,23 @@ export OPENAI_API_KEY=your-api-key-here
 #### Run all integration tests:
 ```bash
 sbt "testOnly *OpenAIIntegrationSpec"
+sbt "testOnly *ClaudeIntegrationSpec"
 ```
 
 #### Skip integration tests (when no API key is available):
-If `OPENAI_API_KEY` is not set, all tests will be automatically skipped (not failed).
+
+If `OPENAI_API_KEY` or `ANTHROPIC_API_KEY` is not set, all the related tests will be automatically skipped (not failed).
 This makes the tests CI/CD friendly.
 
 ## Troubleshooting
 
 ### "OPENAI_API_KEY not defined - skipping integration test"
-This is normal behavior when no API key is set. To run tests:
-Set your API key: `export OPENAI_API_KEY=your-key`
+
+This is normal behavior when no API key is set. To run tests, set your API key:
+`export OPENAI_API_KEY=your-key`
+
+The same approach works for Claude API related integration tests:
+`export ANTHROPIC_API_KEY=your-key`
 
 ### Rate limiting errors
 The tests include rate limiting handling, but if you encounter issues:
@@ -46,12 +54,12 @@ The tests include rate limiting handling, but if you encounter issues:
 
 ### Authentication errors
 - Verify your API key is correct and active
-- Check that your OpenAI account has sufficient credits
+- Check that your OpenAI/Claude account has sufficient credits
 - Ensure the key has necessary permissions
 
 ### Network timeouts
 - Check internet connectivity
-- Verify OpenAI API is accessible from your network
+- Verify OpenAI/Claude API is accessible from your network
 - Tests have 30-second timeout configured
 
 ## Adding New Integration Tests
