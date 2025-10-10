@@ -17,7 +17,7 @@ lazy val root = (project in file("."))
   .settings(publish / skip := true, name := "sttp-ai", scalaVersion := scala2.head)
   .aggregate(allAgregates: _*)
 
-lazy val allAgregates = core.projectRefs ++
+lazy val allAgregates = openai.projectRefs ++
   claude.projectRefs ++
   fs2.projectRefs ++
   zio.projectRefs ++
@@ -27,7 +27,7 @@ lazy val allAgregates = core.projectRefs ++
   examples.projectRefs ++
   docs.projectRefs
 
-lazy val core = (projectMatrix in file("core"))
+lazy val openai = (projectMatrix in file("openai"))
   .jvmPlatform(
     scalaVersions = scala2 ++ scala3
   )
@@ -61,7 +61,7 @@ lazy val fs2 = (projectMatrix in file("streaming/fs2"))
   .settings(
     libraryDependencies ++= Libraries.sttpClientFs2
   )
-  .dependsOn(core % "compile->compile;test->test", claude % "compile->compile;test->test")
+  .dependsOn(openai % "compile->compile;test->test", claude % "compile->compile;test->test")
 
 lazy val zio = (projectMatrix in file("streaming/zio"))
   .jvmPlatform(
@@ -71,7 +71,7 @@ lazy val zio = (projectMatrix in file("streaming/zio"))
   .settings(
     libraryDependencies += Libraries.sttpClientZio
   )
-  .dependsOn(core % "compile->compile;test->test", claude % "compile->compile;test->test")
+  .dependsOn(openai % "compile->compile;test->test", claude % "compile->compile;test->test")
 
 lazy val pekko = (projectMatrix in file("streaming/pekko"))
   .jvmPlatform(
@@ -81,7 +81,7 @@ lazy val pekko = (projectMatrix in file("streaming/pekko"))
   .settings(
     libraryDependencies ++= Libraries.sttpClientPekko
   )
-  .dependsOn(core % "compile->compile;test->test", claude % "compile->compile;test->test")
+  .dependsOn(openai % "compile->compile;test->test", claude % "compile->compile;test->test")
 
 lazy val akka = (projectMatrix in file("streaming/akka"))
   .jvmPlatform(
@@ -91,7 +91,7 @@ lazy val akka = (projectMatrix in file("streaming/akka"))
   .settings(
     libraryDependencies ++= Libraries.sttpClientAkka
   )
-  .dependsOn(core % "compile->compile;test->test", claude % "compile->compile;test->test")
+  .dependsOn(openai % "compile->compile;test->test", claude % "compile->compile;test->test")
 
 lazy val ox = (projectMatrix in file("streaming/ox"))
   .jvmPlatform(
@@ -101,7 +101,7 @@ lazy val ox = (projectMatrix in file("streaming/ox"))
   .settings(
     libraryDependencies ++= Libraries.sttpClientOx
   )
-  .dependsOn(core % "compile->compile;test->test", claude % "compile->compile;test->test")
+  .dependsOn(openai % "compile->compile;test->test", claude % "compile->compile;test->test")
 
 lazy val examples = (projectMatrix in file("examples"))
   .jvmPlatform(
@@ -133,5 +133,5 @@ lazy val docs = (projectMatrix in file("generated-docs")) // important: it must 
     name := "docs",
     evictionErrorLevel := Level.Info
   )
-  .dependsOn(core, fs2, zio, ox, pekko)
+  .dependsOn(openai, fs2, zio, ox, pekko)
   .jvmPlatform(scalaVersions = scala3)

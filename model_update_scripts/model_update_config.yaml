@@ -1,72 +1,72 @@
 endpoints:
   "v1/assistants":
-    file: "core/src/main/scala/sttp/openai/requests/assistants/AssistantsModel.scala"
+    file: "openai/src/main/scala/sttp/openai/requests/assistants/AssistantsModel.scala"
     className: "AssistantsModel"
     insertBeforeMarker: "case class CustomAssistantsModel"
     valuesSetName: "values"
 
   "v1/chat/completions":
-    file: "core/src/main/scala/sttp/openai/requests/completions/chat/ChatRequestBody.scala"
+    file: "openai/src/main/scala/sttp/openai/requests/completions/chat/ChatRequestBody.scala"
     className: "ChatCompletionModel"
     insertBeforeMarker: "case class CustomChatCompletionModel"
     valuesSetName: "values"
     
   "v1/completions":
-    file: "core/src/main/scala/sttp/openai/requests/completions/CompletionsRequestBody.scala"
+    file: "openai/src/main/scala/sttp/openai/requests/completions/CompletionsRequestBody.scala"
     className: "CompletionModel"
     insertBeforeMarker: "case class CustomCompletionModel"
     valuesSetName: "values"
     
   "v1/embeddings":
-    file: "core/src/main/scala/sttp/openai/requests/embeddings/EmbeddingsRequestBody.scala"
+    file: "openai/src/main/scala/sttp/openai/requests/embeddings/EmbeddingsRequestBody.scala"
     className: "EmbeddingsModel"
     insertBeforeMarker: "case class CustomEmbeddingsModel"
     valuesSetName: "values"
   
   "v1/images/generations":
-    file: "core/src/main/scala/sttp/openai/requests/images/creation/ImageCreationRequestBody.scala"
+    file: "openai/src/main/scala/sttp/openai/requests/images/creation/ImageCreationRequestBody.scala"
     className: "ImageCreationModel"
     insertBeforeMarker: "case class CustomImageCreationModel"
     valuesSetName: null
   
   "v1/images/edits":
-    file: "core/src/main/scala/sttp/openai/requests/images/edit/ImageEditsConfig.scala"
+    file: "openai/src/main/scala/sttp/openai/requests/images/edit/ImageEditsConfig.scala"
     className: "ImageEditsModel"
     insertBeforeMarker: "case class CustomImageEditsModel"
     valuesSetName: null
 
   "v1/fine-tuning":
-    file: "core/src/main/scala/sttp/openai/requests/finetuning/FineTuningModel.scala"
+    file: "openai/src/main/scala/sttp/openai/requests/finetuning/FineTuningModel.scala"
     className: "FineTuningModel"
     insertBeforeMarker: "case class CustomFineTuningModel"
     valuesSetName: "values"
     
   "v1/moderations":
-    file: "core/src/main/scala/sttp/openai/requests/moderations/ModerationsRequestBody.scala"
+    file: "openai/src/main/scala/sttp/openai/requests/moderations/ModerationsRequestBody.scala"
     className: "ModerationModel"
     insertBeforeMarker: "case class CustomModerationModel"
     valuesSetName: "values"
 
   "v1/responses":
-    file: "core/src/main/scala/sttp/openai/requests/responses/ResponsesModel.scala"
+    file: "openai/src/main/scala/sttp/openai/requests/responses/ResponsesModel.scala"
     className: "ResponsesModel"
     insertBeforeMarker: "case class CustomResponsesModel"
     valuesSetName: "values"
 
   "v1/audio/speech":
-    file: "core/src/main/scala/sttp/openai/requests/audio/speech/SpeechRequestBody.scala"
+    file: "openai/src/main/scala/sttp/openai/requests/audio/speech/SpeechRequestBody.scala"
     className: "SpeechModel"
     insertBeforeMarker: "case class CustomSpeechModel"
     valuesSetName: null
     
   "v1/audio/transcriptions":
-    file: "core/src/main/scala/sttp/openai/requests/audio/transcriptions/TranscriptionModel.scala"
+    file: "openai/src/main/scala/sttp/openai/requests/audio/transcriptions/TranscriptionModel.scala"
     className: "TranscriptionModel"
     insertBeforeMarker: "case class Custom"
     valuesSetName: null
     
   "v1/audio/translations":
-    file: "core/src/main/scala/sttp/openai/requests/audio/translations/TranslationModel.scala"
+    file: "openai/src/main/scala/sttp/openai/requests/audio/translations/TranslationModel.scala"
     className: "TranslationModel"
     insertBeforeMarker: "case class Custom"
     valuesSetName: null
