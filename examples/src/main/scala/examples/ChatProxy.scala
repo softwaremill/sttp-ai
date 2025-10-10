@@ -1,4 +1,4 @@
-//> using dep com.softwaremill.sttp.openai::ox:0.3.7
+//> using dep com.softwaremill.sttp.ai::ox:0.3.7
 //> using dep com.softwaremill.sttp.tapir::tapir-netty-server-sync:1.11.33
 //> using dep com.softwaremill.sttp.client4::ox:4.0.8
 //> using dep ch.qos.logback:logback-classic:1.5.18
@@ -14,10 +14,10 @@ import org.slf4j.{Logger, LoggerFactory}
 import ox.*
 import ox.either.orThrow
 import sttp.client4.{DefaultSyncBackend, SyncBackend}
-import sttp.openai.OpenAI
-import sttp.openai.requests.completions.chat.ChatRequestBody.{ChatBody, ChatCompletionModel}
-import sttp.openai.requests.completions.chat.message.{Content, Message}
-import sttp.openai.streaming.ox.*
+import sttp.ai.openai.OpenAI
+import sttp.ai.openai.requests.completions.chat.ChatRequestBody.{ChatBody, ChatCompletionModel}
+import sttp.ai.openai.requests.completions.chat.message.{Content, Message}
+import sttp.ai.openai.streaming.ox.*
 import sttp.tapir.*
 import sttp.tapir.CodecFormat.*
 import sttp.tapir.server.netty.sync.{NettySyncServer, OxStreams}

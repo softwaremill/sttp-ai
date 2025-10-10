@@ -407,7 +407,7 @@ During Phase 5 completion, a critical JSON serialization bug was discovered in t
 ## 8. Migration and Compatibility
 
 ### Compatibility with Existing OpenAI Implementation
-- Maintain separate package namespaces (`sttp.openai` vs `sttp.ai.claude`)
+- Maintain separate package namespaces (`sttp.ai.openai` vs `sttp.ai.claude`)
 - Share common utilities where beneficial (HTTP client configuration, error handling patterns)
 - Ensure no dependency conflicts between modules
 - Allow users to include both modules simultaneously
