@@ -3,7 +3,7 @@ package sttp.ai.claude.unit.models
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
 import sttp.ai.claude.models.{ContentBlock, Message}
-import sttp.ai.claude.json.SnakePickle._
+import sttp.ai.core.json.SnakePickle._
 
 class MessageSpec extends AnyFlatSpec with Matchers {
 

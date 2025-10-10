@@ -7,7 +7,7 @@ import sttp.ai.claude.responses.{MessageResponse, ModelsResponse}
 import sttp.capabilities.Streams
 import sttp.client4._
 import sttp.model.Uri
-import sttp.ai.claude.json.SnakePickle._
+import sttp.ai.core.json.SnakePickle._
 import java.io.InputStream
 
 trait ClaudeClient {

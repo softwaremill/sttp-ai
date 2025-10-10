@@ -11,7 +11,7 @@ import sttp.client4.StreamRequest
 import sttp.client4.akkahttp.AkkaHttpServerSentEvents
 import sttp.model.ResponseMetadata
 import sttp.model.sse.ServerSentEvent
-import sttp.ai.claude.json.SnakePickle._
+import sttp.ai.core.json.SnakePickle._
 
 object ClaudeAkkaStreaming {
   import MessageStreamResponse.EventData.DoneEvent

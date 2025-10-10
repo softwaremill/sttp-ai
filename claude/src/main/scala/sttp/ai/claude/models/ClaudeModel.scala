@@ -1,6 +1,6 @@
 package sttp.ai.claude.models
 
-import sttp.ai.claude.json.SnakePickle.{macroRW, ReadWriter}
+import sttp.ai.core.json.SnakePickle.{macroRW, ReadWriter}
 
 sealed abstract class ClaudeModel(val value: String) {
   override def toString: String = value
