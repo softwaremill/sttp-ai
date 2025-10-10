@@ -1,6 +1,6 @@
 package sttp.ai.openai.requests.audio.transcriptions
 
-import sttp.ai.openai.json.SnakePickle
+import sttp.ai.core.json.SnakePickle
 
 sealed abstract class TranscriptionModel(val value: String)
 

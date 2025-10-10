@@ -1,5 +1,5 @@
 package sttp.ai.openai.requests.finetuning
-import sttp.ai.openai.json.SnakePickle
+import sttp.ai.core.json.SnakePickle
 import ujson.Str
 
 sealed abstract class FineTuningModel(val value: String)

@@ -1,6 +1,6 @@
 package sttp.ai.openai.requests.vectorstore
 
-import sttp.ai.openai.json.SnakePickle
+import sttp.ai.core.json.SnakePickle
 import ujson.{Obj, Value}
 
 /** Represents the expiration policy for a vector store.

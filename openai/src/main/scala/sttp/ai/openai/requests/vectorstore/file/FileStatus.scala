@@ -1,6 +1,6 @@
 package sttp.ai.openai.requests.vectorstore.file
 
-import sttp.ai.openai.json.SnakePickle
+import sttp.ai.core.json.SnakePickle
 import ujson.Value
 
 sealed trait FileStatus

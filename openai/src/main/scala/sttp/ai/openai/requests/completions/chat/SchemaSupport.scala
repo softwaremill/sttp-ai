@@ -4,7 +4,7 @@ import io.circe.syntax._
 import io.circe.{DecodingFailure, Json, JsonNumber, JsonObject}
 import sttp.apispec.Schema
 import sttp.apispec.circe._
-import sttp.ai.openai.json.SnakePickle
+import sttp.ai.core.json.SnakePickle
 import ujson._
 import ujson.circe.CirceJson
 

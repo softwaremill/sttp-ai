@@ -949,7 +949,7 @@ With all this in mind please remember that it is still required to deserialized 
 //> using dep com.softwaremill.sttp.ai::openai:0.3.10
 
 import sttp.ai.openai.OpenAISyncClient
-import sttp.ai.openai.json.SnakePickle
+import sttp.ai.core.json.SnakePickle
 import sttp.ai.openai.requests.completions.chat.ChatRequestBody.ChatBody
 import sttp.ai.openai.requests.completions.chat.ChatRequestBody.ChatCompletionModel.GPT4oMini
 import sttp.ai.openai.requests.completions.chat.ToolCall.FunctionToolCall

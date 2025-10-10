@@ -2,7 +2,7 @@ package sttp.ai.openai.json
 
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
-import sttp.ai.openai.json.SerializationHelpersSpec.TestObject
+import sttp.ai.core.json.{SerializationHelpers, SnakePickle}
 import ujson._
 
 object SerializationHelpersSpec {
@@ -10,6 +10,8 @@ object SerializationHelpersSpec {
   @upickle.implicits.key("test_object_key")
   case class TestObject(name: String, value: Int, optionalField: Option[String] = None) extends Base
 }
+
+import SerializationHelpersSpec._
 
 class SerializationHelpersSpec extends AnyFlatSpec with Matchers {
 

@@ -4,7 +4,7 @@ import org.scalatest.EitherValues
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
 import sttp.ai.openai.fixtures
-import sttp.ai.openai.json.SnakePickle
+import sttp.ai.core.json.SnakePickle
 import sttp.ai.openai.requests.images.{ResponseFormat, Size}
 import sttp.ai.openai.utils.JsonUtils
 class ImageCreationDataSpec extends AnyFlatSpec with Matchers with EitherValues {

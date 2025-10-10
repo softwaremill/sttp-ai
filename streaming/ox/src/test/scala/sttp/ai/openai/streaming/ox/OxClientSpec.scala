@@ -10,7 +10,7 @@ import sttp.model.sse.ServerSentEvent
 import sttp.ai.openai.OpenAI
 import sttp.ai.openai.OpenAIExceptions.OpenAIException.DeserializationOpenAIException
 import sttp.ai.openai.fixtures.ErrorFixture
-import sttp.ai.openai.json.SnakePickle.*
+import sttp.ai.core.json.SnakePickle.*
 import sttp.ai.openai.requests.completions.chat.ChatChunkRequestResponseData.ChatChunkResponse
 import sttp.ai.openai.requests.completions.chat.ChatChunkRequestResponseData.ChatChunkResponse.DoneEvent
 import sttp.ai.openai.requests.completions.chat.ChatRequestBody.{ChatBody, ChatCompletionModel}

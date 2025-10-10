@@ -1,6 +1,6 @@
 package sttp.ai.openai.requests.threads
 
-import sttp.ai.openai.json.SnakePickle
+import sttp.ai.core.json.SnakePickle
 import sttp.ai.openai.requests.completions.chat.message.ToolResources
 import sttp.ai.openai.requests.threads.messages.ThreadMessagesRequestBody.CreateMessage
 

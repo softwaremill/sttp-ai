@@ -4,7 +4,7 @@ import org.scalatest.EitherValues
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
 import sttp.ai.openai.fixtures.VectorStoreFixture
-import sttp.ai.openai.json.SnakePickle
+import sttp.ai.core.json.SnakePickle
 import sttp.ai.openai.requests.vectorstore.VectorStoreRequestBody.{CreateVectorStoreBody, ModifyVectorStoreBody}
 import sttp.ai.openai.requests.vectorstore.VectorStoreResponseData._
 import sttp.ai.openai.utils.JsonUtils

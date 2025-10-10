@@ -1,6 +1,6 @@
 package sttp.ai.openai.requests.images.edit
 
-import sttp.ai.openai.json.SnakePickle
+import sttp.ai.core.json.SnakePickle
 import sttp.ai.openai.requests.images.{ResponseFormat, Size}
 
 import java.io.File

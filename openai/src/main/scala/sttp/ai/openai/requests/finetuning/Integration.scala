@@ -1,6 +1,6 @@
 package sttp.ai.openai.requests.finetuning
 
-import sttp.ai.openai.json.SnakePickle
+import sttp.ai.core.json.SnakePickle
 
 /** @param `type`
   *   The type of integration to enable. Currently, only "wandb" (Weights and Biases) is supported.

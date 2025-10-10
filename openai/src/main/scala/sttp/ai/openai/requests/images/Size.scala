@@ -1,6 +1,6 @@
 package sttp.ai.openai.requests.images
 
-import sttp.ai.openai.json.SnakePickle
+import sttp.ai.core.json.SnakePickle
 
 sealed abstract class Size(val value: String)
 

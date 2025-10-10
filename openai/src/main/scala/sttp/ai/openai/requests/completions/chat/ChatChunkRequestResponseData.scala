@@ -1,7 +1,7 @@
 package sttp.ai.openai.requests.completions.chat
 
 import sttp.model.sse.ServerSentEvent
-import sttp.ai.openai.json.SnakePickle
+import sttp.ai.core.json.SnakePickle
 import sttp.ai.openai.requests.completions.Usage
 
 object ChatChunkRequestResponseData {

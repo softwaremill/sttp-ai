@@ -16,7 +16,7 @@ import java.io.InputStream
   * camelCase and maps errors to OpenAIException subclasses.
   */
 object SttpUpickleApiExtension extends SttpUpickleApi {
-  override val upickleApi: SnakePickle.type = SnakePickle
+  override val upickleApi: sttp.ai.core.json.SnakePickle.type = sttp.ai.core.json.SnakePickle
 
   def asStreamUnsafe_parseErrors[S](s: Streams[S]): StreamResponseAs[Either[OpenAIException, s.BinaryStream], S] =
     asStreamUnsafe(s).mapWithMetadata { (body, meta) =>

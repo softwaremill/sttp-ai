@@ -6,7 +6,7 @@ import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
 import sttp.apispec.{Schema, SchemaType}
 import sttp.ai.openai.fixtures
-import sttp.ai.openai.json.SnakePickle
+import sttp.ai.core.json.SnakePickle
 import sttp.ai.openai.requests.completions.chat.ChatRequestBody.ResponseFormat.JsonSchema
 
 import scala.collection.immutable.ListMap

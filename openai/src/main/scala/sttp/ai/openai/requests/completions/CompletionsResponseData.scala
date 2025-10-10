@@ -1,6 +1,6 @@
 package sttp.ai.openai.requests.completions
 
-import sttp.ai.openai.json.SnakePickle
+import sttp.ai.core.json.SnakePickle
 import sttp.ai.openai.requests.completions.CompletionsRequestBody.CompletionModel
 
 object CompletionsResponseData {

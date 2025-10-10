@@ -1,6 +1,6 @@
 package sttp.ai.openai.requests.responses
 
-import sttp.ai.openai.json.SnakePickle
+import sttp.ai.core.json.SnakePickle
 
 case class DeleteModelResponseResponse(
     `object`: String,

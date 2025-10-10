@@ -6,7 +6,7 @@ import sttp.client4.ResponseException
   *
   * This provides a common exception hierarchy for both OpenAI and Claude APIs.
   */
-sealed abstract class AIException(
+abstract class AIException(
     val message: Option[String],
     val `type`: Option[String],
     val param: Option[String],
