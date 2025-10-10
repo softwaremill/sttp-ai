@@ -17,7 +17,8 @@ lazy val root = (project in file("."))
   .settings(publish / skip := true, name := "sttp-ai", scalaVersion := scala2.head)
   .aggregate(allAgregates: _*)
 
-lazy val allAgregates = openai.projectRefs ++
+lazy val allAgregates = core.projectRefs ++
+  openai.projectRefs ++
   claude.projectRefs ++
   fs2.projectRefs ++
   zio.projectRefs ++
@@ -26,6 +27,17 @@ lazy val allAgregates = openai.projectRefs ++
   ox.projectRefs ++
   examples.projectRefs ++
   docs.projectRefs
+
+lazy val core = (projectMatrix in file("core"))
+  .jvmPlatform(
+    scalaVersions = scala2 ++ scala3
+  )
+  .settings(commonSettings: _*)
+  .settings(
+    libraryDependencies ++= Seq(
+      Libraries.uPickle
+    ) ++ Libraries.sttpClient ++ Seq(Libraries.scalaTest)
+  )
 
 lazy val openai = (projectMatrix in file("openai"))
   .jvmPlatform(
@@ -39,6 +51,7 @@ lazy val openai = (projectMatrix in file("openai"))
     ) ++ Libraries.sttpApispec ++ Libraries.sttpClient ++ Seq(Libraries.scalaTest)
   )
   .settings(commonSettings: _*)
+  .dependsOn(core)
 
 lazy val claude = (projectMatrix in file("claude"))
   .jvmPlatform(
@@ -52,6 +65,7 @@ lazy val claude = (projectMatrix in file("claude"))
       Libraries.uPickle
     ) ++ Libraries.sttpApispec ++ Libraries.sttpClient ++ Seq(Libraries.scalaTest)
   )
+  .dependsOn(core)
 
 lazy val fs2 = (projectMatrix in file("streaming/fs2"))
   .jvmPlatform(
