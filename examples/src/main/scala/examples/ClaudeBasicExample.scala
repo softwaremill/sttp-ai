@@ -1,5 +1,4 @@
 //> using repository ivy2Local
-//> using scala 3
 //> using dep com.softwaremill.sttp.ai::claude:0.4.0
 //> using dep ch.qos.logback:logback-classic:1.5.19
 
