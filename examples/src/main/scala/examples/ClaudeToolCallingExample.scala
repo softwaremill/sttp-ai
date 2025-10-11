@@ -1,19 +1,19 @@
 //> using repository ivy2Local
-//> using dep com.softwaremill.sttp.ai::claude:0.3.10
-//> using dep ch.qos.logback:logback-classic:1.5.18
-//> using dep com.softwaremill.sttp.client4::upickle:4.0.11
+//> using dep com.softwaremill.sttp.ai::claude:0.4.0
+//> using dep ch.qos.logback:logback-classic:1.5.19
+//> using dep com.softwaremill.sttp.client4::upickle:4.0.12
 
 // remember to set the ANTHROPIC_API_KEY env variable!
 // run with: ANTHROPIC_API_KEY=... scala-cli run ClaudeToolCallingExample.scala
 
 package examples
 
-import sttp.ai.claude._
+import sttp.ai.claude.*
+import sttp.ai.claude.ClaudeExceptions.ClaudeException
 import sttp.ai.claude.config.ClaudeConfig
-import sttp.ai.claude.models._
+import sttp.ai.claude.models.*
 import sttp.ai.claude.requests.MessageRequest
 import sttp.ai.claude.responses.MessageResponse
-import sttp.ai.claude.ClaudeExceptions.ClaudeException
 import sttp.client4.{DefaultSyncBackend, SyncBackend}
 
 object ClaudeToolCallingExample extends App {

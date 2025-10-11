@@ -677,7 +677,7 @@ For example, to use `fs2` add the following dependency & import:
 "com.softwaremill.sttp.ai" %% "fs2" % "0.4.0"
 
 // import 
-import sttp.ai.openai.streaming.fs2._
+import sttp.ai.openai.streaming.fs2.*
 ```
 
 Example below uses `HttpClientFs2Backend` as a backend:

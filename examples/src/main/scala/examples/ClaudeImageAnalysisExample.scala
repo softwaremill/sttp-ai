@@ -1,24 +1,24 @@
 //> using repository ivy2Local
-//> using dep com.softwaremill.sttp.ai::claude:0.3.10
-//> using dep ch.qos.logback:logback-classic:1.5.18
+//> using dep com.softwaremill.sttp.ai::claude:0.4.0
+//> using dep ch.qos.logback:logback-classic:1.5.19
 
 // remember to set the ANTHROPIC_API_KEY env variable!
 // run with: ANTHROPIC_API_KEY=... scala-cli run ClaudeImageAnalysisExample.scala
 
 package examples
 
-import sttp.ai.claude._
+import sttp.ai.claude.*
+import sttp.ai.claude.ClaudeExceptions.ClaudeException
 import sttp.ai.claude.config.ClaudeConfig
 import sttp.ai.claude.models.{ContentBlock, Message}
 import sttp.ai.claude.requests.MessageRequest
 import sttp.ai.claude.responses.MessageResponse
-import sttp.ai.claude.ClaudeExceptions.ClaudeException
 import sttp.client4.{DefaultSyncBackend, SyncBackend}
 
-import java.util.Base64
-import java.io.ByteArrayOutputStream
 import java.awt.image.BufferedImage
 import java.awt.{Color, Graphics2D}
+import java.io.ByteArrayOutputStream
+import java.util.Base64
 import javax.imageio.ImageIO
 
 object ClaudeImageAnalysisExample extends App {
