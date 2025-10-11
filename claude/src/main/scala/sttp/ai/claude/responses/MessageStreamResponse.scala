@@ -1,19 +1,22 @@
 package sttp.ai.claude.responses
 
-import sttp.ai.claude.models.{ContentBlock, Usage}
-import sttp.ai.core.json.SnakePickle.{macroRW, ReadWriter}
+import sttp.ai.claude.models._
+import sttp.ai.core.json.SnakePickle._
+import upickle.implicits._
 
 sealed trait MessageStreamResponse {
   def `type`: String
 }
 
 object MessageStreamResponse {
+  @key("message_start")
   case class MessageStart(
       message: MessageStartData
   ) extends MessageStreamResponse {
     val `type`: String = "message_start"
   }
 
+  @key("content_block_start")
   case class ContentBlockStart(
       index: Int,
       contentBlock: ContentBlock
@@ -21,6 +24,7 @@ object MessageStreamResponse {
     val `type`: String = "content_block_start"
   }
 
+  @key("content_block_delta")
   case class ContentBlockDelta(
       index: Int,
       delta: ContentDelta
@@ -28,26 +32,31 @@ object MessageStreamResponse {
     val `type`: String = "content_block_delta"
   }
 
+  @key("content_block_stop")
   case class ContentBlockStop(
       index: Int
   ) extends MessageStreamResponse {
     val `type`: String = "content_block_stop"
   }
 
+  @key("message_delta")
   case class MessageDelta(
       delta: MessageDeltaData
   ) extends MessageStreamResponse {
     val `type`: String = "message_delta"
   }
 
+  @key("message_stop")
   case class MessageStop() extends MessageStreamResponse {
     val `type`: String = "message_stop"
   }
 
+  @key("ping")
   case class Ping() extends MessageStreamResponse {
     val `type`: String = "ping"
   }
 
+  @key("error")
   case class Error(error: ErrorDetail) extends MessageStreamResponse {
     val `type`: String = "error"
   }
@@ -67,6 +76,7 @@ object MessageStreamResponse {
   sealed trait ContentDelta
 
   object ContentDelta {
+    @key("text_delta")
     case class TextDelta(text: String) extends ContentDelta {
       val `type`: String = "text_delta"
     }
