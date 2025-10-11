@@ -3,7 +3,7 @@ package sttp.ai.claude.streaming.ox
 import org.scalatest.EitherValues
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
-import ox.{Ox, supervised}
+import ox.{supervised, Ox}
 import sttp.ai.claude.ClaudeClient
 import sttp.ai.claude.ClaudeExceptions.ClaudeException
 import sttp.ai.claude.ClaudeExceptions.ClaudeException.DeserializationClaudeException
