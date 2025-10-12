@@ -9,7 +9,10 @@ def dependenciesFor(version: String)(deps: (Option[(Long, Long)] => ModuleID)*):
   deps.map(_.apply(CrossVersion.partialVersion(version)))
 
 lazy val commonSettings = commonSmlBuildSettings ++ ossPublishSettings ++ Seq(
-  organization := "com.softwaremill.sttp.ai"
+  organization := "com.softwaremill.sttp.ai",
+  // Suppress ScalaTest Assertion unused value warnings in tests
+  Test / scalacOptions += "-Wconf:msg=unused value of type org.scalatest.Assertion:silent",
+  Test / scalacOptions += "-Wconf:msg=discarded non-Unit value of type org.scalatest.Assertion:silent"
 )
 
 lazy val root = (project in file("."))
