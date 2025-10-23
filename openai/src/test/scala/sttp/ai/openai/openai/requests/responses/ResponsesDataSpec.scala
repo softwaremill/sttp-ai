@@ -299,7 +299,7 @@ class ResponsesDataSpec extends AnyFlatSpec with Matchers with EitherValues {
     usage.inputTokens shouldBe 328
     usage.outputTokens shouldBe 52
     usage.totalTokens shouldBe 380
-    usage.inputTokensDetails shouldBe Some(InputTokensDetails(cachedTokens = 0))
+    usage.inputTokensDetails shouldBe Some(InputTokensDetails(cachedTokens = Some(0)))
     usage.outputTokensDetails shouldBe Some(OutputTokensDetails(reasoningTokens = Some(0)))
 
     // Check the output structure
@@ -350,7 +350,7 @@ class ResponsesDataSpec extends AnyFlatSpec with Matchers with EitherValues {
     usage2.inputTokens shouldBe 500
     usage2.outputTokens shouldBe 150
     usage2.totalTokens shouldBe 650
-    usage2.inputTokensDetails shouldBe Some(InputTokensDetails(cachedTokens = 100))
+    usage2.inputTokensDetails shouldBe Some(InputTokensDetails(cachedTokens = Some(100)))
     usage2.outputTokensDetails shouldBe Some(OutputTokensDetails(reasoningTokens = Some(50)))
 
     // Check reasoning config

@@ -36,10 +36,10 @@ object Usage {
   *   tokens, these tokens are still counted in the total completion tokens for purposes of billing, output, and context window limits.
   */
 case class CompletionTokensDetails(
-    acceptedPredictionTokens: Int = 0,
-    audioTokens: Int = 0,
-    reasoningTokens: Int = 0,
-    rejectedPredictionTokens: Int = 0
+    acceptedPredictionTokens: Option[Int],
+    audioTokens: Option[Int],
+    reasoningTokens: Option[Int],
+    rejectedPredictionTokens: Option[Int]
 )
 
 object CompletionTokensDetails {
@@ -52,8 +52,8 @@ object CompletionTokensDetails {
   *   Cached tokens present in the prompt.
   */
 case class PromptTokensDetails(
-    audioTokens: Int = 0,
-    cachedTokens: Int = 0
+    audioTokens: Option[Int],
+    cachedTokens: Option[Int]
 )
 
 object PromptTokensDetails {
