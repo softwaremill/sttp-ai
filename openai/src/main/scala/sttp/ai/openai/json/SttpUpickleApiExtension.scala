@@ -58,18 +58,23 @@ object SttpUpickleApiExtension extends SttpUpickleApi with ResponseHandlers[Open
       .showAs("either(as error, as string)")
 
   private def httpToOpenAIError(he: UnexpectedStatusCode[String]): OpenAIException = {
-    val errorMessageBody = upickleApi.read[ujson.Value](he.body).apply("error")
-    val error = upickleApi.read[Error](errorMessageBody)
-    import error._
+    val (message, tpe, param, code) =
+      try {
+        val errorMessageBody = upickleApi.read[ujson.Value](he.body).apply("error")
+        val error = upickleApi.read[Error](errorMessageBody)
+        (error.message, error.`type`, error.param, error.code)
+      } catch {
+        case _: ujson.ParseException => (None, None, None, None)
+      }
 
     he.response.code match {
-      case TooManyRequests                              => new RateLimitException(message, `type`, param, code, he)
-      case BadRequest | NotFound | UnsupportedMediaType => new InvalidRequestException(message, `type`, param, code, he)
-      case Unauthorized                                 => new AuthenticationException(message, `type`, param, code, he)
-      case Forbidden                                    => new PermissionException(message, `type`, param, code, he)
-      case Conflict                                     => new TryAgain(message, `type`, param, code, he)
-      case ServiceUnavailable                           => new ServiceUnavailableException(message, `type`, param, code, he)
-      case _                                            => new APIException(message, `type`, param, code, he)
+      case TooManyRequests                              => new RateLimitException(message, tpe, param, code, he)
+      case BadRequest | NotFound | UnsupportedMediaType => new InvalidRequestException(message, tpe, param, code, he)
+      case Unauthorized                                 => new AuthenticationException(message, tpe, param, code, he)
+      case Forbidden                                    => new PermissionException(message, tpe, param, code, he)
+      case Conflict                                     => new TryAgain(message, tpe, param, code, he)
+      case ServiceUnavailable                           => new ServiceUnavailableException(message, tpe, param, code, he)
+      case _                                            => new APIException(message, tpe, param, code, he)
     }
   }
 
