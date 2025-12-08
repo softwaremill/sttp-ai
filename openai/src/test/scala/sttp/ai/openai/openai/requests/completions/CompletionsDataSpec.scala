@@ -86,6 +86,49 @@ class CompletionsDataSpec extends AnyFlatSpec with Matchers with EitherValues {
     givenResponse.value shouldBe expectedResponse
   }
 
+  "Given completions response with partial token details as Json" should "be properly deserialized to case class" in {
+    import sttp.ai.openai.requests.completions.CompletionsRequestBody.CompletionModel.GPT35TurboInstruct
+    import sttp.ai.openai.requests.completions.CompletionsResponseData.CompletionsResponse._
+    import sttp.ai.openai.requests.completions.CompletionsResponseData._
+
+    // given
+    val jsonResponse = fixtures.CompletionsFixture.jsonPartialTokenDetailsResponse
+    val expectedResponse: CompletionsResponse = CompletionsResponse(
+      id = "cmpl-partial-test",
+      `object` = "text_completion",
+      created = 1681472500,
+      model = GPT35TurboInstruct,
+      choices = Seq(
+        Choices(
+          text = "\n\nTest response.",
+          index = 0,
+          finishReason = "stop",
+          logprobs = None
+        )
+      ),
+      usage = Usage(
+        promptTokens = 10,
+        completionTokens = 5,
+        totalTokens = 15,
+        completionTokensDetails = Some(
+          CompletionTokensDetails(
+            acceptedPredictionTokens = None,
+            audioTokens = None,
+            reasoningTokens = Some(0),
+            rejectedPredictionTokens = None
+          )
+        ),
+        promptTokensDetails = None
+      )
+    )
+
+    // when
+    val givenResponse: Either[Exception, CompletionsResponse] = JsonUtils.deserializeJsonSnake.apply(jsonResponse)
+
+    // then
+    givenResponse.value shouldBe expectedResponse
+  }
+
   "Given completions request as case class" should "be properly serialized to Json" in {
     import sttp.ai.openai.requests.completions.CompletionsRequestBody.CompletionModel.GPT35TurboInstruct
     import sttp.ai.openai.requests.completions.CompletionsRequestBody.CompletionsBody._
