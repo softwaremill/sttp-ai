@@ -52,7 +52,7 @@ sttp-ai uses sttp client to describe requests and responses used in OpenAI, Clau
 Add the following dependency:
 
 ```sbt
-"com.softwaremill.sttp.ai" %% "openai" % "0.4.2"
+"com.softwaremill.sttp.ai" %% "openai" % "0.4.3"
 ```
 
 ### For Claude (Anthropic) API
@@ -60,14 +60,14 @@ Add the following dependency:
 Add the following dependency:
 
 ```sbt
-"com.softwaremill.sttp.ai" %% "claude" % "0.4.2"
+"com.softwaremill.sttp.ai" %% "claude" % "0.4.3"
 
 // For streaming support, add one or more:
-"com.softwaremill.sttp.ai" %% "claude-streaming-fs2" % "0.4.2"    // cats-effect/fs2
-"com.softwaremill.sttp.ai" %% "claude-streaming-zio" % "0.4.2"    // ZIO
-"com.softwaremill.sttp.ai" %% "claude-streaming-akka" % "0.4.2"   // Akka Streams (Scala 2.13 only)
-"com.softwaremill.sttp.ai" %% "claude-streaming-pekko" % "0.4.2"  // Pekko Streams
-"com.softwaremill.sttp.ai" %% "claude-streaming-ox" % "0.4.2"    // Ox direct-style (Scala 3 only)
+"com.softwaremill.sttp.ai" %% "claude-streaming-fs2" % "0.4.3"    // cats-effect/fs2
+"com.softwaremill.sttp.ai" %% "claude-streaming-zio" % "0.4.3"    // ZIO
+"com.softwaremill.sttp.ai" %% "claude-streaming-akka" % "0.4.3"   // Akka Streams (Scala 2.13 only)
+"com.softwaremill.sttp.ai" %% "claude-streaming-pekko" % "0.4.3"  // Pekko Streams
+"com.softwaremill.sttp.ai" %% "claude-streaming-ox" % "0.4.3"    // Ox direct-style (Scala 3 only)
 ```
 
 sttp-openai is available for Scala 2.13 and Scala 3
@@ -81,7 +81,7 @@ Examples are runnable using [scala-cli](https://scala-cli.virtuslab.org).
 ### Basic Usage (OpenAI)
 
 ```scala mdoc:compile-only
-//> using dep com.softwaremill.sttp.ai::openai:0.4.2
+//> using dep com.softwaremill.sttp.ai::openai:0.4.3
 
 import sttp.ai.openai.OpenAISyncClient
 import sttp.ai.openai.requests.completions.chat.ChatRequestResponseData.ChatResponse
@@ -147,7 +147,7 @@ This module provides **native support for Anthropic's Claude API** within the st
 ### Basic Usage (Claude)
 
 ```scala mdoc:compile-only
-//> using dep com.softwaremill.sttp.ai::claude:0.4.2
+//> using dep com.softwaremill.sttp.ai::claude:0.4.3
 
 import sttp.ai.claude.*
 import sttp.ai.claude.config.ClaudeConfig
@@ -477,7 +477,7 @@ try {
 Ollama with sync backend:
 
 ```scala mdoc:compile-only
-//> using dep com.softwaremill.sttp.ai::openai:0.4.2
+//> using dep com.softwaremill.sttp.ai::openai:0.4.3
 
 import sttp.model.Uri.*
 import sttp.ai.openai.OpenAISyncClient
@@ -531,7 +531,7 @@ object Main:
 Grok with cats-effect based backend:
 
 ```scala mdoc:compile-only
-//> using dep com.softwaremill.sttp.ai::openai:0.4.2
+//> using dep com.softwaremill.sttp.ai::openai:0.4.3
 //> using dep com.softwaremill.sttp.client4::cats:4.0.0-M17
 
 import cats.effect.IO
@@ -607,7 +607,7 @@ Example below uses `HttpClientCatsBackend` as a backend, make sure to [add it to
 or use backend of your choice.
 
 ```scala mdoc:compile-only
-//> using dep com.softwaremill.sttp.ai::openai:0.4.2
+//> using dep com.softwaremill.sttp.ai::openai:0.4.3
 //> using dep com.softwaremill.sttp.client4::cats:4.0.0-M17
 
 import cats.effect.IO
@@ -676,7 +676,7 @@ For example, to use `fs2` add the following dependency & import:
 
 ```scala
 // sbt dependency
-"com.softwaremill.sttp.ai" %% "fs2" % "0.4.2"
+"com.softwaremill.sttp.ai" %% "fs2" % "0.4.3"
 
 // import 
 import sttp.ai.openai.streaming.fs2.*
@@ -685,7 +685,7 @@ import sttp.ai.openai.streaming.fs2.*
 Example below uses `HttpClientFs2Backend` as a backend:
 
 ```scala mdoc:compile-only
-//> using dep com.softwaremill.sttp.ai::fs2:0.4.2
+//> using dep com.softwaremill.sttp.ai::fs2:0.4.3
 
 import cats.effect.IO
 import cats.effect.unsafe.implicits.global
@@ -766,7 +766,7 @@ To use direct-style streaming (requires Scala 3) add the following dependency & 
 
 ```scala
 // sbt dependency
-"com.softwaremill.sttp.ai" %% "ox" % "0.4.2"
+"com.softwaremill.sttp.ai" %% "ox" % "0.4.3"
 
 // import 
 import sttp.ai.openai.streaming.ox.*
@@ -775,7 +775,7 @@ import sttp.ai.openai.streaming.ox.*
 Example code:
 
 ```scala
-//> using dep com.softwaremill.sttp.ai::ox:0.4.2
+//> using dep com.softwaremill.sttp.ai::ox:0.4.3
 
 import ox.*
 import ox.either.orThrow
@@ -822,7 +822,7 @@ and support for JSON Schema, you can use `ResponseFormat.JsonSchema` when creati
 The example below produces a JSON object:
 
 ```scala mdoc:compile-only
-//> using dep com.softwaremill.sttp.ai::openai:0.4.2
+//> using dep com.softwaremill.sttp.ai::openai:0.4.3
 
 import scala.collection.immutable.ListMap
 import sttp.apispec.{Schema, SchemaType}
@@ -948,7 +948,7 @@ Another helpful feature is adding possibility to create ToolMessage object passi
 With all this in mind please remember that it is still required to deserialized arguments, which are sent back by Assistant to call our function.
 
 ```scala mdoc:compile-only
-//> using dep com.softwaremill.sttp.ai::openai:0.4.2
+//> using dep com.softwaremill.sttp.ai::openai:0.4.3
 
 import sttp.ai.openai.OpenAISyncClient
 import sttp.ai.core.json.SnakePickle
