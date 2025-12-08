@@ -109,4 +109,30 @@ object CompletionsFixture {
                               |  "n": 1,
                               |  "stop": "\n"
                               |}""".stripMargin
+
+  /** Response with partial completion_tokens_details - only some fields present This reproduces the issue from
+    * https://github.com/softwaremill/sttp-ai/issues/432 where OpenAI returns only a subset of token detail fields
+    */
+  val jsonPartialTokenDetailsResponse: String = """{
+                     |  "id": "cmpl-partial-test",
+                     |  "object": "text_completion",
+                     |  "created": 1681472500,
+                     |  "model": "gpt-3.5-turbo-instruct",
+                     |  "choices": [
+                     |    {
+                     |      "text": "\n\nTest response.",
+                     |      "index": 0,
+                     |      "logprobs": null,
+                     |      "finish_reason": "stop"
+                     |    }
+                     |  ],
+                     |  "usage": {
+                     |    "prompt_tokens": 10,
+                     |    "completion_tokens": 5,
+                     |    "total_tokens": 15,
+                     |    "completion_tokens_details": {
+                     |      "reasoning_tokens": 0
+                     |    }
+                     |  }
+                     |}""".stripMargin
 }
