@@ -10,17 +10,24 @@ def dependenciesFor(version: String)(deps: (Option[(Long, Long)] => ModuleID)*):
 
 lazy val commonSettings = commonSmlBuildSettings ++ ossPublishSettings ++ Seq(
   organization := "com.softwaremill.sttp.ai",
+  mimaPreviousArtifacts := Set.empty,
+  versionScheme := Some("semver-spec"),
   // Suppress ScalaTest Assertion unused value warnings in tests
   Test / scalacOptions += "-Wconf:msg=unused value of type org.scalatest.Assertion:silent",
   Test / scalacOptions += "-Wconf:msg=discarded non-Unit value of type org.scalatest.Assertion:silent"
 )
 
-lazy val root = (project in file("."))
-  .settings(commonSettings: _*)
-  .settings(publish / skip := true, name := "sttp-ai", scalaVersion := scala2.head)
-  .aggregate(allAgregates: _*)
+lazy val commonJvmSettings = commonSettings ++ Seq(
+  mimaPreviousArtifacts := previousStableVersion.value.map(organization.value %% moduleName.value % _).toSet,
+  mimaReportBinaryIssues := { if ((publish / skip).value) {} else mimaReportBinaryIssues.value }
+)
 
-lazy val allAgregates = core.projectRefs ++
+lazy val root = (project in file("."))
+  .settings(commonJvmSettings: _*)
+  .settings(publish / skip := true, name := "sttp-ai", scalaVersion := scala2.head)
+  .aggregate(allAggregates: _*)
+
+lazy val allAggregates = core.projectRefs ++
   openai.projectRefs ++
   claude.projectRefs ++
   fs2.projectRefs ++
@@ -35,7 +42,7 @@ lazy val core = (projectMatrix in file("core"))
   .jvmPlatform(
     scalaVersions = scala2 ++ scala3
   )
-  .settings(commonSettings: _*)
+  .settings(commonJvmSettings: _*)
   .settings(
     libraryDependencies ++= Seq(
       Libraries.uPickle
@@ -53,14 +60,14 @@ lazy val openai = (projectMatrix in file("openai"))
       Libraries.uPickle
     ) ++ Libraries.sttpApispec ++ Libraries.sttpClient ++ Seq(Libraries.scalaTest)
   )
-  .settings(commonSettings: _*)
+  .settings(commonJvmSettings: _*)
   .dependsOn(core)
 
 lazy val claude = (projectMatrix in file("claude"))
   .jvmPlatform(
     scalaVersions = scala3 ++ scala2 // Scala 3 first priority
   )
-  .settings(commonSettings: _*)
+  .settings(commonJvmSettings: _*)
   .settings(
     libraryDependencies ++= Seq(
       Libraries.tapirApispecDocs,
@@ -74,7 +81,7 @@ lazy val fs2 = (projectMatrix in file("streaming/fs2"))
   .jvmPlatform(
     scalaVersions = scala2 ++ scala3
   )
-  .settings(commonSettings)
+  .settings(commonJvmSettings)
   .settings(
     libraryDependencies ++= Libraries.sttpClientFs2
   )
@@ -84,7 +91,7 @@ lazy val zio = (projectMatrix in file("streaming/zio"))
   .jvmPlatform(
     scalaVersions = scala2 ++ scala3
   )
-  .settings(commonSettings)
+  .settings(commonJvmSettings)
   .settings(
     libraryDependencies += Libraries.sttpClientZio
   )
@@ -94,7 +101,7 @@ lazy val pekko = (projectMatrix in file("streaming/pekko"))
   .jvmPlatform(
     scalaVersions = scala2 ++ scala3
   )
-  .settings(commonSettings)
+  .settings(commonJvmSettings)
   .settings(
     libraryDependencies ++= Libraries.sttpClientPekko
   )
@@ -104,7 +111,7 @@ lazy val akka = (projectMatrix in file("streaming/akka"))
   .jvmPlatform(
     scalaVersions = scala2
   )
-  .settings(commonSettings)
+  .settings(commonJvmSettings)
   .settings(
     libraryDependencies ++= Libraries.sttpClientAkka
   )
@@ -114,7 +121,7 @@ lazy val ox = (projectMatrix in file("streaming/ox"))
   .jvmPlatform(
     scalaVersions = scala3
   )
-  .settings(commonSettings)
+  .settings(commonJvmSettings)
   .settings(
     libraryDependencies ++= Libraries.sttpClientOx
   )
@@ -124,7 +131,7 @@ lazy val examples = (projectMatrix in file("examples"))
   .jvmPlatform(
     scalaVersions = scala3
   )
-  .settings(commonSettings)
+  .settings(commonJvmSettings)
   .settings(
     libraryDependencies ++= Seq(
       "com.softwaremill.sttp.tapir" %% "tapir-netty-server-sync" % "1.11.46",
