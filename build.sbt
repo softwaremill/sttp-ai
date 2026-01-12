@@ -54,7 +54,7 @@ lazy val openai = (projectMatrix in file("openai"))
     ) ++ Libraries.sttpApispec ++ Libraries.sttpClient ++ Seq(Libraries.scalaTest)
   )
   .settings(commonSettings: _*)
-  .dependsOn(core)
+  .dependsOn(core % "compile->compile;test->test")
 
 lazy val claude = (projectMatrix in file("claude"))
   .jvmPlatform(
@@ -68,7 +68,7 @@ lazy val claude = (projectMatrix in file("claude"))
       Libraries.uPickle
     ) ++ Libraries.sttpApispec ++ Libraries.sttpClient ++ Seq(Libraries.scalaTest)
   )
-  .dependsOn(core)
+  .dependsOn(core % "compile->compile;test->test")
 
 lazy val fs2 = (projectMatrix in file("streaming/fs2"))
   .jvmPlatform(
