@@ -2,7 +2,6 @@ package examples
 
 import sttp.ai.core.agent.*
 import sttp.ai.claude.ClaudeClient
-import sttp.ai.claude.agent.ClaudeAgent
 import sttp.ai.openai.OpenAI
 import sttp.ai.openai.agent.OpenAIAgent
 import sttp.client4.DefaultSyncBackend
@@ -69,7 +68,7 @@ object AgentLoopExample extends App {
   val tools = Seq(weatherTool, calculatorTool)
 
   val openai = OpenAI.fromEnv
-  val configResult = AgentConfig(
+  private val configResult = AgentConfig(
     maxIterations = 8,
     userTools = tools
   )
@@ -84,14 +83,7 @@ object AgentLoopExample extends App {
   try
     configResult match {
       case Right(config) =>
-        val allTools = config.userTools ++ AgentConfig.systemTools
-        val agentBackend = new OpenAIAgent[Identity](
-          openai,
-          "gpt-4o-mini",
-          allTools,
-          config.systemPrompt
-        )(IdentityMonad)
-        val agent = Agent(agentBackend, config)(IdentityMonad)
+        val agent = OpenAIAgent[Identity](openai, "gpt-4o-mini", config)(IdentityMonad)
 
         val result = agent.run(prompt)(backend)
 

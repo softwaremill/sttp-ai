@@ -3,7 +3,7 @@ package sttp.ai.claude.integration
 import sttp.ai.core.agent.integration.AgentIntegrationSpecBase
 import sttp.ai.core.agent._
 import sttp.ai.claude.ClaudeClient
-import sttp.ai.claude.agent.ClaudeAgent
+import sttp.ai.claude.agent._
 import sttp.ai.claude.config.ClaudeConfig
 import sttp.monad.IdentityMonad
 import sttp.shared.Identity
@@ -17,7 +17,7 @@ class ClaudeAgentIntegrationSpec extends AgentIntegrationSpecBase {
     val client = ClaudeClient(config)
     val agentConfig = AgentConfig(maxIterations = maxIterations, userTools = tools).right.get
     val allTools = agentConfig.userTools ++ AgentConfig.systemTools
-    val agentBackend = new ClaudeAgent[Identity](
+    val agentBackend = new ClaudeAgentBackend[Identity](
       client,
       "claude-3-haiku-20240307",
       allTools,

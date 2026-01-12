@@ -4,11 +4,10 @@ import sttp.ai.claude.ClaudeClient
 import sttp.ai.claude.config.ClaudeConfig
 import sttp.ai.claude.models.{ContentBlock, Message, PropertySchema, Tool, ToolInputSchema}
 import sttp.ai.claude.requests.MessageRequest
-import sttp.ai.claude.responses.MessageResponse
 import sttp.ai.core.agent._
 import sttp.client4.Backend
 
-class ClaudeAgent[F[_]](
+private[claude] class ClaudeAgentBackend[F[_]](
     client: ClaudeClient,
     modelName: String,
     tools: Seq[AgentTool],
@@ -114,16 +113,30 @@ object ClaudeAgent {
   def apply[F[_]](
       claudeConfig: ClaudeConfig,
       modelName: String,
-      tools: Seq[AgentTool],
-      systemPrompt: Option[String]
-  )(implicit monad: sttp.monad.MonadError[F]): ClaudeAgent[F] =
-    new ClaudeAgent[F](ClaudeClient(claudeConfig), modelName, tools, systemPrompt)
+      config: AgentConfig
+  )(implicit monad: sttp.monad.MonadError[F]): Agent[F] = {
+    val allTools = config.userTools ++ AgentConfig.systemTools
+    val backend = new ClaudeAgentBackend[F](
+      ClaudeClient(claudeConfig),
+      modelName,
+      allTools,
+      config.systemPrompt
+    )
+    Agent(backend, config)
+  }
 
   def apply[F[_]](
       client: ClaudeClient,
       modelName: String,
-      tools: Seq[AgentTool],
-      systemPrompt: Option[String]
-  )(implicit monad: sttp.monad.MonadError[F]): ClaudeAgent[F] =
-    new ClaudeAgent[F](client, modelName, tools, systemPrompt)
+      config: AgentConfig
+  )(implicit monad: sttp.monad.MonadError[F]): Agent[F] = {
+    val allTools = config.userTools ++ AgentConfig.systemTools
+    val backend = new ClaudeAgentBackend[F](
+      client,
+      modelName,
+      allTools,
+      config.systemPrompt
+    )
+    Agent(backend, config)
+  }
 }

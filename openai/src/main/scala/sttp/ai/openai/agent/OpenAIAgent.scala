@@ -4,13 +4,12 @@ import sttp.ai.core.agent._
 import sttp.ai.core.json.SnakePickle
 import sttp.ai.openai.OpenAI
 import sttp.ai.openai.requests.completions.chat.ChatRequestBody.{ChatBody, ChatCompletionModel}
-import sttp.ai.openai.requests.completions.chat.ChatRequestResponseData.ChatResponse
 import sttp.ai.openai.requests.completions.chat.{FunctionCall, ToolCall => OpenAIToolCall}
 import sttp.ai.openai.requests.completions.chat.message.{Content, Message, Tool}
 import sttp.client4.Backend
 import ujson.{Arr, Bool, Obj, Str, Value}
 
-class OpenAIAgent[F[_]](
+private[openai] class OpenAIAgentBackend[F[_]](
     openAI: OpenAI,
     modelName: String,
     tools: Seq[AgentTool],
@@ -148,16 +147,30 @@ object OpenAIAgent {
   def apply[F[_]](
       apiKey: String,
       modelName: String,
-      tools: Seq[AgentTool],
-      systemPrompt: Option[String]
-  )(implicit monad: sttp.monad.MonadError[F]): OpenAIAgent[F] =
-    new OpenAIAgent[F](new OpenAI(apiKey), modelName, tools, systemPrompt)
+      config: AgentConfig
+  )(implicit monad: sttp.monad.MonadError[F]): Agent[F] = {
+    val allTools = config.userTools ++ AgentConfig.systemTools
+    val backend = new OpenAIAgentBackend[F](
+      new OpenAI(apiKey),
+      modelName,
+      allTools,
+      config.systemPrompt
+    )
+    Agent(backend, config)
+  }
 
   def apply[F[_]](
       openAI: OpenAI,
       modelName: String,
-      tools: Seq[AgentTool],
-      systemPrompt: Option[String]
-  )(implicit monad: sttp.monad.MonadError[F]): OpenAIAgent[F] =
-    new OpenAIAgent[F](openAI, modelName, tools, systemPrompt)
+      config: AgentConfig
+  )(implicit monad: sttp.monad.MonadError[F]): Agent[F] = {
+    val allTools = config.userTools ++ AgentConfig.systemTools
+    val backend = new OpenAIAgentBackend[F](
+      openAI,
+      modelName,
+      allTools,
+      config.systemPrompt
+    )
+    Agent(backend, config)
+  }
 }
