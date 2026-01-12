@@ -11,12 +11,12 @@ import sttp.client4.Backend
 import ujson.{Arr, Bool, Obj, Str, Value}
 
 class OpenAIAgent[F[_]](
-  openAI: OpenAI, 
-  modelName: String,
-  tools: Seq[AgentTool],
-  systemPrompt: Option[String]
-)(implicit monad: sttp.monad.MonadError[F]) 
-  extends AgentBackendBase[F](tools, systemPrompt) {
+    openAI: OpenAI,
+    modelName: String,
+    tools: Seq[AgentTool],
+    systemPrompt: Option[String]
+)(implicit monad: sttp.monad.MonadError[F])
+    extends AgentBackendBase[F](tools, systemPrompt) {
 
   private val convertedTools: Seq[Tool.FunctionTool] = tools.map(convertTool)
 
@@ -27,7 +27,7 @@ class OpenAIAgent[F[_]](
     tool.parameters.foreach { case (paramName, paramSpec) =>
       val paramObj = Obj("type" -> Str(ParameterType.asString(paramSpec.dataType)))
       paramObj("description") = Str(paramSpec.description)
-      
+
       paramSpec.`enum`.foreach { enumValues =>
         paramObj("enum") = Arr.from(enumValues.map(Str(_)))
       }
@@ -75,10 +75,12 @@ class OpenAIAgent[F[_]](
             )
           )
         }
-        Seq(Message.AssistantMessage(
-          content = content,
-          toolCalls = openaiToolCalls
-        ))
+        Seq(
+          Message.AssistantMessage(
+            content = content,
+            toolCalls = openaiToolCalls
+          )
+        )
 
       case ConversationEntry.ToolResult(toolCallId, _, result) =>
         Seq(Message.ToolMessage(content = result, toolCallId = toolCallId))
@@ -91,8 +93,8 @@ class OpenAIAgent[F[_]](
   }
 
   override protected def sendApiRequest(
-    history: ConversationHistory,
-    backend: Backend[F]
+      history: ConversationHistory,
+      backend: Backend[F]
   ): F[AgentResponse] = {
     val messages = buildMessages(history)
     val request = ChatBody(
@@ -100,13 +102,13 @@ class OpenAIAgent[F[_]](
       messages = messages,
       tools = if (convertedTools.nonEmpty) Some(convertedTools) else None
     )
-    
+
     monad.flatMap(monad.map(openAI.createChatCompletion(request).send(backend))(_.body)) {
-      case Right(response) => 
+      case Right(response) =>
         val textContent = response.choices.headOption
           .flatMap(choice => Option(choice.message.content))
           .getOrElse("")
-        
+
         val toolCalls = response.choices.headOption match {
           case Some(choice) =>
             choice.message.toolCalls.zipWithIndex.map { case (toolCall, idx) =>
@@ -129,32 +131,33 @@ class OpenAIAgent[F[_]](
             }
           case None => Seq.empty
         }
-        
+
         val stopReason = response.choices.headOption.map(_.finishReason)
-        
+
         monad.unit(AgentResponse(textContent, toolCalls, stopReason))
-      
-      case Left(error) => monad.error(
-        new RuntimeException(s"OpenAI API error: ${error.getMessage}")
-      )
+
+      case Left(error) =>
+        monad.error(
+          new RuntimeException(s"OpenAI API error: ${error.getMessage}")
+        )
     }
   }
 }
 
 object OpenAIAgent {
   def apply[F[_]](
-    apiKey: String, 
-    modelName: String, 
-    tools: Seq[AgentTool],
-    systemPrompt: Option[String]
+      apiKey: String,
+      modelName: String,
+      tools: Seq[AgentTool],
+      systemPrompt: Option[String]
   )(implicit monad: sttp.monad.MonadError[F]): OpenAIAgent[F] =
     new OpenAIAgent[F](new OpenAI(apiKey), modelName, tools, systemPrompt)
 
   def apply[F[_]](
-    openAI: OpenAI, 
-    modelName: String, 
-    tools: Seq[AgentTool],
-    systemPrompt: Option[String]
+      openAI: OpenAI,
+      modelName: String,
+      tools: Seq[AgentTool],
+      systemPrompt: Option[String]
   )(implicit monad: sttp.monad.MonadError[F]): OpenAIAgent[F] =
     new OpenAIAgent[F](openAI, modelName, tools, systemPrompt)
 }

@@ -9,7 +9,7 @@ case class AgentConfig private (
 object AgentConfig {
   private[ai] val systemTools: Seq[AgentTool] = Seq(new FinishTool())
   private val reservedToolNames: Set[String] = Set(FinishTool.ToolName)
-  
+
   def apply(
       maxIterations: Int = 10,
       systemPrompt: Option[String] = None,
@@ -21,16 +21,16 @@ object AgentConfig {
     } else {
       Left(
         s"Cannot provide tools with reserved names: ${reservedToolNames.mkString(", ")}. " +
-        s"The following tools conflict: ${conflictingTools.map(_.name).mkString(", ")}. " +
-        s"These are system tools managed internally."
+          s"The following tools conflict: ${conflictingTools.map(_.name).mkString(", ")}. " +
+          s"These are system tools managed internally."
       )
     }
   }
-  
+
   def default: Either[String, AgentConfig] = apply(
     systemPrompt = Some(buildSystemPrompt(10))
   )
-  
+
   private def buildSystemPrompt(maxIterations: Int): String =
     s"""You are a simple loop-based agent that solves the user's task step by step using tool calling when appropriate.
        |

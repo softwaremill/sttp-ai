@@ -11,7 +11,7 @@ class FinishTool extends AgentTool {
   override def parameters: Map[String, ParameterSpec] = Map(
     "answer" -> ParameterSpec(
       dataType = ParameterType.String,
-      description = "The final answer to provide to the user",
+      description = "The final answer to provide to the user"
     )
   )
 

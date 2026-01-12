@@ -28,7 +28,8 @@ class ConversationHistorySpec extends AnyFlatSpec with Matchers {
   }
 
   it should "preserve existing entries" in {
-    val history = ConversationHistory.withInitialPrompt("First")
+    val history = ConversationHistory
+      .withInitialPrompt("First")
       .addUserPrompt("Second")
 
     history.entries should have size 2
@@ -59,7 +60,8 @@ class ConversationHistorySpec extends AnyFlatSpec with Matchers {
   }
 
   it should "preserve existing entries" in {
-    val history = ConversationHistory.withInitialPrompt("User message")
+    val history = ConversationHistory
+      .withInitialPrompt("User message")
       .addAssistantResponse("Response", Seq.empty)
 
     history.entries should have size 2
@@ -95,7 +97,8 @@ class ConversationHistorySpec extends AnyFlatSpec with Matchers {
   }
 
   it should "preserve existing entries" in {
-    val history = ConversationHistory.withInitialPrompt("Start")
+    val history = ConversationHistory
+      .withInitialPrompt("Start")
       .addIterationMarker(1, 5)
       .addIterationMarker(2, 5)
 
@@ -117,8 +120,9 @@ class ConversationHistorySpec extends AnyFlatSpec with Matchers {
   it should "handle complex conversation flow" in {
     val toolCall1 = ToolCall(id = "call_1", toolName = "calc", input = Map("x" -> Str("5")))
     val toolCall2 = ToolCall(id = "call_2", toolName = "weather", input = Map("city" -> Str("Paris")))
-    
-    val history = ConversationHistory.withInitialPrompt("Calculate 5+10 and get weather")
+
+    val history = ConversationHistory
+      .withInitialPrompt("Calculate 5+10 and get weather")
       .addAssistantResponse("I'll help with that", Seq(toolCall1, toolCall2))
       .addToolResult("call_1", "calc", "15")
       .addToolResult("call_2", "weather", "Sunny, 22C")

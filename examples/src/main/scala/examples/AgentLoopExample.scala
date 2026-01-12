@@ -17,7 +17,7 @@ object AgentLoopExample extends App {
     toolParameters = Map(
       "location" -> ParameterSpec(
         dataType = ParameterType.String,
-        description = "The city name",
+        description = "The city name"
       ),
       "unit" -> ParameterSpec(
         dataType = ParameterType.String,
@@ -43,11 +43,11 @@ object AgentLoopExample extends App {
       ),
       "a" -> ParameterSpec(
         dataType = ParameterType.Number,
-        description = "First number",
+        description = "First number"
       ),
       "b" -> ParameterSpec(
         dataType = ParameterType.Number,
-        description = "Second number",
+        description = "Second number"
       )
     )
   ) { input =>
@@ -70,7 +70,7 @@ object AgentLoopExample extends App {
 
   val openai = OpenAI.fromEnv
   val configResult = AgentConfig(
-    maxIterations = 10,
+    maxIterations = 8,
     userTools = tools
   )
 
@@ -81,18 +81,18 @@ object AgentLoopExample extends App {
   println(s"User: $prompt\n")
 
   val backend = DefaultSyncBackend()
-  try {
+  try
     configResult match {
       case Right(config) =>
         val allTools = config.userTools ++ AgentConfig.systemTools
         val agentBackend = new OpenAIAgent[Identity](
-          openai, 
-          "gpt-4o-mini", 
+          openai,
+          "gpt-4o-mini",
           allTools,
           config.systemPrompt
         )(IdentityMonad)
         val agent = Agent(agentBackend, config)(IdentityMonad)
-        
+
         val result = agent.run(prompt)(backend)
 
         println("\n=== Agent Result ===")
@@ -105,9 +105,9 @@ object AgentLoopExample extends App {
           println(s"    Input: ${tc.input}")
           println(s"    Output: ${tc.output}")
         }
-        
+
       case Left(error) =>
         println(s"Configuration error: $error")
     }
-  } finally backend.close()
+  finally backend.close()
 }

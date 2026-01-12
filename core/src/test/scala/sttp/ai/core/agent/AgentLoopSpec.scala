@@ -34,8 +34,8 @@ class AgentLoopSpec extends AnyFlatSpec with Matchers {
     toolName = "calculator",
     toolDescription = "Calculate",
     toolParameters = Map(
-      "a" -> ParameterSpec(ParameterType.Number, "First number", required = true),
-      "b" -> ParameterSpec(ParameterType.Number, "Second number", required = true)
+      "a" -> ParameterSpec(ParameterType.Number, "First number"),
+      "b" -> ParameterSpec(ParameterType.Number, "Second number")
     )
   ) { input =>
     val a = input.get("a").map(_.num).getOrElse(0.0)
@@ -60,8 +60,8 @@ class AgentLoopSpec extends AnyFlatSpec with Matchers {
       toolName = "dummy",
       toolDescription = "Dummy tool",
       toolParameters = Map.empty
-    ) { _ => "dummy result" }
-    
+    )(_ => "dummy result")
+
     val result = runLoop(
       Seq(
         AgentResponse("", Seq(ToolCall(id = "call_1", toolName = "dummy", input = Map.empty)), Some("tool_calls")),
@@ -79,11 +79,17 @@ class AgentLoopSpec extends AnyFlatSpec with Matchers {
   }
 
   it should "stop when finish tool is called" in {
-    val result = runLoop(Seq(
-      AgentResponse("", Seq(
-        ToolCall(id = "call_1", toolName = "finish", input = Map("answer" -> Str("Final answer")))
-      ), Some("tool_calls"))
-    ))
+    val result = runLoop(
+      Seq(
+        AgentResponse(
+          "",
+          Seq(
+            ToolCall(id = "call_1", toolName = "finish", input = Map("answer" -> Str("Final answer")))
+          ),
+          Some("tool_calls")
+        )
+      )
+    )
 
     result.finishReason shouldBe FinishReason.ToolFinish
     result.finalAnswer shouldBe "Final answer"
@@ -92,9 +98,11 @@ class AgentLoopSpec extends AnyFlatSpec with Matchers {
   }
 
   it should "stop on natural stop when no tool calls" in {
-    val result = runLoop(Seq(
-      AgentResponse("Final answer without tools", Seq.empty, Some("stop"))
-    ))
+    val result = runLoop(
+      Seq(
+        AgentResponse("Final answer without tools", Seq.empty, Some("stop"))
+      )
+    )
 
     result.finishReason shouldBe FinishReason.NaturalStop
     result.finalAnswer shouldBe "Final answer without tools"
@@ -105,10 +113,14 @@ class AgentLoopSpec extends AnyFlatSpec with Matchers {
   it should "execute multiple tool calls in one iteration" in {
     val result = runLoop(
       Seq(
-        AgentResponse("", Seq(
-          ToolCall(id = "call_1", toolName = "calculator", input = Map("a" -> Num(5), "b" -> Num(10))),
-          ToolCall(id = "call_2", toolName = "calculator", input = Map("a" -> Num(3), "b" -> Num(7)))
-        ), Some("tool_calls")),
+        AgentResponse(
+          "",
+          Seq(
+            ToolCall(id = "call_1", toolName = "calculator", input = Map("a" -> Num(5), "b" -> Num(10))),
+            ToolCall(id = "call_2", toolName = "calculator", input = Map("a" -> Num(3), "b" -> Num(7)))
+          ),
+          Some("tool_calls")
+        ),
         AgentResponse("Done", Seq.empty, Some("stop"))
       ),
       tools = Seq(calculatorTool)
@@ -135,9 +147,13 @@ class AgentLoopSpec extends AnyFlatSpec with Matchers {
 
     val result = runLoop(
       Seq(
-        AgentResponse("", Seq(
-          ToolCall(id = "call_1", toolName = "error_tool", input = Map.empty)
-        ), Some("tool_calls")),
+        AgentResponse(
+          "",
+          Seq(
+            ToolCall(id = "call_1", toolName = "error_tool", input = Map.empty)
+          ),
+          Some("tool_calls")
+        ),
         AgentResponse("Recovered", Seq.empty, Some("stop"))
       ),
       tools = Seq(errorTool)
@@ -151,12 +167,18 @@ class AgentLoopSpec extends AnyFlatSpec with Matchers {
   }
 
   it should "handle unknown tool gracefully" in {
-    val result = runLoop(Seq(
-      AgentResponse("", Seq(
-        ToolCall(id = "call_1", toolName = "unknown_tool", input = Map.empty)
-      ), Some("tool_calls")),
-      AgentResponse("Recovered", Seq.empty, Some("stop"))
-    ))
+    val result = runLoop(
+      Seq(
+        AgentResponse(
+          "",
+          Seq(
+            ToolCall(id = "call_1", toolName = "unknown_tool", input = Map.empty)
+          ),
+          Some("tool_calls")
+        ),
+        AgentResponse("Recovered", Seq.empty, Some("stop"))
+      )
+    )
 
     result.iterations shouldBe 2
     result.toolCalls should have size 1
@@ -167,9 +189,13 @@ class AgentLoopSpec extends AnyFlatSpec with Matchers {
   it should "build tool call records correctly" in {
     val result = runLoop(
       Seq(
-        AgentResponse("", Seq(
-          ToolCall(id = "call_1", toolName = "calculator", input = Map("a" -> Num(5), "b" -> Num(10)))
-        ), Some("tool_calls")),
+        AgentResponse(
+          "",
+          Seq(
+            ToolCall(id = "call_1", toolName = "calculator", input = Map("a" -> Num(5), "b" -> Num(10)))
+          ),
+          Some("tool_calls")
+        ),
         AgentResponse("Done", Seq.empty, Some("stop"))
       ),
       tools = Seq(calculatorTool)
@@ -188,10 +214,13 @@ class AgentLoopSpec extends AnyFlatSpec with Matchers {
 
   it should "add iteration markers after first iteration" in {
     val config = AgentConfig(maxIterations = 3).right.get
-    val (loop, stubBackend) = createLoop(Seq(
-      AgentResponse("First", Seq.empty, Some("stop")),
-      AgentResponse("Second", Seq.empty, Some("stop"))
-    ), config)
+    val (loop, stubBackend) = createLoop(
+      Seq(
+        AgentResponse("First", Seq.empty, Some("stop")),
+        AgentResponse("Second", Seq.empty, Some("stop"))
+      ),
+      config
+    )
 
     loop.run("Test")(backend)
 
@@ -203,10 +232,14 @@ class AgentLoopSpec extends AnyFlatSpec with Matchers {
   it should "finish tool has priority over other tools" in {
     val result = runLoop(
       Seq(
-        AgentResponse("", Seq(
-          ToolCall(id = "call_1", toolName = "calculator", input = Map("a" -> Num(5), "b" -> Num(10))),
-          ToolCall(id = "call_2", toolName = "finish", input = Map("answer" -> Str("Early finish")))
-        ), Some("tool_calls"))
+        AgentResponse(
+          "",
+          Seq(
+            ToolCall(id = "call_1", toolName = "calculator", input = Map("a" -> Num(5), "b" -> Num(10))),
+            ToolCall(id = "call_2", toolName = "finish", input = Map("answer" -> Str("Early finish")))
+          ),
+          Some("tool_calls")
+        )
       ),
       tools = Seq(calculatorTool)
     )
@@ -224,14 +257,14 @@ class AgentLoopSpec extends AnyFlatSpec with Matchers {
       toolName = "finish",
       toolDescription = "User finish tool",
       toolParameters = Map.empty
-    ) { _ => "custom finish" }
+    )(_ => "custom finish")
 
     val configResult = AgentConfig(userTools = Seq(userFinishTool))
-    
+
     configResult shouldBe a[Left[_, _]]
-    configResult.left.get should include("reserved names")
-    configResult.left.get should include("finish")
-    configResult.left.get should include("system tools")
+    configResult.left.toOption.get should include("reserved names")
+    configResult.left.toOption.get should include("finish")
+    configResult.left.toOption.get should include("system tools")
   }
 
   it should "accept valid user tools" in {
@@ -239,12 +272,12 @@ class AgentLoopSpec extends AnyFlatSpec with Matchers {
       toolName = "custom",
       toolDescription = "Custom tool",
       toolParameters = Map.empty
-    ) { _ => "result" }
-    
+    )(_ => "result")
+
     val configResult = AgentConfig(userTools = Seq(customTool))
-    
+
     configResult shouldBe a[Right[_, _]]
-    val config = configResult.right.get
+    val config = configResult.toOption.get
     config.userTools should have size 1
     config.userTools.head.name shouldBe "custom"
   }
@@ -254,14 +287,17 @@ class AgentLoopSpec extends AnyFlatSpec with Matchers {
       toolName = "dummy",
       toolDescription = "Dummy tool",
       toolParameters = Map.empty
-    ) { _ => "final tool result" }
-    
+    )(_ => "final tool result")
+
     val config = AgentConfig(maxIterations = 3, userTools = Seq(dummyTool)).right.get
-    val (loop, _) = createLoop(Seq(
-      AgentResponse("First response", Seq(ToolCall(id = "call_1", toolName = "dummy", input = Map.empty)), Some("tool_calls")),
-      AgentResponse("Second response", Seq(ToolCall(id = "call_2", toolName = "dummy", input = Map.empty)), Some("tool_calls")),
-      AgentResponse("Third response", Seq(ToolCall(id = "call_3", toolName = "dummy", input = Map.empty)), Some("tool_calls"))
-    ), config)
+    val (loop, _) = createLoop(
+      Seq(
+        AgentResponse("First response", Seq(ToolCall(id = "call_1", toolName = "dummy", input = Map.empty)), Some("tool_calls")),
+        AgentResponse("Second response", Seq(ToolCall(id = "call_2", toolName = "dummy", input = Map.empty)), Some("tool_calls")),
+        AgentResponse("Third response", Seq(ToolCall(id = "call_3", toolName = "dummy", input = Map.empty)), Some("tool_calls"))
+      ),
+      config
+    )
 
     val result = loop.run("Test")(backend)
 

@@ -4,8 +4,8 @@ import sttp.client4.Backend
 import sttp.ai.core.json.SnakePickle
 
 class AgentLoop[F[_]](
-  agentBackend: AgentBackend[F],
-  config: AgentConfig
+    agentBackend: AgentBackend[F],
+    config: AgentConfig
 )(implicit monad: sttp.monad.MonadError[F]) {
 
   private val allTools = config.userTools ++ AgentConfig.systemTools
@@ -53,9 +53,9 @@ class AgentLoop[F[_]](
               val tool = toolMap.get(toolCall.toolName)
               val result = tool match {
                 case Some(t) =>
-                  try {
+                  try
                     t.execute(toolCall.input)
-                  } catch {
+                  catch {
                     case e: Exception =>
                       s"Error executing tool: ${e.getMessage}"
                   }
