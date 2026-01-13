@@ -3,17 +3,17 @@ package sttp.ai.core.agent
 case class AgentConfig private (
     maxIterations: Int,
     systemPrompt: Option[String],
-    userTools: Seq[AgentTool]
+    userTools: Seq[AgentTool[_]]
 )
 
 object AgentConfig {
-  private[ai] val systemTools: Seq[AgentTool] = Seq(new FinishTool())
+  private[ai] val systemTools: Seq[AgentTool[_]] = Seq(FinishTool())
   private val reservedToolNames: Set[String] = Set(FinishTool.ToolName)
 
   def apply(
       maxIterations: Int = 10,
       systemPrompt: Option[String] = None,
-      userTools: Seq[AgentTool] = Seq.empty
+      userTools: Seq[AgentTool[_]] = Seq.empty
   ): Either[String, AgentConfig] = {
     val conflictingTools = userTools.filter(t => reservedToolNames.contains(t.name))
     if (conflictingTools.isEmpty) {

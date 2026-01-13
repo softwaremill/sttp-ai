@@ -3,52 +3,44 @@ package sttp.ai.core.agent.integration
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
 import sttp.ai.core.agent._
+import sttp.ai.core.json.SnakePickle
 import sttp.client4.{Backend, DefaultSyncBackend}
 import sttp.shared.Identity
+import sttp.tapir.generic.auto._
 
 abstract class AgentIntegrationSpecBase extends AnyFlatSpec with Matchers {
 
   def providerName: String
   def apiKeyEnvVar: String
-  def createAgent(maxIterations: Int, tools: Seq[AgentTool]): Agent[Identity]
+  def createAgent(maxIterations: Int, tools: Seq[AgentTool[_]]): Agent[Identity]
 
   protected val maybeApiKey: Option[String] = sys.env.get(apiKeyEnvVar)
 
-  protected val calculatorTool: AgentTool = AgentTool(
-    toolName = "calculator",
-    toolDescription = "Perform basic arithmetic operations",
-    toolParameters = Map(
-      "operation" -> ParameterSpec(
-        dataType = ParameterType.String,
-        description = "The operation to perform",
-        `enum` = Some(Seq("add", "multiply", "subtract", "divide"))
-      ),
-      "a" -> ParameterSpec(ParameterType.Number, "First number"),
-      "b" -> ParameterSpec(ParameterType.Number, "Second number")
-    )
-  ) { input =>
-    val operation = input.get("operation").map(_.str).getOrElse("add")
-    val a = input.get("a").map(_.num).getOrElse(0.0)
-    val b = input.get("b").map(_.num).getOrElse(0.0)
-    val result = operation match {
-      case "add"      => a + b
-      case "multiply" => a * b
-      case "subtract" => a - b
-      case "divide"   => if (b != 0) a / b else 0.0
+  case class CalculatorInput(operation: String, a: Double, b: Double)
+  implicit val calculatorInputRW: SnakePickle.ReadWriter[CalculatorInput] = SnakePickle.macroRW
+
+  protected val calculatorTool: AgentTool[CalculatorInput] = AgentTool.fromFunction(
+    "calculator",
+    "Perform basic arithmetic operations"
+  ) { (input: CalculatorInput) =>
+    val result = input.operation match {
+      case "add"      => input.a + input.b
+      case "multiply" => input.a * input.b
+      case "subtract" => input.a - input.b
+      case "divide"   => if (input.b != 0) input.a / input.b else 0.0
       case _          => 0.0
     }
     s"$result"
   }
 
-  protected val weatherTool: AgentTool = AgentTool(
-    toolName = "get_weather",
-    toolDescription = "Get current weather for a city",
-    toolParameters = Map(
-      "city" -> ParameterSpec(ParameterType.String, "City name")
-    )
-  ) { input =>
-    val city = input.get("city").map(_.str).getOrElse("Unknown")
-    s"The weather in $city is sunny, 22°C"
+  case class WeatherInput(city: String)
+  implicit val weatherInputRW: SnakePickle.ReadWriter[WeatherInput] = SnakePickle.macroRW
+
+  protected val weatherTool: AgentTool[WeatherInput] = AgentTool.fromFunction(
+    "get_weather",
+    "Get current weather for a city"
+  ) { (input: WeatherInput) =>
+    s"The weather in ${input.city} is sunny, 22°C"
   }
 
   protected def assertContainsAny(text: String, options: String*): Unit = {
@@ -78,7 +70,7 @@ abstract class AgentIntegrationSpecBase extends AnyFlatSpec with Matchers {
       s"Should have at least $min iterations, but had ${result.iterations}"
     )
 
-  def withAgent[T](maxIter: Int, tools: Seq[AgentTool])(test: (Agent[Identity], Backend[Identity]) => T): T = {
+  def withAgent[T](maxIter: Int, tools: Seq[AgentTool[_]])(test: (Agent[Identity], Backend[Identity]) => T): T = {
     if (maybeApiKey.isEmpty) {
       cancel(s"$apiKeyEnvVar not defined - skipping integration test")
     }

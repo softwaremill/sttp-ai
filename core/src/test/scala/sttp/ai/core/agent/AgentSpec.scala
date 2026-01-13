@@ -2,9 +2,11 @@ package sttp.ai.core.agent
 
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
+import sttp.ai.core.json.SnakePickle
 import sttp.client4.testing.SyncBackendStub
 import sttp.monad.IdentityMonad
 import sttp.shared.Identity
+import sttp.tapir.generic.auto._
 import ujson.{Num, Str}
 
 class AgentSpec extends AnyFlatSpec with Matchers {
@@ -13,7 +15,7 @@ class AgentSpec extends AnyFlatSpec with Matchers {
     private var callCount = 0
     var receivedHistories: Seq[ConversationHistory] = Seq.empty
 
-    override def tools: Seq[AgentTool] = Seq.empty
+    override def tools: Seq[AgentTool[_]] = Seq.empty
     override def systemPrompt: Option[String] = None
 
     override def sendRequest(
@@ -33,17 +35,14 @@ class AgentSpec extends AnyFlatSpec with Matchers {
 
   private val backend = SyncBackendStub
 
-  private val calculatorTool = AgentTool(
-    toolName = "calculator",
-    toolDescription = "Calculate",
-    toolParameters = Map(
-      "a" -> ParameterSpec(ParameterType.Number, "First number"),
-      "b" -> ParameterSpec(ParameterType.Number, "Second number")
-    )
-  ) { input =>
-    val a = input.get("a").map(_.num).getOrElse(0.0)
-    val b = input.get("b").map(_.num).getOrElse(0.0)
-    s"Result: ${a + b}"
+  case class CalculatorInput(a: Double, b: Double)
+  implicit val calculatorInputRW: SnakePickle.ReadWriter[CalculatorInput] = SnakePickle.macroRW
+
+  private val calculatorTool = AgentTool.fromFunction(
+    "calculator",
+    "Calculate"
+  ) { (input: CalculatorInput) =>
+    s"Result: ${input.a + input.b}"
   }
 
   private def createLoop(responses: Seq[AgentResponse], config: AgentConfig): (Agent[Identity], StubAgentBackend) = {
@@ -52,18 +51,20 @@ class AgentSpec extends AnyFlatSpec with Matchers {
     (loop, stubBackend)
   }
 
-  private def runLoop(responses: Seq[AgentResponse], tools: Seq[AgentTool] = Seq.empty): AgentResult = {
+  private def runLoop(responses: Seq[AgentResponse], tools: Seq[AgentTool[_]] = Seq.empty): AgentResult = {
     val testConfig = AgentConfig(maxIterations = 5, userTools = tools).right.get
     val (loop, _) = createLoop(responses, testConfig)
     loop.run("Test")(backend)
   }
 
+  case class DummyInput()
+  implicit val dummyInputRW: SnakePickle.ReadWriter[DummyInput] = SnakePickle.macroRW
+
   "Agent" should "stop after max iterations" in {
-    val dummyTool = AgentTool(
-      toolName = "dummy",
-      toolDescription = "Dummy tool",
-      toolParameters = Map.empty
-    )(_ => "dummy result")
+    val dummyTool = AgentTool.fromFunction(
+      "dummy",
+      "Dummy tool"
+    )((_: DummyInput) => "dummy result")
 
     val result = runLoop(
       Seq(
@@ -140,11 +141,10 @@ class AgentSpec extends AnyFlatSpec with Matchers {
   }
 
   it should "handle tool execution errors gracefully" in {
-    val errorTool = AgentTool(
-      toolName = "error_tool",
-      toolDescription = "Tool that throws",
-      toolParameters = Map.empty
-    ) { _ =>
+    val errorTool = AgentTool.fromFunction(
+      "error_tool",
+      "Tool that throws"
+    ) { (_: DummyInput) =>
       throw new RuntimeException("Tool error")
     }
 
@@ -256,11 +256,10 @@ class AgentSpec extends AnyFlatSpec with Matchers {
   }
 
   it should "reject user tools with reserved names" in {
-    val userFinishTool = AgentTool(
-      toolName = "finish",
-      toolDescription = "User finish tool",
-      toolParameters = Map.empty
-    )(_ => "custom finish")
+    val userFinishTool = AgentTool.fromFunction(
+      "finish",
+      "User finish tool"
+    )((_: DummyInput) => "custom finish")
 
     val configResult = AgentConfig(userTools = Seq(userFinishTool))
 
@@ -271,11 +270,10 @@ class AgentSpec extends AnyFlatSpec with Matchers {
   }
 
   it should "accept valid user tools" in {
-    val customTool = AgentTool(
-      toolName = "custom",
-      toolDescription = "Custom tool",
-      toolParameters = Map.empty
-    )(_ => "result")
+    val customTool = AgentTool.fromFunction(
+      "custom",
+      "Custom tool"
+    )((_: DummyInput) => "result")
 
     val configResult = AgentConfig(userTools = Seq(customTool))
 
@@ -286,11 +284,10 @@ class AgentSpec extends AnyFlatSpec with Matchers {
   }
 
   it should "extract final answer from last tool result on max iterations" in {
-    val dummyTool = AgentTool(
-      toolName = "dummy",
-      toolDescription = "Dummy tool",
-      toolParameters = Map.empty
-    )(_ => "final tool result")
+    val dummyTool = AgentTool.fromFunction(
+      "dummy",
+      "Dummy tool"
+    )((_: DummyInput) => "final tool result")
 
     val config = AgentConfig(maxIterations = 3, userTools = Seq(dummyTool)).right.get
     val (loop, _) = createLoop(

@@ -4,52 +4,29 @@ import sttp.ai.core.agent._
 import sttp.ai.core.json.SnakePickle
 import sttp.ai.openai.OpenAI
 import sttp.ai.openai.requests.completions.chat.ChatRequestBody.{ChatBody, ChatCompletionModel}
-import sttp.ai.openai.requests.completions.chat.{FunctionCall, ToolCall => OpenAIToolCall}
+import sttp.ai.openai.requests.completions.chat.{FunctionCall, SchemaSupport, ToolCall => OpenAIToolCall}
 import sttp.ai.openai.requests.completions.chat.message.{Content, Message, Tool}
 import sttp.client4.Backend
-import ujson.{Arr, Bool, Obj, Str, Value}
+import ujson.Value
 
 private[openai] class OpenAIAgentBackend[F[_]](
     openAI: OpenAI,
     modelName: String,
-    val tools: Seq[AgentTool],
+    val tools: Seq[AgentTool[_]],
     val systemPrompt: Option[String]
 )(implicit monad: sttp.monad.MonadError[F])
     extends AgentBackend[F] {
 
   private val convertedTools: Seq[Tool.FunctionTool] = tools.map(convertTool)
 
-  private def convertTool(tool: AgentTool): Tool.FunctionTool = {
-    val properties = Obj()
-    val required = Arr()
-
-    tool.parameters.foreach { case (paramName, paramSpec) =>
-      val paramObj = Obj("type" -> Str(ParameterType.asString(paramSpec.dataType)))
-      paramObj("description") = Str(paramSpec.description)
-
-      paramSpec.`enum`.foreach { enumValues =>
-        paramObj("enum") = Arr.from(enumValues.map(Str(_)))
-      }
-
-      properties(paramName) = paramObj
-
-      if (paramSpec.required) {
-        required.arr.addOne(Str(paramName))
-        ()
-      }
-    }
-
-    val parametersMap = Map(
-      "type" -> Str("object"),
-      "properties" -> properties,
-      "required" -> required,
-      "additionalProperties" -> Bool(false)
-    )
+  private def convertTool(tool: AgentTool[_]): Tool.FunctionTool = {
+    val schema = tool.jsonSchema
+    val schemaJson = SnakePickle.writeJs(schema)(SchemaSupport.schemaRW)
 
     Tool.FunctionTool(
       name = tool.name,
       description = Some(tool.description),
-      parameters = Some(parametersMap),
+      parameters = Some(schemaJson.obj.toMap),
       strict = Some(false)
     )
   }

@@ -1,50 +1,43 @@
 package sttp.ai.core.agent
 
+import sttp.apispec.Schema
+import sttp.ai.core.json.SnakePickle
+import sttp.tapir.{Schema => TapirSchema}
+import sttp.tapir.docs.apispec.schema.TapirSchemaToJsonSchema
 import ujson.Value
 
-sealed trait ParameterType
-
-object ParameterType {
-  case object String extends ParameterType
-  case object Number extends ParameterType
-  case object Integer extends ParameterType
-  case object Boolean extends ParameterType
-  case object Object extends ParameterType
-  case object Array extends ParameterType
-
-  def asString(paramType: ParameterType): String = paramType match {
-    case String  => "string"
-    case Number  => "number"
-    case Integer => "integer"
-    case Boolean => "boolean"
-    case Object  => "object"
-    case Array   => "array"
-  }
-}
-
-case class ParameterSpec(
-    dataType: ParameterType,
-    description: String,
-    required: Boolean = true,
-    `enum`: Option[Seq[String]] = None
-)
-
-trait AgentTool {
+trait AgentTool[T] {
   def name: String
   def description: String
-  def parameters: Map[String, ParameterSpec]
-  def execute(input: Map[String, Value]): String
+  def jsonSchema: Schema
+  def reader: SnakePickle.Reader[T]
+  def execute(input: T): String
 }
 
 object AgentTool {
-  def apply(
+  def fromFunction[T](
+      toolName: String,
+      toolDescription: String
+  )(f: T => String)(implicit tapirSchema: TapirSchema[T], toolReader: SnakePickle.Reader[T]): AgentTool[T] =
+    new AgentTool[T] {
+      override def name: String = toolName
+      override def description: String = toolDescription
+      override def jsonSchema: Schema =
+        TapirSchemaToJsonSchema(tapirSchema, markOptionsAsNullable = true)
+      override def reader: SnakePickle.Reader[T] = toolReader
+      override def execute(input: T): String = f(input)
+    }
+
+  def dynamic(
       toolName: String,
       toolDescription: String,
-      toolParameters: Map[String, ParameterSpec]
-  )(executeFunction: Map[String, Value] => String): AgentTool = new AgentTool {
-    override def name: String = toolName
-    override def description: String = toolDescription
-    override def parameters: Map[String, ParameterSpec] = toolParameters
-    override def execute(input: Map[String, Value]): String = executeFunction(input)
-  }
+      toolSchema: Schema
+  )(f: Map[String, Value] => String)(implicit toolReader: SnakePickle.Reader[Map[String, Value]]): AgentTool[Map[String, Value]] =
+    new AgentTool[Map[String, Value]] {
+      override def name: String = toolName
+      override def description: String = toolDescription
+      override def jsonSchema: Schema = toolSchema
+      override def reader: SnakePickle.Reader[Map[String, Value]] = toolReader
+      override def execute(input: Map[String, Value]): String = f(input)
+    }
 }

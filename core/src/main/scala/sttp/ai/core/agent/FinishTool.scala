@@ -1,26 +1,21 @@
 package sttp.ai.core.agent
 
-import ujson.Value
+import sttp.ai.core.json.SnakePickle
+import sttp.tapir.Schema
 
-class FinishTool extends AgentTool {
-  override def name: String = FinishTool.ToolName
+case class FinishInput(answer: String)
 
-  override def description: String =
-    "Call this tool when you have a final answer to provide to the user. This will end the agent loop."
-
-  override def parameters: Map[String, ParameterSpec] = Map(
-    "answer" -> ParameterSpec(
-      dataType = ParameterType.String,
-      description = "The final answer to provide to the user"
-    )
-  )
-
-  override def execute(input: Map[String, Value]): String =
-    input.get("answer").map(_.str).getOrElse("")
+object FinishInput {
+  implicit val rw: SnakePickle.ReadWriter[FinishInput] = SnakePickle.macroRW
+  implicit val schema: Schema[FinishInput] = Schema.derived
 }
 
 object FinishTool {
-  def apply(): FinishTool = new FinishTool()
-
   val ToolName: String = "finish"
+
+  def apply(): AgentTool[FinishInput] =
+    AgentTool.fromFunction(
+      ToolName,
+      "Call this tool when you have a final answer to provide to the user. This will end the agent loop."
+    )(_.answer)
 }

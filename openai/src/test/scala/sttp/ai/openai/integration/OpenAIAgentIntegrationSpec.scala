@@ -12,7 +12,7 @@ class OpenAIAgentIntegrationSpec extends AgentIntegrationSpecBase {
   override def providerName: String = "OpenAI"
   override def apiKeyEnvVar: String = "OPENAI_API_KEY"
 
-  override def createAgent(maxIterations: Int, tools: Seq[AgentTool]): Agent[Identity] = {
+  override def createAgent(maxIterations: Int, tools: Seq[AgentTool[_]]): Agent[Identity] = {
     val openai = OpenAI.fromEnv
     val agentConfig = AgentConfig(maxIterations = maxIterations, userTools = tools).right.get
     val allTools = agentConfig.userTools ++ AgentConfig.systemTools

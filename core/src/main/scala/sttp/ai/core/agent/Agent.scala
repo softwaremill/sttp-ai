@@ -54,9 +54,9 @@ class Agent[F[_]](
               val tool = toolMap.get(toolCall.toolName)
               val result = tool match {
                 case Some(t) =>
-                  try
-                    t.execute(toolCall.input)
-                  catch {
+                  try {
+                    executeTool(t, toolCall)
+                  } catch {
                     case e: Exception =>
                       s"Error executing tool: ${e.getMessage}"
                   }
@@ -102,6 +102,12 @@ class Agent[F[_]](
       }
 
     loop(initialHistory, 0, Seq.empty)
+  }
+
+  private def executeTool[T](tool: AgentTool[T], toolCall: ToolCall): String = {
+    val jsonString = SnakePickle.write(toolCall.input)
+    val typedInput = SnakePickle.read[T](jsonString)(tool.reader)
+    tool.execute(typedInput)
   }
 
   private def extractFinalAnswer(history: ConversationHistory): String =

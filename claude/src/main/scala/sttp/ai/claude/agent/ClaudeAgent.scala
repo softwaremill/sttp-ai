@@ -5,31 +5,40 @@ import sttp.ai.claude.config.ClaudeConfig
 import sttp.ai.claude.models.{ContentBlock, Message, PropertySchema, Tool, ToolInputSchema}
 import sttp.ai.claude.requests.MessageRequest
 import sttp.ai.core.agent._
+import sttp.apispec.circe._
 import sttp.client4.Backend
+import io.circe.syntax._
+import ujson.circe.CirceJson
 
 private[claude] class ClaudeAgentBackend[F[_]](
     client: ClaudeClient,
     modelName: String,
-    val tools: Seq[AgentTool],
+    val tools: Seq[AgentTool[_]],
     val systemPrompt: Option[String]
 )(implicit monad: sttp.monad.MonadError[F])
     extends AgentBackend[F] {
 
   private val convertedTools: Seq[Tool] = tools.map(convertTool)
 
-  private def convertTool(tool: AgentTool): Tool = {
-    val properties = tool.parameters.map { case (name, spec) =>
-      name -> PropertySchema(
-        `type` = ParameterType.asString(spec.dataType),
-        description = Some(spec.description),
-        `enum` = spec.`enum`.map(_.toList)
-      )
-    }
+  private def convertTool(tool: AgentTool[_]): Tool = {
+    val schema = tool.jsonSchema
+    val schemaJson = CirceJson.transform(schema.asJson, upickle.default.reader[ujson.Value])
 
-    val required = tool.parameters
-      .filter { case (_, spec) => spec.required }
-      .keys
-      .toList
+    val properties = schemaJson.obj.get("properties").map { propsObj =>
+      propsObj.obj.map { case (name, propSchema) =>
+        val propType = propSchema.obj.get("type").map(_.str).getOrElse("string")
+        val propDescription = propSchema.obj.get("description").map(_.str)
+        val propEnum = propSchema.obj.get("enum").map(_.arr.map(_.str).toList)
+
+        name -> PropertySchema(
+          `type` = propType,
+          description = propDescription,
+          `enum` = propEnum
+        )
+      }.toMap
+    }.getOrElse(Map.empty)
+
+    val required = schemaJson.obj.get("required").map(_.arr.map(_.str).toList)
 
     Tool(
       name = tool.name,
@@ -37,7 +46,7 @@ private[claude] class ClaudeAgentBackend[F[_]](
       inputSchema = ToolInputSchema(
         `type` = "object",
         properties = properties,
-        required = if (required.nonEmpty) Some(required) else None
+        required = required
       )
     )
   }

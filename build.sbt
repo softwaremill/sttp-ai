@@ -38,8 +38,9 @@ lazy val core = (projectMatrix in file("core"))
   .settings(commonSettings: _*)
   .settings(
     libraryDependencies ++= Seq(
-      Libraries.uPickle
-    ) ++ Libraries.sttpClient ++ Seq(Libraries.scalaTest)
+      Libraries.uPickle,
+      Libraries.tapirApispecDocs
+    ) ++ Libraries.sttpApispec ++ Libraries.sttpClient ++ Seq(Libraries.scalaTest)
   )
 
 lazy val openai = (projectMatrix in file("openai"))
