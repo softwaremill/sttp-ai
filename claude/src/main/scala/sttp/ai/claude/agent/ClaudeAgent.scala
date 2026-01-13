@@ -10,10 +10,10 @@ import sttp.client4.Backend
 private[claude] class ClaudeAgentBackend[F[_]](
     client: ClaudeClient,
     modelName: String,
-    tools: Seq[AgentTool],
-    systemPrompt: Option[String]
+    val tools: Seq[AgentTool],
+    val systemPrompt: Option[String]
 )(implicit monad: sttp.monad.MonadError[F])
-    extends AgentBackendBase[F](tools, systemPrompt) {
+    extends AgentBackend[F] {
 
   private val convertedTools: Seq[Tool] = tools.map(convertTool)
 
@@ -76,7 +76,7 @@ private[claude] class ClaudeAgentBackend[F[_]](
         Some(Message.user(s"[Iteration $current of $max]"))
     }
 
-  override protected def sendApiRequest(
+  override def sendRequest(
       history: ConversationHistory,
       backend: Backend[F]
   ): F[AgentResponse] = {

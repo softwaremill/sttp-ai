@@ -7,11 +7,14 @@ import sttp.monad.IdentityMonad
 import sttp.shared.Identity
 import ujson.{Num, Str}
 
-class AgentLoopSpec extends AnyFlatSpec with Matchers {
+class AgentSpec extends AnyFlatSpec with Matchers {
 
   class StubAgentBackend(responses: Seq[AgentResponse]) extends AgentBackend[Identity] {
     private var callCount = 0
     var receivedHistories: Seq[ConversationHistory] = Seq.empty
+
+    override def tools: Seq[AgentTool] = Seq.empty
+    override def systemPrompt: Option[String] = None
 
     override def sendRequest(
         history: ConversationHistory,
@@ -43,9 +46,9 @@ class AgentLoopSpec extends AnyFlatSpec with Matchers {
     s"Result: ${a + b}"
   }
 
-  private def createLoop(responses: Seq[AgentResponse], config: AgentConfig): (AgentLoop[Identity], StubAgentBackend) = {
+  private def createLoop(responses: Seq[AgentResponse], config: AgentConfig): (Agent[Identity], StubAgentBackend) = {
     val stubBackend = new StubAgentBackend(responses)
-    val loop = new AgentLoop[Identity](stubBackend, config)(IdentityMonad)
+    val loop = new Agent[Identity](stubBackend, config)(IdentityMonad)
     (loop, stubBackend)
   }
 
@@ -55,7 +58,7 @@ class AgentLoopSpec extends AnyFlatSpec with Matchers {
     loop.run("Test")(backend)
   }
 
-  "AgentLoop" should "stop after max iterations" in {
+  "Agent" should "stop after max iterations" in {
     val dummyTool = AgentTool(
       toolName = "dummy",
       toolDescription = "Dummy tool",

@@ -12,10 +12,10 @@ import ujson.{Arr, Bool, Obj, Str, Value}
 private[openai] class OpenAIAgentBackend[F[_]](
     openAI: OpenAI,
     modelName: String,
-    tools: Seq[AgentTool],
-    systemPrompt: Option[String]
+    val tools: Seq[AgentTool],
+    val systemPrompt: Option[String]
 )(implicit monad: sttp.monad.MonadError[F])
-    extends AgentBackendBase[F](tools, systemPrompt) {
+    extends AgentBackend[F] {
 
   private val convertedTools: Seq[Tool.FunctionTool] = tools.map(convertTool)
 
@@ -91,7 +91,7 @@ private[openai] class OpenAIAgentBackend[F[_]](
     systemMessages ++ conversationMessages
   }
 
-  override protected def sendApiRequest(
+  override def sendRequest(
       history: ConversationHistory,
       backend: Backend[F]
   ): F[AgentResponse] = {
