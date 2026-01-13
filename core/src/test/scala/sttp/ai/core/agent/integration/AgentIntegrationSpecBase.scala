@@ -9,7 +9,10 @@ import sttp.shared.Identity
 abstract class AgentIntegrationSpecBase extends AnyFlatSpec with Matchers {
 
   def providerName: String
+  def apiKeyEnvVar: String
   def createAgent(maxIterations: Int, tools: Seq[AgentTool]): Agent[Identity]
+
+  protected val maybeApiKey: Option[String] = sys.env.get(apiKeyEnvVar)
 
   protected val calculatorTool: AgentTool = AgentTool(
     toolName = "calculator",
@@ -76,6 +79,9 @@ abstract class AgentIntegrationSpecBase extends AnyFlatSpec with Matchers {
     )
 
   def withAgent[T](maxIter: Int, tools: Seq[AgentTool])(test: (Agent[Identity], Backend[Identity]) => T): T = {
+    if (maybeApiKey.isEmpty) {
+      cancel(s"$apiKeyEnvVar not defined - skipping integration test")
+    }
     val backend = DefaultSyncBackend()
     try {
       val agent = createAgent(maxIter, tools)

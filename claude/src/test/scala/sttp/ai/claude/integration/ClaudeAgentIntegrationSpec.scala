@@ -11,6 +11,7 @@ import sttp.shared.Identity
 class ClaudeAgentIntegrationSpec extends AgentIntegrationSpecBase {
 
   override def providerName: String = "Claude"
+  override def apiKeyEnvVar: String = "ANTHROPIC_API_KEY"
 
   override def createAgent(maxIterations: Int, tools: Seq[AgentTool]): Agent[Identity] = {
     val config = ClaudeConfig.fromEnv

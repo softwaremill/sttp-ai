@@ -10,6 +10,7 @@ import sttp.shared.Identity
 class OpenAIAgentIntegrationSpec extends AgentIntegrationSpecBase {
 
   override def providerName: String = "OpenAI"
+  override def apiKeyEnvVar: String = "OPENAI_API_KEY"
 
   override def createAgent(maxIterations: Int, tools: Seq[AgentTool]): Agent[Identity] = {
     val openai = OpenAI.fromEnv
