@@ -14,10 +14,10 @@ class Agent[F[_]](
 
   def run(
       initialPrompt: String
-  )(backend: Backend[F]): F[AgentResult] = {
+  )(backend: Backend[F]): F[AgentResult[String]] = {
     val initialHistory = ConversationHistory.withInitialPrompt(initialPrompt)
 
-    def loop(history: ConversationHistory, iteration: Int, toolCallRecords: Seq[ToolCallRecord]): F[AgentResult] =
+    def loop(history: ConversationHistory, iteration: Int, toolCallRecords: Seq[ToolCallRecord]): F[AgentResult[String]] =
       if (iteration >= config.maxIterations) {
         val finalAnswer = extractFinalAnswer(history)
         monad.unit(
@@ -54,9 +54,9 @@ class Agent[F[_]](
               val tool = toolMap.get(toolCall.toolName)
               val result = tool match {
                 case Some(t) =>
-                  try {
+                  try
                     executeTool(t, toolCall)
-                  } catch {
+                  catch {
                     case e: Exception =>
                       s"Error executing tool: ${e.getMessage}"
                   }
@@ -106,7 +106,7 @@ class Agent[F[_]](
 
   private def executeTool[T](tool: AgentTool[T], toolCall: ToolCall): String = {
     val jsonString = SnakePickle.write(toolCall.input)
-    val typedInput = SnakePickle.read[T](jsonString)(tool.reader)
+    val typedInput = SnakePickle.read[T](jsonString)(tool.readWriter)
     tool.execute(typedInput)
   }
 

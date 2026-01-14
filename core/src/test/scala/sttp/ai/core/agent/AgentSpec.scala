@@ -6,7 +6,7 @@ import sttp.ai.core.json.SnakePickle
 import sttp.client4.testing.SyncBackendStub
 import sttp.monad.IdentityMonad
 import sttp.shared.Identity
-import sttp.tapir.generic.auto._
+import sttp.tapir.Schema
 import ujson.{Num, Str}
 
 class AgentSpec extends AnyFlatSpec with Matchers {
@@ -37,6 +37,7 @@ class AgentSpec extends AnyFlatSpec with Matchers {
 
   case class CalculatorInput(a: Double, b: Double)
   implicit val calculatorInputRW: SnakePickle.ReadWriter[CalculatorInput] = SnakePickle.macroRW
+  implicit val calculatorInputSchema: Schema[CalculatorInput] = Schema.derived
 
   private val calculatorTool = AgentTool.fromFunction(
     "calculator",
@@ -51,7 +52,7 @@ class AgentSpec extends AnyFlatSpec with Matchers {
     (loop, stubBackend)
   }
 
-  private def runLoop(responses: Seq[AgentResponse], tools: Seq[AgentTool[_]] = Seq.empty): AgentResult = {
+  private def runLoop(responses: Seq[AgentResponse], tools: Seq[AgentTool[_]] = Seq.empty): AgentResult[String] = {
     val testConfig = AgentConfig(maxIterations = 5, userTools = tools).right.get
     val (loop, _) = createLoop(responses, testConfig)
     loop.run("Test")(backend)
@@ -59,6 +60,7 @@ class AgentSpec extends AnyFlatSpec with Matchers {
 
   case class DummyInput()
   implicit val dummyInputRW: SnakePickle.ReadWriter[DummyInput] = SnakePickle.macroRW
+  implicit val dummyInputSchema: Schema[DummyInput] = Schema.derived
 
   "Agent" should "stop after max iterations" in {
     val dummyTool = AgentTool.fromFunction(

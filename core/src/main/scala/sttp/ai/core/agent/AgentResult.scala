@@ -16,8 +16,8 @@ case class ToolCallRecord(
     iteration: Int
 )
 
-case class AgentResult(
-    finalAnswer: String,
+case class AgentResult[T](
+    finalAnswer: T,
     iterations: Int,
     toolCalls: Seq[ToolCallRecord],
     finishReason: FinishReason

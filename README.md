@@ -489,29 +489,24 @@ Framework for building autonomous AI agents that iteratively solve tasks using t
 //> using dep com.softwaremill.sttp.ai::openai:0.4.3
 
 import sttp.ai.core.agent.*
+import sttp.ai.core.json.SnakePickle
 import sttp.ai.openai.OpenAI
 import sttp.ai.openai.agent.OpenAIAgent
 import sttp.client4.DefaultSyncBackend
 import sttp.monad.IdentityMonad
 import sttp.shared.Identity
+import sttp.tapir.Schema
 
 object BasicExample extends App {
-  // Define a tool
-  val weatherTool = AgentTool(
-    toolName = "get_weather",
-    toolDescription = "Get the current weather for a location",
-    toolParameters = Map(
-      "location" -> ParameterSpec(
-        dataType = ParameterType.String,
-        description = "The city name"
-      )
-    )
-  ) { input =>
-    val location = input.get("location").map(_.str).getOrElse("Unknown")
-    s"The weather in $location is 22°C, sunny"
+  case class WeatherInput(location: String) derives SnakePickle.ReadWriter, Schema
+
+  val weatherTool = AgentTool.fromFunction(
+    "get_weather",
+    "Get the current weather for a location"
+  ) { (input: WeatherInput) =>
+    s"The weather in ${input.location} is 22°C, sunny"
   }
 
-  // Configure agent
   val configResult = AgentConfig(
     maxIterations = 5,
     userTools = Seq(weatherTool)
@@ -521,10 +516,8 @@ object BasicExample extends App {
   try
     configResult match {
       case Right(config) =>
-        // Create agent
         val agent = OpenAIAgent[Identity](OpenAI.fromEnv, "gpt-4o-mini", config)(IdentityMonad)
 
-        // Run agent
         val result = agent.run("What's the weather in Paris?")(backend)
 
         println(s"Answer: ${result.finalAnswer}")
@@ -555,40 +548,34 @@ Returns `Either[String, AgentConfig]` to validate against reserved tool names li
 
 #### Tool Definition
 
-```scala
-val calculatorTool = AgentTool(
-  toolName = "calculate",
-  toolDescription = "Perform a mathematical calculation",
-  toolParameters = Map(
-    "operation" -> ParameterSpec(
-      dataType = ParameterType.String,
-      description = "add, subtract, multiply, divide",
-      `enum` = Some(Seq("add", "subtract", "multiply", "divide"))
-    ),
-    "a" -> ParameterSpec(ParameterType.Number, "First number"),
-    "b" -> ParameterSpec(ParameterType.Number, "Second number")
-  )
-) { input =>
-  val op = input.get("operation").map(_.str).getOrElse("add")
-  val a = input.get("a").map(_.num).getOrElse(0.0)
-  val b = input.get("b").map(_.num).getOrElse(0.0)
+Tools are defined using type-safe case classes with the `derives` syntax:
 
-  op match {
-    case "add"      => s"${a + b}"
-    case "subtract" => s"${a - b}"
-    case "multiply" => s"${a * b}"
-    case "divide"   => if (b != 0) s"${a / b}" else "Error: Division by zero"
+```scala
+import sttp.ai.core.json.SnakePickle
+import sttp.tapir.Schema
+
+case class CalculatorInput(
+  operation: String,
+  a: Double,
+  b: Double
+) derives SnakePickle.ReadWriter, Schema
+
+val calculatorTool = AgentTool.fromFunction(
+  "calculate",
+  "Perform a mathematical calculation"
+) { (input: CalculatorInput) =>
+  input.operation match {
+    case "add"      => s"${input.a + input.b}"
+    case "subtract" => s"${input.a - input.b}"
+    case "multiply" => s"${input.a * input.b}"
+    case "divide"   => 
+      if (input.b != 0) s"${input.a / input.b}" 
+      else "Error: Division by zero"
   }
 }
 ```
 
-#### Parameter Types
-* `String`
-* `Number`
-* `Integer`
-* `Boolean`
-* `Object`
-* `Array`
+The `derives SnakePickle.ReadWriter, Schema` clause automatically generates the necessary serialization and schema information for the tool.
 
 **Built-in `finish` Tool:**
 

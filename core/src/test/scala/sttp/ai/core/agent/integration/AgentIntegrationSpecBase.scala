@@ -6,7 +6,7 @@ import sttp.ai.core.agent._
 import sttp.ai.core.json.SnakePickle
 import sttp.client4.{Backend, DefaultSyncBackend}
 import sttp.shared.Identity
-import sttp.tapir.generic.auto._
+import sttp.tapir.Schema
 
 abstract class AgentIntegrationSpecBase extends AnyFlatSpec with Matchers {
 
@@ -18,6 +18,7 @@ abstract class AgentIntegrationSpecBase extends AnyFlatSpec with Matchers {
 
   case class CalculatorInput(operation: String, a: Double, b: Double)
   implicit val calculatorInputRW: SnakePickle.ReadWriter[CalculatorInput] = SnakePickle.macroRW
+  implicit val calculatorInputSchema: Schema[CalculatorInput] = Schema.derived
 
   protected val calculatorTool: AgentTool[CalculatorInput] = AgentTool.fromFunction(
     "calculator",
@@ -35,6 +36,7 @@ abstract class AgentIntegrationSpecBase extends AnyFlatSpec with Matchers {
 
   case class WeatherInput(city: String)
   implicit val weatherInputRW: SnakePickle.ReadWriter[WeatherInput] = SnakePickle.macroRW
+  implicit val weatherInputSchema: Schema[WeatherInput] = Schema.derived
 
   protected val weatherTool: AgentTool[WeatherInput] = AgentTool.fromFunction(
     "get_weather",
@@ -56,7 +58,7 @@ abstract class AgentIntegrationSpecBase extends AnyFlatSpec with Matchers {
     }
   }
 
-  protected def assertToolCalled(result: AgentResult, toolName: String, minTimes: Int = 1): Unit = {
+  protected def assertToolCalled(result: AgentResult[String], toolName: String, minTimes: Int = 1): Unit = {
     val callCount = result.toolCalls.count(_.toolName == toolName)
     assert(
       callCount >= minTimes,
@@ -64,7 +66,7 @@ abstract class AgentIntegrationSpecBase extends AnyFlatSpec with Matchers {
     )
   }
 
-  protected def assertMinIterations(result: AgentResult, min: Int): Unit =
+  protected def assertMinIterations(result: AgentResult[String], min: Int): Unit =
     assert(
       result.iterations >= min,
       s"Should have at least $min iterations, but had ${result.iterations}"

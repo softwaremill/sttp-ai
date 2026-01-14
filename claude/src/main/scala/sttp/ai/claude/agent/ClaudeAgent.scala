@@ -24,19 +24,22 @@ private[claude] class ClaudeAgentBackend[F[_]](
     val schema = tool.jsonSchema
     val schemaJson = CirceJson.transform(schema.asJson, upickle.default.reader[ujson.Value])
 
-    val properties = schemaJson.obj.get("properties").map { propsObj =>
-      propsObj.obj.map { case (name, propSchema) =>
-        val propType = propSchema.obj.get("type").map(_.str).getOrElse("string")
-        val propDescription = propSchema.obj.get("description").map(_.str)
-        val propEnum = propSchema.obj.get("enum").map(_.arr.map(_.str).toList)
+    val properties = schemaJson.obj
+      .get("properties")
+      .map { propsObj =>
+        propsObj.obj.map { case (name, propSchema) =>
+          val propType = propSchema.obj.get("type").map(_.str).getOrElse("string")
+          val propDescription = propSchema.obj.get("description").map(_.str)
+          val propEnum = propSchema.obj.get("enum").map(_.arr.map(_.str).toList)
 
-        name -> PropertySchema(
-          `type` = propType,
-          description = propDescription,
-          `enum` = propEnum
-        )
-      }.toMap
-    }.getOrElse(Map.empty)
+          name -> PropertySchema(
+            `type` = propType,
+            description = propDescription,
+            `enum` = propEnum
+          )
+        }.toMap
+      }
+      .getOrElse(Map.empty)
 
     val required = schemaJson.obj.get("required").map(_.arr.map(_.str).toList)
 
