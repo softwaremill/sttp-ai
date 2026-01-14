@@ -4,6 +4,7 @@ import sttp.ai.core.agent._
 import sttp.ai.core.json.SnakePickle
 import sttp.ai.openai.OpenAI
 import sttp.ai.openai.requests.completions.chat.ChatRequestBody.{ChatBody, ChatCompletionModel}
+import sttp.ai.openai.requests.completions.chat.ChatRequestResponseData.ChatResponse
 import sttp.ai.openai.requests.completions.chat.{FunctionCall, SchemaSupport, ToolCall => OpenAIToolCall}
 import sttp.ai.openai.requests.completions.chat.message.{Content, Message, Tool}
 import sttp.client4.Backend

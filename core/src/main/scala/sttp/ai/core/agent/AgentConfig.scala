@@ -17,7 +17,8 @@ object AgentConfig {
   ): Either[String, AgentConfig] = {
     val conflictingTools = userTools.filter(t => reservedToolNames.contains(t.name))
     if (conflictingTools.isEmpty) {
-      Right(new AgentConfig(maxIterations, systemPrompt, userTools))
+      val finalSystemPrompt = systemPrompt.orElse(Some(buildSystemPrompt(maxIterations)))
+      Right(new AgentConfig(maxIterations, finalSystemPrompt, userTools))
     } else {
       Left(
         s"Cannot provide tools with reserved names: ${reservedToolNames.mkString(", ")}. " +
@@ -26,10 +27,6 @@ object AgentConfig {
       )
     }
   }
-
-  def default: Either[String, AgentConfig] = apply(
-    systemPrompt = Some(buildSystemPrompt(10))
-  )
 
   private def buildSystemPrompt(maxIterations: Int): String =
     s"""You are a simple loop-based agent that solves the user's task step by step using tool calling when appropriate.
