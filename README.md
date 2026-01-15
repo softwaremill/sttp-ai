@@ -36,6 +36,7 @@ sttp is a family of Scala HTTP-related projects, and currently includes:
   - [Key Differences from OpenAI](#key-differences-from-openai-api)
   - [Synchronous Claude Client](#synchronous-claude-client)
 - [Agent Loop](#agent-loop)
+  - [Exception Handling](#exception-handling)
 - [OpenAI-Compatible APIs](#openai-compatible-apis)
 - [Examples](#examples)
 - [Contributing](#contributing)
@@ -545,6 +546,85 @@ val config = AgentConfig(
 ```
 
 Returns `Either[String, AgentConfig]` to validate against reserved tool names like `finish`.
+
+#### Exception Handling
+
+The `ExceptionHandler` controls how tool execution errors and argument parsing failures are handled. You can choose between built-in handlers or create custom ones.
+
+**Built-in Handlers:**
+
+| Handler | Tool Execution Errors | Parse Errors | Use Case |
+|---------|----------------------|--------------|----------|
+| `ExceptionHandler.default` | IO/Interrupt errors propagate; others sent to LLM | Sent to LLM with descriptive message | **Recommended for most cases** |
+| `ExceptionHandler.sendAllToLLM` | All errors sent to LLM | All errors sent to LLM | Let LLM recover from all errors |
+| `ExceptionHandler.propagateAll` | All errors propagate | All errors propagate | Strict mode, fail fast |
+
+**Default Handler (recommended):**
+
+```scala
+val config = AgentConfig(
+  maxIterations = 5,
+  userTools = Seq(myTool),
+  exceptionHandler = ExceptionHandler.default  // This is the default, can be omitted
+)
+```
+
+The default handler:
+- **Propagates** `IOException` and `InterruptedException` (system-level errors that typically can't be recovered)
+- **Sends to LLM** all other exceptions with descriptive error messages, allowing the agent to retry or adjust
+
+**Send All to LLM:**
+
+```scala
+val config = AgentConfig(
+  maxIterations = 5,
+  userTools = Seq(myTool),
+  exceptionHandler = ExceptionHandler.sendAllToLLM
+)
+```
+
+All errors are converted to messages and sent to the LLM, giving it maximum opportunity to recover.
+
+**Propagate All (Strict Mode):**
+
+```scala
+val config = AgentConfig(
+  maxIterations = 5,
+  userTools = Seq(myTool),
+  exceptionHandler = ExceptionHandler.propagateAll
+)
+```
+
+All errors immediately terminate the agent loop by propagating the exception. Use this for strict error handling where any failure should stop execution.
+
+**Custom Handler:**
+
+```scala
+val customHandler = new ExceptionHandler {
+  def handleToolException(toolName: String, exception: Exception): Either[String, Exception] =
+    exception match {
+      case e: MyRecoverableException =>
+        Left(s"Recoverable error in $toolName: ${e.getMessage}")
+      case other =>
+        Right(other)  // Propagate
+    }
+
+  def handleParseError(
+      toolName: String,
+      rawArguments: String,
+      parseException: Exception
+  ): Either[String, Exception] =
+    Left(s"Invalid arguments for $toolName - please check the schema")
+}
+
+val config = AgentConfig(
+  maxIterations = 5,
+  userTools = Seq(myTool),
+  exceptionHandler = customHandler
+)
+```
+
+Return `Left(message)` to send the error to the LLM and continue the loop, or `Right(exception)` to propagate and terminate.
 
 #### Tool Definition
 
