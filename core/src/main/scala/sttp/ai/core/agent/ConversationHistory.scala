@@ -1,7 +1,5 @@
 package sttp.ai.core.agent
 
-import ujson.Value
-
 sealed trait ConversationEntry
 
 object ConversationEntry {
@@ -14,7 +12,7 @@ object ConversationEntry {
 case class ToolCall(
     id: String,
     toolName: String,
-    input: Map[String, Value]
+    input: String
 )
 
 case class ConversationHistory(entries: Seq[ConversationEntry]) {

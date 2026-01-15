@@ -4,11 +4,9 @@ import sttp.ai.core.agent._
 import sttp.ai.core.json.SnakePickle
 import sttp.ai.openai.OpenAI
 import sttp.ai.openai.requests.completions.chat.ChatRequestBody.{ChatBody, ChatCompletionModel}
-import sttp.ai.openai.requests.completions.chat.ChatRequestResponseData.ChatResponse
-import sttp.ai.openai.requests.completions.chat.{FunctionCall, SchemaSupport, ToolCall => OpenAIToolCall}
 import sttp.ai.openai.requests.completions.chat.message.{Content, Message, Tool}
+import sttp.ai.openai.requests.completions.chat.{FunctionCall, SchemaSupport, ToolCall => OpenAIToolCall}
 import sttp.client4.Backend
-import ujson.Value
 
 private[openai] class OpenAIAgentBackend[F[_]](
     openAI: OpenAI,
@@ -92,24 +90,20 @@ private[openai] class OpenAIAgentBackend[F[_]](
               toolCall match {
                 case OpenAIToolCall.FunctionToolCall(maybeId, function) =>
                   val id = maybeId.getOrElse(s"call_$idx")
-                  val inputMap =
-                    try {
-                      val parsed = ujson.read(function.arguments)
-                      parsed.obj.toMap
-                    } catch {
-                      case _: Exception => Map.empty[String, Value]
-                    }
                   ToolCall(
                     id = id,
                     toolName = function.name.getOrElse("unknown"),
-                    input = inputMap
+                    input = function.arguments
                   )
               }
             }
           case None => Seq.empty
         }
 
-        val stopReason = response.choices.headOption.map(_.finishReason)
+        val stopReason = response.choices.headOption
+          .map(_.finishReason)
+          .map(mapOpenAIStopReason)
+          .getOrElse(StopReason.EndTurn)
 
         monad.unit(AgentResponse(textContent, toolCalls, stopReason))
 
@@ -119,6 +113,16 @@ private[openai] class OpenAIAgentBackend[F[_]](
         )
     }
   }
+
+  private def mapOpenAIStopReason(reason: String): StopReason =
+    reason match {
+      case "stop"           => StopReason.EndTurn
+      case "tool_calls"     => StopReason.ToolUse
+      case "function_calls" => StopReason.ToolUse
+      case "length"         => StopReason.MaxTokens
+      case "content_filter" => StopReason.ContentFilter
+      case other            => StopReason.Other(other)
+    }
 }
 
 object OpenAIAgent {

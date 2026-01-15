@@ -3,7 +3,8 @@ package sttp.ai.core.agent
 case class AgentConfig private (
     maxIterations: Int,
     systemPrompt: Option[String],
-    userTools: Seq[AgentTool[_]]
+    userTools: Seq[AgentTool[_]],
+    exceptionHandler: ExceptionHandler
 )
 
 object AgentConfig {
@@ -13,12 +14,13 @@ object AgentConfig {
   def apply(
       maxIterations: Int = 10,
       systemPrompt: Option[String] = None,
-      userTools: Seq[AgentTool[_]] = Seq.empty
+      userTools: Seq[AgentTool[_]] = Seq.empty,
+      exceptionHandler: ExceptionHandler = ExceptionHandler.default
   ): Either[String, AgentConfig] = {
     val conflictingTools = userTools.filter(t => reservedToolNames.contains(t.name))
     if (conflictingTools.isEmpty) {
       val finalSystemPrompt = systemPrompt.orElse(Some(buildSystemPrompt(maxIterations)))
-      Right(new AgentConfig(maxIterations, finalSystemPrompt, userTools))
+      Right(new AgentConfig(maxIterations, finalSystemPrompt, userTools, exceptionHandler))
     } else {
       Left(
         s"Cannot provide tools with reserved names: ${reservedToolNames.mkString(", ")}. " +

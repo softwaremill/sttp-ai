@@ -7,7 +7,6 @@ import sttp.client4.testing.SyncBackendStub
 import sttp.monad.IdentityMonad
 import sttp.shared.Identity
 import sttp.tapir.Schema
-import ujson.{Num, Str}
 
 class AgentSpec extends AnyFlatSpec with Matchers {
 
@@ -62,6 +61,10 @@ class AgentSpec extends AnyFlatSpec with Matchers {
   implicit val dummyInputRW: SnakePickle.ReadWriter[DummyInput] = SnakePickle.macroRW
   implicit val dummyInputSchema: Schema[DummyInput] = Schema.derived
 
+  case class NumberInput(value: Int)
+  implicit val numberInputRW: SnakePickle.ReadWriter[NumberInput] = SnakePickle.macroRW
+  implicit val numberInputSchema: Schema[NumberInput] = Schema.derived
+
   "Agent" should "stop after max iterations" in {
     val dummyTool = AgentTool.fromFunction(
       "dummy",
@@ -70,11 +73,11 @@ class AgentSpec extends AnyFlatSpec with Matchers {
 
     val result = runLoop(
       Seq(
-        AgentResponse("", Seq(ToolCall(id = "call_1", toolName = "dummy", input = Map.empty)), Some("tool_calls")),
-        AgentResponse("", Seq(ToolCall(id = "call_2", toolName = "dummy", input = Map.empty)), Some("tool_calls")),
-        AgentResponse("", Seq(ToolCall(id = "call_3", toolName = "dummy", input = Map.empty)), Some("tool_calls")),
-        AgentResponse("", Seq(ToolCall(id = "call_4", toolName = "dummy", input = Map.empty)), Some("tool_calls")),
-        AgentResponse("", Seq(ToolCall(id = "call_5", toolName = "dummy", input = Map.empty)), Some("tool_calls"))
+        AgentResponse("", Seq(ToolCall(id = "call_1", toolName = "dummy", input = "{}")), StopReason.ToolUse),
+        AgentResponse("", Seq(ToolCall(id = "call_2", toolName = "dummy", input = "{}")), StopReason.ToolUse),
+        AgentResponse("", Seq(ToolCall(id = "call_3", toolName = "dummy", input = "{}")), StopReason.ToolUse),
+        AgentResponse("", Seq(ToolCall(id = "call_4", toolName = "dummy", input = "{}")), StopReason.ToolUse),
+        AgentResponse("", Seq(ToolCall(id = "call_5", toolName = "dummy", input = "{}")), StopReason.ToolUse)
       ),
       tools = Seq(dummyTool)
     )
@@ -90,9 +93,9 @@ class AgentSpec extends AnyFlatSpec with Matchers {
         AgentResponse(
           "",
           Seq(
-            ToolCall(id = "call_1", toolName = "finish", input = Map("answer" -> Str("Final answer")))
+            ToolCall(id = "call_1", toolName = "finish", input = """{"answer":"Final answer"}""")
           ),
-          Some("tool_calls")
+          StopReason.ToolUse
         )
       )
     )
@@ -106,7 +109,7 @@ class AgentSpec extends AnyFlatSpec with Matchers {
   it should "stop on natural stop when no tool calls" in {
     val result = runLoop(
       Seq(
-        AgentResponse("Final answer without tools", Seq.empty, Some("stop"))
+        AgentResponse("Final answer without tools", Seq.empty, StopReason.EndTurn)
       )
     )
 
@@ -122,12 +125,12 @@ class AgentSpec extends AnyFlatSpec with Matchers {
         AgentResponse(
           "",
           Seq(
-            ToolCall(id = "call_1", toolName = "calculator", input = Map("a" -> Num(5), "b" -> Num(10))),
-            ToolCall(id = "call_2", toolName = "calculator", input = Map("a" -> Num(3), "b" -> Num(7)))
+            ToolCall(id = "call_1", toolName = "calculator", input = """{"a":5,"b":10}"""),
+            ToolCall(id = "call_2", toolName = "calculator", input = """{"a":3,"b":7}""")
           ),
-          Some("tool_calls")
+          StopReason.ToolUse
         ),
-        AgentResponse("Done", Seq.empty, Some("stop"))
+        AgentResponse("Done", Seq.empty, StopReason.EndTurn)
       ),
       tools = Seq(calculatorTool)
     )
@@ -155,11 +158,11 @@ class AgentSpec extends AnyFlatSpec with Matchers {
         AgentResponse(
           "",
           Seq(
-            ToolCall(id = "call_1", toolName = "error_tool", input = Map.empty)
+            ToolCall(id = "call_1", toolName = "error_tool", input = "{}")
           ),
-          Some("tool_calls")
+          StopReason.ToolUse
         ),
-        AgentResponse("Recovered", Seq.empty, Some("stop"))
+        AgentResponse("Recovered", Seq.empty, StopReason.EndTurn)
       ),
       tools = Seq(errorTool)
     )
@@ -177,11 +180,11 @@ class AgentSpec extends AnyFlatSpec with Matchers {
         AgentResponse(
           "",
           Seq(
-            ToolCall(id = "call_1", toolName = "unknown_tool", input = Map.empty)
+            ToolCall(id = "call_1", toolName = "unknown_tool", input = "{}")
           ),
-          Some("tool_calls")
+          StopReason.ToolUse
         ),
-        AgentResponse("Recovered", Seq.empty, Some("stop"))
+        AgentResponse("Recovered", Seq.empty, StopReason.EndTurn)
       )
     )
 
@@ -197,11 +200,11 @@ class AgentSpec extends AnyFlatSpec with Matchers {
         AgentResponse(
           "",
           Seq(
-            ToolCall(id = "call_1", toolName = "calculator", input = Map("a" -> Num(5), "b" -> Num(10)))
+            ToolCall(id = "call_1", toolName = "calculator", input = """{"a":5,"b":10}""")
           ),
-          Some("tool_calls")
+          StopReason.ToolUse
         ),
-        AgentResponse("Done", Seq.empty, Some("stop"))
+        AgentResponse("Done", Seq.empty, StopReason.EndTurn)
       ),
       tools = Seq(calculatorTool)
     )
@@ -221,8 +224,8 @@ class AgentSpec extends AnyFlatSpec with Matchers {
     val config = AgentConfig(maxIterations = 3).right.get
     val (loop, stubBackend) = createLoop(
       Seq(
-        AgentResponse("First", Seq.empty, Some("stop")),
-        AgentResponse("Second", Seq.empty, Some("stop"))
+        AgentResponse("First", Seq.empty, StopReason.EndTurn),
+        AgentResponse("Second", Seq.empty, StopReason.EndTurn)
       ),
       config
     )
@@ -240,10 +243,10 @@ class AgentSpec extends AnyFlatSpec with Matchers {
         AgentResponse(
           "",
           Seq(
-            ToolCall(id = "call_1", toolName = "calculator", input = Map("a" -> Num(5), "b" -> Num(10))),
-            ToolCall(id = "call_2", toolName = "finish", input = Map("answer" -> Str("Early finish")))
+            ToolCall(id = "call_1", toolName = "calculator", input = """{"a":5,"b":10}"""),
+            ToolCall(id = "call_2", toolName = "finish", input = """{"answer":"Early finish"}""")
           ),
-          Some("tool_calls")
+          StopReason.ToolUse
         )
       ),
       tools = Seq(calculatorTool)
@@ -294,9 +297,9 @@ class AgentSpec extends AnyFlatSpec with Matchers {
     val config = AgentConfig(maxIterations = 3, userTools = Seq(dummyTool)).right.get
     val (loop, _) = createLoop(
       Seq(
-        AgentResponse("First response", Seq(ToolCall(id = "call_1", toolName = "dummy", input = Map.empty)), Some("tool_calls")),
-        AgentResponse("Second response", Seq(ToolCall(id = "call_2", toolName = "dummy", input = Map.empty)), Some("tool_calls")),
-        AgentResponse("Third response", Seq(ToolCall(id = "call_3", toolName = "dummy", input = Map.empty)), Some("tool_calls"))
+        AgentResponse("First response", Seq(ToolCall(id = "call_1", toolName = "dummy", input = "{}")), StopReason.ToolUse),
+        AgentResponse("Second response", Seq(ToolCall(id = "call_2", toolName = "dummy", input = "{}")), StopReason.ToolUse),
+        AgentResponse("Third response", Seq(ToolCall(id = "call_3", toolName = "dummy", input = "{}")), StopReason.ToolUse)
       ),
       config
     )
@@ -306,5 +309,224 @@ class AgentSpec extends AnyFlatSpec with Matchers {
     result.finishReason shouldBe FinishReason.MaxIterations
     result.finalAnswer shouldBe "final tool result"
     result.iterations shouldBe 3
+  }
+
+  "Agent with default ExceptionHandler" should "propagate IOException from tool" in {
+    val ioTool = AgentTool.fromFunction(
+      "io_tool",
+      "IO tool"
+    ) { (_: DummyInput) =>
+      throw new java.io.IOException("Network error")
+    }
+
+    val config = AgentConfig(
+      maxIterations = 3,
+      userTools = Seq(ioTool),
+      exceptionHandler = ExceptionHandler.default
+    ).toOption.get
+
+    val (loop, _) = createLoop(
+      Seq(AgentResponse("", Seq(ToolCall(id = "call_1", toolName = "io_tool", input = "{}")), StopReason.ToolUse)),
+      config
+    )
+
+    assertThrows[java.io.IOException] {
+      loop.run("Test")(backend)
+    }
+  }
+
+  it should "propagate InterruptedException from tool" in {
+    val interruptedTool = AgentTool.fromFunction(
+      "interrupted_tool",
+      "Interrupted tool"
+    ) { (_: DummyInput) =>
+      throw new InterruptedException("Thread interrupted")
+    }
+
+    val config = AgentConfig(
+      maxIterations = 3,
+      userTools = Seq(interruptedTool),
+      exceptionHandler = ExceptionHandler.default
+    ).toOption.get
+
+    val (loop, _) = createLoop(
+      Seq(AgentResponse("", Seq(ToolCall(id = "call_1", toolName = "interrupted_tool", input = "{}")), StopReason.ToolUse)),
+      config
+    )
+
+    assertThrows[InterruptedException] {
+      loop.run("Test")(backend)
+    }
+  }
+
+  it should "send RuntimeException to LLM and continue loop" in {
+    val errorTool = AgentTool.fromFunction(
+      "error_tool",
+      "Error tool"
+    ) { (_: DummyInput) =>
+      throw new RuntimeException("Logic error")
+    }
+
+    val config = AgentConfig(
+      maxIterations = 3,
+      userTools = Seq(errorTool),
+      exceptionHandler = ExceptionHandler.default
+    ).toOption.get
+
+    val (loop, _) = createLoop(
+      Seq(
+        AgentResponse("", Seq(ToolCall(id = "call_1", toolName = "error_tool", input = "{}")), StopReason.ToolUse),
+        AgentResponse("Recovered", Seq.empty, StopReason.EndTurn)
+      ),
+      config
+    )
+
+    val result = loop.run("Test")(backend)
+
+    result.toolCalls should have size 1
+    result.toolCalls.head.output should include("Error executing tool 'error_tool'")
+    result.toolCalls.head.output should include("Logic error")
+    result.finishReason shouldBe FinishReason.NaturalStop
+  }
+
+  "Agent with sendAllToLLM ExceptionHandler" should "send IOException to LLM instead of propagating" in {
+    val ioTool = AgentTool.fromFunction(
+      "io_tool",
+      "IO tool"
+    ) { (_: DummyInput) =>
+      throw new java.io.IOException("Network error")
+    }
+
+    val config = AgentConfig(
+      maxIterations = 3,
+      userTools = Seq(ioTool),
+      exceptionHandler = ExceptionHandler.sendAllToLLM
+    ).toOption.get
+
+    val (loop, _) = createLoop(
+      Seq(
+        AgentResponse("", Seq(ToolCall(id = "call_1", toolName = "io_tool", input = "{}")), StopReason.ToolUse),
+        AgentResponse("Recovered", Seq.empty, StopReason.EndTurn)
+      ),
+      config
+    )
+
+    val result = loop.run("Test")(backend)
+
+    result.toolCalls.head.output should include("Error executing tool 'io_tool'")
+    result.toolCalls.head.output should include("Network error")
+    result.finishReason shouldBe FinishReason.NaturalStop
+  }
+
+  "Agent with propagateAll ExceptionHandler" should "propagate all errors" in {
+    val errorTool = AgentTool.fromFunction(
+      "error_tool",
+      "Error tool"
+    ) { (_: DummyInput) =>
+      throw new RuntimeException("Any error")
+    }
+
+    val config = AgentConfig(
+      maxIterations = 3,
+      userTools = Seq(errorTool),
+      exceptionHandler = ExceptionHandler.propagateAll
+    ).toOption.get
+
+    val (loop, _) = createLoop(
+      Seq(AgentResponse("", Seq(ToolCall(id = "call_1", toolName = "error_tool", input = "{}")), StopReason.ToolUse)),
+      config
+    )
+
+    assertThrows[RuntimeException] {
+      loop.run("Test")(backend)
+    }
+  }
+
+  "Agent with parse errors" should "send descriptive error to LLM" in {
+    val numberTool = AgentTool.fromFunction(
+      "number",
+      "Number tool"
+    ) { (input: NumberInput) =>
+      s"Got: ${input.value}"
+    }
+
+    val config = AgentConfig(
+      maxIterations = 3,
+      userTools = Seq(numberTool)
+    ).toOption.get
+
+    val (loop, _) = createLoop(
+      Seq(
+        // Invalid input - string instead of int
+        AgentResponse("", Seq(ToolCall(id = "call_1", toolName = "number", input = """{"value":"not_a_number"}""")), StopReason.ToolUse),
+        AgentResponse("Fixed", Seq.empty, StopReason.EndTurn)
+      ),
+      config
+    )
+
+    val result = loop.run("Test")(backend)
+
+    result.toolCalls.head.output should include("Invalid arguments for tool 'number'")
+    result.toolCalls.head.output should include("Please check the tool definition")
+    result.finishReason shouldBe FinishReason.NaturalStop
+  }
+
+  it should "handle malformed JSON" in {
+    val config = AgentConfig(
+      maxIterations = 3,
+      userTools = Seq(calculatorTool)
+    ).toOption.get
+
+    val (loop, _) = createLoop(
+      Seq(
+        AgentResponse("", Seq(ToolCall(id = "call_1", toolName = "calculator", input = """{"a":not valid json}""")), StopReason.ToolUse),
+        AgentResponse("Fixed", Seq.empty, StopReason.EndTurn)
+      ),
+      config
+    )
+
+    val result = loop.run("Test")(backend)
+
+    result.toolCalls.head.output should include("Invalid arguments")
+    result.finishReason shouldBe FinishReason.NaturalStop
+  }
+
+  "Agent with custom ExceptionHandler" should "use custom error formatting" in {
+    val customHandler = new ExceptionHandler {
+      def handleToolException(toolName: String, exception: Exception): Either[String, Exception] =
+        Left(s"CUSTOM ERROR in $toolName: ${exception.getClass.getSimpleName}")
+
+      def handleParseError(
+          toolName: String,
+          rawArguments: String,
+          parseException: Exception
+      ): Either[String, Exception] =
+        Left(s"CUSTOM PARSE ERROR in $toolName")
+    }
+
+    val errorTool = AgentTool.fromFunction(
+      "error_tool",
+      "Error tool"
+    ) { (_: DummyInput) =>
+      throw new IllegalArgumentException("Bad argument")
+    }
+
+    val config = AgentConfig(
+      maxIterations = 3,
+      userTools = Seq(errorTool),
+      exceptionHandler = customHandler
+    ).toOption.get
+
+    val (loop, _) = createLoop(
+      Seq(
+        AgentResponse("", Seq(ToolCall(id = "call_1", toolName = "error_tool", input = "{}")), StopReason.ToolUse),
+        AgentResponse("Done", Seq.empty, StopReason.EndTurn)
+      ),
+      config
+    )
+
+    val result = loop.run("Test")(backend)
+
+    result.toolCalls.head.output shouldBe "CUSTOM ERROR in error_tool: IllegalArgumentException"
   }
 }

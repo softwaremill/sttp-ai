@@ -39,12 +39,14 @@ class Agent[F[_]](
 
         monad.flatMap(responseFuture) { response =>
           if (response.toolCalls.isEmpty) {
+            val finishReason = mapStopReason(response.stopReason)
+
             monad.unit(
               AgentResult(
                 finalAnswer = response.textContent,
                 iterations = iteration + 1,
                 toolCalls = toolCallRecords,
-                finishReason = FinishReason.NaturalStop
+                finishReason = finishReason
               )
             )
           } else {
@@ -52,22 +54,19 @@ class Agent[F[_]](
 
             val toolResults = response.toolCalls.map { toolCall =>
               val tool = toolMap.get(toolCall.toolName)
-              val result = tool match {
+              val result: String = tool match {
                 case Some(t) =>
-                  try
-                    executeTool(t, toolCall)
-                  catch {
-                    case e: Exception =>
-                      s"Error executing tool: ${e.getMessage}"
+                  executeTool(t, toolCall) match {
+                    case Right(successResult) => successResult
+                    case Left(errorForLLM)    => errorForLLM
                   }
                 case None =>
                   s"Tool not found: ${toolCall.toolName}"
               }
 
-              val inputJson = SnakePickle.write(toolCall.input)
               val record = ToolCallRecord(
                 toolName = toolCall.toolName,
-                input = inputJson,
+                input = toolCall.input,
                 output = result,
                 iteration = iteration + 1
               )
@@ -104,11 +103,45 @@ class Agent[F[_]](
     loop(initialHistory, 0, Seq.empty)
   }
 
-  private def executeTool[T](tool: AgentTool[T], toolCall: ToolCall): String = {
-    val jsonString = SnakePickle.write(toolCall.input)
-    val typedInput = SnakePickle.read[T](jsonString)(tool.readWriter)
-    tool.execute(typedInput)
+  private def executeTool[T](tool: AgentTool[T], toolCall: ToolCall): Either[String, String] = {
+    val parseResult: Either[Exception, T] =
+      try
+        Right(SnakePickle.read[T](toolCall.input)(tool.readWriter))
+      catch {
+        case e: Exception => Left(e)
+      }
+
+    parseResult match {
+      case Left(parseException) =>
+        config.exceptionHandler.handleParseError(
+          toolCall.toolName,
+          toolCall.input,
+          parseException
+        ) match {
+          case Left(errorMessage) => Left(errorMessage)
+          case Right(ex)          => throw ex
+        }
+
+      case Right(typedInput) =>
+        try
+          Right(tool.execute(typedInput))
+        catch {
+          case e: Exception =>
+            config.exceptionHandler.handleToolException(toolCall.toolName, e) match {
+              case Left(errorMessage) => Left(errorMessage)
+              case Right(ex)          => throw ex
+            }
+        }
+    }
   }
+
+  private def mapStopReason(stopReason: StopReason): FinishReason =
+    stopReason match {
+      case StopReason.MaxTokens     => FinishReason.TokenLimit
+      case StopReason.ContentFilter => FinishReason.Error("Content filtered")
+      case StopReason.Other(reason) => FinishReason.Error(s"Unknown stop reason: $reason")
+      case _                        => FinishReason.NaturalStop
+    }
 
   private def extractFinalAnswer(history: ConversationHistory): String =
     history.entries.reverseIterator

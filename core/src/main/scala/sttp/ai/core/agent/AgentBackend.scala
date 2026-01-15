@@ -40,5 +40,33 @@ trait AgentBackend[F[_]] {
 case class AgentResponse(
     textContent: String,
     toolCalls: Seq[ToolCall],
-    stopReason: Option[String]
+    stopReason: StopReason
 )
+
+/** Represents why the LLM stopped generating.
+  *
+  * This abstracts over different API-specific stop reasons (OpenAI: "stop", "tool_calls", "length"; Claude: "end_turn", "tool_use",
+  * "max_tokens").
+  */
+sealed trait StopReason
+
+object StopReason {
+
+  /** The model finished naturally (OpenAI: "stop", Claude: "end_turn") */
+  case object EndTurn extends StopReason
+
+  /** The model wants to call one or more tools (OpenAI: "tool_calls", Claude: "tool_use") */
+  case object ToolUse extends StopReason
+
+  /** Maximum token limit was reached (OpenAI: "length", Claude: "max_tokens") */
+  case object MaxTokens extends StopReason
+
+  /** A stop sequence was encountered (Claude: "stop_sequence") */
+  case object StopSequence extends StopReason
+
+  /** Content was filtered (OpenAI: "content_filter") */
+  case object ContentFilter extends StopReason
+
+  /** Unknown or unrecognized stop reason */
+  case class Other(reason: String) extends StopReason
+}

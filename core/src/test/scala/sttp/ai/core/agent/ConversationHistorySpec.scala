@@ -2,7 +2,6 @@ package sttp.ai.core.agent
 
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
-import ujson.Str
 
 class ConversationHistorySpec extends AnyFlatSpec with Matchers {
 
@@ -46,7 +45,7 @@ class ConversationHistorySpec extends AnyFlatSpec with Matchers {
   }
 
   it should "add assistant response with tool calls" in {
-    val toolCall = ToolCall(id = "call_1", toolName = "test", input = Map("x" -> Str("5")))
+    val toolCall = ToolCall(id = "call_1", toolName = "test", input = """{"x":"5"}""")
     val history = ConversationHistory.empty
       .addAssistantResponse("Let me check", Seq(toolCall))
 
@@ -78,7 +77,7 @@ class ConversationHistorySpec extends AnyFlatSpec with Matchers {
   }
 
   it should "preserve existing entries" in {
-    val toolCall = ToolCall(id = "call_1", toolName = "calc", input = Map("x" -> Str("5")))
+    val toolCall = ToolCall(id = "call_1", toolName = "calc", input = """{"x":"5"}""")
     val history = ConversationHistory.empty
       .addAssistantResponse("Calculating", Seq(toolCall))
       .addToolResult("call_1", "calc", "5")
@@ -118,8 +117,8 @@ class ConversationHistorySpec extends AnyFlatSpec with Matchers {
   }
 
   it should "handle complex conversation flow" in {
-    val toolCall1 = ToolCall(id = "call_1", toolName = "calc", input = Map("x" -> Str("5")))
-    val toolCall2 = ToolCall(id = "call_2", toolName = "weather", input = Map("city" -> Str("Paris")))
+    val toolCall1 = ToolCall(id = "call_1", toolName = "calc", input = """{"x":"5"}""")
+    val toolCall2 = ToolCall(id = "call_2", toolName = "weather", input = """{"city":"Paris"}""")
 
     val history = ConversationHistory
       .withInitialPrompt("Calculate 5+10 and get weather")
@@ -139,7 +138,7 @@ class ConversationHistorySpec extends AnyFlatSpec with Matchers {
   }
 
   "ToolCall" should "store id, toolName, and input correctly" in {
-    val input = Map("param1" -> Str("value1"), "param2" -> Str("value2"))
+    val input = """{"param1":"value1","param2":"value2"}"""
     val toolCall = ToolCall(id = "call_123", toolName = "myTool", input = input)
 
     toolCall.id shouldBe "call_123"

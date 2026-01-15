@@ -6,6 +6,7 @@ object FinishReason {
   case object MaxIterations extends FinishReason
   case object ToolFinish extends FinishReason
   case object NaturalStop extends FinishReason
+  case object TokenLimit extends FinishReason
   case class Error(message: String) extends FinishReason
 }
 

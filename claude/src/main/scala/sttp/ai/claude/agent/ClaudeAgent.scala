@@ -65,7 +65,8 @@ private[claude] class ClaudeAgentBackend[F[_]](
         } else List.empty
 
         val toolUseBlocks = toolCalls.map { tc =>
-          ContentBlock.ToolUseContent(tc.id, tc.toolName, tc.input)
+          val inputValue = ujson.read(tc.input)
+          ContentBlock.ToolUseContent(tc.id, tc.toolName, inputValue.obj.toMap)
         }
 
         Some(Message.assistant(contentBlocks ++ toolUseBlocks))
@@ -108,10 +109,12 @@ private[claude] class ClaudeAgentBackend[F[_]](
           .getOrElse("")
 
         val toolCalls = response.content.collect { case ContentBlock.ToolUseContent(id, name, input) =>
-          ToolCall(id, name, input)
+          val inputJson = ujson.write(ujson.Obj.from(input))
+          ToolCall(id, name, inputJson)
         }
 
-        monad.unit(AgentResponse(textContent, toolCalls, response.stopReason))
+        val stopReason = mapClaudeStopReason(response.stopReason)
+        monad.unit(AgentResponse(textContent, toolCalls, stopReason))
 
       case Left(error) =>
         monad.error(
@@ -119,6 +122,16 @@ private[claude] class ClaudeAgentBackend[F[_]](
         )
     }
   }
+
+  private def mapClaudeStopReason(reason: Option[String]): StopReason =
+    reason match {
+      case Some("end_turn")      => StopReason.EndTurn
+      case Some("tool_use")      => StopReason.ToolUse
+      case Some("max_tokens")    => StopReason.MaxTokens
+      case Some("stop_sequence") => StopReason.StopSequence
+      case Some(other)           => StopReason.Other(other)
+      case None                  => StopReason.EndTurn
+    }
 }
 
 object ClaudeAgent {
