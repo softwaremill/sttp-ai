@@ -3,8 +3,8 @@
 //> using dep com.softwaremill.sttp.client4::ox:4.0.12
 //> using dep ch.qos.logback:logback-classic:1.5.19
 
-// remember to set the OPENAI_KEY env variable!
-// run with: OPENAI_KEY=... scala-cli run ChatProxy.scala
+// remember to set the OPENAI_API_KEY env variable!
+// run with: OPENAI_API_KEY=... scala-cli run ChatProxy.scala
 
 // test by connecting to ws://localhost:8080/chat using a WebSocket client
 
@@ -79,7 +79,7 @@ def chat(sttpBackend: SyncBackend, openAI: OpenAI): OxStreams.Pipe[ChatMessage, 
 
 object ChatProxy extends OxApp:
   override def run(args: Vector[String])(using Ox): ExitCode =
-    val openAI = new OpenAI(System.getenv("OPENAI_KEY"))
+    val openAI = OpenAI.fromEnv
     val sttpBackend = useCloseableInScope(DefaultSyncBackend())
     val chatProxyServerEndpoint = chatProxyEndpoint.handleSuccess(_ => chat(sttpBackend, openAI))
     val binding = NettySyncServer().addEndpoint(chatProxyServerEndpoint).start()

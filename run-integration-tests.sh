@@ -53,8 +53,8 @@ fi
 echo ""
 echo "🧪 Running integration tests..."
 
-# Run the integration tests
-sbt "testOnly *OpenAIIntegrationSpec *ClaudeIntegrationSpec"
+# Run the integration tests (including agent tests)
+sbt "testOnly *OpenAIIntegrationSpec *ClaudeIntegrationSpec *OpenAIAgentIntegrationSpec *ClaudeAgentIntegrationSpec"
 
 echo ""
 if [ "$OPENAI_SET" = true ] || [ "$ANTHROPIC_SET" = true ]; then

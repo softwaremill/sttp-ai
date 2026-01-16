@@ -35,6 +35,8 @@ sttp is a family of Scala HTTP-related projects, and currently includes:
   - [Error Handling](#claude-error-handling)
   - [Key Differences from OpenAI](#key-differences-from-openai-api)
   - [Synchronous Claude Client](#synchronous-claude-client)
+- [Agent Loop](#agent-loop)
+  - [Exception Handling](#exception-handling)
 - [OpenAI-Compatible APIs](#openai-compatible-apis)
 - [Examples](#examples)
 - [Contributing](#contributing)
@@ -468,6 +470,288 @@ try {
 } catch {
   case e: ClaudeException => println(s"Error: ${e.getMessage}")
 }
+```
+
+## Agent Loop
+
+Framework for building autonomous AI agents that iteratively solve tasks using tool calling. Provides unified interface for OpenAI, Claude, and custom backends.
+
+**Key Features:**
+
+- Unified API for OpenAI and Claude
+- Type-safe tool definitions with automatic finish mechanism
+- Full execution history tracking
+- Support for Identity, cats-effect, ZIO, and other effect systems
+- Easy custom backend implementation
+
+### Quick Start
+
+```scala mdoc:compile-only
+//> using dep com.softwaremill.sttp.ai::openai:0.4.3
+
+import sttp.ai.core.agent.*
+import sttp.ai.core.json.SnakePickle
+import sttp.ai.openai.OpenAI
+import sttp.ai.openai.agent.OpenAIAgent
+import sttp.client4.DefaultSyncBackend
+import sttp.monad.IdentityMonad
+import sttp.shared.Identity
+import sttp.tapir.Schema
+
+object BasicExample extends App {
+  case class WeatherInput(location: String) derives SnakePickle.ReadWriter, Schema
+
+  val weatherTool = AgentTool.fromFunction(
+    "get_weather",
+    "Get the current weather for a location"
+  ) { (input: WeatherInput) =>
+    s"The weather in ${input.location} is 22°C, sunny"
+  }
+
+  val configResult = AgentConfig(
+    maxIterations = 5,
+    userTools = Seq(weatherTool)
+  )
+
+  val backend = DefaultSyncBackend()
+  try
+    configResult match {
+      case Right(config) =>
+        val agent = OpenAIAgent[Identity](OpenAI.fromEnv, "gpt-4o-mini", config)(IdentityMonad)
+
+        val result = agent.run("What's the weather in Paris?")(backend)
+
+        println(s"Answer: ${result.finalAnswer}")
+        println(s"Iterations: ${result.iterations}")
+
+      case Left(error) =>
+        println(s"Configuration error: $error")
+    }
+  finally backend.close()
+}
+```
+
+**For Claude:** Use `ClaudeAgent[Identity](ClaudeConfig.fromEnv, "claude-3-haiku-20240307", config)` instead.
+
+### Core Components
+
+#### Agent Configuration
+
+```scala
+val config = AgentConfig(
+  maxIterations = 10,                    // Max reasoning steps
+  systemPrompt = Some("Custom prompt"),  // Optional instructions
+  userTools = Seq(tool1, tool2)         // Your tools
+)
+```
+
+Returns `Either[String, AgentConfig]` to validate against reserved tool names like `finish`.
+
+#### Exception Handling
+
+The `ExceptionHandler` controls how tool execution errors and argument parsing failures are handled. You can choose between built-in handlers or create custom ones.
+
+**Built-in Handlers:**
+
+| Handler | Tool Execution Errors | Parse Errors | Use Case |
+|---------|----------------------|--------------|----------|
+| `ExceptionHandler.default` | IO/Interrupt errors propagate; others sent to LLM | Sent to LLM with descriptive message | **Recommended for most cases** |
+| `ExceptionHandler.sendAllToLLM` | All errors sent to LLM | All errors sent to LLM | Let LLM recover from all errors |
+| `ExceptionHandler.propagateAll` | All errors propagate | All errors propagate | Strict mode, fail fast |
+
+**Default Handler (recommended):**
+
+```scala
+val config = AgentConfig(
+  maxIterations = 5,
+  userTools = Seq(myTool),
+  exceptionHandler = ExceptionHandler.default  // This is the default, can be omitted
+)
+```
+
+The default handler:
+- **Propagates** `IOException` and `InterruptedException` (system-level errors that typically can't be recovered)
+- **Sends to LLM** all other exceptions with descriptive error messages, allowing the agent to retry or adjust
+
+**Send All to LLM:**
+
+```scala
+val config = AgentConfig(
+  maxIterations = 5,
+  userTools = Seq(myTool),
+  exceptionHandler = ExceptionHandler.sendAllToLLM
+)
+```
+
+All errors are converted to messages and sent to the LLM, giving it maximum opportunity to recover.
+
+**Propagate All (Strict Mode):**
+
+```scala
+val config = AgentConfig(
+  maxIterations = 5,
+  userTools = Seq(myTool),
+  exceptionHandler = ExceptionHandler.propagateAll
+)
+```
+
+All errors immediately terminate the agent loop by propagating the exception. Use this for strict error handling where any failure should stop execution.
+
+**Custom Handler:**
+
+```scala
+val customHandler = new ExceptionHandler {
+  def handleToolException(toolName: String, exception: Exception): Either[String, Exception] =
+    exception match {
+      case e: MyRecoverableException =>
+        Left(s"Recoverable error in $toolName: ${e.getMessage}")
+      case other =>
+        Right(other)  // Propagate
+    }
+
+  def handleParseError(
+      toolName: String,
+      rawArguments: String,
+      parseException: Exception
+  ): Either[String, Exception] =
+    Left(s"Invalid arguments for $toolName - please check the schema")
+}
+
+val config = AgentConfig(
+  maxIterations = 5,
+  userTools = Seq(myTool),
+  exceptionHandler = customHandler
+)
+```
+
+Return `Left(message)` to send the error to the LLM and continue the loop, or `Right(exception)` to propagate and terminate.
+
+#### Tool Definition
+
+Tools are defined using type-safe case classes with the `derives` syntax:
+
+```scala
+import sttp.ai.core.json.SnakePickle
+import sttp.tapir.Schema
+
+case class CalculatorInput(
+  operation: String,
+  a: Double,
+  b: Double
+) derives SnakePickle.ReadWriter, Schema
+
+val calculatorTool = AgentTool.fromFunction(
+  "calculate",
+  "Perform a mathematical calculation"
+) { (input: CalculatorInput) =>
+  input.operation match {
+    case "add"      => s"${input.a + input.b}"
+    case "subtract" => s"${input.a - input.b}"
+    case "multiply" => s"${input.a * input.b}"
+    case "divide"   => 
+      if (input.b != 0) s"${input.a / input.b}" 
+      else "Error: Division by zero"
+  }
+}
+```
+
+The `derives SnakePickle.ReadWriter, Schema` clause automatically generates the necessary serialization and schema information for the tool.
+
+**Built-in `finish` Tool:**
+
+The framework automatically provides a `finish` tool that agents call to terminate execution. Reserved name, cannot be overridden.
+
+#### Agent Result
+
+```scala
+case class AgentResult(
+  finalAnswer: String,
+  iterations: Int,
+  toolCalls: Seq[ToolCallRecord],
+  finishReason: FinishReason  // MaxIterations | ToolFinish | NaturalStop | Error
+)
+```
+
+### Custom Backend
+
+You can add support for any LLM API by implementing the `AgentBackend` interface:
+
+```scala
+trait AgentBackend[F[_]] {
+  def sendRequest(
+      history: ConversationHistory,
+      backend: Backend[F]
+  ): F[AgentResponse]
+}
+
+case class AgentResponse(
+    textContent: String,
+    toolCalls: Seq[ToolCall],
+    stopReason: Option[String]
+)
+```
+
+Your implementation needs to:
+1. Convert `ConversationHistory` to your API's message format
+2. Convert `AgentTool` definitions to your API's tool schema
+3. Send request and parse the response into `AgentResponse`
+
+See `OpenAIAgentBackend` and `ClaudeAgentBackend` in source code (`openai/src/main/scala/sttp/ai/openai/agent/` and `claude/src/main/scala/sttp/ai/claude/agent/`) for reference implementations.
+
+### Effect Systems
+
+#### Cats Effect
+
+```scala
+import cats.effect.{IO, IOApp}
+import sttp.client4.httpclient.cats.HttpClientCatsBackend
+import sttp.ai.openai.agent.OpenAIAgent
+
+object CatsEffectExample extends IOApp.Simple {
+  def run: IO[Unit] =
+    AgentConfig(maxIterations = 5, userTools = Seq(weatherTool)) match {
+      case Right(config) =>
+        HttpClientCatsBackend.resource[IO]().use { backend =>
+          val agent = OpenAIAgent[IO](OpenAI.fromEnv, "gpt-4o-mini", config)
+          agent.run("What's the weather in London?")(backend)
+            .flatMap(r => IO.println(s"Answer: ${r.finalAnswer}"))
+        }
+      case Left(error) => IO.println(s"Config error: $error")
+    }
+}
+```
+
+#### ZIO
+
+```scala
+import zio.*
+import sttp.client4.httpclient.zio.HttpClientZioBackend
+import sttp.ai.openai.agent.OpenAIAgent
+
+object ZIOExample extends ZIOAppDefault {
+  def run =
+    AgentConfig(maxIterations = 5, userTools = Seq(weatherTool)) match {
+      case Right(config) =>
+        ZIO.scoped {
+          for {
+            backend <- HttpClientZioBackend.scoped()
+            agent = OpenAIAgent[Task](OpenAI.fromEnv, "gpt-4o-mini", config)
+            result <- agent.run("What's the weather in London?")(backend)
+            _ <- Console.printLine(s"Answer: ${result.finalAnswer}")
+          } yield ()
+        }
+      case Left(error) => Console.printLine(s"Config error: $error")
+    }
+}
+```
+
+### Running Examples
+
+See `examples/src/main/scala/examples/AgentLoopExample.scala`:
+
+```bash
+cd examples
+scala-cli run . -M examples.AgentLoopExample
 ```
 
 ## OpenAI-Compatible APIs
