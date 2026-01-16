@@ -106,16 +106,16 @@ class AgentSpec extends AnyFlatSpec with Matchers {
     result.toolCalls should have size 1
   }
 
-  it should "stop on natural stop when no tool calls" in {
+  it should "continue loop when no tool calls until max iterations" in {
     val result = runLoop(
       Seq(
         AgentResponse("Final answer without tools", Seq.empty, StopReason.EndTurn)
       )
     )
 
-    result.finishReason shouldBe FinishReason.NaturalStop
+    result.finishReason shouldBe FinishReason.MaxIterations
     result.finalAnswer shouldBe "Final answer without tools"
-    result.iterations shouldBe 1
+    result.iterations shouldBe 5
     result.toolCalls shouldBe empty
   }
 
@@ -130,13 +130,13 @@ class AgentSpec extends AnyFlatSpec with Matchers {
           ),
           StopReason.ToolUse
         ),
-        AgentResponse("Done", Seq.empty, StopReason.EndTurn)
+        AgentResponse("", Seq(ToolCall(id = "call_3", toolName = "finish", input = """{"answer":"Done"}""")), StopReason.ToolUse)
       ),
       tools = Seq(calculatorTool)
     )
 
     result.iterations shouldBe 2
-    result.toolCalls should have size 2
+    result.toolCalls should have size 3
     result.toolCalls(0).toolName shouldBe "calculator"
     result.toolCalls(0).output shouldBe "Result: 15.0"
     result.toolCalls(0).iteration shouldBe 1
@@ -162,13 +162,13 @@ class AgentSpec extends AnyFlatSpec with Matchers {
           ),
           StopReason.ToolUse
         ),
-        AgentResponse("Recovered", Seq.empty, StopReason.EndTurn)
+        AgentResponse("", Seq(ToolCall(id = "call_2", toolName = "finish", input = """{"answer":"Recovered"}""")), StopReason.ToolUse)
       ),
       tools = Seq(errorTool)
     )
 
     result.iterations shouldBe 2
-    result.toolCalls should have size 1
+    result.toolCalls should have size 2
     result.toolCalls.head.toolName shouldBe "error_tool"
     result.toolCalls.head.output should include("Error executing tool")
     result.toolCalls.head.output should include("Tool error")
@@ -184,12 +184,12 @@ class AgentSpec extends AnyFlatSpec with Matchers {
           ),
           StopReason.ToolUse
         ),
-        AgentResponse("Recovered", Seq.empty, StopReason.EndTurn)
+        AgentResponse("", Seq(ToolCall(id = "call_2", toolName = "finish", input = """{"answer":"Recovered"}""")), StopReason.ToolUse)
       )
     )
 
     result.iterations shouldBe 2
-    result.toolCalls should have size 1
+    result.toolCalls should have size 2
     result.toolCalls.head.toolName shouldBe "unknown_tool"
     result.toolCalls.head.output shouldBe "Tool not found: unknown_tool"
   }
@@ -221,20 +221,27 @@ class AgentSpec extends AnyFlatSpec with Matchers {
   }
 
   it should "add iteration markers after first iteration" in {
-    val config = AgentConfig(maxIterations = 3).right.get
+    val dummyTool = AgentTool.fromFunction(
+      "dummy",
+      "Dummy tool"
+    )((_: DummyInput) => "dummy result")
+
+    val config = AgentConfig(maxIterations = 3, userTools = Seq(dummyTool)).toOption.get
     val (loop, stubBackend) = createLoop(
       Seq(
-        AgentResponse("First", Seq.empty, StopReason.EndTurn),
-        AgentResponse("Second", Seq.empty, StopReason.EndTurn)
+        AgentResponse("", Seq(ToolCall(id = "call_1", toolName = "dummy", input = "{}")), StopReason.ToolUse),
+        AgentResponse("", Seq(ToolCall(id = "call_2", toolName = "finish", input = """{"answer":"Done"}""")), StopReason.ToolUse)
       ),
       config
     )
 
     loop.run("Test")(backend)
 
-    stubBackend.receivedHistories should have size 1
+    stubBackend.receivedHistories should have size 2
     val firstHistory = stubBackend.receivedHistories.head
     firstHistory.entries.exists(_.isInstanceOf[ConversationEntry.IterationMarker]) shouldBe false
+    val secondHistory = stubBackend.receivedHistories(1)
+    secondHistory.entries.exists(_.isInstanceOf[ConversationEntry.IterationMarker]) shouldBe true
   }
 
   it should "finish tool has priority over other tools" in {
@@ -376,17 +383,17 @@ class AgentSpec extends AnyFlatSpec with Matchers {
     val (loop, _) = createLoop(
       Seq(
         AgentResponse("", Seq(ToolCall(id = "call_1", toolName = "error_tool", input = "{}")), StopReason.ToolUse),
-        AgentResponse("Recovered", Seq.empty, StopReason.EndTurn)
+        AgentResponse("", Seq(ToolCall(id = "call_2", toolName = "finish", input = """{"answer":"Recovered"}""")), StopReason.ToolUse)
       ),
       config
     )
 
     val result = loop.run("Test")(backend)
 
-    result.toolCalls should have size 1
+    result.toolCalls should have size 2
     result.toolCalls.head.output should include("Error executing tool 'error_tool'")
     result.toolCalls.head.output should include("Logic error")
-    result.finishReason shouldBe FinishReason.NaturalStop
+    result.finishReason shouldBe FinishReason.ToolFinish
   }
 
   "Agent with sendAllToLLM ExceptionHandler" should "send IOException to LLM instead of propagating" in {
@@ -406,7 +413,7 @@ class AgentSpec extends AnyFlatSpec with Matchers {
     val (loop, _) = createLoop(
       Seq(
         AgentResponse("", Seq(ToolCall(id = "call_1", toolName = "io_tool", input = "{}")), StopReason.ToolUse),
-        AgentResponse("Recovered", Seq.empty, StopReason.EndTurn)
+        AgentResponse("", Seq(ToolCall(id = "call_2", toolName = "finish", input = """{"answer":"Recovered"}""")), StopReason.ToolUse)
       ),
       config
     )
@@ -415,7 +422,7 @@ class AgentSpec extends AnyFlatSpec with Matchers {
 
     result.toolCalls.head.output should include("Error executing tool 'io_tool'")
     result.toolCalls.head.output should include("Network error")
-    result.finishReason shouldBe FinishReason.NaturalStop
+    result.finishReason shouldBe FinishReason.ToolFinish
   }
 
   "Agent with propagateAll ExceptionHandler" should "propagate all errors" in {
@@ -459,7 +466,7 @@ class AgentSpec extends AnyFlatSpec with Matchers {
       Seq(
         // Invalid input - string instead of int
         AgentResponse("", Seq(ToolCall(id = "call_1", toolName = "number", input = """{"value":"not_a_number"}""")), StopReason.ToolUse),
-        AgentResponse("Fixed", Seq.empty, StopReason.EndTurn)
+        AgentResponse("", Seq(ToolCall(id = "call_2", toolName = "finish", input = """{"answer":"Fixed"}""")), StopReason.ToolUse)
       ),
       config
     )
@@ -468,7 +475,7 @@ class AgentSpec extends AnyFlatSpec with Matchers {
 
     result.toolCalls.head.output should include("Invalid arguments for tool 'number'")
     result.toolCalls.head.output should include("Please check the tool definition")
-    result.finishReason shouldBe FinishReason.NaturalStop
+    result.finishReason shouldBe FinishReason.ToolFinish
   }
 
   it should "handle malformed JSON" in {
@@ -480,7 +487,7 @@ class AgentSpec extends AnyFlatSpec with Matchers {
     val (loop, _) = createLoop(
       Seq(
         AgentResponse("", Seq(ToolCall(id = "call_1", toolName = "calculator", input = """{"a":not valid json}""")), StopReason.ToolUse),
-        AgentResponse("Fixed", Seq.empty, StopReason.EndTurn)
+        AgentResponse("", Seq(ToolCall(id = "call_2", toolName = "finish", input = """{"answer":"Fixed"}""")), StopReason.ToolUse)
       ),
       config
     )
@@ -488,7 +495,7 @@ class AgentSpec extends AnyFlatSpec with Matchers {
     val result = loop.run("Test")(backend)
 
     result.toolCalls.head.output should include("Invalid arguments")
-    result.finishReason shouldBe FinishReason.NaturalStop
+    result.finishReason shouldBe FinishReason.ToolFinish
   }
 
   "Agent with custom ExceptionHandler" should "use custom error formatting" in {
