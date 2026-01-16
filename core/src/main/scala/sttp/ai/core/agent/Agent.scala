@@ -35,20 +35,13 @@ class Agent[F[_]](
           history
         }
 
-        val responseFuture = agentBackend.sendRequest(historyWithMarker, backend)
+        val response = agentBackend.sendRequest(historyWithMarker, backend)
 
-        monad.flatMap(responseFuture) { response =>
+        monad.flatMap(response) { response =>
           if (response.toolCalls.isEmpty) {
-            val finishReason = mapStopReason(response.stopReason)
-
-            monad.unit(
-              AgentResult(
-                finalAnswer = response.textContent,
-                iterations = iteration + 1,
-                toolCalls = toolCallRecords,
-                finishReason = finishReason
-              )
-            )
+            // No tool calls - add assistant response to history and continue the loop
+            val updatedHistory = history.addAssistantResponse(response.textContent, response.toolCalls)
+            loop(updatedHistory, iteration + 1, toolCallRecords)
           } else {
             val updatedHistory = history.addAssistantResponse(response.textContent, response.toolCalls)
 
@@ -134,14 +127,6 @@ class Agent[F[_]](
         }
     }
   }
-
-  private def mapStopReason(stopReason: StopReason): FinishReason =
-    stopReason match {
-      case StopReason.MaxTokens     => FinishReason.TokenLimit
-      case StopReason.ContentFilter => FinishReason.Error("Content filtered")
-      case StopReason.Other(reason) => FinishReason.Error(s"Unknown stop reason: $reason")
-      case _                        => FinishReason.NaturalStop
-    }
 
   private def extractFinalAnswer(history: ConversationHistory): String =
     history.entries.reverseIterator
