@@ -9,6 +9,8 @@ import sttp.apispec.circe._
 import sttp.client4.Backend
 import io.circe.syntax._
 import ujson.circe.CirceJson
+import sttp.shared.Identity
+import sttp.monad.IdentityMonad
 
 private[claude] class ClaudeAgentBackend[F[_]](
     client: ClaudeClient,
@@ -164,4 +166,16 @@ object ClaudeAgent {
     )
     Agent(backend, config)
   }
+
+  def synchronous(
+      claudeConfig: ClaudeConfig,
+      modelName: String,
+      config: AgentConfig
+  ): Agent[Identity] = apply(claudeConfig, modelName, config)(IdentityMonad)
+
+  def synchronous(
+      client: ClaudeClient,
+      modelName: String,
+      config: AgentConfig
+  ): Agent[Identity] = apply(client, modelName, config)(IdentityMonad)
 }

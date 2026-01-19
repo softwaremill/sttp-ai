@@ -529,7 +529,9 @@ object BasicExample extends App {
 }
 ```
 
-**For Claude:** Use `ClaudeAgent[Identity](ClaudeConfig.fromEnv, "claude-3-haiku-20240307", config)` instead.
+**For Claude:** Use `ClaudeAgent.synchronous(ClaudeConfig.fromEnv, "claude-3-haiku-20240307", config)` instead.
+
+**For effect systems:** use `OpenAIAgent.apply[F]` and `ClaudeAgent.apply[F]`.
 
 ### Core Components
 
