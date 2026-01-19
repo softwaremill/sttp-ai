@@ -145,12 +145,12 @@ object ClaudeClient {
     * @return
     *   ClaudeClient instance
     */
-  def apply(config: ClaudeConfig): ClaudeClientImpl = new ClaudeClientImpl(config)
+  def apply(config: ClaudeConfig): ClaudeClient = new ClaudeClientImpl(config)
 
   /** Creates a ClaudeClient from environment variables using ClaudeConfig.fromEnv.
     *
     * @return
     *   ClaudeClient instance
     */
-  def fromEnv: ClaudeClientImpl = apply(ClaudeConfig.fromEnv)
+  def fromEnv: ClaudeClient = apply(ClaudeConfig.fromEnv)
 }
