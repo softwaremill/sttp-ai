@@ -5,8 +5,6 @@ import sttp.ai.core.json.SnakePickle
 import sttp.ai.openai.OpenAI
 import sttp.ai.openai.agent.OpenAIAgent
 import sttp.client4.DefaultSyncBackend
-import sttp.monad.IdentityMonad
-import sttp.shared.Identity
 import sttp.tapir.Schema
 
 object AgentLoopExample extends App {
@@ -56,7 +54,7 @@ object AgentLoopExample extends App {
   try
     configResult match {
       case Right(config) =>
-        val agent = OpenAIAgent[Identity](openai, "gpt-4o-mini", config)(IdentityMonad)
+        val agent = OpenAIAgent.synchronous(openai, "gpt-4o-mini", config)
 
         val result = agent.run(prompt)(backend)
 

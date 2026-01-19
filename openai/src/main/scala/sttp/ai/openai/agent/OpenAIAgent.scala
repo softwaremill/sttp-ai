@@ -7,6 +7,8 @@ import sttp.ai.openai.requests.completions.chat.ChatRequestBody.{ChatBody, ChatC
 import sttp.ai.openai.requests.completions.chat.message.{Content, Message, Tool}
 import sttp.ai.openai.requests.completions.chat.{FunctionCall, SchemaSupport, ToolCall => OpenAIToolCall}
 import sttp.client4.Backend
+import sttp.shared.Identity
+import sttp.monad.IdentityMonad
 
 private[openai] class OpenAIAgentBackend[F[_]](
     openAI: OpenAI,
@@ -155,4 +157,16 @@ object OpenAIAgent {
     )
     Agent(backend, config)
   }
+
+  def synchronous(
+      apiKey: String,
+      modelName: String,
+      config: AgentConfig
+  ): Agent[Identity] = apply(apiKey, modelName, config)(IdentityMonad)
+
+  def synchronous(
+      openAI: OpenAI,
+      modelName: String,
+      config: AgentConfig
+  ): Agent[Identity] = apply(openAI, modelName, config)(IdentityMonad)
 }
