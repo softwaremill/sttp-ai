@@ -29,6 +29,7 @@ sttp is a family of Scala HTTP-related projects, and currently includes:
   - [Basic Usage](#basic-usage-claude)
   - [Configuration](#claude-configuration)
   - [Messages API](#claude-messages-api)
+  - [Structured Outputs](#claude-structured-outputs)
   - [Tool Calling](#claude-tool-calling)
   - [Streaming](#claude-streaming)
   - [Models API](#claude-models-api)
@@ -141,6 +142,7 @@ This module provides **native support for Anthropic's Claude API** within the st
 - ✅ **Models API** - List available Claude models via `/v1/models`
 - ✅ **Streaming Support** - Server-Sent Events streaming for all effect systems (fs2, ZIO, Akka, Pekko, Ox)
 - ✅ **Tool Calling** - Native Claude tool calling support
+- ✅ **Structured Outputs** - Beta support for JSON schema validation (Claude 4.1+ models)
 - ✅ **Image Support** - Multi-modal inputs via ContentBlock with base64 encoding
 - ✅ **Comprehensive Error Handling** - Claude-specific exception hierarchy
 - ✅ **System Messages** - Proper system message handling via `system` parameter
@@ -290,6 +292,168 @@ val request = MessageRequest(
   tools = Some(tools)                // Tool calling support
 )
 ```
+
+### Claude Structured Outputs
+
+Claude's structured output feature (currently in beta) allows you to enforce that the model's response follows a specific JSON schema. This is useful for getting consistently formatted responses for data extraction, API responses, and structured data processing.
+
+**Model Support:**
+- ✅ **Supported models**: Claude 4.1+ models (`claude-sonnet-4-1-20250514`, `claude-opus-4-1-20250514`, etc.)
+- ❌ **Legacy models**: Claude 3.x series don't support structured outputs
+- ✅ **Forward compatibility**: Unknown/future models default to supported
+
+#### Basic Structured Output Example
+
+```scala mdoc:compile-only
+//> using dep com.softwaremill.sttp.ai::claude:0.4.4
+//> using dep com.softwaremill.sttp.tapir::tapir-core:1.11.7
+
+import sttp.ai.claude.*
+import sttp.ai.claude.config.ClaudeConfig
+import sttp.ai.claude.models.{ContentBlock, Message, OutputFormat}
+import sttp.ai.claude.requests.MessageRequest
+import sttp.ai.core.json.SnakePickle
+import sttp.apispec.{Schema => ASchema}
+import sttp.client4.*
+import sttp.tapir.Schema
+import sttp.tapir.docs.apispec.schema.TapirSchemaToJsonSchema
+import sttp.tapir.generic.auto.*
+
+object StructuredOutputExample:
+  // Define case class with Schema derivation
+  case class PersonInfo(
+    name: String,
+    age: Int,
+    occupation: String,
+    skills: List[String]
+  )
+
+  object PersonInfo:
+    given SnakePickle.Reader[PersonInfo] = SnakePickle.macroR[PersonInfo]
+
+  def main(args: Array[String]): Unit =
+    val config = ClaudeConfig.fromEnv
+    val backend: SyncBackend = DefaultSyncBackend()
+    val client = ClaudeClient(config)
+
+    // Generate JSON schema from case class using Tapir
+    val tapirSchema = implicitly[Schema[PersonInfo]]
+    val jsonSchema: ASchema = TapirSchemaToJsonSchema(tapirSchema, markOptionsAsNullable = true)
+
+    // Convert to ujson format and create OutputFormat
+    val outputFormat = OutputFormat.JsonSchema.fromApiSpec("person_info", jsonSchema)
+
+    val messages = List(
+      Message.user(List(ContentBlock.text(
+        "Extract information about John, a 30-year-old software engineer who knows Python and Scala."
+      )))
+    )
+
+    val request = MessageRequest.withStructuredOutput(
+      model = "claude-sonnet-4-5-20250514", // Structured output supported model
+      messages = messages,
+      maxTokens = 500,
+      outputFormat = outputFormat
+    )
+
+    val response = client.createMessage(request).send(backend)
+
+    response.body match {
+      case Right(messageResponse) =>
+        messageResponse.content.foreach {
+          case ContentBlock.TextContent(text) =>
+            println("Structured JSON output:")
+            println(text)
+
+            // Parse JSON response back to case class
+            val personInfo = SnakePickle.read[PersonInfo](text)
+            println(s"Parsed: ${personInfo.name}, age ${personInfo.age}, ${personInfo.occupation}")
+            println(s"Skills: ${personInfo.skills.mkString(", ")}")
+          case _ => // Handle other content types
+        }
+      case Left(error) =>
+        println(s"Error: ${error.getMessage}")
+    }
+
+    backend.close()
+```
+
+#### Alternative: Manual Schema Definition
+
+If you prefer not to use Tapir, you can define schemas manually:
+
+```scala
+import ujson.*
+
+// Create from ujson.Value
+val schema = ujson.Obj(
+  "type" -> "object",
+  "properties" -> ujson.Obj(
+    "summary" -> ujson.Obj("type" -> "string"),
+    "confidence" -> ujson.Obj("type" -> "number", "minimum" -> 0, "maximum" -> 1)
+  ),
+  "required" -> ujson.Arr("summary", "confidence")
+)
+val outputFormat = OutputFormat.JsonSchema("analysis", schema)
+
+// Create from JSON string
+val jsonSchemaString = """
+{
+  "type": "object",
+  "properties": {
+    "name": {"type": "string"},
+    "age": {"type": "integer"}
+  },
+  "required": ["name", "age"]
+}
+"""
+val outputFormat2 = OutputFormat.JsonSchema.fromJson("person", jsonSchemaString)
+```
+
+#### Error Handling for Structured Outputs
+
+```scala
+import sttp.ai.claude.ClaudeExceptions.*
+
+client.createMessage(request).send(backend) match {
+  case Right(response) =>
+    // Process valid structured response
+    handleStructuredResponse(response)
+  case Left(error) => error match {
+    case _: UnsupportedModelForStructuredOutputException =>
+      println("This model doesn't support structured outputs. Use Claude 4.1+ models.")
+    case _: InvalidRequestException if error.getMessage.contains("output_format") =>
+      println("Invalid JSON schema provided")
+    case other =>
+      println(s"Other error: ${other.getMessage}")
+  }
+}
+```
+
+#### Model Compatibility Check
+
+```scala
+import sttp.ai.claude.models.ClaudeModel
+
+// Check if a model supports structured output
+val modelId = "claude-sonnet-4-5-20250514"
+val isSupported = ClaudeModel.modelSupportsStructuredOutput(modelId)
+
+if (isSupported) {
+  // Use structured output
+  val request = MessageRequest.withStructuredOutput(modelId, messages, 500, outputFormat)
+} else {
+  // Fall back to regular request
+  val request = MessageRequest.simple(modelId, messages, 500)
+}
+```
+
+**Important Notes:**
+- Structured outputs require Claude 4.1+ models (`claude-sonnet-4-1-*`, `claude-opus-4-1-*`, etc.)
+- Legacy Claude 3.x models will throw `UnsupportedModelForStructuredOutputException`
+- The beta feature uses `anthropic-beta: structured-outputs-2025-11-13` header automatically
+- Unknown/future models default to supporting structured outputs for forward compatibility
+- JSON schemas must be valid and follow standard JSON Schema specifications
 
 ### Claude Tool Calling
 
