@@ -16,7 +16,7 @@ abstract class AIException(
       message.getOrElse(if (cause != null) cause.getMessage else null),
       cause
     ) {
-  
+
   def this(
       message: Option[String],
       `type`: Option[String],

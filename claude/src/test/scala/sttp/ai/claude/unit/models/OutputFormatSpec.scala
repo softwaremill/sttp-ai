@@ -43,10 +43,10 @@ class OutputFormatSpec extends AnyFlatSpec with Matchers {
 
   it should "include additionalProperties: false for object types with properties" in {
     val format = OutputFormat.JsonSchema.withTapirSchema[Person]
-    
+
     val json = SnakePickle.write(format)
     val parsed = ujson.read(json)
-    
+
     parsed("schema")("additionalProperties").bool shouldBe false
   }
 

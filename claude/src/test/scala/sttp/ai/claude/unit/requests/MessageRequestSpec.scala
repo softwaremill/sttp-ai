@@ -11,11 +11,11 @@ import ujson._
 class MessageRequestSpec extends AnyFlatSpec with Matchers {
 
   case class UserProfile(
-    name: String,
-    age: Int,
-    email: String,
-    isActive: Boolean,
-    tags: List[String]
+      name: String,
+      age: Int,
+      email: String,
+      isActive: Boolean,
+      tags: List[String]
   )
 
   implicit val userProfileSchema: TSchema[UserProfile] = TSchema.derived[UserProfile]
@@ -35,7 +35,7 @@ class MessageRequestSpec extends AnyFlatSpec with Matchers {
     parsed("model").str shouldBe "claude-sonnet-4-5-20250514"
     parsed("max_tokens").num shouldBe 1024
     parsed("output_format")("type").str shouldBe "json_schema"
-    
+
     val schema = parsed("output_format")("schema")
     schema("type").str shouldBe "object"
     schema("properties").obj.contains("name") shouldBe true
