@@ -53,6 +53,11 @@ object ContentBlock {
     implicit val rw: ReadWriter[ImageSource] = macroRW
   }
 
+  def text(content: String): TextContent = TextContent(content)
+
+  def image(mediaType: String, data: String): ImageContent =
+    ImageContent(ImageSource.base64(mediaType, data))
+
   implicit val textContentRW: ReadWriter[TextContent] = macroRW
   implicit val imageContentRW: ReadWriter[ImageContent] = macroRW
   implicit val toolUseContentRW: ReadWriter[ToolUseContent] = macroRW
