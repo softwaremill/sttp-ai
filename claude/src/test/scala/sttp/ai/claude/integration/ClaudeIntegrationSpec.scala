@@ -311,12 +311,8 @@ class ClaudeIntegrationSpec extends AnyFlatSpec with Matchers with BeforeAndAfte
       val outputFormat = OutputFormat.JsonSchema.withTapirSchema[Person]
 
       val request = MessageRequest
-        .simple(
-          model = "claude-haiku-4-5-20251001",
-          messages = List(Message.user("Generate a person named Alice who is 30 years old.")),
-          maxTokens = 100,
-          outputFormat = Some(outputFormat)
-        )
+        .simple("claude-haiku-4-5-20251001", List(Message.user("Generate a person named Alice who is 30 years old.")), 100)
+        .withStructuredOutput(outputFormat)
 
       // when
       val response = client.createMessage(request)
@@ -347,12 +343,8 @@ class ClaudeIntegrationSpec extends AnyFlatSpec with Matchers with BeforeAndAfte
         val client = ClaudeSyncClient.fromEnv
         try {
           val request = MessageRequest
-            .simple(
-              model = "claude-3-haiku-20240307",
-              messages = List(Message.user("Test")),
-              maxTokens = 10,
-              outputFormat = Some(outputFormat)
-            )
+            .simple("claude-3-haiku-20240307", List(Message.user("Test")), 10)
+            .withStructuredOutput(outputFormat)
 
           client.createMessage(request)
         } finally client.close()

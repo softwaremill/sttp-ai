@@ -18,6 +18,9 @@ case class MessageRequest(
     outputFormat: Option[OutputFormat] = None
 ) {
   def usesStructuredOutput: Boolean = outputFormat.exists(_.isInstanceOf[OutputFormat.JsonSchema])
+
+  def withStructuredOutput(format: OutputFormat): MessageRequest =
+    this.copy(outputFormat = Some(format))
 }
 
 object MessageRequest {
@@ -51,14 +54,12 @@ object MessageRequest {
       model: String,
       messages: List[Message],
       maxTokens: Int,
-      tools: List[Tool],
-      outputFormat: Option[OutputFormat] = None
+      tools: List[Tool]
   ): MessageRequest = MessageRequest(
     model = model,
     messages = messages,
     maxTokens = maxTokens,
-    tools = Some(tools),
-    outputFormat = outputFormat
+    tools = Some(tools)
   )
 
   implicit val rw: ReadWriter[MessageRequest] = macroRW

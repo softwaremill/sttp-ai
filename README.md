@@ -169,7 +169,7 @@ object Main:
 
     // Create a simple message
     val messages = List(
-      Message.user(List(ContentBlock.TextContent("Hello Claude! What's the weather like today?")))
+      Message.user(List(ContentBlock.text("Hello Claude! What's the weather like today?")))
     )
 
     val request = MessageRequest.simple(
@@ -340,8 +340,7 @@ object StructuredOutputExample:
     val tapirSchema = implicitly[Schema[PersonInfo]]
     val jsonSchema: ASchema = TapirSchemaToJsonSchema(tapirSchema, markOptionsAsNullable = true)
 
-    // Convert to ujson format and create OutputFormat
-    val outputFormat = OutputFormat.JsonSchema.fromApiSpec("person_info", jsonSchema)
+    val outputFormat = OutputFormat.JsonSchema(jsonSchema)
 
     val messages = List(
       Message.user(List(ContentBlock.text(
@@ -349,12 +348,9 @@ object StructuredOutputExample:
       )))
     )
 
-    val request = MessageRequest.withStructuredOutput(
-      model = "claude-sonnet-4-5-20250514", // Structured output supported model
-      messages = messages,
-      maxTokens = 500,
-      outputFormat = outputFormat
-    )
+    val request = MessageRequest
+      .simple("claude-sonnet-4-5-20250514", messages, 500)
+      .withStructuredOutput(outputFormat)
 
     val response = client.createMessage(request).send(backend)
 
@@ -378,79 +374,27 @@ object StructuredOutputExample:
     backend.close()
 ```
 
-#### Alternative: Manual Schema Definition
+#### Manual Schema Definition
 
 If you prefer not to use Tapir, you can define schemas manually:
 
 ```scala
-import ujson.*
+import sttp.apispec.{Schema => ASchema, SchemaType}
+import scala.collection.immutable.ListMap
 
-// Create from ujson.Value
-val schema = ujson.Obj(
-  "type" -> "object",
-  "properties" -> ujson.Obj(
-    "summary" -> ujson.Obj("type" -> "string"),
-    "confidence" -> ujson.Obj("type" -> "number", "minimum" -> 0, "maximum" -> 1)
+val schema: ASchema = ASchema(SchemaType.Object).copy(
+  properties = ListMap(
+    "summary" -> ASchema(SchemaType.String),
+    "confidence" -> ASchema(SchemaType.Number).copy(minimum = Some(0), maximum = Some(1))
   ),
-  "required" -> ujson.Arr("summary", "confidence")
+  required = List("summary", "confidence")
 )
-val outputFormat = OutputFormat.JsonSchema("analysis", schema)
-
-// Create from JSON string
-val jsonSchemaString = """
-{
-  "type": "object",
-  "properties": {
-    "name": {"type": "string"},
-    "age": {"type": "integer"}
-  },
-  "required": ["name", "age"]
-}
-"""
-val outputFormat2 = OutputFormat.JsonSchema.fromJson("person", jsonSchemaString)
-```
-
-#### Error Handling for Structured Outputs
-
-```scala
-import sttp.ai.claude.ClaudeExceptions.*
-
-client.createMessage(request).send(backend) match {
-  case Right(response) =>
-    // Process valid structured response
-    handleStructuredResponse(response)
-  case Left(error) => error match {
-    case _: UnsupportedModelForStructuredOutputException =>
-      println("This model doesn't support structured outputs. Use Claude 4.1+ models.")
-    case _: InvalidRequestException if error.getMessage.contains("output_format") =>
-      println("Invalid JSON schema provided")
-    case other =>
-      println(s"Other error: ${other.getMessage}")
-  }
-}
-```
-
-#### Model Compatibility Check
-
-```scala
-import sttp.ai.claude.models.ClaudeModel
-
-// Check if a model supports structured output
-val modelId = "claude-sonnet-4-5-20250514"
-val isSupported = ClaudeModel.modelSupportsStructuredOutput(modelId)
-
-if (isSupported) {
-  // Use structured output
-  val request = MessageRequest.withStructuredOutput(modelId, messages, 500, outputFormat)
-} else {
-  // Fall back to regular request
-  val request = MessageRequest.simple(modelId, messages, 500)
-}
+val outputFormat = OutputFormat.JsonSchema(schema)
 ```
 
 **Important Notes:**
 - Structured outputs require Claude 4.1+ models (`claude-sonnet-4-1-*`, `claude-opus-4-1-*`, etc.)
-- Legacy Claude 3.x models will throw `UnsupportedModelForStructuredOutputException`
+- Legacy models will throw `UnsupportedModelForStructuredOutputException`
 - The beta feature uses `anthropic-beta: structured-outputs-2025-11-13` header automatically
 - Unknown/future models default to supporting structured outputs for forward compatibility
 - JSON schemas must be valid and follow standard JSON Schema specifications

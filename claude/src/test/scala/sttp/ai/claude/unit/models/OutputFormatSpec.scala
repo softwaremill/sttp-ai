@@ -89,10 +89,20 @@ class OutputFormatSpec extends AnyFlatSpec with Matchers {
 
     val sampleMessages = List(Message.user(List(ContentBlock.TextContent("Hello"))))
 
-    val textRequest = MessageRequest.simple("claude-sonnet-4-5-20250514", sampleMessages, 1024, Some(OutputFormat.Text))
+    val textRequest = MessageRequest(
+      model = "claude-sonnet-4-5-20250514",
+      messages = sampleMessages,
+      maxTokens = 1024,
+      outputFormat = Some(OutputFormat.Text)
+    )
     textRequest.usesStructuredOutput shouldBe false
 
-    val jsonObjectRequest = MessageRequest.simple("claude-sonnet-4-5-20250514", sampleMessages, 1024, Some(OutputFormat.JsonObject))
+    val jsonObjectRequest = MessageRequest(
+      model = "claude-sonnet-4-5-20250514",
+      messages = sampleMessages,
+      maxTokens = 1024,
+      outputFormat = Some(OutputFormat.JsonObject)
+    )
     jsonObjectRequest.usesStructuredOutput shouldBe false
   }
 
@@ -104,7 +114,9 @@ class OutputFormatSpec extends AnyFlatSpec with Matchers {
     val schema = sttp.apispec.Schema(`type` = Some(List(sttp.apispec.SchemaType.Object)))
     val jsonSchemaFormat = OutputFormat.JsonSchema(schema)
 
-    val request = MessageRequest.simple("claude-sonnet-4-5-20250514", sampleMessages, 1024, Some(jsonSchemaFormat))
+    val request = MessageRequest
+      .simple("claude-sonnet-4-5-20250514", sampleMessages, 1024)
+      .withStructuredOutput(jsonSchemaFormat)
     request.usesStructuredOutput shouldBe true
   }
 
@@ -114,7 +126,7 @@ class OutputFormatSpec extends AnyFlatSpec with Matchers {
 
     val sampleMessages = List(Message.user(List(ContentBlock.TextContent("Hello"))))
 
-    val request = MessageRequest.simple("claude-sonnet-4-5-20250514", sampleMessages, 1024, None)
+    val request = MessageRequest.simple("claude-sonnet-4-5-20250514", sampleMessages, 1024)
     request.usesStructuredOutput shouldBe false
   }
 }

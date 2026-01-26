@@ -27,7 +27,8 @@ class MessageRequestSpec extends AnyFlatSpec with Matchers {
   "MessageRequest serialization" should "include output_format with schema" in {
     val outputFormat = OutputFormat.JsonSchema.withTapirSchema[UserProfile]
     val request = MessageRequest
-      .simple("claude-sonnet-4-5-20250514", sampleMessages, 1024, Some(outputFormat))
+      .simple("claude-sonnet-4-5-20250514", sampleMessages, 1024)
+      .withStructuredOutput(outputFormat)
 
     val json = SnakePickle.write(request)
     val parsed = ujson.read(json)
@@ -56,12 +57,9 @@ class MessageRequestSpec extends AnyFlatSpec with Matchers {
 
   it should "round-trip with structured output" in {
     val outputFormat = OutputFormat.JsonSchema.withTapirSchema[UserProfile]
-    val request = MessageRequest.simple(
-      model = "claude-sonnet-4-5-20250514",
-      messages = sampleMessages,
-      maxTokens = 1024,
-      outputFormat = Some(outputFormat)
-    )
+    val request = MessageRequest
+      .simple("claude-sonnet-4-5-20250514", sampleMessages, 1024)
+      .withStructuredOutput(outputFormat)
 
     val json = SnakePickle.write(request)
     val deserialized = SnakePickle.read[MessageRequest](json)
