@@ -27,6 +27,7 @@ object OutputFormat {
 
   private case class ParseException(circeException: DecodingFailure) extends Exception("Failed to parse JSON schema", circeException)
 
+  // Claude API requires `additionalProperties: false` to exist always, without that it throws API exception
   private def addAdditionalPropertiesFalse(value: Value): Value = value match {
     case obj: ujson.Obj =>
       val isObjectType = obj.value.get("type").exists {

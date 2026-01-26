@@ -37,15 +37,11 @@ class ClaudeClientImpl(config: ClaudeConfig) extends ClaudeClient with ResponseH
       .header("anthropic-version", config.anthropicVersion)
       .header("content-type", "application/json")
 
-  private def claudeAuthRequestForMessage(request: MessageRequest): PartialRequest[Either[String, String]] = {
-    val base = claudeAuthRequest
+  private def claudeAuthRequestForMessage(request: MessageRequest): PartialRequest[Either[String, String]] =
     if (request.usesStructuredOutput) {
       validateModelForStructuredOutput(request.model)
-      base.header("anthropic-beta", StructuredOutputsBetaHeader)
-    } else {
-      base
-    }
-  }
+      claudeAuthRequest.header("anthropic-beta", StructuredOutputsBetaHeader)
+    } else claudeAuthRequest
 
   private def validateModelForStructuredOutput(modelId: String): Unit =
     if (!ClaudeModel.modelSupportsStructuredOutput(modelId)) {
