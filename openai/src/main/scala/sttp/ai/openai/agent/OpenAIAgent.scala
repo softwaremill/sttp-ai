@@ -43,11 +43,10 @@ private[openai] class OpenAIAgentBackend[F[_]](
 
       case ConversationEntry.AssistantResponse(content, toolCalls) =>
         val openaiToolCalls = toolCalls.map { tc =>
-          val argsJson = SnakePickle.write(tc.input)
           OpenAIToolCall.FunctionToolCall(
             id = Some(tc.id),
             function = FunctionCall(
-              arguments = argsJson,
+              arguments = tc.input,
               name = Some(tc.toolName)
             )
           )
