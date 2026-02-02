@@ -27,22 +27,30 @@ object OutputFormat {
 
   private case class ParseException(circeException: DecodingFailure) extends Exception("Failed to parse JSON schema", circeException)
 
+  // JSON Schema field name constants
+  private val TypeKey = "type"
+  private val PropertiesKey = "properties"
+  private val AdditionalPropertiesKey = "additionalProperties"
+  private val ObjectTypeValue = "object"
+
+  // OutputFormat type value constants
+  private val TextTypeValue = "text"
+  private val JsonObjectTypeValue = "json_object"
+  private val JsonSchemaTypeValue = "json_schema"
+
   // Claude API requires `additionalProperties: false` to exist always, without that it throws API exception
   private def addAdditionalPropertiesFalse(value: Value): Value = value match {
     case obj: ujson.Obj =>
-      val isObjectType = obj.value.get("type").exists {
-        case ujson.Str("object") => true
-        case _                   => false
-      }
-      val hasProperties = obj.value.contains("properties")
-      val hasAdditionalProperties = obj.value.contains("additionalProperties")
+      val isObjectType = obj.value.get(TypeKey).contains(ujson.Str(ObjectTypeValue))
+      val hasProperties = obj.value.contains(PropertiesKey)
+      val hasAdditionalProperties = obj.value.contains(AdditionalPropertiesKey)
+      val needsAdditionalProperties = isObjectType && hasProperties && !hasAdditionalProperties
 
-      if (isObjectType && hasProperties && !hasAdditionalProperties) {
-        val updated = obj.value.toMap + ("additionalProperties" -> ujson.Bool(false))
-        ujson.Obj.from(updated.view.mapValues(addAdditionalPropertiesFalse))
-      } else {
-        ujson.Obj.from(obj.value.view.mapValues(addAdditionalPropertiesFalse))
-      }
+      val updated =
+        if (needsAdditionalProperties) obj.value.toMap + (AdditionalPropertiesKey -> ujson.Bool(false))
+        else obj.value
+
+      ujson.Obj.from(updated.view.mapValues(addAdditionalPropertiesFalse))
     case arr: ujson.Arr =>
       ujson.Arr.from(arr.value.map(addAdditionalPropertiesFalse))
     case other => other
@@ -69,20 +77,16 @@ object OutputFormat {
     .readwriter[Value]
     .bimap[OutputFormat](
       {
-        case Text       => ujson.Obj("type" -> "text")
-        case JsonObject => ujson.Obj("type" -> "json_object")
-        case js: JsonSchema =>
-          val baseJson = SnakePickle.writeJs(js)
-          val objWithType = baseJson.obj.clone()
-          objWithType("type") = "json_schema"
-          objWithType
+        case Text           => ujson.Obj(TypeKey -> TextTypeValue)
+        case JsonObject     => ujson.Obj(TypeKey -> JsonObjectTypeValue)
+        case js: JsonSchema => SnakePickle.writeJs(js).obj + (TypeKey -> ujson.Str(JsonSchemaTypeValue))
       },
-      {
-        case obj if obj.obj.get("type").contains(ujson.Str("text"))        => Text
-        case obj if obj.obj.get("type").contains(ujson.Str("json_object")) => JsonObject
-        case obj if obj.obj.get("type").contains(ujson.Str("json_schema")) =>
-          SnakePickle.read[JsonSchema](obj)
-        case other => throw new Exception(s"Unknown OutputFormat: $other")
-      }
+      obj =>
+        obj.obj.get(TypeKey) match {
+          case Some(ujson.Str(TextTypeValue))       => Text
+          case Some(ujson.Str(JsonObjectTypeValue)) => JsonObject
+          case Some(ujson.Str(JsonSchemaTypeValue)) => SnakePickle.read[JsonSchema](obj)
+          case other                                => throw new Exception(s"Unknown OutputFormat: $other")
+        }
     )
 }

@@ -60,32 +60,32 @@ class ClaudeModelSpec extends AnyFlatSpec with Matchers {
     ClaudeModel.values should have size 16
   }
 
-  "Structured output support" should "be false for legacy Claude 3.x models" in {
-    ClaudeModel.Claude3_5Sonnet.supportsStructuredOutput shouldBe false
-    ClaudeModel.Claude3_5SonnetLatest.supportsStructuredOutput shouldBe false
-    ClaudeModel.Claude3_5Haiku.supportsStructuredOutput shouldBe false
-    ClaudeModel.Claude3_5HaikuLatest.supportsStructuredOutput shouldBe false
-    ClaudeModel.Claude3Opus.supportsStructuredOutput shouldBe false
-    ClaudeModel.Claude3Sonnet.supportsStructuredOutput shouldBe false
-    ClaudeModel.Claude3Haiku.supportsStructuredOutput shouldBe false
+  "Structured output support" should "be false for legacy Claude 3.x models (Default type)" in {
+    ClaudeModel.Claude3_5Sonnet shouldBe a[ClaudeModel.Default]
+    ClaudeModel.Claude3_5SonnetLatest shouldBe a[ClaudeModel.Default]
+    ClaudeModel.Claude3_5Haiku shouldBe a[ClaudeModel.Default]
+    ClaudeModel.Claude3_5HaikuLatest shouldBe a[ClaudeModel.Default]
+    ClaudeModel.Claude3Opus shouldBe a[ClaudeModel.Default]
+    ClaudeModel.Claude3Sonnet shouldBe a[ClaudeModel.Default]
+    ClaudeModel.Claude3Haiku shouldBe a[ClaudeModel.Default]
   }
 
-  it should "be false for Claude 4.0 models" in {
-    ClaudeModel.ClaudeSonnet4_0.supportsStructuredOutput shouldBe false
-    ClaudeModel.ClaudeOpus4_0.supportsStructuredOutput shouldBe false
+  it should "be false for Claude 4.0 models (Default type)" in {
+    ClaudeModel.ClaudeSonnet4_0 shouldBe a[ClaudeModel.Default]
+    ClaudeModel.ClaudeOpus4_0 shouldBe a[ClaudeModel.Default]
   }
 
-  it should "be true for Claude 4.1 models" in {
-    ClaudeModel.ClaudeOpus4_1.supportsStructuredOutput shouldBe true
+  it should "be true for Claude 4.1 models (WithStructuredOutput type)" in {
+    ClaudeModel.ClaudeOpus4_1 shouldBe a[ClaudeModel.WithStructuredOutput]
   }
 
-  it should "be true for Claude 4.5 models" in {
-    ClaudeModel.ClaudeSonnet4_5.supportsStructuredOutput shouldBe true
-    ClaudeModel.ClaudeSonnet4_5Latest.supportsStructuredOutput shouldBe true
-    ClaudeModel.ClaudeHaiku4_5.supportsStructuredOutput shouldBe true
-    ClaudeModel.ClaudeHaiku4_5Latest.supportsStructuredOutput shouldBe true
-    ClaudeModel.ClaudeOpus4_5.supportsStructuredOutput shouldBe true
-    ClaudeModel.ClaudeOpus4_5Latest.supportsStructuredOutput shouldBe true
+  it should "be true for Claude 4.5 models (WithStructuredOutput type)" in {
+    ClaudeModel.ClaudeSonnet4_5 shouldBe a[ClaudeModel.WithStructuredOutput]
+    ClaudeModel.ClaudeSonnet4_5Latest shouldBe a[ClaudeModel.WithStructuredOutput]
+    ClaudeModel.ClaudeHaiku4_5 shouldBe a[ClaudeModel.WithStructuredOutput]
+    ClaudeModel.ClaudeHaiku4_5Latest shouldBe a[ClaudeModel.WithStructuredOutput]
+    ClaudeModel.ClaudeOpus4_5 shouldBe a[ClaudeModel.WithStructuredOutput]
+    ClaudeModel.ClaudeOpus4_5Latest shouldBe a[ClaudeModel.WithStructuredOutput]
   }
 
   "modelSupportsStructuredOutput" should "return false for known legacy model IDs" in {
