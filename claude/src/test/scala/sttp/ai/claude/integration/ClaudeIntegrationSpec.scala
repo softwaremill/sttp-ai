@@ -5,14 +5,23 @@ import org.scalatest.concurrent.Eventually
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.time.{Millis, Seconds, Span}
-import sttp.ai.claude.ClaudeExceptions.ClaudeException
+import sttp.ai.claude.ClaudeExceptions.{ClaudeException, UnsupportedModelForStructuredOutputException}
 import sttp.ai.claude.ClaudeSyncClient
 import sttp.ai.claude.config.ClaudeConfig
-import sttp.ai.claude.models.{ContentBlock, Message, PropertySchema, Tool, ToolInputSchema}
+import sttp.ai.claude.models.{ContentBlock, Message, OutputFormat, PropertySchema, Tool, ToolInputSchema}
 import sttp.ai.claude.requests.MessageRequest
 import sttp.model.Uri
+import sttp.tapir.{Schema => TSchema}
+import upickle.legacy.{macroRW, read, ReadWriter}
 
 import scala.util.{Failure, Try}
+
+case class Person(name: String, age: Int)
+
+object Person {
+  implicit val rw: ReadWriter[Person] = macroRW
+  implicit val schema: TSchema[Person] = TSchema.derived[Person]
+}
 
 /** Integration tests for sttp-claude library that test against the real Claude API.
   *
@@ -293,6 +302,56 @@ class ClaudeIntegrationSpec extends AnyFlatSpec with Matchers with BeforeAndAfte
       }
       textContent should be(defined)
       textContent.get should not be empty
+      ()
+    }
+
+  "Claude Structured Output" should "return valid JSON matching the schema" in
+    withClient { client =>
+      // given
+      val outputFormat = OutputFormat.JsonSchema.withTapirSchema[Person]
+
+      val request = MessageRequest
+        .simple("claude-haiku-4-5-20251001", List(Message.user("Generate a person named Alice who is 30 years old.")), 100)
+        .withStructuredOutput(outputFormat)
+
+      // when
+      val response = client.createMessage(request)
+
+      // then
+      response should not be null
+      response.role shouldBe "assistant"
+      response.content should not be empty
+
+      // Extract the text content which should be valid JSON
+      val textContent = response.content.collectFirst { case ContentBlock.TextContent(text) =>
+        text
+      }
+      textContent should be(defined)
+
+      // Parse and validate the JSON response using the case class and uPickle
+      val person = read[Person](textContent.get)
+      person.name shouldBe "Alice"
+      person.age shouldBe 30
+      ()
+    }
+
+  it should "throw UnsupportedModelForStructuredOutputException for legacy models" in
+    withClient { _ =>
+      val outputFormat = OutputFormat.JsonSchema.withTapirSchema[Person]
+
+      val exception = intercept[UnsupportedModelForStructuredOutputException] {
+        val client = ClaudeSyncClient.fromEnv
+        try {
+          val request = MessageRequest
+            .simple("claude-3-haiku-20240307", List(Message.user("Test")), 10)
+            .withStructuredOutput(outputFormat)
+
+          client.createMessage(request)
+        } finally client.close()
+      }
+
+      exception.getMessage should include("claude-3-haiku-20240307")
+      exception.getMessage should include("does not support structured output")
       ()
     }
 }
