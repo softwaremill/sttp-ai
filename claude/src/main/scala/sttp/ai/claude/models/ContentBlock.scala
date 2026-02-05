@@ -14,6 +14,11 @@ object ContentBlock {
     val `type`: String = "text"
   }
 
+  @key("thinking")
+  case class ThinkingContent(thinking: String) extends ContentBlock {
+    val `type`: String = "thinking"
+  }
+
   @key("image")
   case class ImageContent(source: ImageSource) extends ContentBlock {
     val `type`: String = "image"
@@ -55,16 +60,20 @@ object ContentBlock {
 
   def text(content: String): TextContent = TextContent(content)
 
+  def thinking(content: String): ThinkingContent = ThinkingContent(content)
+
   def image(mediaType: String, data: String): ImageContent =
     ImageContent(ImageSource.base64(mediaType, data))
 
   implicit val textContentRW: ReadWriter[TextContent] = macroRW
+  implicit val thinkingContentRW: ReadWriter[ThinkingContent] = macroRW
   implicit val imageContentRW: ReadWriter[ImageContent] = macroRW
   implicit val toolUseContentRW: ReadWriter[ToolUseContent] = macroRW
   implicit val toolResultContentRW: ReadWriter[ToolResultContent] = macroRW
 
   implicit val rw: ReadWriter[ContentBlock] = ReadWriter.merge(
     textContentRW,
+    thinkingContentRW,
     imageContentRW,
     toolUseContentRW,
     toolResultContentRW

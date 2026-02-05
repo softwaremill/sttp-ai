@@ -21,6 +21,20 @@ class ContentBlockSpec extends AnyFlatSpec with Matchers {
     deserialized shouldBe textContent
   }
 
+  "ThinkingContent" should "have correct type" in {
+    val thinkingContent = ContentBlock.ThinkingContent("Let me think about this...")
+    thinkingContent.`type` shouldBe "thinking"
+    thinkingContent.thinking shouldBe "Let me think about this..."
+  }
+
+  it should "serialize and deserialize correctly" in {
+    val thinkingContent = ContentBlock.ThinkingContent("This is a thinking process")
+    val json = write(thinkingContent)
+    val deserialized = read[ContentBlock](json)
+
+    deserialized shouldBe thinkingContent
+  }
+
   "ImageContent" should "have correct type" in {
     val imageSource = ContentBlock.ImageSource.base64("image/png", "base64data")
     val imageContent = ContentBlock.ImageContent(imageSource)

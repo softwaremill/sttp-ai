@@ -9,8 +9,8 @@ case class MessageResponse(
     role: String,
     content: List[ContentBlock],
     model: String,
-    stopReason: Option[String],
-    stopSequence: Option[String],
+    stopReason: Option[String] = None,
+    stopSequence: Option[String] = None,
     usage: Usage
 )
 
