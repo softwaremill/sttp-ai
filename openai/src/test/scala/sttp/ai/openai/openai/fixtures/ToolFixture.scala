@@ -15,7 +15,7 @@ object ToolFixture {
       |        "departureCity",
       |        "destinationCity"
       |      ],
-      |      "$schema": "http://json-schema.org/draft/2020-12/schema#",
+      |      "$schema": "https://json-schema.org/draft/2020-12/schema",
       |      "$defs": {
       |        "Passenger": {
       |          "additionalProperties": false,
@@ -79,7 +79,7 @@ object ToolFixture {
       |        "departureCity",
       |        "destinationCity"
       |      ],
-      |      "$schema": "http://json-schema.org/draft/2020-12/schema#",
+      |      "$schema": "https://json-schema.org/draft/2020-12/schema",
       |      "$defs": {
       |        "Passenger": {
       |          "additionalProperties": false,

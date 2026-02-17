@@ -1,4 +1,5 @@
 import sbt.*
+import org.portablescala.sbtplatformdeps.PlatformDepsPlugin.autoImport.*
 
 object Dependencies {
 
@@ -7,25 +8,29 @@ object Dependencies {
     val scalaTestCats = "1.7.0"
 
     val sttpApispec = "0.11.10"
-    val sttpClient = "4.0.12"
+    val sttpClient = "4.0.18"
     val pekkoStreams = "1.2.1"
     val akkaStreams = "2.6.20"
-    val tapir = "1.11.46"
+    val tapir = "1.13.8"
     val uPickle = "4.3.2"
   }
 
   object Libraries {
 
-    val scalaTest = "org.scalatest" %% "scalatest" % V.scalaTest % Test
+    val scalaTest = Def.setting("org.scalatest" %%% "scalatest" % V.scalaTest % Test)
 
-    val sttpApispec = Seq(
-      "com.softwaremill.sttp.apispec" %% "apispec-model" % V.sttpApispec,
-      "com.softwaremill.sttp.apispec" %% "jsonschema-circe" % V.sttpApispec
+    val sttpApispec = Def.setting(
+      Seq(
+        "com.softwaremill.sttp.apispec" %%% "apispec-model" % V.sttpApispec,
+        "com.softwaremill.sttp.apispec" %%% "jsonschema-circe" % V.sttpApispec
+      )
     )
 
-    val sttpClient = Seq(
-      "com.softwaremill.sttp.client4" %% "core" % V.sttpClient,
-      "com.softwaremill.sttp.client4" %% "upickle" % V.sttpClient
+    val sttpClient = Def.setting(
+      Seq(
+        "com.softwaremill.sttp.client4" %%% "core" % V.sttpClient,
+        "com.softwaremill.sttp.client4" %%% "upickle" % V.sttpClient
+      )
     )
 
     val sttpClientFs2 = Seq(
@@ -49,11 +54,11 @@ object Dependencies {
       "com.softwaremill.sttp.client4" %% "ox" % V.sttpClient
     )
 
-    val tapirApispecDocs = "com.softwaremill.sttp.tapir" %% "tapir-apispec-docs" % V.tapir
+    val tapirApispecDocs = Def.setting("com.softwaremill.sttp.tapir" %%% "tapir-apispec-docs" % V.tapir)
 
-    val uJsonCirce = "com.lihaoyi" %% "ujson-circe" % V.uPickle
+    val uJsonCirce = Def.setting("com.lihaoyi" %%% "ujson-circe" % V.uPickle)
 
-    val uPickle = "com.lihaoyi" %% "upickle" % V.uPickle
+    val uPickle = Def.setting("com.lihaoyi" %%% "upickle" % V.uPickle)
 
   }
 
