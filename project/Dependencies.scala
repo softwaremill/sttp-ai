@@ -1,5 +1,4 @@
 import sbt.*
-import sbt.Def
 import org.portablescala.sbtplatformdeps.PlatformDepsPlugin.autoImport.*
 
 object Dependencies {
