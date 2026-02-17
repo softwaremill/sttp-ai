@@ -2,7 +2,7 @@ import Dependencies.*
 import com.softwaremill.Publish.ossPublishSettings
 import com.softwaremill.SbtSoftwareMillCommon.commonSmlBuildSettings
 
-val scala2 = List("2.13.16")
+val scala2 = List("2.13.18")
 val scala3 = List("3.3.6")
 
 def dependenciesFor(version: String)(deps: (Option[(Long, Long)] => ModuleID)*): Seq[ModuleID] =
@@ -35,24 +35,31 @@ lazy val core = (projectMatrix in file("core"))
   .jvmPlatform(
     scalaVersions = scala2 ++ scala3
   )
+  .nativePlatform(
+    scalaVersions = scala3
+  )
   .settings(commonSettings: _*)
   .settings(
-    libraryDependencies ++= Seq(
-      Libraries.uPickle,
-      Libraries.tapirApispecDocs
-    ) ++ Libraries.sttpApispec ++ Libraries.sttpClient ++ Seq(Libraries.scalaTest)
+    libraryDependencies ++=
+      Libraries.sttpClient.value ++ Libraries.sttpApispec.value ++ Seq(
+        Libraries.uPickle.value,
+        Libraries.tapirApispecDocs.value,
+        Libraries.scalaTest.value
+      )
   )
 
 lazy val openai = (projectMatrix in file("openai"))
   .jvmPlatform(
     scalaVersions = scala2 ++ scala3
   )
+  .nativePlatform(
+    scalaVersions = scala3
+  )
   .settings(
-    libraryDependencies ++= Seq(
-      Libraries.tapirApispecDocs,
-      Libraries.uJsonCirce,
-      Libraries.uPickle
-    ) ++ Libraries.sttpApispec ++ Libraries.sttpClient ++ Seq(Libraries.scalaTest)
+    libraryDependencies ++=
+      Libraries.sttpClient.value ++
+        Seq(Libraries.uPickle.value, Libraries.tapirApispecDocs.value, Libraries.uJsonCirce.value) ++
+        Libraries.sttpApispec.value ++ Seq(Libraries.scalaTest.value)
   )
   .settings(commonSettings: _*)
   .dependsOn(core % "compile->compile;test->test")
@@ -61,13 +68,15 @@ lazy val claude = (projectMatrix in file("claude"))
   .jvmPlatform(
     scalaVersions = scala3 ++ scala2 // Scala 3 first priority
   )
+  .nativePlatform(
+    scalaVersions = scala3
+  )
   .settings(commonSettings: _*)
   .settings(
-    libraryDependencies ++= Seq(
-      Libraries.tapirApispecDocs,
-      Libraries.uJsonCirce,
-      Libraries.uPickle
-    ) ++ Libraries.sttpApispec ++ Libraries.sttpClient ++ Seq(Libraries.scalaTest)
+    libraryDependencies ++=
+      Seq(Libraries.tapirApispecDocs.value, Libraries.uJsonCirce.value, Libraries.uPickle.value) ++
+        Libraries.sttpApispec.value ++
+        Libraries.sttpClient.value ++ Seq(Libraries.scalaTest.value)
   )
   .dependsOn(core % "compile->compile;test->test")
 
@@ -128,7 +137,7 @@ lazy val examples = (projectMatrix in file("examples"))
   .settings(commonSettings)
   .settings(
     libraryDependencies ++= Seq(
-      "com.softwaremill.sttp.tapir" %% "tapir-netty-server-sync" % "1.11.46",
+      "com.softwaremill.sttp.tapir" %% "tapir-netty-server-sync" % V.tapir,
       "ch.qos.logback" % "logback-classic" % "1.5.6"
     ) ++ Libraries.sttpClientOx,
     publish / skip := true
