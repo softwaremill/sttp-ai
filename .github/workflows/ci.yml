@@ -24,10 +24,10 @@ jobs:
         java-version: '21'
         cache: 'sbt'
     - uses: sbt/setup-sbt@3e125ece5c3e5248e18da9ed8d2cce3d335ec8dd # v1, specifically v1.1.14
-    - name: Install libcurl
+    - name: Install native dependencies
       run: |
         sudo apt-get update
-        sudo apt-get install libcurl3-dev
+        sudo apt-get install libidn2-dev libcurl3-dev
     - name: Check formatting
       run: sbt -v scalafmtCheckAll
     - name: Compile
@@ -59,10 +59,10 @@ jobs:
           java-version: '21'
           cache: 'sbt'
       - uses: sbt/setup-sbt@3e125ece5c3e5248e18da9ed8d2cce3d335ec8dd # v1, specifically v1.1.14
-      - name: Install libcurl
+      - name: Install native dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install libcurl3-dev
+          sudo apt-get install libidn2-dev libcurl3-dev
       - name: Compile
         run: sbt compile
       - name: Publish artifacts
