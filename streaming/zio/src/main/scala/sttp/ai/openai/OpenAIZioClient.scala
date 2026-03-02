@@ -2,13 +2,7 @@ package sttp.ai.openai
 
 import sttp.ai.openai.OpenAIExceptions.OpenAIException
 import sttp.ai.openai.config.OpenAIConfig
-import sttp.ai.openai.requests.admin.{
-  AdminApiKeyRequestBody,
-  AdminApiKeyResponse,
-  DeleteAdminApiKeyResponse,
-  ListAdminApiKeyResponse,
-  QueryParameters => _
-}
+import sttp.ai.openai.requests.admin.{AdminApiKeyRequestBody, AdminApiKeyResponse, DeleteAdminApiKeyResponse, ListAdminApiKeyResponse, QueryParameters => _}
 import sttp.ai.openai.requests.assistants.AssistantsRequestBody.{CreateAssistantBody, ModifyAssistantBody}
 import sttp.ai.openai.requests.assistants.AssistantsResponseData.{AssistantData, DeleteAssistantResponse, ListAssistantsResponse}
 import sttp.ai.openai.requests.audio.AudioResponseData.AudioResponse
@@ -19,23 +13,12 @@ import sttp.ai.openai.requests.completions.CompletionsRequestBody.CompletionsBod
 import sttp.ai.openai.requests.completions.CompletionsResponseData.CompletionsResponse
 import sttp.ai.openai.requests.completions.chat
 import sttp.ai.openai.requests.completions.chat.ChatRequestBody.{ChatBody, UpdateChatCompletionRequestBody}
-import sttp.ai.openai.requests.completions.chat.ChatRequestResponseData.{
-  ChatResponse,
-  DeleteChatCompletionResponse,
-  ListChatResponse,
-  ListMessageResponse
-}
+import sttp.ai.openai.requests.completions.chat.ChatRequestResponseData.{ChatResponse, DeleteChatCompletionResponse, ListChatResponse, ListMessageResponse}
 import sttp.ai.openai.requests.completions.chat.{ListMessagesQueryParameters => _}
 import sttp.ai.openai.requests.embeddings.EmbeddingsRequestBody.EmbeddingsBody
 import sttp.ai.openai.requests.embeddings.EmbeddingsResponseBody.EmbeddingResponse
 import sttp.ai.openai.requests.files.FilesResponseData.{DeletedFileData, FileData, FilesResponse}
-import sttp.ai.openai.requests.finetuning.{
-  FineTuningJobRequestBody,
-  FineTuningJobResponse,
-  ListFineTuningJobCheckpointResponse,
-  ListFineTuningJobEventResponse,
-  ListFineTuningJobResponse
-}
+import sttp.ai.openai.requests.finetuning.{FineTuningJobRequestBody, FineTuningJobResponse, ListFineTuningJobCheckpointResponse, ListFineTuningJobEventResponse, ListFineTuningJobResponse}
 import sttp.ai.openai.requests.images.ImageResponseData.ImageResponse
 import sttp.ai.openai.requests.images.creation.ImageCreationRequestBody.ImageCreationBody
 import sttp.ai.openai.requests.images.edit.ImageEditsConfig
@@ -43,14 +26,7 @@ import sttp.ai.openai.requests.images.variations.ImageVariationsConfig
 import sttp.ai.openai.requests.models.ModelsResponseData.{DeletedModelData, ModelData, ModelsResponse}
 import sttp.ai.openai.requests.moderations.ModerationsRequestBody.ModerationsBody
 import sttp.ai.openai.requests.moderations.ModerationsResponseData.ModerationData
-import sttp.ai.openai.requests.responses.{
-  DeleteModelResponseResponse,
-  GetResponseQueryParameters,
-  InputItemsListResponseBody,
-  ListInputItemsQueryParameters,
-  ResponsesRequestBody,
-  ResponsesResponseBody
-}
+import sttp.ai.openai.requests.responses.{DeleteModelResponseResponse, GetResponseQueryParameters, InputItemsListResponseBody, ListInputItemsQueryParameters, ResponsesRequestBody, ResponsesResponseBody}
 import sttp.ai.openai.requests.threads.QueryParameters
 import sttp.ai.openai.requests.threads.ThreadsRequestBody.CreateThreadBody
 import sttp.ai.openai.requests.threads.ThreadsResponseData.{DeleteThreadResponse, ThreadData}
@@ -62,30 +38,23 @@ import sttp.ai.openai.requests.upload.{CompleteUploadRequestBody, UploadPartResp
 import sttp.ai.openai.requests.vectorstore.VectorStoreRequestBody.{CreateVectorStoreBody, ModifyVectorStoreBody}
 import sttp.ai.openai.requests.vectorstore.VectorStoreResponseData.{DeleteVectorStoreResponse, ListVectorStoresResponse, VectorStore}
 import sttp.ai.openai.requests.vectorstore.file.VectorStoreFileRequestBody.{CreateVectorStoreFileBody, ListVectorStoreFilesBody}
-import sttp.ai.openai.requests.vectorstore.file.VectorStoreFileResponseData.{
-  DeleteVectorStoreFileResponse,
-  ListVectorStoreFilesResponse,
-  VectorStoreFile
-}
+import sttp.ai.openai.requests.vectorstore.file.VectorStoreFileResponseData.{DeleteVectorStoreFileResponse, ListVectorStoreFilesResponse, VectorStoreFile}
 import sttp.ai.openai.requests.{admin, batch, finetuning}
 import sttp.capabilities.zio.ZioStreams
 import sttp.client4.httpclient.zio.HttpClientZioBackend
 import sttp.client4.{Request, WebSocketStreamBackend}
 import sttp.model.Uri
-import zio.{IO, Task, Unsafe, ZIO}
+import zio.{IO, Task, Unsafe, ZIO, ZLayer}
 import sttp.ai.openai.OpenAIZioClient.OpenAiResponse
 
 import java.io.File
 
-class OpenAIZioClient private (
-    authToken: String,
-    backend: WebSocketStreamBackend[Task, ZioStreams],
-    closeClient: Boolean,
-    baseUri: Uri,
-    organization: Option[String] = None
-) {
+class OpenAIZioClient private(
+                               openAI: OpenAI,
+                               backend: WebSocketStreamBackend[Task, ZioStreams]
+                             ) {
 
-  private val openAI = new OpenAI(authToken, baseUri, organization)
+  // private val openAI = new OpenAI(authToken, baseUri, organization)
 
   /** Lists the currently available models, and provides basic information about each one such as the owner and availability.
     *
@@ -1180,7 +1149,7 @@ class OpenAIZioClient private (
     send(openAI.deleteAdminApiKey(keyId))
 
   /** Closes and releases resources of http client if was not provided explicitly, otherwise works no-op. */
-  def close(): IO[Nothing, Unit] = if (closeClient) backend.close().orDie else ZIO.unit
+  // def close(): IO[Nothing, Unit] = if (closeClient) backend.close().orDie else ZIO.unit
 
   private def send[A](request: Request[Either[OpenAIException, A]]): OpenAiResponse[A] =
     request.send(backend).orDie.flatMap(response => ZIO.fromEither(response.body))
@@ -1189,28 +1158,10 @@ class OpenAIZioClient private (
 object OpenAIZioClient {
   type OpenAiResponse[A] = IO[OpenAIException, A]
 
-  def apply(authToken: String): OpenAIZioClient =
-    new OpenAIZioClient(authToken, unsafeBackend(), true, OpenAIUris.OpenAIBaseUri)
-
-  def apply(authToken: String, backend: WebSocketStreamBackend[Task, ZioStreams]): OpenAIZioClient =
-    new OpenAIZioClient(authToken, backend, false, OpenAIUris.OpenAIBaseUri)
-
-  def apply(authToken: String, backend: WebSocketStreamBackend[Task, ZioStreams], baseUrl: Uri): OpenAIZioClient =
-    new OpenAIZioClient(authToken, backend, false, baseUrl)
-
-  def apply(authToken: String, baseUrl: Uri): OpenAIZioClient =
-    new OpenAIZioClient(authToken, unsafeBackend(), true, baseUrl)
-
-  def apply(config: OpenAIConfig): OpenAIZioClient =
-    new OpenAIZioClient(config.apiKey, unsafeBackend(), true, config.baseUrl, config.organization)
-
-  def apply(config: OpenAIConfig, backend: WebSocketStreamBackend[Task, ZioStreams]): OpenAIZioClient =
-    new OpenAIZioClient(config.apiKey, backend, false, config.baseUrl, config.organization)
-
-  def fromEnv: OpenAIZioClient = apply(OpenAIConfig.fromEnv)
-
-  def fromEnv(backend: WebSocketStreamBackend[Task, ZioStreams]): OpenAIZioClient = apply(OpenAIConfig.fromEnv, backend)
-
-  private def unsafeBackend(): WebSocketStreamBackend[Task, ZioStreams] =
-    Unsafe.unsafe(implicit u => zio.Runtime.default.unsafe.run(HttpClientZioBackend()).getOrThrowFiberFailure())
+  val layer = ZLayer {
+    for {
+      openAI <- ZIO.service[OpenAI]
+      client <- ZIO.service[WebSocketStreamBackend[Task, ZioStreams]]
+    } yield new OpenAIZioClient(openAI, client)
+  }
 }
