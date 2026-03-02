@@ -2,7 +2,13 @@ package sttp.ai.openai
 
 import sttp.ai.openai.OpenAIExceptions.OpenAIException
 import sttp.ai.openai.config.OpenAIConfig
-import sttp.ai.openai.requests.admin.{DeleteAdminApiKeyResponse, QueryParameters => _}
+import sttp.ai.openai.requests.admin.{
+  AdminApiKeyRequestBody,
+  AdminApiKeyResponse,
+  DeleteAdminApiKeyResponse,
+  ListAdminApiKeyResponse,
+  QueryParameters => _
+}
 import sttp.ai.openai.requests.assistants.AssistantsRequestBody.{CreateAssistantBody, ModifyAssistantBody}
 import sttp.ai.openai.requests.assistants.AssistantsResponseData.{AssistantData, DeleteAssistantResponse, ListAssistantsResponse}
 import sttp.ai.openai.requests.audio.AudioResponseData.AudioResponse
@@ -13,12 +19,23 @@ import sttp.ai.openai.requests.completions.CompletionsRequestBody.CompletionsBod
 import sttp.ai.openai.requests.completions.CompletionsResponseData.CompletionsResponse
 import sttp.ai.openai.requests.completions.chat
 import sttp.ai.openai.requests.completions.chat.ChatRequestBody.{ChatBody, UpdateChatCompletionRequestBody}
-import sttp.ai.openai.requests.completions.chat.ChatRequestResponseData.{ChatResponse, DeleteChatCompletionResponse, ListChatResponse, ListMessageResponse}
+import sttp.ai.openai.requests.completions.chat.ChatRequestResponseData.{
+  ChatResponse,
+  DeleteChatCompletionResponse,
+  ListChatResponse,
+  ListMessageResponse
+}
 import sttp.ai.openai.requests.completions.chat.{ListMessagesQueryParameters => _}
 import sttp.ai.openai.requests.embeddings.EmbeddingsRequestBody.EmbeddingsBody
 import sttp.ai.openai.requests.embeddings.EmbeddingsResponseBody.EmbeddingResponse
 import sttp.ai.openai.requests.files.FilesResponseData.{DeletedFileData, FileData, FilesResponse}
-import sttp.ai.openai.requests.finetuning.{FineTuningJobRequestBody, FineTuningJobResponse, ListFineTuningJobEventResponse, ListFineTuningJobResponse}
+import sttp.ai.openai.requests.finetuning.{
+  FineTuningJobRequestBody,
+  FineTuningJobResponse,
+  ListFineTuningJobCheckpointResponse,
+  ListFineTuningJobEventResponse,
+  ListFineTuningJobResponse
+}
 import sttp.ai.openai.requests.images.ImageResponseData.ImageResponse
 import sttp.ai.openai.requests.images.creation.ImageCreationRequestBody.ImageCreationBody
 import sttp.ai.openai.requests.images.edit.ImageEditsConfig
@@ -26,7 +43,14 @@ import sttp.ai.openai.requests.images.variations.ImageVariationsConfig
 import sttp.ai.openai.requests.models.ModelsResponseData.{DeletedModelData, ModelData, ModelsResponse}
 import sttp.ai.openai.requests.moderations.ModerationsRequestBody.ModerationsBody
 import sttp.ai.openai.requests.moderations.ModerationsResponseData.ModerationData
-import sttp.ai.openai.requests.responses.{DeleteModelResponseResponse, GetResponseQueryParameters, InputItemsListResponseBody, ListInputItemsQueryParameters, ResponsesRequestBody, ResponsesResponseBody}
+import sttp.ai.openai.requests.responses.{
+  DeleteModelResponseResponse,
+  GetResponseQueryParameters,
+  InputItemsListResponseBody,
+  ListInputItemsQueryParameters,
+  ResponsesRequestBody,
+  ResponsesResponseBody
+}
 import sttp.ai.openai.requests.threads.QueryParameters
 import sttp.ai.openai.requests.threads.ThreadsRequestBody.CreateThreadBody
 import sttp.ai.openai.requests.threads.ThreadsResponseData.{DeleteThreadResponse, ThreadData}
@@ -38,18 +62,24 @@ import sttp.ai.openai.requests.upload.{CompleteUploadRequestBody, UploadPartResp
 import sttp.ai.openai.requests.vectorstore.VectorStoreRequestBody.{CreateVectorStoreBody, ModifyVectorStoreBody}
 import sttp.ai.openai.requests.vectorstore.VectorStoreResponseData.{DeleteVectorStoreResponse, ListVectorStoresResponse, VectorStore}
 import sttp.ai.openai.requests.vectorstore.file.VectorStoreFileRequestBody.{CreateVectorStoreFileBody, ListVectorStoreFilesBody}
-import sttp.ai.openai.requests.vectorstore.file.VectorStoreFileResponseData.{DeleteVectorStoreFileResponse, ListVectorStoreFilesResponse, VectorStoreFile}
+import sttp.ai.openai.requests.vectorstore.file.VectorStoreFileResponseData.{
+  DeleteVectorStoreFileResponse,
+  ListVectorStoreFilesResponse,
+  VectorStoreFile
+}
 import sttp.ai.openai.requests.{admin, batch, finetuning}
+import sttp.capabilities.zio.ZioStreams
 import sttp.client4.httpclient.zio.HttpClientZioBackend
 import sttp.client4.{Request, WebSocketStreamBackend}
 import sttp.model.Uri
-import zio.{IO, ZIO}
+import zio.{IO, Task, Unsafe, ZIO}
+import sttp.ai.openai.OpenAIZioClient.OpenAiResponse
 
 import java.io.File
 
 class OpenAIZioClient private (
     authToken: String,
-    backend: WebSocketStreamBackend[Any, Any],
+    backend: WebSocketStreamBackend[Task, ZioStreams],
     closeClient: Boolean,
     baseUri: Uri,
     organization: Option[String] = None
@@ -61,7 +91,7 @@ class OpenAIZioClient private (
     *
     * [[https://platform.openai.com/docs/api-reference/models]]
     */
-  def getModels: IO[OpenAIException, ModelsResponse] =
+  def getModels: OpenAiResponse[ModelsResponse] =
     send(openAI.getModels)
 
   /** Retrieves a model instance, providing basic information about the model such as the owner and permissions.
@@ -71,7 +101,7 @@ class OpenAIZioClient private (
     * @param modelId
     *   The ID of the model to use for this request.
     */
-  def retrieveModel(modelId: String): IO[OpenAIException, ModelData] =
+  def retrieveModel(modelId: String): OpenAiResponse[ModelData] =
     send(openAI.retrieveModel(modelId))
 
   /** Delete a fine-tuned model. You must have the Owner role in your organization to delete a model.
@@ -84,7 +114,7 @@ class OpenAIZioClient private (
     * @return
     *   Deletion status.
     */
-  def deleteModel(modelId: String): IO[OpenAIException, DeletedModelData] =
+  def deleteModel(modelId: String): OpenAiResponse[DeletedModelData] =
     send(openAI.deleteModel(modelId))
 
   /** Creates a completion for the provided prompt and parameters given in request body.
@@ -96,7 +126,7 @@ class OpenAIZioClient private (
     * @deprecated
     *   This is marked as Legacy in OpenAI API and might be removed in the future. Please use [[createChatCompletion]] instead.
     */
-  def createCompletion(completionBody: CompletionsBody): IO[OpenAIException, CompletionsResponse] =
+  def createCompletion(completionBody: CompletionsBody): OpenAiResponse[CompletionsResponse] =
     send(openAI.createCompletion(completionBody))
 
   /** Creates an image given a prompt in request body.
@@ -106,7 +136,7 @@ class OpenAIZioClient private (
     * @param imageCreationBody
     *   Create image request body.
     */
-  def createImage(imageCreationBody: ImageCreationBody): IO[OpenAIException, ImageResponse] =
+  def createImage(imageCreationBody: ImageCreationBody): OpenAiResponse[ImageResponse] =
     send(openAI.createImage(imageCreationBody))
 
   /** Creates edited or extended images given an original image and a prompt.
@@ -121,7 +151,7 @@ class OpenAIZioClient private (
     * @param prompt
     *   A text description of the desired image. The maximum length is 1000 characters.
     */
-  def imageEdits(image: File, prompt: String): IO[OpenAIException, ImageResponse] =
+  def imageEdits(image: File, prompt: String): OpenAiResponse[ImageResponse] =
     send(openAI.imageEdits(image, prompt))
 
   /** Creates edited or extended images given an original image and a prompt.
@@ -136,7 +166,7 @@ class OpenAIZioClient private (
     * @param prompt
     *   A text description of the desired image. The maximum length is 1000 characters.
     */
-  def imageEdits(systemPath: String, prompt: String): IO[OpenAIException, ImageResponse] =
+  def imageEdits(systemPath: String, prompt: String): OpenAiResponse[ImageResponse] =
     send(openAI.imageEdits(systemPath, prompt))
 
   /** Creates edited or extended images given an original image and a prompt.
@@ -146,7 +176,7 @@ class OpenAIZioClient private (
     * @param imageEditsConfig
     *   An instance of the case class ImageEditConfig containing the necessary parameters for editing the image.
     */
-  def imageEdits(imageEditsConfig: ImageEditsConfig): IO[OpenAIException, ImageResponse] =
+  def imageEdits(imageEditsConfig: ImageEditsConfig): OpenAiResponse[ImageResponse] =
     send(openAI.imageEdits(imageEditsConfig))
 
   /** Creates a variation of a given image.
@@ -158,7 +188,7 @@ class OpenAIZioClient private (
     *
     * Must be a valid PNG file, less than 4MB, and square.
     */
-  def imageVariations(image: File): IO[OpenAIException, ImageResponse] =
+  def imageVariations(image: File): OpenAiResponse[ImageResponse] =
     send(openAI.imageVariations(image))
 
   /** Creates a variation of a given image.
@@ -170,7 +200,7 @@ class OpenAIZioClient private (
     *
     * Must be a valid PNG file, less than 4MB, and square.
     */
-  def imageVariations(systemPath: String): IO[OpenAIException, ImageResponse] =
+  def imageVariations(systemPath: String): OpenAiResponse[ImageResponse] =
     send(openAI.imageVariations(systemPath))
 
   /** Creates a variation of a given image.
@@ -180,7 +210,7 @@ class OpenAIZioClient private (
     * @param imageVariationsConfig
     *   An instance of the case class ImageVariationsConfig containing the necessary parameters for the image variation.
     */
-  def imageVariations(imageVariationsConfig: ImageVariationsConfig): IO[OpenAIException, ImageResponse] =
+  def imageVariations(imageVariationsConfig: ImageVariationsConfig): OpenAiResponse[ImageResponse] =
     send(openAI.imageVariations(imageVariationsConfig))
 
   /** Creates a model response for the given chat conversation defined in chatBody.
@@ -190,7 +220,7 @@ class OpenAIZioClient private (
     * @param chatBody
     *   Chat request body.
     */
-  def createChatCompletion(chatBody: ChatBody): IO[OpenAIException, ChatResponse] =
+  def createChatCompletion(chatBody: ChatBody): OpenAiResponse[ChatResponse] =
     send(openAI.createChatCompletion(chatBody))
 
   /** Get a stored chat completion. Only chat completions that have been created with the store parameter set to true will be returned.
@@ -203,7 +233,7 @@ class OpenAIZioClient private (
     * @return
     *   The ChatCompletion object matching the specified ID.
     */
-  def getChatCompletion(completionId: String): IO[OpenAIException, ChatResponse] =
+  def getChatCompletion(completionId: String): OpenAiResponse[ChatResponse] =
     send(openAI.getChatCompletion(completionId))
 
   /** Get the messages in a stored chat completion. Only chat completions that have been created with the store parameter set to true will
@@ -220,7 +250,7 @@ class OpenAIZioClient private (
   def getChatMessages(
       completionId: String,
       queryParameters: chat.ListMessagesQueryParameters = chat.ListMessagesQueryParameters.empty
-  ): IO[OpenAIException, ListMessageResponse] =
+  ): OpenAiResponse[ListMessageResponse] =
     send(openAI.getChatMessages(completionId, queryParameters))
 
   /** List stored chat completions. Only chat completions that have been stored with the store parameter set to true will be returned.
@@ -232,7 +262,7 @@ class OpenAIZioClient private (
     */
   def listChatCompletions(
       queryParameters: chat.ListChatCompletionsQueryParameters = chat.ListChatCompletionsQueryParameters.empty
-  ): IO[OpenAIException, ListChatResponse] =
+  ): OpenAiResponse[ListChatResponse] =
     send(openAI.listChatCompletions(queryParameters))
 
   /** Modify a stored chat completion. Only chat completions that have been created with the store parameter set to true can be modified.
@@ -251,7 +281,7 @@ class OpenAIZioClient private (
   def updateChatCompletion(
       completionId: String,
       requestBody: UpdateChatCompletionRequestBody
-  ): IO[OpenAIException, ChatResponse] =
+  ): OpenAiResponse[ChatResponse] =
     send(openAI.updateChatCompletion(completionId, requestBody))
 
   /** Delete a stored chat completion. Only chat completions that have been created with the store parameter set to true can be deleted.
@@ -264,7 +294,7 @@ class OpenAIZioClient private (
     * @return
     *   A deletion confirmation object.
     */
-  def deleteChatCompletion(completionId: String): IO[OpenAIException, DeleteChatCompletionResponse] =
+  def deleteChatCompletion(completionId: String): OpenAiResponse[DeleteChatCompletionResponse] =
     send(openAI.deleteChatCompletion(completionId))
 
   /** Creates a model response.
@@ -280,7 +310,7 @@ class OpenAIZioClient private (
     * @return
     *   Returns a Response object.
     */
-  def createModelResponse(requestBody: ResponsesRequestBody): IO[OpenAIException, ResponsesResponseBody] =
+  def createModelResponse(requestBody: ResponsesRequestBody): OpenAiResponse[ResponsesResponseBody] =
     send(openAI.createModelResponse(requestBody))
 
   /** Retrieves a model response with the given ID.
@@ -296,7 +326,7 @@ class OpenAIZioClient private (
   def getModelResponse(
       responseId: String,
       queryParameters: GetResponseQueryParameters
-  ): IO[OpenAIException, ResponsesResponseBody] =
+  ): OpenAiResponse[ResponsesResponseBody] =
     send(openAI.getModelResponse(responseId, queryParameters))
 
   /** Deletes a model response with the given ID.
@@ -309,7 +339,7 @@ class OpenAIZioClient private (
     * @return
     *   A deletion confirmation object.
     */
-  def deleteModelResponse(responseId: String): IO[OpenAIException, DeleteModelResponseResponse] =
+  def deleteModelResponse(responseId: String): OpenAiResponse[DeleteModelResponseResponse] =
     send(openAI.deleteModelResponse(responseId))
 
   /** Cancels a model response with the given ID.
@@ -324,7 +354,7 @@ class OpenAIZioClient private (
     * @return
     *   The Upload object with status cancelled.
     */
-  def cancelResponse(responseId: String): IO[OpenAIException, ResponsesResponseBody] =
+  def cancelResponse(responseId: String): OpenAiResponse[ResponsesResponseBody] =
     send(openAI.cancelResponse(responseId))
 
   /** Returns a list of input items for a given response.
@@ -342,14 +372,14 @@ class OpenAIZioClient private (
   def listResponsesInputItems(
       responseId: String,
       queryParameters: ListInputItemsQueryParameters = ListInputItemsQueryParameters.empty
-  ): IO[OpenAIException, InputItemsListResponseBody] =
+  ): OpenAiResponse[InputItemsListResponseBody] =
     send(openAI.listResponsesInputItems(responseId, queryParameters))
 
   /** Returns a list of files that belong to the user's organization.
     *
     * [[https://platform.openai.com/docs/api-reference/files]]
     */
-  def getFiles: IO[OpenAIException, FilesResponse] =
+  def getFiles: OpenAiResponse[FilesResponse] =
     send(openAI.getFiles)
 
   /** Upload a file that contains document(s) to be used across various endpoints/features. Currently, the size of all the files uploaded by
@@ -367,7 +397,7 @@ class OpenAIZioClient private (
     *
     * Use "fine-tune" for Fine-tuning. This allows OpenAI to validate the format of the uploaded file.
     */
-  def uploadFile(file: File, purpose: String): IO[OpenAIException, FileData] =
+  def uploadFile(file: File, purpose: String): OpenAiResponse[FileData] =
     send(openAI.uploadFile(file, purpose))
 
   /** Upload a file that contains document(s) to be used across various endpoints/features. Currently, the size of all the files uploaded by
@@ -379,7 +409,7 @@ class OpenAIZioClient private (
     *   JSON Lines file to be uploaded and the purpose is set to "fine-tune", each line is a JSON record with "prompt" and "completion"
     *   fields representing your [[https://platform.openai.com/docs/guides/fine-tuning/prepare-training-data training examples]].
     */
-  def uploadFile(file: File): IO[OpenAIException, FileData] =
+  def uploadFile(file: File): OpenAiResponse[FileData] =
     send(openAI.uploadFile(file))
 
   /** Upload a file that contains document(s) to be used across various endpoints/features. Currently, the size of all the files uploaded by
@@ -397,7 +427,7 @@ class OpenAIZioClient private (
     *
     * Use "fine-tune" for Fine-tuning. This allows OpenAI to validate the format of the uploaded file.
     */
-  def uploadFile(systemPath: String, purpose: String): IO[OpenAIException, FileData] =
+  def uploadFile(systemPath: String, purpose: String): OpenAiResponse[FileData] =
     send(openAI.uploadFile(systemPath, purpose))
 
   /** Upload a file that contains document(s) to be used across various endpoints/features. Currently, the size of all the files uploaded by
@@ -410,7 +440,7 @@ class OpenAIZioClient private (
     *   "completion" fields representing your
     *   [[https://platform.openai.com/docs/guides/fine-tuning/prepare-training-data training examples]].
     */
-  def uploadFile(systemPath: String): IO[OpenAIException, FileData] =
+  def uploadFile(systemPath: String): OpenAiResponse[FileData] =
     send(openAI.uploadFile(systemPath))
 
   /** Delete a file.
@@ -420,7 +450,7 @@ class OpenAIZioClient private (
     * @param fileId
     *   The ID of the file to use for this request.
     */
-  def deleteFile(fileId: String): IO[OpenAIException, DeletedFileData] =
+  def deleteFile(fileId: String): OpenAiResponse[DeletedFileData] =
     send(openAI.deleteFile(fileId))
 
   /** Returns information about a specific file.
@@ -430,7 +460,7 @@ class OpenAIZioClient private (
     * @param fileId
     *   The ID of the file to use for this request.
     */
-  def retrieveFile(fileId: String): IO[OpenAIException, FileData] =
+  def retrieveFile(fileId: String): OpenAiResponse[FileData] =
     send(openAI.retrieveFile(fileId))
 
   /** Returns the contents of the specified file.
@@ -440,7 +470,7 @@ class OpenAIZioClient private (
     * @param fileId
     *   The ID of the file.
     */
-  def retrieveFileContent(fileId: String): IO[OpenAIException, String] =
+  def retrieveFileContent(fileId: String): OpenAiResponse[String] =
     send(openAI.retrieveFileContent(fileId))
 
   /** Translates audio into English text.
@@ -452,7 +482,7 @@ class OpenAIZioClient private (
     * @param model
     *   ID of the model to use. Only whisper-1 is currently available.
     */
-  def createTranslation(file: File, model: TranslationModel): IO[OpenAIException, AudioResponse] =
+  def createTranslation(file: File, model: TranslationModel): OpenAiResponse[AudioResponse] =
     send(openAI.createTranslation(file, model))
 
   /** Translates audio into English text.
@@ -464,7 +494,7 @@ class OpenAIZioClient private (
     * @param model
     *   ID of the model to use. Only whisper-1 is currently available.
     */
-  def createTranslation(systemPath: String, model: TranslationModel): IO[OpenAIException, AudioResponse] =
+  def createTranslation(systemPath: String, model: TranslationModel): OpenAiResponse[AudioResponse] =
     send(openAI.createTranslation(systemPath, model))
 
   /** Translates audio into English text.
@@ -474,7 +504,7 @@ class OpenAIZioClient private (
     * @param translationConfig
     *   An instance of the case class TranslationConfig containing the necessary parameters for the audio translation.
     */
-  def createTranslation(translationConfig: TranslationConfig): IO[OpenAIException, AudioResponse] =
+  def createTranslation(translationConfig: TranslationConfig): OpenAiResponse[AudioResponse] =
     send(openAI.createTranslation(translationConfig))
 
   /** Classifies if text violates OpenAI's Content Policy.
@@ -484,7 +514,7 @@ class OpenAIZioClient private (
     * @param moderationsBody
     *   Moderation request body.
     */
-  def createModeration(moderationsBody: ModerationsBody): IO[OpenAIException, ModerationData] =
+  def createModeration(moderationsBody: ModerationsBody): OpenAiResponse[ModerationData] =
     send(openAI.createModeration(moderationsBody))
 
   /** Transcribes audio into the input language.
@@ -496,7 +526,7 @@ class OpenAIZioClient private (
     * @param model
     *   ID of the model to use. Whisper-1, gpt-4o-transcribe, gpt-4o-mini-transcribe are currently available.
     */
-  def createTranscription(file: File, model: TranscriptionModel): IO[OpenAIException, AudioResponse] =
+  def createTranscription(file: File, model: TranscriptionModel): OpenAiResponse[AudioResponse] =
     send(openAI.createTranscription(file, model))
 
   /** Transcribes audio into the input language.
@@ -508,7 +538,7 @@ class OpenAIZioClient private (
     * @param model
     *   ID of the model to use. Whisper-1, gpt-4o-transcribe, gpt-4o-mini-transcribe are currently available.
     */
-  def createTranscription(systemPath: String, model: TranscriptionModel): IO[OpenAIException, AudioResponse] =
+  def createTranscription(systemPath: String, model: TranscriptionModel): OpenAiResponse[AudioResponse] =
     send(openAI.createTranscription(systemPath, model))
 
   /** Transcribes audio into the input language.
@@ -518,7 +548,7 @@ class OpenAIZioClient private (
     * @return
     *   An url to edited image.
     */
-  def createTranscription(transcriptionConfig: TranscriptionConfig): IO[OpenAIException, AudioResponse] =
+  def createTranscription(transcriptionConfig: TranscriptionConfig): OpenAiResponse[AudioResponse] =
     send(openAI.createTranscription(transcriptionConfig))
 
   /** Creates an intermediate Upload object that you can add Parts to. Currently, an Upload can accept at most 8 GB in total and expires
@@ -542,7 +572,7 @@ class OpenAIZioClient private (
     * @return
     *   The Upload object with status pending.
     */
-  def createUpload(uploadRequestBody: UploadRequestBody): IO[OpenAIException, UploadResponse] =
+  def createUpload(uploadRequestBody: UploadRequestBody): OpenAiResponse[UploadResponse] =
     send(openAI.createUpload(uploadRequestBody))
 
   /** Adds a Part to an Upload object. A Part represents a chunk of bytes from the file you are trying to upload.
@@ -561,7 +591,7 @@ class OpenAIZioClient private (
     * @return
     *   The upload Part object.
     */
-  def addUploadPart(uploadId: String, data: File): IO[OpenAIException, UploadPartResponse] =
+  def addUploadPart(uploadId: String, data: File): OpenAiResponse[UploadPartResponse] =
     send(openAI.addUploadPart(uploadId, data))
 
   /** Completes the Upload.
@@ -583,7 +613,7 @@ class OpenAIZioClient private (
     * @return
     *   The Upload object with status completed with an additional file property containing the created usable File object.
     */
-  def completeUpload(uploadId: String, requestBody: CompleteUploadRequestBody): IO[OpenAIException, UploadResponse] =
+  def completeUpload(uploadId: String, requestBody: CompleteUploadRequestBody): OpenAiResponse[UploadResponse] =
     send(openAI.completeUpload(uploadId, requestBody))
 
   /** Cancels the Upload. No Parts may be added after an Upload is cancelled.
@@ -596,7 +626,7 @@ class OpenAIZioClient private (
     * @return
     *   The Upload object with status cancelled.
     */
-  def cancelUpload(uploadId: String): IO[OpenAIException, UploadResponse] =
+  def cancelUpload(uploadId: String): OpenAiResponse[UploadResponse] =
     send(openAI.cancelUpload(uploadId))
 
   /** Creates a fine-tuning job which begins the process of creating a new model from a given dataset.
@@ -608,7 +638,7 @@ class OpenAIZioClient private (
     * @param fineTuningRequestBody
     *   Request body that will be used to create a fine-tuning job.
     */
-  def createFineTuningJob(fineTuningRequestBody: FineTuningJobRequestBody): IO[OpenAIException, FineTuningJobResponse] =
+  def createFineTuningJob(fineTuningRequestBody: FineTuningJobRequestBody): OpenAiResponse[FineTuningJobResponse] =
     send(openAI.createFineTuningJob(fineTuningRequestBody))
 
   /** List your organization's fine-tuning jobs
@@ -617,7 +647,7 @@ class OpenAIZioClient private (
     */
   def listFineTuningJobs(
       queryParameters: finetuning.QueryParameters = finetuning.QueryParameters.empty
-  ): IO[OpenAIException, ListFineTuningJobResponse] =
+  ): OpenAiResponse[ListFineTuningJobResponse] =
     send(openAI.listFineTuningJobs(queryParameters))
 
   /** Get status updates for a fine-tuning job.
@@ -630,7 +660,7 @@ class OpenAIZioClient private (
   def listFineTuningJobEvents(
       fineTuningJobId: String,
       queryParameters: finetuning.QueryParameters = finetuning.QueryParameters.empty
-  ): IO[OpenAIException, ListFineTuningJobEventResponse] =
+  ): OpenAiResponse[ListFineTuningJobEventResponse] =
     send(openAI.listFineTuningJobEvents(fineTuningJobId, queryParameters))
 
   /** List checkpoints for a fine-tuning job.
@@ -643,7 +673,7 @@ class OpenAIZioClient private (
   def listFineTuningJobCheckpoints(
       fineTuningJobId: String,
       queryParameters: finetuning.QueryParameters = finetuning.QueryParameters.empty
-  ): IO[OpenAIException, ListFineTuningJobCheckpointResponse] =
+  ): OpenAiResponse[ListFineTuningJobCheckpointResponse] =
     send(openAI.listFineTuningJobCheckpoints(fineTuningJobId, queryParameters))
 
   /** Get info about a fine-tuning job.
@@ -653,7 +683,7 @@ class OpenAIZioClient private (
     * @param fineTuningJobId
     *   The ID of the fine-tuning job.
     */
-  def retrieveFineTuningJob(fineTuningJobId: String): IO[OpenAIException, FineTuningJobResponse] =
+  def retrieveFineTuningJob(fineTuningJobId: String): OpenAiResponse[FineTuningJobResponse] =
     send(openAI.retrieveFineTuningJob(fineTuningJobId))
 
   /** Immediately cancel a fine-tune job.
@@ -663,7 +693,7 @@ class OpenAIZioClient private (
     * @param fineTuningJobId
     *   The ID of the fine-tuning job to cancel.
     */
-  def cancelFineTuningJob(fineTuningJobId: String): IO[OpenAIException, FineTuningJobResponse] =
+  def cancelFineTuningJob(fineTuningJobId: String): OpenAiResponse[FineTuningJobResponse] =
     send(openAI.cancelFineTuningJob(fineTuningJobId))
 
   /** Gets info about the fine-tune job.
@@ -673,7 +703,7 @@ class OpenAIZioClient private (
     * @param embeddingsBody
     *   Embeddings request body.
     */
-  def createEmbeddings(embeddingsBody: EmbeddingsBody): IO[OpenAIException, EmbeddingResponse] =
+  def createEmbeddings(embeddingsBody: EmbeddingsBody): OpenAiResponse[EmbeddingResponse] =
     send(openAI.createEmbeddings(embeddingsBody))
 
   /** Create a thread.
@@ -683,7 +713,7 @@ class OpenAIZioClient private (
     * @param createThreadBody
     *   Create completion request body.
     */
-  def createThread(createThreadBody: CreateThreadBody): IO[OpenAIException, ThreadData] =
+  def createThread(createThreadBody: CreateThreadBody): OpenAiResponse[ThreadData] =
     send(openAI.createThread(createThreadBody))
 
   /** Retrieves a thread.
@@ -693,7 +723,7 @@ class OpenAIZioClient private (
     * @param threadId
     *   The ID of the thread to retrieve.
     */
-  def retrieveThread(threadId: String): IO[OpenAIException, ThreadData] =
+  def retrieveThread(threadId: String): OpenAiResponse[ThreadData] =
     send(openAI.retrieveThread(threadId))
 
   /** Modifies a thread.
@@ -703,7 +733,7 @@ class OpenAIZioClient private (
     * @param threadId
     *   The ID of the thread to modify. Only the metadata can be modified.
     */
-  def modifyThread(threadId: String, metadata: Map[String, String]): IO[OpenAIException, ThreadData] =
+  def modifyThread(threadId: String, metadata: Map[String, String]): OpenAiResponse[ThreadData] =
     send(openAI.modifyThread(threadId, metadata))
 
   /** Delete a thread.
@@ -713,7 +743,7 @@ class OpenAIZioClient private (
     * @param threadId
     *   The ID of the thread to delete.
     */
-  def deleteThread(threadId: String): IO[OpenAIException, DeleteThreadResponse] =
+  def deleteThread(threadId: String): OpenAiResponse[DeleteThreadResponse] =
     send(openAI.deleteThread(threadId))
 
   /** Create a message.
@@ -723,7 +753,7 @@ class OpenAIZioClient private (
     * @param threadId
     *   The ID of the thread to create a message for.
     */
-  def createThreadMessage(threadId: String, message: CreateMessage): IO[OpenAIException, MessageData] =
+  def createThreadMessage(threadId: String, message: CreateMessage): OpenAiResponse[MessageData] =
     send(openAI.createThreadMessage(threadId, message))
 
   /** Returns a list of messages for a given thread.
@@ -736,7 +766,7 @@ class OpenAIZioClient private (
   def listThreadMessages(
       threadId: String,
       queryParameters: QueryParameters = QueryParameters.empty
-  ): IO[OpenAIException, ListMessagesResponse] =
+  ): OpenAiResponse[ListMessagesResponse] =
     send(openAI.listThreadMessages(threadId, queryParameters))
 
   /** Retrieve a message.
@@ -749,7 +779,7 @@ class OpenAIZioClient private (
     * @param messageId
     *   The ID of the message to retrieve.
     */
-  def retrieveThreadMessage(threadId: String, messageId: String): IO[OpenAIException, MessageData] =
+  def retrieveThreadMessage(threadId: String, messageId: String): OpenAiResponse[MessageData] =
     send(openAI.retrieveThreadMessage(threadId, messageId))
 
   /** Modifies a message.
@@ -762,7 +792,7 @@ class OpenAIZioClient private (
     * @param messageId
     *   The ID of the message to modify.
     */
-  def modifyMessage(threadId: String, messageId: String, metadata: Map[String, String]): IO[OpenAIException, MessageData] =
+  def modifyMessage(threadId: String, messageId: String, metadata: Map[String, String]): OpenAiResponse[MessageData] =
     send(openAI.modifyMessage(threadId, messageId, metadata))
 
   /** Deletes a message.
@@ -778,7 +808,7 @@ class OpenAIZioClient private (
     * @return
     *   Deletion status
     */
-  def deleteMessage(threadId: String, messageId: String): IO[OpenAIException, DeleteMessageResponse] =
+  def deleteMessage(threadId: String, messageId: String): OpenAiResponse[DeleteMessageResponse] =
     send(openAI.deleteMessage(threadId, messageId))
 
   /** Create an assistant with a model and instructions.
@@ -788,14 +818,14 @@ class OpenAIZioClient private (
     * @param createAssistantBody
     *   Create completion request body.
     */
-  def createAssistant(createAssistantBody: CreateAssistantBody): IO[OpenAIException, AssistantData] =
+  def createAssistant(createAssistantBody: CreateAssistantBody): OpenAiResponse[AssistantData] =
     send(openAI.createAssistant(createAssistantBody))
 
   /** Returns a list of assistants.
     *
     * [[https://platform.openai.com/docs/api-reference/assistants/listAssistants]]
     */
-  def listAssistants(queryParameters: QueryParameters = QueryParameters.empty): IO[OpenAIException, ListAssistantsResponse] =
+  def listAssistants(queryParameters: QueryParameters = QueryParameters.empty): OpenAiResponse[ListAssistantsResponse] =
     send(openAI.listAssistants(queryParameters))
 
   /** Retrieves an assistant.
@@ -805,7 +835,7 @@ class OpenAIZioClient private (
     * @param assistantId
     *   The ID of the assistant to retrieve.
     */
-  def retrieveAssistant(assistantId: String): IO[OpenAIException, AssistantData] =
+  def retrieveAssistant(assistantId: String): OpenAiResponse[AssistantData] =
     send(openAI.retrieveAssistant(assistantId))
 
   /** Modifies an assistant.
@@ -818,7 +848,7 @@ class OpenAIZioClient private (
     * @param modifyAssistantBody
     *   Modify assistant request body.
     */
-  def modifyAssistant(assistantId: String, modifyAssistantBody: ModifyAssistantBody): IO[OpenAIException, AssistantData] =
+  def modifyAssistant(assistantId: String, modifyAssistantBody: ModifyAssistantBody): OpenAiResponse[AssistantData] =
     send(openAI.modifyAssistant(assistantId, modifyAssistantBody))
 
   /** Delete an assistant.
@@ -828,7 +858,7 @@ class OpenAIZioClient private (
     * @param assistantId
     *   The ID of the assistant to delete.
     */
-  def deleteAssistant(assistantId: String): IO[OpenAIException, DeleteAssistantResponse] =
+  def deleteAssistant(assistantId: String): OpenAiResponse[DeleteAssistantResponse] =
     send(openAI.deleteAssistant(assistantId))
 
   /** Create a run.
@@ -840,7 +870,7 @@ class OpenAIZioClient private (
     * @param createRun
     *   Create run request body.
     */
-  def createRun(threadId: String, createRun: CreateRun): IO[OpenAIException, RunData] =
+  def createRun(threadId: String, createRun: CreateRun): OpenAiResponse[RunData] =
     send(openAI.createRun(threadId, createRun))
 
   /** Create a thread and run it in one request.
@@ -850,7 +880,7 @@ class OpenAIZioClient private (
     * @param createThreadAndRun
     *   Create thread and run request body.
     */
-  def createThreadAndRun(createThreadAndRun: CreateThreadAndRun): IO[OpenAIException, RunData] =
+  def createThreadAndRun(createThreadAndRun: CreateThreadAndRun): OpenAiResponse[RunData] =
     send(openAI.createThreadAndRun(createThreadAndRun))
 
   /** Returns a list of runs belonging to a thread.
@@ -860,7 +890,7 @@ class OpenAIZioClient private (
     * @param threadId
     *   The ID of the thread the run belongs to.
     */
-  def listRuns(threadId: String): IO[OpenAIException, ListRunsResponse] =
+  def listRuns(threadId: String): OpenAiResponse[ListRunsResponse] =
     send(openAI.listRuns(threadId))
 
   /** Returns a list of run steps belonging to a run.
@@ -877,7 +907,7 @@ class OpenAIZioClient private (
       threadId: String,
       runId: String,
       queryParameters: QueryParameters = QueryParameters.empty
-  ): IO[OpenAIException, ListRunStepsResponse] =
+  ): OpenAiResponse[ListRunStepsResponse] =
     send(openAI.listRunSteps(threadId, runId, queryParameters))
 
   /** Retrieves a run.
@@ -890,7 +920,7 @@ class OpenAIZioClient private (
     * @param runId
     *   The ID of the run to retrieve.
     */
-  def retrieveRun(threadId: String, runId: String): IO[OpenAIException, RunData] =
+  def retrieveRun(threadId: String, runId: String): OpenAiResponse[RunData] =
     send(openAI.retrieveRun(threadId, runId))
 
   /** Retrieves a run step.
@@ -906,7 +936,7 @@ class OpenAIZioClient private (
     * @param stepId
     *   The ID of the run step to retrieve.
     */
-  def retrieveRunStep(threadId: String, runId: String, stepId: String): IO[OpenAIException, RunStepData] =
+  def retrieveRunStep(threadId: String, runId: String, stepId: String): OpenAiResponse[RunStepData] =
     send(openAI.retrieveRunStep(threadId, runId, stepId))
 
   /** Modifies a run.
@@ -919,7 +949,7 @@ class OpenAIZioClient private (
     * @param runId
     *   The ID of the run to modify.
     */
-  def modifyRun(threadId: String, runId: String, metadata: Map[String, String]): IO[OpenAIException, RunData] =
+  def modifyRun(threadId: String, runId: String, metadata: Map[String, String]): OpenAiResponse[RunData] =
     send(openAI.modifyRun(threadId, runId, metadata))
 
   /** When a run has the status: "requires_action" and required_action.type is submit_tool_outputs, this endpoint can be used to submit the
@@ -934,7 +964,7 @@ class OpenAIZioClient private (
     * @param toolOutputs
     *   A list of tools for which the outputs are being submitted.
     */
-  def submitToolOutputs(threadId: String, runId: String, toolOutputs: Seq[ToolOutput]): IO[OpenAIException, RunData] =
+  def submitToolOutputs(threadId: String, runId: String, toolOutputs: Seq[ToolOutput]): OpenAiResponse[RunData] =
     send(openAI.submitToolOutputs(threadId, runId, toolOutputs))
 
   /** Cancels a run that is in_progress.
@@ -947,7 +977,7 @@ class OpenAIZioClient private (
     * @param runId
     *   The ID of the run to cancel.
     */
-  def cancelRun(threadId: String, runId: String): IO[OpenAIException, RunData] =
+  def cancelRun(threadId: String, runId: String): OpenAiResponse[RunData] =
     send(openAI.cancelRun(threadId, runId))
 
   /** Creates vector store
@@ -957,7 +987,7 @@ class OpenAIZioClient private (
     * @return
     *   Newly created vector store or exception
     */
-  def createVectorStore(createVectorStoreBody: CreateVectorStoreBody): IO[OpenAIException, VectorStore] =
+  def createVectorStore(createVectorStoreBody: CreateVectorStoreBody): OpenAiResponse[VectorStore] =
     send(openAI.createVectorStore(createVectorStoreBody))
 
   /** Lists vector store
@@ -967,7 +997,7 @@ class OpenAIZioClient private (
     * @return
     *   List of vector stores matching criteria or exception
     */
-  def listVectorStores(queryParameters: QueryParameters = QueryParameters.empty): IO[OpenAIException, ListVectorStoresResponse] =
+  def listVectorStores(queryParameters: QueryParameters = QueryParameters.empty): OpenAiResponse[ListVectorStoresResponse] =
     send(openAI.listVectorStores(queryParameters))
 
   /** Retrieves vector store by id
@@ -977,7 +1007,7 @@ class OpenAIZioClient private (
     * @return
     *   Vector store object or exception
     */
-  def retrieveVectorStore(vectorStoreId: String): IO[OpenAIException, VectorStore] =
+  def retrieveVectorStore(vectorStoreId: String): OpenAiResponse[VectorStore] =
     send(openAI.retrieveVectorStore(vectorStoreId))
 
   /** Modifies vector store
@@ -989,7 +1019,7 @@ class OpenAIZioClient private (
     * @return
     *   Modified vector store object
     */
-  def modifyVectorStore(vectorStoreId: String, modifyVectorStoreBody: ModifyVectorStoreBody): IO[OpenAIException, VectorStore] =
+  def modifyVectorStore(vectorStoreId: String, modifyVectorStoreBody: ModifyVectorStoreBody): OpenAiResponse[VectorStore] =
     send(openAI.modifyVectorStore(vectorStoreId, modifyVectorStoreBody))
 
   /** Deletes vector store
@@ -999,7 +1029,7 @@ class OpenAIZioClient private (
     * @return
     *   Result of deleted operation
     */
-  def deleteVectorStore(vectorStoreId: String): IO[OpenAIException, DeleteVectorStoreResponse] =
+  def deleteVectorStore(vectorStoreId: String): OpenAiResponse[DeleteVectorStoreResponse] =
     send(openAI.deleteVectorStore(vectorStoreId))
 
   /** Creates vector store file
@@ -1014,7 +1044,7 @@ class OpenAIZioClient private (
   def createVectorStoreFile(
       vectorStoreId: String,
       createVectorStoreFileBody: CreateVectorStoreFileBody
-  ): IO[OpenAIException, VectorStoreFile] =
+  ): OpenAiResponse[VectorStoreFile] =
     send(openAI.createVectorStoreFile(vectorStoreId, createVectorStoreFileBody))
 
   /** List files belonging to particular datastore
@@ -1029,7 +1059,7 @@ class OpenAIZioClient private (
   def listVectorStoreFiles(
       vectorStoreId: String,
       queryParameters: ListVectorStoreFilesBody = ListVectorStoreFilesBody()
-  ): IO[OpenAIException, ListVectorStoreFilesResponse] =
+  ): OpenAiResponse[ListVectorStoreFilesResponse] =
     send(openAI.listVectorStoreFiles(vectorStoreId, queryParameters))
 
   /** Retrieves vector store file by id
@@ -1041,7 +1071,7 @@ class OpenAIZioClient private (
     * @return
     *   Vector store file
     */
-  def retrieveVectorStoreFile(vectorStoreId: String, fileId: String): IO[OpenAIException, VectorStoreFile] =
+  def retrieveVectorStoreFile(vectorStoreId: String, fileId: String): OpenAiResponse[VectorStoreFile] =
     send(openAI.retrieveVectorStoreFile(vectorStoreId, fileId))
 
   /** Deletes vector store file by id
@@ -1053,7 +1083,7 @@ class OpenAIZioClient private (
     * @return
     *   Result of delete operation
     */
-  def deleteVectorStoreFile(vectorStoreId: String, fileId: String): IO[OpenAIException, DeleteVectorStoreFileResponse] =
+  def deleteVectorStoreFile(vectorStoreId: String, fileId: String): OpenAiResponse[DeleteVectorStoreFileResponse] =
     send(openAI.deleteVectorStoreFile(vectorStoreId, fileId))
 
   /** Creates and executes a batch from an uploaded file of requests
@@ -1065,7 +1095,7 @@ class OpenAIZioClient private (
     * @return
     *   The created Batch object.
     */
-  def createBatch(createBatchRequest: BatchRequestBody): IO[OpenAIException, BatchResponse] =
+  def createBatch(createBatchRequest: BatchRequestBody): OpenAiResponse[BatchResponse] =
     send(openAI.createBatch(createBatchRequest))
 
   /** Retrieves a batch.
@@ -1077,7 +1107,7 @@ class OpenAIZioClient private (
     * @return
     *   The Batch object matching the specified ID.
     */
-  def retrieveBatch(batchId: String): IO[OpenAIException, BatchResponse] =
+  def retrieveBatch(batchId: String): OpenAiResponse[BatchResponse] =
     send(openAI.retrieveBatch(batchId))
 
   /** Cancels an in-progress batch. The batch will be in status cancelling for up to 10 minutes, before changing to cancelled, where it will
@@ -1090,7 +1120,7 @@ class OpenAIZioClient private (
     * @return
     *   The Batch object matching the specified ID.
     */
-  def cancelBatch(batchId: String): IO[OpenAIException, BatchResponse] =
+  def cancelBatch(batchId: String): OpenAiResponse[BatchResponse] =
     send(openAI.cancelBatch(batchId))
 
   /** List your organization's batches.
@@ -1100,7 +1130,7 @@ class OpenAIZioClient private (
     * @return
     *   A list of paginated Batch objects.
     */
-  def listBatches(queryParameters: batch.QueryParameters = batch.QueryParameters.empty): IO[OpenAIException, ListBatchResponse] =
+  def listBatches(queryParameters: batch.QueryParameters = batch.QueryParameters.empty): OpenAiResponse[ListBatchResponse] =
     send(openAI.listBatches(queryParameters))
 
   /** Create an organization admin API key
@@ -1112,7 +1142,7 @@ class OpenAIZioClient private (
     * @return
     *   The created admin API key object.
     */
-  def createAdminApiKey(createAdminApiKeyRequest: AdminApiKeyRequestBody): IO[OpenAIException, AdminApiKeyResponse] =
+  def createAdminApiKey(createAdminApiKeyRequest: AdminApiKeyRequestBody): OpenAiResponse[AdminApiKeyResponse] =
     send(openAI.createAdminApiKey(createAdminApiKeyRequest))
 
   /** Retrieve a single organization API key
@@ -1124,7 +1154,7 @@ class OpenAIZioClient private (
     * @return
     *   The requested admin API key object.
     */
-  def retrieveAdminApiKey(keyId: String): IO[OpenAIException, AdminApiKeyResponse] =
+  def retrieveAdminApiKey(keyId: String): OpenAiResponse[AdminApiKeyResponse] =
     send(openAI.retrieveAdminApiKey(keyId))
 
   /** List organization API keys
@@ -1134,7 +1164,7 @@ class OpenAIZioClient private (
     * @return
     *   A list of admin API key objects.
     */
-  def listAdminApiKeys(queryParameters: admin.QueryParameters = admin.QueryParameters.empty): IO[OpenAIException, ListAdminApiKeyResponse] =
+  def listAdminApiKeys(queryParameters: admin.QueryParameters = admin.QueryParameters.empty): OpenAiResponse[ListAdminApiKeyResponse] =
     send(openAI.listAdminApiKeys(queryParameters))
 
   /** Delete an organization admin API key
@@ -1146,36 +1176,41 @@ class OpenAIZioClient private (
     * @return
     *   A confirmation object indicating the key was deleted.
     */
-  def deleteAdminApiKey(keyId: String): IO[OpenAIException, DeleteAdminApiKeyResponse] =
+  def deleteAdminApiKey(keyId: String): OpenAiResponse[DeleteAdminApiKeyResponse] =
     send(openAI.deleteAdminApiKey(keyId))
 
   /** Closes and releases resources of http client if was not provided explicitly, otherwise works no-op. */
-  def close(): IO[Nothing, Unit] = if (closeClient) ZIO.succeed(backend.close()) else ZIO.unit
+  def close(): IO[Nothing, Unit] = if (closeClient) backend.close().orDie else ZIO.unit
 
-  private def send[A](request: Request[Either[OpenAIException, A]]): IO[OpenAIException, A] =
+  private def send[A](request: Request[Either[OpenAIException, A]]): OpenAiResponse[A] =
     request.send(backend).orDie.flatMap(response => ZIO.fromEither(response.body))
 }
 
 object OpenAIZioClient {
-  def apply(authToken: String): OpenAIZioClient =
-    new OpenAIZioClient(authToken, HttpClientZioBackend(), true, OpenAIUris.OpenAIBaseUri)
+  type OpenAiResponse[A] = IO[OpenAIException, A]
 
-  def apply(authToken: String, backend: WebSocketStreamBackend[Any, Any]): OpenAIZioClient =
+  def apply(authToken: String): OpenAIZioClient =
+    new OpenAIZioClient(authToken, unsafeBackend(), true, OpenAIUris.OpenAIBaseUri)
+
+  def apply(authToken: String, backend: WebSocketStreamBackend[Task, ZioStreams]): OpenAIZioClient =
     new OpenAIZioClient(authToken, backend, false, OpenAIUris.OpenAIBaseUri)
 
-  def apply(authToken: String, backend: WebSocketStreamBackend[Any, Any], baseUrl: Uri): OpenAIZioClient =
+  def apply(authToken: String, backend: WebSocketStreamBackend[Task, ZioStreams], baseUrl: Uri): OpenAIZioClient =
     new OpenAIZioClient(authToken, backend, false, baseUrl)
 
   def apply(authToken: String, baseUrl: Uri): OpenAIZioClient =
-    new OpenAIZioClient(authToken, HttpClientZioBackend(), true, baseUrl)
+    new OpenAIZioClient(authToken, unsafeBackend(), true, baseUrl)
 
   def apply(config: OpenAIConfig): OpenAIZioClient =
-    new OpenAIZioClient(config.apiKey, HttpClientZioBackend(), true, config.baseUrl, config.organization)
+    new OpenAIZioClient(config.apiKey, unsafeBackend(), true, config.baseUrl, config.organization)
 
-  def apply(config: OpenAIConfig, backend: WebSocketStreamBackend[Any, Any]): OpenAIZioClient =
+  def apply(config: OpenAIConfig, backend: WebSocketStreamBackend[Task, ZioStreams]): OpenAIZioClient =
     new OpenAIZioClient(config.apiKey, backend, false, config.baseUrl, config.organization)
 
   def fromEnv: OpenAIZioClient = apply(OpenAIConfig.fromEnv)
 
-  def fromEnv(backend: WebSocketStreamBackend[Any, Any]): OpenAIZioClient = apply(OpenAIConfig.fromEnv, backend)
+  def fromEnv(backend: WebSocketStreamBackend[Task, ZioStreams]): OpenAIZioClient = apply(OpenAIConfig.fromEnv, backend)
+
+  private def unsafeBackend(): WebSocketStreamBackend[Task, ZioStreams] =
+    Unsafe.unsafe(implicit u => zio.Runtime.default.unsafe.run(HttpClientZioBackend()).getOrThrowFiberFailure())
 }
