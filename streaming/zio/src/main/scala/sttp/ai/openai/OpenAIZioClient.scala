@@ -52,7 +52,7 @@ import java.io.File
 
 class OpenAIZioClient private (
     openAI: OpenAI,
-    backend: WebSocketStreamBackend[UIO, ZioStreams]
+    backend: WebSocketStreamBackend[Task, ZioStreams]
 ) {
 
   /** Lists the currently available models, and provides basic information about each one such as the owner and availability.
@@ -1162,7 +1162,7 @@ class OpenAIZioClient private (
     */
   def createSpeech(requestBody: SpeechRequestBody): OpenAiResponse[Stream[Throwable, Byte]] = {
     val request = openAI.createSpeech(requestBody)
-    request.send(backend).flatMap(response => ZIO.fromEither(response.body))
+    request.send(backend).orDie.flatMap(response => ZIO.fromEither(response.body))
   }
 
   /** Creates and streams a model response as chunk objects for the given chat conversation defined in chatBody. The request will complete
@@ -1175,11 +1175,11 @@ class OpenAIZioClient private (
     */
   def createStreamedChatCompletion(chatBody: ChatBody): OpenAiResponse[Stream[Throwable, ChatChunkResponse]] = {
     val request = openAI.createStreamedChatCompletion(chatBody)
-    request.send(backend).flatMap(response => ZIO.fromEither(response.body))
+    request.send(backend).orDie.flatMap(response => ZIO.fromEither(response.body))
   }
 
   private def send[A](request: Request[Either[OpenAIException, A]]): OpenAiResponse[A] =
-    request.send(backend).flatMap(response => ZIO.fromEither(response.body))
+    request.send(backend).orDie.flatMap(response => ZIO.fromEither(response.body))
 }
 
 object OpenAIZioClient {
@@ -1188,7 +1188,7 @@ object OpenAIZioClient {
   val layer = ZLayer {
     for {
       openAI <- ZIO.service[OpenAI]
-      client <- ZIO.service[WebSocketStreamBackend[UIO, ZioStreams]]
+      client <- ZIO.service[WebSocketStreamBackend[Task, ZioStreams]]
     } yield new OpenAIZioClient(openAI, client)
   }
 }

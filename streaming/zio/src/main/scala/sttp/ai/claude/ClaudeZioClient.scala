@@ -12,7 +12,7 @@ import zio._
 
 class ClaudeZioClient private (
     client: ClaudeClient,
-    backend: WebSocketStreamBackend[UIO, ZioStreams]
+    backend: WebSocketStreamBackend[Task, ZioStreams]
 ) {
 
   /** Creates a model response for the given message request.
@@ -42,20 +42,20 @@ class ClaudeZioClient private (
     */
   def createStreamedMessage(messageRequest: MessageRequest): ClaudeResponse[Stream[Throwable, MessageStreamResponse]] = {
     val request = client.createStreamedMessage(messageRequest)
-    request.send(backend).flatMap(response => ZIO.fromEither(response.body))
+    request.send(backend).orDie.flatMap(response => ZIO.fromEither(response.body))
   }
 
   private def send[A](request: Request[Either[ClaudeException, A]]): ClaudeResponse[A] =
-    request.send(backend).flatMap(response => ZIO.fromEither(response.body))
+    request.send(backend).orDie.flatMap(response => ZIO.fromEither(response.body))
 }
 
 object ClaudeZioClient {
   type ClaudeResponse[A] = IO[ClaudeException, A]
 
-  val layer: ZLayer[ClaudeClient with WebSocketStreamBackend[UIO, ZioStreams], Nothing, ClaudeZioClient] = ZLayer {
+  val layer: ZLayer[ClaudeClient with WebSocketStreamBackend[Task, ZioStreams], Nothing, ClaudeZioClient] = ZLayer {
     for {
       client  <- ZIO.service[ClaudeClient]
-      backend <- ZIO.service[WebSocketStreamBackend[UIO, ZioStreams]]
+      backend <- ZIO.service[WebSocketStreamBackend[Task, ZioStreams]]
     } yield new ClaudeZioClient(client, backend)
   }
 }
