@@ -1,20 +1,14 @@
 package sttp.ai.claude
 
 import sttp.ai.claude.ClaudeExceptions.ClaudeException
-import sttp.ai.claude.config.ClaudeConfig
+import sttp.ai.claude.ClaudeZioClient.ClaudeResponse
 import sttp.ai.claude.requests.MessageRequest
 import sttp.ai.claude.responses.{MessageResponse, MessageStreamResponse, ModelsResponse}
-import sttp.ai.claude.ClaudeZioClient.ClaudeResponse
 import sttp.ai.claude.streaming.zio.ClaudeZioStreaming.ClaudeClientZioExtension
 import sttp.capabilities.zio.ZioStreams
-import sttp.client4.impl.zio.ZioServerSentEvents
-import sttp.client4.{Request, StreamRequest, WebSocketStreamBackend}
-import sttp.model.ResponseMetadata
-import sttp.model.sse.ServerSentEvent
-import zio.{IO, Task, UIO, ZIO, ZLayer}
+import sttp.client4.{Request, WebSocketStreamBackend}
 import zio.stream.Stream
-import sttp.ai.core.json.SnakePickle._
-
+import zio.{IO, UIO, ZIO, ZLayer}
 
 class ClaudeZioClient private (
     client: ClaudeClient,

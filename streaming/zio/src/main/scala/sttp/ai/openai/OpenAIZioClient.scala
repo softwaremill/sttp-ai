@@ -1,6 +1,7 @@
 package sttp.ai.openai
 
 import sttp.ai.openai.OpenAIExceptions.OpenAIException
+import sttp.ai.openai.OpenAIZioClient.OpenAiResponse
 import sttp.ai.openai.requests.admin.{AdminApiKeyRequestBody, AdminApiKeyResponse, DeleteAdminApiKeyResponse, ListAdminApiKeyResponse, QueryParameters => _}
 import sttp.ai.openai.requests.assistants.AssistantsRequestBody.{CreateAssistantBody, ModifyAssistantBody}
 import sttp.ai.openai.requests.assistants.AssistantsResponseData.{AssistantData, DeleteAssistantResponse, ListAssistantsResponse}
@@ -13,14 +14,13 @@ import sttp.ai.openai.requests.completions.CompletionsRequestBody.CompletionsBod
 import sttp.ai.openai.requests.completions.CompletionsResponseData.CompletionsResponse
 import sttp.ai.openai.requests.completions.chat
 import sttp.ai.openai.requests.completions.chat.ChatChunkRequestResponseData.ChatChunkResponse
-import sttp.ai.openai.requests.completions.chat.ChatChunkRequestResponseData.ChatChunkResponse.DoneEvent
 import sttp.ai.openai.requests.completions.chat.ChatRequestBody.{ChatBody, UpdateChatCompletionRequestBody}
 import sttp.ai.openai.requests.completions.chat.ChatRequestResponseData.{ChatResponse, DeleteChatCompletionResponse, ListChatResponse, ListMessageResponse}
 import sttp.ai.openai.requests.completions.chat.{ListMessagesQueryParameters => _}
 import sttp.ai.openai.requests.embeddings.EmbeddingsRequestBody.EmbeddingsBody
 import sttp.ai.openai.requests.embeddings.EmbeddingsResponseBody.EmbeddingResponse
 import sttp.ai.openai.requests.files.FilesResponseData.{DeletedFileData, FileData, FilesResponse}
-import sttp.ai.openai.requests.finetuning.{FineTuningJobRequestBody, FineTuningJobResponse, ListFineTuningJobCheckpointResponse, ListFineTuningJobEventResponse, ListFineTuningJobResponse}
+import sttp.ai.openai.requests.finetuning._
 import sttp.ai.openai.requests.images.ImageResponseData.ImageResponse
 import sttp.ai.openai.requests.images.creation.ImageCreationRequestBody.ImageCreationBody
 import sttp.ai.openai.requests.images.edit.ImageEditsConfig
@@ -28,7 +28,7 @@ import sttp.ai.openai.requests.images.variations.ImageVariationsConfig
 import sttp.ai.openai.requests.models.ModelsResponseData.{DeletedModelData, ModelData, ModelsResponse}
 import sttp.ai.openai.requests.moderations.ModerationsRequestBody.ModerationsBody
 import sttp.ai.openai.requests.moderations.ModerationsResponseData.ModerationData
-import sttp.ai.openai.requests.responses.{DeleteModelResponseResponse, GetResponseQueryParameters, InputItemsListResponseBody, ListInputItemsQueryParameters, ResponsesRequestBody, ResponsesResponseBody}
+import sttp.ai.openai.requests.responses._
 import sttp.ai.openai.requests.threads.QueryParameters
 import sttp.ai.openai.requests.threads.ThreadsRequestBody.CreateThreadBody
 import sttp.ai.openai.requests.threads.ThreadsResponseData.{DeleteThreadResponse, ThreadData}
@@ -42,17 +42,13 @@ import sttp.ai.openai.requests.vectorstore.VectorStoreResponseData.{DeleteVector
 import sttp.ai.openai.requests.vectorstore.file.VectorStoreFileRequestBody.{CreateVectorStoreFileBody, ListVectorStoreFilesBody}
 import sttp.ai.openai.requests.vectorstore.file.VectorStoreFileResponseData.{DeleteVectorStoreFileResponse, ListVectorStoreFilesResponse, VectorStoreFile}
 import sttp.ai.openai.requests.{admin, batch, finetuning}
-import sttp.capabilities.zio.ZioStreams
-import sttp.client4.impl.zio.ZioServerSentEvents
-import sttp.client4.{Request, Response, StreamRequest, WebSocketStreamBackend}
-import sttp.model.ResponseMetadata
-import sttp.model.sse.ServerSentEvent
-import zio.{IO, Task, UIO, ZIO, ZLayer}
-import zio.stream.Stream
-import sttp.ai.openai.OpenAIZioClient.OpenAiResponse
 import sttp.ai.openai.streaming.zio.extension
+import sttp.capabilities.zio.ZioStreams
+import sttp.client4.{Request, WebSocketStreamBackend}
+import zio.stream.Stream
+import zio._
 
-import java.io.{File, InputStream}
+import java.io.File
 
 class OpenAIZioClient private (
     openAI: OpenAI,
