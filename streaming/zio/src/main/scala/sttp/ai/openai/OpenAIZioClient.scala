@@ -59,8 +59,6 @@ class OpenAIZioClient private (
     backend: WebSocketStreamBackend[UIO, ZioStreams]
 ) {
 
-  // private val openAI = new OpenAI(authToken, baseUri, organization)
-
   /** Lists the currently available models, and provides basic information about each one such as the owner and availability.
     *
     * [[https://platform.openai.com/docs/api-reference/models]]
