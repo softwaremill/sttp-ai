@@ -1,17 +1,19 @@
 package sttp.ai.openai
 
 import sttp.ai.openai.OpenAIExceptions.OpenAIException
-import sttp.ai.openai.config.OpenAIConfig
 import sttp.ai.openai.requests.admin.{AdminApiKeyRequestBody, AdminApiKeyResponse, DeleteAdminApiKeyResponse, ListAdminApiKeyResponse, QueryParameters => _}
 import sttp.ai.openai.requests.assistants.AssistantsRequestBody.{CreateAssistantBody, ModifyAssistantBody}
 import sttp.ai.openai.requests.assistants.AssistantsResponseData.{AssistantData, DeleteAssistantResponse, ListAssistantsResponse}
 import sttp.ai.openai.requests.audio.AudioResponseData.AudioResponse
+import sttp.ai.openai.requests.audio.speech.SpeechRequestBody
 import sttp.ai.openai.requests.audio.transcriptions.{TranscriptionConfig, TranscriptionModel}
 import sttp.ai.openai.requests.audio.translations.{TranslationConfig, TranslationModel}
 import sttp.ai.openai.requests.batch.{BatchRequestBody, BatchResponse, ListBatchResponse}
 import sttp.ai.openai.requests.completions.CompletionsRequestBody.CompletionsBody
 import sttp.ai.openai.requests.completions.CompletionsResponseData.CompletionsResponse
 import sttp.ai.openai.requests.completions.chat
+import sttp.ai.openai.requests.completions.chat.ChatChunkRequestResponseData.ChatChunkResponse
+import sttp.ai.openai.requests.completions.chat.ChatChunkRequestResponseData.ChatChunkResponse.DoneEvent
 import sttp.ai.openai.requests.completions.chat.ChatRequestBody.{ChatBody, UpdateChatCompletionRequestBody}
 import sttp.ai.openai.requests.completions.chat.ChatRequestResponseData.{ChatResponse, DeleteChatCompletionResponse, ListChatResponse, ListMessageResponse}
 import sttp.ai.openai.requests.completions.chat.{ListMessagesQueryParameters => _}
@@ -41,18 +43,21 @@ import sttp.ai.openai.requests.vectorstore.file.VectorStoreFileRequestBody.{Crea
 import sttp.ai.openai.requests.vectorstore.file.VectorStoreFileResponseData.{DeleteVectorStoreFileResponse, ListVectorStoreFilesResponse, VectorStoreFile}
 import sttp.ai.openai.requests.{admin, batch, finetuning}
 import sttp.capabilities.zio.ZioStreams
-import sttp.client4.httpclient.zio.HttpClientZioBackend
-import sttp.client4.{Request, WebSocketStreamBackend}
-import sttp.model.Uri
-import zio.{IO, Task, Unsafe, ZIO, ZLayer}
+import sttp.client4.impl.zio.ZioServerSentEvents
+import sttp.client4.{Request, Response, StreamRequest, WebSocketStreamBackend}
+import sttp.model.ResponseMetadata
+import sttp.model.sse.ServerSentEvent
+import zio.{IO, Task, UIO, ZIO, ZLayer}
+import zio.stream.Stream
 import sttp.ai.openai.OpenAIZioClient.OpenAiResponse
+import sttp.ai.openai.streaming.zio.extension
 
-import java.io.File
+import java.io.{File, InputStream}
 
-class OpenAIZioClient private(
-                               openAI: OpenAI,
-                               backend: WebSocketStreamBackend[Task, ZioStreams]
-                             ) {
+class OpenAIZioClient private (
+    openAI: OpenAI,
+    backend: WebSocketStreamBackend[UIO, ZioStreams]
+) {
 
   // private val openAI = new OpenAI(authToken, baseUri, organization)
 
@@ -1151,8 +1156,36 @@ class OpenAIZioClient private(
   /** Closes and releases resources of http client if was not provided explicitly, otherwise works no-op. */
   // def close(): IO[Nothing, Unit] = if (closeClient) backend.close().orDie else ZIO.unit
 
+  /** Generates audio from the input text.
+    *
+    * [[https://platform.openai.com/docs/api-reference/audio/createSpeech]]
+    *
+    * @param requestBody
+    *   Request body that will be used to create a speech.
+    *
+    * @return
+    *   The audio file content.
+    */
+  def createSpeech(requestBody: SpeechRequestBody): OpenAiResponse[Stream[Throwable, Byte]] = {
+    val request = openAI.createSpeech(requestBody)
+    request.send(backend).flatMap(response => ZIO.fromEither(response.body))
+  }
+
+  /** Creates and streams a model response as chunk objects for the given chat conversation defined in chatBody. The request will complete
+    * and the connection close only once the source is fully consumed.
+    *
+    * [[https://platform.openai.com/docs/api-reference/chat/create]]
+    *
+    * @param chatBody
+    *   Chat request body.
+    */
+  def createStreamedChatCompletion(chatBody: ChatBody): OpenAiResponse[Stream[Throwable, ChatChunkResponse]] = {
+    val request = openAI.createStreamedChatCompletion(chatBody)
+    request.send(backend).flatMap(response => ZIO.fromEither(response.body))
+  }
+
   private def send[A](request: Request[Either[OpenAIException, A]]): OpenAiResponse[A] =
-    request.send(backend).orDie.flatMap(response => ZIO.fromEither(response.body))
+    request.send(backend).flatMap(response => ZIO.fromEither(response.body))
 }
 
 object OpenAIZioClient {
@@ -1161,7 +1194,7 @@ object OpenAIZioClient {
   val layer = ZLayer {
     for {
       openAI <- ZIO.service[OpenAI]
-      client <- ZIO.service[WebSocketStreamBackend[Task, ZioStreams]]
+      client <- ZIO.service[WebSocketStreamBackend[UIO, ZioStreams]]
     } yield new OpenAIZioClient(openAI, client)
   }
 }
