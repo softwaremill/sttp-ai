@@ -8,7 +8,7 @@ import sttp.ai.claude.streaming.zio.ClaudeZioStreaming.ClaudeClientZioExtension
 import sttp.capabilities.zio.ZioStreams
 import sttp.client4.{Request, WebSocketStreamBackend}
 import zio.stream.Stream
-import zio.{IO, UIO, ZIO, ZLayer}
+import zio._
 
 class ClaudeZioClient private (
     client: ClaudeClient,
