@@ -1,6 +1,7 @@
 package sttp.ai.openai
 
 import sttp.ai.openai.OpenAIExceptions.OpenAIException
+import sttp.ai.openai.OpenAIExceptions.OpenAIException.DeserializationOpenAIException
 import sttp.ai.openai.OpenAIZioClient.OpenAiResponse
 import sttp.ai.openai.requests.admin.{AdminApiKeyRequestBody, AdminApiKeyResponse, DeleteAdminApiKeyResponse, ListAdminApiKeyResponse, QueryParameters => _}
 import sttp.ai.openai.requests.assistants.AssistantsRequestBody.{CreateAssistantBody, ModifyAssistantBody}
@@ -14,6 +15,7 @@ import sttp.ai.openai.requests.completions.CompletionsRequestBody.CompletionsBod
 import sttp.ai.openai.requests.completions.CompletionsResponseData.CompletionsResponse
 import sttp.ai.openai.requests.completions.chat
 import sttp.ai.openai.requests.completions.chat.ChatChunkRequestResponseData.ChatChunkResponse
+import sttp.ai.openai.requests.completions.chat.ChatRequestBody.ResponseFormat.JsonSchema
 import sttp.ai.openai.requests.completions.chat.ChatRequestBody.{ChatBody, UpdateChatCompletionRequestBody}
 import sttp.ai.openai.requests.completions.chat.ChatRequestResponseData.{ChatResponse, DeleteChatCompletionResponse, ListChatResponse, ListMessageResponse}
 import sttp.ai.openai.requests.completions.chat.{ListMessagesQueryParameters => _}
@@ -45,6 +47,7 @@ import sttp.ai.openai.requests.{admin, batch, finetuning}
 import sttp.ai.openai.streaming.zio.extension
 import sttp.capabilities.zio.ZioStreams
 import sttp.client4.{Request, WebSocketStreamBackend}
+import sttp.tapir.{Schema => TapirSchema}
 import zio.stream.Stream
 import zio._
 
@@ -190,6 +193,35 @@ class OpenAIZioClient private (
     */
   def createChatCompletion(chatBody: ChatBody): OpenAiResponse[ChatResponse] =
     send(openAI.createChatCompletion(chatBody))
+
+  /** Creates a typed model response for the given chat conversation and response format defined in chatBody.
+    *
+    * @param chatBody
+    *   Chat request body.
+    * @param responseName
+    *   An optional name for the response.
+    * @param parseFunction
+    *   Function that parse the response message to a given object
+    * @tparam T
+    *   The return type, which must have a TapirSchema instance available.
+    */
+  def createChatCompletion[T: TapirSchema](chatBody: ChatBody, responseName: Option[String] = None)(parseFunction: String => Either[String, T]): OpenAiResponse[T] = {
+    val withResponseFormat =
+      if (chatBody.responseFormat.nonEmpty) chatBody
+      else chatBody.copy(responseFormat = Some(JsonSchema.withTapirSchema[T](responseName.getOrElse("response"), None, Some(true))))
+
+    for {
+      res <- send(openAI.createChatCompletion(withResponseFormat))
+      message <- res.choices.headOption match {
+        case Some(value) => ZIO.succeed(value.message)
+        case None => ZIO.fail(new DeserializationOpenAIException("no choices found in response", null))
+      }
+      content <- parseFunction(message.content) match {
+        case Left(error) => ZIO.fail(new DeserializationOpenAIException(error, null))
+        case Right(value) => ZIO.succeed(value)
+      }
+    } yield content
+  }
 
   /** Get a stored chat completion. Only chat completions that have been created with the store parameter set to true will be returned.
     *
