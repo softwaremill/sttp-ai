@@ -8,9 +8,13 @@ import sttp.client4.testing.ResponseStub
 import sttp.model.StatusCode
 import sttp.model.StatusCode._
 import sttp.ai.openai.OpenAIExceptions.OpenAIException
+import sttp.ai.openai.OpenAIExceptions.OpenAIException.DeserializationOpenAIException
 import sttp.ai.openai.fixtures.ErrorFixture
+import sttp.ai.openai.requests.completions.chat.ChatRequestBody.{ChatBody, ChatCompletionModel}
 import sttp.ai.openai.requests.models.ModelsResponseData._
+import sttp.ai.openai.requests.responses.ResponsesModel.GPT4oMini
 import sttp.ai.openai.{CustomizeOpenAIRequest, OpenAISyncClient}
+import sttp.tapir.Schema
 
 import java.util.concurrent.atomic.AtomicReference
 
@@ -78,5 +82,79 @@ class SyncClientSpec extends AnyFlatSpec with Matchers with EitherValues {
     // then
     capturedRequest.get().headers.find(_.is("X-Test")).map(_.value) shouldBe Some("test"): Unit
     capturedRequest.get().headers.find(_.is("X-Test-2")).map(_.value) shouldBe Some("test-2")
+  }
+
+  case class Step(explanation: String, output: String)
+
+  case class MathReasoning(steps: List[Step], finalAnswer: String)
+
+  "typed createChatCompletion" should "be ok" in {
+    // given
+    val capturedRequest = new AtomicReference[GenericRequest[_, _]](null)
+    val syncBackendStub = DefaultSyncBackend.stub.whenAnyRequest.thenRespondF { request =>
+      capturedRequest.set(request)
+      ResponseStub.adjust(sttp.ai.openai.fixtures.CompletionsFixture.structuredOutputsResponse, StatusCode.Ok)
+    }
+    val syncClient = OpenAISyncClient(authToken = "test-token", backend = syncBackendStub)
+
+    // when
+    val mockRes = MathReasoning(Nil, "final answer")
+    import sttp.tapir.generic.auto._
+    val res = syncClient.createChatCompletion[MathReasoning](ChatBody(Nil, ChatCompletionModel.GPT4oMini)) { body =>
+      Right(mockRes)
+    }
+
+    // then
+    res shouldBe mockRes
+  }
+
+  "typed createChatCompletion" should "throw exception with parsed error" in {
+    // given
+    val capturedRequest = new AtomicReference[GenericRequest[_, _]](null)
+    val syncBackendStub = DefaultSyncBackend.stub.whenAnyRequest.thenRespondF { request =>
+      capturedRequest.set(request)
+      ResponseStub.adjust(sttp.ai.openai.fixtures.CompletionsFixture.structuredOutputsResponse, StatusCode.Ok)
+    }
+    val syncClient = OpenAISyncClient(authToken = "test-token", backend = syncBackendStub)
+
+    // when
+    import sttp.tapir.generic.auto._
+    val caught = intercept[OpenAIException](syncClient.createChatCompletion[MathReasoning](ChatBody(Nil, ChatCompletionModel.GPT4oMini)) { body =>
+      Left("parsed error")
+    })
+
+    val expectedError = new DeserializationOpenAIException("parsed error", null)
+    caught.getClass shouldBe expectedError.getClass: Unit
+    caught.message shouldBe expectedError.message: Unit
+    caught.cause shouldBe null
+    caught.code shouldBe expectedError.code: Unit
+    caught.param shouldBe expectedError.param: Unit
+    caught.`type` shouldBe expectedError.`type`
+  }
+
+  "typed createChatCompletion" should "throw exception without choices" in {
+    // given
+    val capturedRequest = new AtomicReference[GenericRequest[_, _]](null)
+    val syncBackendStub = DefaultSyncBackend.stub.whenAnyRequest.thenRespondF { request =>
+      capturedRequest.set(request)
+      ResponseStub.adjust(sttp.ai.openai.fixtures.CompletionsFixture.structuredOutputsResponseWithoutChoices, StatusCode.Ok)
+    }
+    val syncClient = OpenAISyncClient(authToken = "test-token", backend = syncBackendStub)
+
+    // when
+    val mockRes = MathReasoning(Nil, "final answer")
+    import sttp.tapir.generic.auto._
+    val caught = intercept[OpenAIException](syncClient.createChatCompletion[MathReasoning](ChatBody(Nil, ChatCompletionModel.GPT4oMini)) { body =>
+      Right(mockRes)
+    })
+
+    // then
+    val expectedError = new DeserializationOpenAIException("no choices found in response", null)
+    caught.getClass shouldBe expectedError.getClass: Unit
+    caught.message shouldBe expectedError.message: Unit
+    caught.cause shouldBe null
+    caught.code shouldBe expectedError.code: Unit
+    caught.param shouldBe expectedError.param: Unit
+    caught.`type` shouldBe expectedError.`type`
   }
 }
