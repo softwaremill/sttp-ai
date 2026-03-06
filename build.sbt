@@ -138,11 +138,13 @@ lazy val examples = (projectMatrix in file("examples"))
   .settings(
     libraryDependencies ++= Seq(
       "com.softwaremill.sttp.tapir" %% "tapir-netty-server-sync" % V.tapir,
-      "ch.qos.logback" % "logback-classic" % "1.5.6"
+      "com.softwaremill.sttp.client4" %% "slf4j-backend"           % "4.0.15",
+      "ch.qos.logback" % "logback-classic" % "1.5.6",
+      "dev.zio" %% "zio-json" % "0.7.44"
     ) ++ Libraries.sttpClientOx,
     publish / skip := true
   )
-  .dependsOn(ox)
+  .dependsOn(ox, zio)
 
 val compileDocumentation: TaskKey[Unit] = taskKey[Unit]("Compiles docs module throwing away its output")
 compileDocumentation :=
