@@ -54,7 +54,7 @@ object ClaudeZioClient {
 
   val layer: ZLayer[ClaudeClient with WebSocketStreamBackend[Task, ZioStreams], Nothing, ClaudeZioClient] = ZLayer {
     for {
-      client  <- ZIO.service[ClaudeClient]
+      client <- ZIO.service[ClaudeClient]
       backend <- ZIO.service[WebSocketStreamBackend[Task, ZioStreams]]
     } yield new ClaudeZioClient(client, backend)
   }

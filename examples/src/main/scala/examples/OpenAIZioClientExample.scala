@@ -62,10 +62,10 @@ class OpenAIZioClientExample private (client: OpenAIZioClient) {
     )
 
   def chatBody(
-                messages: Seq[Message],
-                responseFormat: Option[ResponseFormat] = None,
-                tools: Option[Seq[Tool]] = None
-              ) =
+      messages: Seq[Message],
+      responseFormat: Option[ResponseFormat] = None,
+      tools: Option[Seq[Tool]] = None
+  ) =
     ChatBody(
       model = model,
       messages = messages,
@@ -76,9 +76,7 @@ class OpenAIZioClientExample private (client: OpenAIZioClient) {
 
 object OpenAIZioClientExample extends ZIOAppDefault {
   val live: ZLayer[OpenAIZioClient, Any, OpenAIZioClientExample] =
-    ZLayer.fromFunction((client: OpenAIZioClient) =>
-      new OpenAIZioClientExample(client)
-    )
+    ZLayer.fromFunction((client: OpenAIZioClient) => new OpenAIZioClientExample(client))
 
   val program = for {
     service <- ZIO.service[OpenAIZioClientExample]
@@ -89,11 +87,12 @@ object OpenAIZioClientExample extends ZIOAppDefault {
 
   override def run: ZIO[ZIOAppArgs & Scope, Any, Any] =
     program
-    .provide(
-      OpenAIZioClientExample.live,
-      OpenAIZioClient.layer,
-      ZLayer.succeed(OpenAI.apply(OpenAIConfig("ollama", uri"http://localhost:11434/v1"))),
-      HttpClientZioBackend.layer() >>> ZLayer.fromFunction((client: SttpClient) =>
-        Slf4jLoggingBackend(client, LogConfig(logRequestBody = true, logResponseBody = true)))
-    )
+      .provide(
+        OpenAIZioClientExample.live,
+        OpenAIZioClient.layer,
+        ZLayer.succeed(OpenAI.apply(OpenAIConfig("ollama", uri"http://localhost:11434/v1"))),
+        HttpClientZioBackend.layer() >>> ZLayer.fromFunction((client: SttpClient) =>
+          Slf4jLoggingBackend(client, LogConfig(logRequestBody = true, logResponseBody = true))
+        )
+      )
 }

@@ -17,7 +17,12 @@ import sttp.ai.openai.requests.completions.CompletionsResponseData.CompletionsRe
 import sttp.ai.openai.requests.completions.chat
 import sttp.ai.openai.requests.completions.chat.ChatRequestBody.ResponseFormat.JsonSchema
 import sttp.ai.openai.requests.completions.chat.ChatRequestBody.{ChatBody, UpdateChatCompletionRequestBody}
-import sttp.ai.openai.requests.completions.chat.ChatRequestResponseData.{ChatResponse, DeleteChatCompletionResponse, ListChatResponse, ListMessageResponse}
+import sttp.ai.openai.requests.completions.chat.ChatRequestResponseData.{
+  ChatResponse,
+  DeleteChatCompletionResponse,
+  ListChatResponse,
+  ListMessageResponse
+}
 import sttp.ai.openai.requests.completions.chat.{ListMessagesQueryParameters => _}
 import sttp.ai.openai.requests.embeddings.EmbeddingsRequestBody.EmbeddingsBody
 import sttp.ai.openai.requests.embeddings.EmbeddingsResponseBody.EmbeddingResponse
@@ -42,7 +47,11 @@ import sttp.ai.openai.requests.upload.{CompleteUploadRequestBody, UploadPartResp
 import sttp.ai.openai.requests.vectorstore.VectorStoreRequestBody.{CreateVectorStoreBody, ModifyVectorStoreBody}
 import sttp.ai.openai.requests.vectorstore.VectorStoreResponseData.{DeleteVectorStoreResponse, ListVectorStoresResponse, VectorStore}
 import sttp.ai.openai.requests.vectorstore.file.VectorStoreFileRequestBody.{CreateVectorStoreFileBody, ListVectorStoreFilesBody}
-import sttp.ai.openai.requests.vectorstore.file.VectorStoreFileResponseData.{DeleteVectorStoreFileResponse, ListVectorStoreFilesResponse, VectorStoreFile}
+import sttp.ai.openai.requests.vectorstore.file.VectorStoreFileResponseData.{
+  DeleteVectorStoreFileResponse,
+  ListVectorStoreFilesResponse,
+  VectorStoreFile
+}
 import sttp.ai.openai.requests.{admin, batch, finetuning}
 import sttp.tapir.{Schema => TapirSchema}
 
@@ -204,20 +213,23 @@ class OpenAISyncClient private (
     * @tparam T
     *   The return type, which must have a TapirSchema instance available.
     */
-  def createChatCompletion[T: TapirSchema](chatBody: ChatBody, responseName: Option[String] = None)(parseFunction: String => Either[String, T]): T = {
+  def createChatCompletion[T: TapirSchema](chatBody: ChatBody, responseName: Option[String] = None)(
+      parseFunction: String => Either[String, T]
+  ): T = {
     val withResponseFormat =
       if (chatBody.responseFormat.nonEmpty) chatBody
       else chatBody.copy(responseFormat = Some(JsonSchema.withTapirSchema[T](responseName.getOrElse("response"), None, Some(true))))
 
     val finalRes: Either[OpenAIException, T] = for {
       res <- customizeRequest.apply(openAI.createChatCompletion(withResponseFormat)).send(backend).body
-      message <- res.choices.headOption.map(_.message)
+      message <- res.choices.headOption
+        .map(_.message)
         .toRight(new DeserializationOpenAIException("no choices found in response", null))
       content <- parseFunction(message.content).left.map(err => new DeserializationOpenAIException(err, null))
     } yield content
 
     finalRes match {
-      case Right(value) => value
+      case Right(value)    => value
       case Left(exception) => throw exception
     }
   }
