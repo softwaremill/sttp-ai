@@ -54,7 +54,8 @@ class OpenAIZioClientSpec extends AnyFlatSpec with Matchers with EitherValues {
 
   "typed createChatCompletion" should "be ok" in {
     // given
-    val zioBackendStub = HttpClientZioBackend.stub.whenAnyRequest.thenRespondAdjust(CompletionsFixture.structuredOutputsResponse, StatusCode.Ok)
+    val zioBackendStub =
+      HttpClientZioBackend.stub.whenAnyRequest.thenRespondAdjust(CompletionsFixture.structuredOutputsResponse, StatusCode.Ok)
     val client = new OpenAI("test-token")
 
     // when
@@ -76,7 +77,8 @@ class OpenAIZioClientSpec extends AnyFlatSpec with Matchers with EitherValues {
 
   "typed createChatCompletion" should "throw exception with parsed error" in {
     // given
-    val zioBackendStub = HttpClientZioBackend.stub.whenAnyRequest.thenRespondAdjust(CompletionsFixture.structuredOutputsResponse, StatusCode.Ok)
+    val zioBackendStub =
+      HttpClientZioBackend.stub.whenAnyRequest.thenRespondAdjust(CompletionsFixture.structuredOutputsResponse, StatusCode.Ok)
     val client = new OpenAI("test-token")
 
     // when
@@ -84,9 +86,11 @@ class OpenAIZioClientSpec extends AnyFlatSpec with Matchers with EitherValues {
 
     val caughtEffect = for {
       client <- ZIO.service[OpenAIZioClient]
-      res <- client.createChatCompletion[MathReasoning](ChatBody(Nil, ChatCompletionModel.GPT4oMini)) { _ =>
-        Left("parsed error")
-      }.either
+      res <- client
+        .createChatCompletion[MathReasoning](ChatBody(Nil, ChatCompletionModel.GPT4oMini)) { _ =>
+          Left("parsed error")
+        }
+        .either
     } yield res.left.value
 
     val caught = unsafeRun(caughtEffect.provide(OpenAIZioClient.layer, ZLayer.succeed(zioBackendStub), ZLayer.succeed(client)))
@@ -102,7 +106,8 @@ class OpenAIZioClientSpec extends AnyFlatSpec with Matchers with EitherValues {
 
   "typed createChatCompletion" should "throw exception without choices" in {
     // given
-    val zioBackendStub = HttpClientZioBackend.stub.whenAnyRequest.thenRespondAdjust(CompletionsFixture.structuredOutputsResponseWithoutChoices, StatusCode.Ok)
+    val zioBackendStub =
+      HttpClientZioBackend.stub.whenAnyRequest.thenRespondAdjust(CompletionsFixture.structuredOutputsResponseWithoutChoices, StatusCode.Ok)
     val client = new OpenAI("test-token")
 
     // when
@@ -110,9 +115,11 @@ class OpenAIZioClientSpec extends AnyFlatSpec with Matchers with EitherValues {
     val mockRes = MathReasoning(Nil, "final answer")
     val caughtEffect = for {
       client <- ZIO.service[OpenAIZioClient]
-      res <- client.createChatCompletion[MathReasoning](ChatBody(Nil, ChatCompletionModel.GPT4oMini)) { _ =>
-        Right(mockRes)
-      }.either
+      res <- client
+        .createChatCompletion[MathReasoning](ChatBody(Nil, ChatCompletionModel.GPT4oMini)) { _ =>
+          Right(mockRes)
+        }
+        .either
     } yield res.left.value
 
     val caught = unsafeRun(caughtEffect.provide(OpenAIZioClient.layer, ZLayer.succeed(zioBackendStub), ZLayer.succeed(client)))
@@ -156,7 +163,8 @@ class OpenAIZioClientSpec extends AnyFlatSpec with Matchers with EitherValues {
       finalRes <- res.runCollect
     } yield finalRes
 
-    val response: Chunk[ChatChunkResponse] = unsafeRun(streamEffect.provide(OpenAIZioClient.layer, ZLayer.succeed(zioBackendStub), ZLayer.succeed(client)))
+    val response: Chunk[ChatChunkResponse] =
+      unsafeRun(streamEffect.provide(OpenAIZioClient.layer, ZLayer.succeed(zioBackendStub), ZLayer.succeed(client)))
 
     // then
     response.toList shouldBe chatChunks.map(read[ChatChunkResponse](_))

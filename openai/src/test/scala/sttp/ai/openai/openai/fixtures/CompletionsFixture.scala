@@ -136,8 +136,8 @@ object CompletionsFixture {
                      |  }
                      |}""".stripMargin
 
-  /**Structured Outputs/JSON Schema support
-    * a response from Ollama with a structured content that can be deserialized to a typed value, in this case a JSON object with steps and final answer.
+  /** Structured Outputs/JSON Schema support a response from Ollama with a structured content that can be deserialized to a typed value, in
+    * this case a JSON object with steps and final answer.
     */
   val structuredOutputsResponse =
     """{

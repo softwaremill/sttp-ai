@@ -119,9 +119,10 @@ class SyncClientSpec extends AnyFlatSpec with Matchers with EitherValues {
 
     // when
     import sttp.tapir.generic.auto._
-    val caught = intercept[OpenAIException](syncClient.createChatCompletion[MathReasoning](ChatBody(Nil, ChatCompletionModel.GPT4oMini)) { body =>
-      Left("parsed error")
-    })
+    val caught =
+      intercept[OpenAIException](syncClient.createChatCompletion[MathReasoning](ChatBody(Nil, ChatCompletionModel.GPT4oMini)) { body =>
+        Left("parsed error")
+      })
 
     val expectedError = new DeserializationOpenAIException("parsed error", null)
     caught.getClass shouldBe expectedError.getClass: Unit
@@ -144,9 +145,10 @@ class SyncClientSpec extends AnyFlatSpec with Matchers with EitherValues {
     // when
     val mockRes = MathReasoning(Nil, "final answer")
     import sttp.tapir.generic.auto._
-    val caught = intercept[OpenAIException](syncClient.createChatCompletion[MathReasoning](ChatBody(Nil, ChatCompletionModel.GPT4oMini)) { body =>
-      Right(mockRes)
-    })
+    val caught =
+      intercept[OpenAIException](syncClient.createChatCompletion[MathReasoning](ChatBody(Nil, ChatCompletionModel.GPT4oMini)) { body =>
+        Right(mockRes)
+      })
 
     // then
     val expectedError = new DeserializationOpenAIException("no choices found in response", null)
