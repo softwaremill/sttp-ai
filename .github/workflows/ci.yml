@@ -24,7 +24,7 @@ jobs:
         distribution: 'temurin'
         java-version: '21'
         cache: 'sbt'
-    - uses: sbt/setup-sbt@06192244f17880c9bf69ccd8de5b2e8785822be5 # v1, specifically v1.1.17
+    - uses: sbt/setup-sbt@6bec67c98f542b9e17369bfca0ec822ac1363194 # v1, specifically v1.1.19
     - name: Install native dependencies
       run: |
         sudo apt-get update
@@ -59,7 +59,7 @@ jobs:
           distribution: 'temurin'
           java-version: '21'
           cache: 'sbt'
-      - uses: sbt/setup-sbt@06192244f17880c9bf69ccd8de5b2e8785822be5 # v1, specifically v1.1.17
+      - uses: sbt/setup-sbt@6bec67c98f542b9e17369bfca0ec822ac1363194 # v1, specifically v1.1.19
       - name: Install native dependencies
         run: |
           sudo apt-get update
