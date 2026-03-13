@@ -28,20 +28,18 @@ class ClaudeClientImpl(config: ClaudeConfig) extends ClaudeClient with ResponseH
 
   private val claudeUris = new ClaudeUris(config.baseUrl)
 
-  /** Beta header for structured outputs feature */
-  private val StructuredOutputsBetaHeader = "structured-outputs-2025-11-13"
-
   private def claudeAuthRequest =
     basicRequest
       .header("x-api-key", config.apiKey)
       .header("anthropic-version", config.anthropicVersion)
       .header("content-type", "application/json")
 
-  private def claudeAuthRequestForMessage(request: MessageRequest): PartialRequest[Either[String, String]] =
+  private def claudeAuthRequestForMessage(request: MessageRequest): PartialRequest[Either[String, String]] = {
     if (request.usesStructuredOutput) {
       validateModelForStructuredOutput(request.model)
-      claudeAuthRequest.header("anthropic-beta", StructuredOutputsBetaHeader)
-    } else claudeAuthRequest
+    }
+    claudeAuthRequest
+  }
 
   private def validateModelForStructuredOutput(modelId: String): Unit =
     if (!ClaudeModel.modelSupportsStructuredOutput(modelId)) {

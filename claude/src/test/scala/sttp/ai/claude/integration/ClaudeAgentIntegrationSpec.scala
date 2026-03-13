@@ -20,7 +20,7 @@ class ClaudeAgentIntegrationSpec extends AgentIntegrationSpecBase {
     val allTools = agentConfig.userTools ++ AgentConfig.systemTools
     val agentBackend = new ClaudeAgentBackend[Identity](
       client,
-      "claude-3-haiku-20240307",
+      "claude-haiku-4-5-20251001",
       allTools,
       agentConfig.systemPrompt
     )(IdentityMonad)
