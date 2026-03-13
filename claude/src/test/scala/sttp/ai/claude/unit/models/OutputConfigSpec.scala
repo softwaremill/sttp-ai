@@ -2,14 +2,17 @@ package sttp.ai.claude.unit.models
 
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
-import sttp.ai.claude.models.OutputFormat
+import sttp.ai.claude.models.{ContentBlock, Effort, Message, OutputConfig, OutputFormat}
+import sttp.ai.claude.requests.MessageRequest
 import sttp.ai.core.json.SnakePickle
 import sttp.tapir.{Schema => TSchema}
 
-class OutputFormatSpec extends AnyFlatSpec with Matchers {
+class OutputConfigSpec extends AnyFlatSpec with Matchers {
 
   case class Person(name: String, age: Int)
   implicit val personSchema: TSchema[Person] = TSchema.derived[Person]
+
+  val sampleMessages: List[Message] = List(Message.user(List(ContentBlock.TextContent("Hello"))))
 
   "OutputFormat.Text" should "serialize to text format" in {
     val format: OutputFormat = OutputFormat.Text
@@ -83,17 +86,61 @@ class OutputFormatSpec extends AnyFlatSpec with Matchers {
     deserialized shouldBe original
   }
 
+  "Effort" should "serialize to string values" in {
+    SnakePickle.write(Effort.Low: Effort) shouldBe "\"low\""
+    SnakePickle.write(Effort.Medium: Effort) shouldBe "\"medium\""
+    SnakePickle.write(Effort.High: Effort) shouldBe "\"high\""
+    SnakePickle.write(Effort.Max: Effort) shouldBe "\"max\""
+  }
+
+  it should "round-trip correctly for all values" in
+    List(Effort.Low, Effort.Medium, Effort.High, Effort.Max).foreach { effort =>
+      val json = SnakePickle.write(effort: Effort)
+      val deserialized = SnakePickle.read[Effort](json)
+      deserialized shouldBe effort
+    }
+
+  "OutputConfig" should "serialize with format only" in {
+    val config = OutputConfig(format = Some(OutputFormat.Text))
+    val json = SnakePickle.write(config)
+    val parsed = ujson.read(json)
+
+    parsed("format")("type").str shouldBe "text"
+    parsed.obj.contains("effort") shouldBe false
+  }
+
+  it should "serialize with effort only" in {
+    val config = OutputConfig(effort = Some(Effort.High))
+    val json = SnakePickle.write(config)
+    val parsed = ujson.read(json)
+
+    parsed("effort").str shouldBe "high"
+    parsed.obj.contains("format") shouldBe false
+  }
+
+  it should "serialize with both format and effort" in {
+    val config = OutputConfig(format = Some(OutputFormat.JsonObject), effort = Some(Effort.Max))
+    val json = SnakePickle.write(config)
+    val parsed = ujson.read(json)
+
+    parsed("format")("type").str shouldBe "json_object"
+    parsed("effort").str shouldBe "max"
+  }
+
+  it should "round-trip correctly" in {
+    val original = OutputConfig(format = Some(OutputFormat.Text), effort = Some(Effort.Medium))
+    val json = SnakePickle.write(original)
+    val deserialized = SnakePickle.read[OutputConfig](json)
+
+    deserialized shouldBe original
+  }
+
   "usesStructuredOutput detection" should "return false for Text and JsonObject" in {
-    import sttp.ai.claude.requests.MessageRequest
-    import sttp.ai.claude.models.{ContentBlock, Message}
-
-    val sampleMessages = List(Message.user(List(ContentBlock.TextContent("Hello"))))
-
     val textRequest = MessageRequest(
       model = "claude-sonnet-4-5-20250514",
       messages = sampleMessages,
       maxTokens = 1024,
-      outputFormat = Some(OutputFormat.Text)
+      outputConfig = Some(OutputConfig(format = Some(OutputFormat.Text)))
     )
     textRequest.usesStructuredOutput shouldBe false
 
@@ -101,16 +148,12 @@ class OutputFormatSpec extends AnyFlatSpec with Matchers {
       model = "claude-sonnet-4-5-20250514",
       messages = sampleMessages,
       maxTokens = 1024,
-      outputFormat = Some(OutputFormat.JsonObject)
+      outputConfig = Some(OutputConfig(format = Some(OutputFormat.JsonObject)))
     )
     jsonObjectRequest.usesStructuredOutput shouldBe false
   }
 
   it should "return true for JsonSchema" in {
-    import sttp.ai.claude.requests.MessageRequest
-    import sttp.ai.claude.models.{ContentBlock, Message}
-
-    val sampleMessages = List(Message.user(List(ContentBlock.TextContent("Hello"))))
     val schema = sttp.apispec.Schema(`type` = Some(List(sttp.apispec.SchemaType.Object)))
     val jsonSchemaFormat = OutputFormat.JsonSchema(schema)
 
@@ -120,12 +163,7 @@ class OutputFormatSpec extends AnyFlatSpec with Matchers {
     request.usesStructuredOutput shouldBe true
   }
 
-  it should "return false when no outputFormat is provided" in {
-    import sttp.ai.claude.requests.MessageRequest
-    import sttp.ai.claude.models.{ContentBlock, Message}
-
-    val sampleMessages = List(Message.user(List(ContentBlock.TextContent("Hello"))))
-
+  it should "return false when no outputConfig is provided" in {
     val request = MessageRequest.simple("claude-sonnet-4-5-20250514", sampleMessages, 1024)
     request.usesStructuredOutput shouldBe false
   }
