@@ -37,6 +37,8 @@ object Person {
   */
 class ClaudeIntegrationSpec extends AnyFlatSpec with Matchers with BeforeAndAfterAll with Eventually {
 
+  private val testModel = "claude-haiku-4-5-20251001"
+
   implicit override val patienceConfig: PatienceConfig =
     PatienceConfig(timeout = Span(30, Seconds), interval = Span(500, Millis))
 
@@ -93,7 +95,7 @@ class ClaudeIntegrationSpec extends AnyFlatSpec with Matchers with BeforeAndAfte
     withClient { client =>
       // given
       val request = MessageRequest.simple(
-        model = "claude-3-haiku-20240307", // Using the cheapest Claude model
+        model = testModel, // Using the cheapest Claude model
         messages = List(Message.user("Hi")), // Minimal message to reduce cost
         maxTokens = 5 // Limit tokens to minimize cost
       )
@@ -119,7 +121,7 @@ class ClaudeIntegrationSpec extends AnyFlatSpec with Matchers with BeforeAndAfte
     withClient { client =>
       // given
       val request = MessageRequest.withSystem(
-        model = "claude-3-haiku-20240307",
+        model = testModel,
         system = "Be concise.", // Short system prompt
         messages = List(Message.user("What is 2+2?")), // Simple question
         maxTokens = 10
@@ -157,7 +159,7 @@ class ClaudeIntegrationSpec extends AnyFlatSpec with Matchers with BeforeAndAfte
       )
 
       val request = MessageRequest.simple(
-        model = "claude-3-haiku-20240307",
+        model = testModel,
         messages = List(imageMessage),
         maxTokens = 20
       )
@@ -193,7 +195,7 @@ class ClaudeIntegrationSpec extends AnyFlatSpec with Matchers with BeforeAndAfte
       )
 
       val request = MessageRequest.withTools(
-        model = "claude-3-haiku-20240307",
+        model = testModel,
         messages = List(Message.user("What's the weather in Paris?")),
         maxTokens = 50,
         tools = List(weatherTool)
@@ -240,7 +242,7 @@ class ClaudeIntegrationSpec extends AnyFlatSpec with Matchers with BeforeAndAfte
     withClient { client =>
       // given
       val request = MessageRequest.simple(
-        model = "claude-3-haiku-20240307",
+        model = testModel,
         messages = List(Message.user("Hi")),
         maxTokens = 1 // Minimal to reduce cost
       )
@@ -284,7 +286,7 @@ class ClaudeIntegrationSpec extends AnyFlatSpec with Matchers with BeforeAndAfte
       // This tests basic message structure rather than complex tool flows
 
       val request = MessageRequest.simple(
-        model = "claude-3-haiku-20240307",
+        model = testModel,
         messages = List(Message.user("Say 'Hello world' in exactly two words.")),
         maxTokens = 10
       )
@@ -311,7 +313,7 @@ class ClaudeIntegrationSpec extends AnyFlatSpec with Matchers with BeforeAndAfte
       val outputFormat = OutputFormat.JsonSchema.withTapirSchema[Person]
 
       val request = MessageRequest
-        .simple("claude-haiku-4-5-20251001", List(Message.user("Generate a person named Alice who is 30 years old.")), 100)
+        .simple(testModel, List(Message.user("Generate a person named Alice who is 30 years old.")), 100)
         .withStructuredOutput(outputFormat)
 
       // when
@@ -343,14 +345,14 @@ class ClaudeIntegrationSpec extends AnyFlatSpec with Matchers with BeforeAndAfte
         val client = ClaudeSyncClient.fromEnv
         try {
           val request = MessageRequest
-            .simple("claude-3-haiku-20240307", List(Message.user("Test")), 10)
+            .simple("claude-3-5-sonnet-20241022", List(Message.user("Test")), 10)
             .withStructuredOutput(outputFormat)
 
           client.createMessage(request)
         } finally client.close()
       }
 
-      exception.getMessage should include("claude-3-haiku-20240307")
+      exception.getMessage should include("claude-3-5-sonnet-20241022")
       exception.getMessage should include("does not support structured output")
       ()
     }

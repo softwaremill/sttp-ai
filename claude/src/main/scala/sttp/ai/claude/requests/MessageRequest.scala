@@ -1,7 +1,6 @@
 package sttp.ai.claude.requests
 
-import sttp.ai.claude.models.{Message, Tool}
-import sttp.ai.claude.models.OutputFormat
+import sttp.ai.claude.models.{Effort, Message, OutputConfig, OutputFormat, Tool}
 import sttp.ai.core.json.SnakePickle.{macroRW, ReadWriter}
 
 case class MessageRequest(
@@ -15,12 +14,19 @@ case class MessageRequest(
     stopSequences: Option[List[String]] = None,
     stream: Option[Boolean] = None,
     tools: Option[List[Tool]] = None,
-    outputFormat: Option[OutputFormat] = None
+    outputConfig: Option[OutputConfig] = None
 ) {
-  def usesStructuredOutput: Boolean = outputFormat.exists(_.isInstanceOf[OutputFormat.JsonSchema])
+  def usesStructuredOutput: Boolean = outputConfig.exists(_.format.exists(_.isInstanceOf[OutputFormat.JsonSchema]))
 
-  def withStructuredOutput(format: OutputFormat): MessageRequest =
-    this.copy(outputFormat = Some(format))
+  def withStructuredOutput(format: OutputFormat): MessageRequest = {
+    val updated = outputConfig.getOrElse(OutputConfig()).copy(format = Some(format))
+    this.copy(outputConfig = Some(updated))
+  }
+
+  def withEffort(effort: Effort): MessageRequest = {
+    val updated = outputConfig.getOrElse(OutputConfig()).copy(effort = Some(effort))
+    this.copy(outputConfig = Some(updated))
+  }
 }
 
 object MessageRequest {
@@ -28,12 +34,12 @@ object MessageRequest {
       model: String,
       messages: List[Message],
       maxTokens: Int,
-      outputFormat: Option[OutputFormat] = None
+      outputConfig: Option[OutputConfig] = None
   ): MessageRequest = MessageRequest(
     model = model,
     messages = messages,
     maxTokens = maxTokens,
-    outputFormat = outputFormat
+    outputConfig = outputConfig
   )
 
   def withSystem(
@@ -41,13 +47,13 @@ object MessageRequest {
       system: String,
       messages: List[Message],
       maxTokens: Int,
-      outputFormat: Option[OutputFormat] = None
+      outputConfig: Option[OutputConfig] = None
   ): MessageRequest = MessageRequest(
     model = model,
     messages = messages,
     system = Some(system),
     maxTokens = maxTokens,
-    outputFormat = outputFormat
+    outputConfig = outputConfig
   )
 
   def withTools(

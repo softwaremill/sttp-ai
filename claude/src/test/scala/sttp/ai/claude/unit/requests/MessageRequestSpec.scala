@@ -24,7 +24,7 @@ class MessageRequestSpec extends AnyFlatSpec with Matchers {
     Message.user(List(ContentBlock.TextContent("Hello")))
   )
 
-  "MessageRequest serialization" should "include output_format with schema" in {
+  "MessageRequest serialization" should "include output_config with format and schema" in {
     val outputFormat = OutputFormat.JsonSchema.withTapirSchema[UserProfile]
     val request = MessageRequest
       .simple("claude-sonnet-4-5-20250514", sampleMessages, 1024)
@@ -35,9 +35,9 @@ class MessageRequestSpec extends AnyFlatSpec with Matchers {
 
     parsed("model").str shouldBe "claude-sonnet-4-5-20250514"
     parsed("max_tokens").num shouldBe 1024
-    parsed("output_format")("type").str shouldBe "json_schema"
+    parsed("output_config")("format")("type").str shouldBe "json_schema"
 
-    val schema = parsed("output_format")("schema")
+    val schema = parsed("output_config")("format")("schema")
     schema("type").str shouldBe "object"
     schema("properties").obj.contains("name") shouldBe true
     schema("properties").obj.contains("age") shouldBe true
@@ -46,13 +46,13 @@ class MessageRequestSpec extends AnyFlatSpec with Matchers {
     schema("properties").obj.contains("tags") shouldBe true
   }
 
-  it should "not include output_format when absent" in {
+  it should "not include output_config when absent" in {
     val request = MessageRequest.simple("claude-sonnet-4-5-20250514", sampleMessages, 1024)
 
     val json = SnakePickle.write(request)
     val parsed = ujson.read(json)
 
-    parsed.obj.contains("output_format") shouldBe false
+    parsed.obj.contains("output_config") shouldBe false
   }
 
   it should "round-trip with structured output" in {
@@ -66,7 +66,8 @@ class MessageRequestSpec extends AnyFlatSpec with Matchers {
 
     deserialized.model shouldBe request.model
     deserialized.maxTokens shouldBe request.maxTokens
-    deserialized.outputFormat shouldBe defined
-    deserialized.outputFormat.get shouldBe a[OutputFormat.JsonSchema]
+    deserialized.outputConfig shouldBe defined
+    deserialized.outputConfig.get.format shouldBe defined
+    deserialized.outputConfig.get.format.get shouldBe a[OutputFormat.JsonSchema]
   }
 }
