@@ -56,8 +56,8 @@ object ClaudeImageAnalysisExample extends App {
     case Right(messageResponse) =>
       println("Claude's image analysis:")
       messageResponse.content.foreach {
-        case ContentBlock.TextContent(text) => println(text)
-        case _                              => // Handle other content types if needed
+        case ContentBlock.TextContent(text, _) => println(text)
+        case _                                 => // Handle other content types if needed
       }
       println(s"\nUsage: ${messageResponse.usage}")
     case Left(error) =>
@@ -97,8 +97,8 @@ object ClaudeImageAnalysisExample extends App {
     case Right(messageResponse) =>
       println("Claude's comparison:")
       messageResponse.content.foreach {
-        case ContentBlock.TextContent(text) => println(text)
-        case _                              => // Handle other content types if needed
+        case ContentBlock.TextContent(text, _) => println(text)
+        case _                                 => // Handle other content types if needed
       }
     case Left(error) =>
       println(s"Error: ${error.getMessage}")
@@ -131,8 +131,8 @@ object ClaudeImageAnalysisExample extends App {
     case Right(messageResponse) =>
       println("Claude's technical analysis:")
       messageResponse.content.foreach {
-        case ContentBlock.TextContent(text) => println(text)
-        case _                              => // Handle other content types if needed
+        case ContentBlock.TextContent(text, _) => println(text)
+        case _                                 => // Handle other content types if needed
       }
     case Left(error) =>
       println(s"Error: ${error.getMessage}")

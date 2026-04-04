@@ -8,7 +8,7 @@ import org.scalatest.time.{Millis, Seconds, Span}
 import sttp.ai.claude.ClaudeExceptions.{ClaudeException, UnsupportedModelForStructuredOutputException}
 import sttp.ai.claude.ClaudeSyncClient
 import sttp.ai.claude.config.ClaudeConfig
-import sttp.ai.claude.models.{ContentBlock, Message, OutputFormat, PropertySchema, Tool, ToolInputSchema}
+import sttp.ai.claude.models._
 import sttp.ai.claude.requests.MessageRequest
 import sttp.model.Uri
 import sttp.tapir.{Schema => TSchema}
@@ -135,7 +135,7 @@ class ClaudeIntegrationSpec extends AnyFlatSpec with Matchers with BeforeAndAfte
       response.role shouldBe "assistant"
       response.content should not be empty
       // The response should contain the answer to 2+2
-      val textContent = response.content.collectFirst { case ContentBlock.TextContent(text) =>
+      val textContent = response.content.collectFirst { case ContentBlock.TextContent(text, _) =>
         text
       }
       textContent should be(defined)
@@ -172,7 +172,7 @@ class ClaudeIntegrationSpec extends AnyFlatSpec with Matchers with BeforeAndAfte
       response.role shouldBe "assistant"
       response.content should not be empty
       // Claude should acknowledge the image in some way
-      val textContent = response.content.collectFirst { case ContentBlock.TextContent(text) =>
+      val textContent = response.content.collectFirst { case ContentBlock.TextContent(text, _) =>
         text
       }
       textContent should be(defined)
@@ -212,8 +212,8 @@ class ClaudeIntegrationSpec extends AnyFlatSpec with Matchers with BeforeAndAfte
       // Claude should either use the tool or explain why it can't
       val hasToolUse = response.content.exists(_.isInstanceOf[ContentBlock.ToolUseContent])
       val hasTextResponse = response.content.exists {
-        case ContentBlock.TextContent(text) => text.toLowerCase.contains("weather") || text.toLowerCase.contains("tool")
-        case _                              => false
+        case ContentBlock.TextContent(text, _) => text.toLowerCase.contains("weather") || text.toLowerCase.contains("tool")
+        case _                                 => false
       }
 
       (hasToolUse || hasTextResponse) shouldBe true
@@ -299,7 +299,7 @@ class ClaudeIntegrationSpec extends AnyFlatSpec with Matchers with BeforeAndAfte
       response.role shouldBe "assistant"
       response.content should not be empty
       // Claude should respond with some text content
-      val textContent = response.content.collectFirst { case ContentBlock.TextContent(text) =>
+      val textContent = response.content.collectFirst { case ContentBlock.TextContent(text, _) =>
         text
       }
       textContent should be(defined)
@@ -325,7 +325,7 @@ class ClaudeIntegrationSpec extends AnyFlatSpec with Matchers with BeforeAndAfte
       response.content should not be empty
 
       // Extract the text content which should be valid JSON
-      val textContent = response.content.collectFirst { case ContentBlock.TextContent(text) =>
+      val textContent = response.content.collectFirst { case ContentBlock.TextContent(text, _) =>
         text
       }
       textContent should be(defined)
@@ -354,6 +354,49 @@ class ClaudeIntegrationSpec extends AnyFlatSpec with Matchers with BeforeAndAfte
 
       exception.getMessage should include("claude-3-5-sonnet-20241022")
       exception.getMessage should include("does not support structured output")
+      ()
+    }
+
+  "Claude Source Citation" should "return citations when summarising a provided document" in
+    withClient { client =>
+      // A short excerpt from the Anthropic Messages API documentation
+      val docText =
+        """The Messages API accepts a structured list of input messages with text and/or image content,
+          |and the model will generate the next message in the conversation.
+          |
+          |Each input message must be an object with a role and content. You can specify a single
+          |user-role message, or include multiple user and assistant messages. The first message must
+          |always use the user role.
+          |
+          |The maximum number of tokens to generate before stopping is controlled by the max_tokens
+          |parameter. Note that the model may stop before reaching this maximum.""".stripMargin
+
+      val request = MessageRequest.simple(
+        model = testModel,
+        messages = List(
+          Message.user(
+            List(
+              ContentBlock.document(docText, title = Some("Anthropic Messages API Documentation")),
+              ContentBlock.text("Summarise this document in one sentence, citing specific claims.")
+            )
+          )
+        ),
+        maxTokens = 150
+      )
+
+      // when
+      val response = client.createMessage(request)
+
+      // then
+      response should not be null
+      response.role shouldBe "assistant"
+      response.content should not be empty
+
+      val textBlock = response.content.collectFirst { case t: ContentBlock.TextContent => t }
+      textBlock should be(defined)
+      textBlock.get.text should not be empty
+      textBlock.get.citations should be(defined)
+      textBlock.get.citations.get should not be empty
       ()
     }
 }

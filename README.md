@@ -184,7 +184,7 @@ object Main:
     response.body match {
       case Right(messageResponse) =>
         messageResponse.content.foreach {
-          case ContentBlock.TextContent(text) => println(text)
+          case ContentBlock.TextContent(text, _) => println(text)
           case _ => // Handle other content types if needed
         }
         println(s"Usage: ${messageResponse.usage}")
@@ -357,7 +357,7 @@ object StructuredOutputExample:
     response.body match {
       case Right(messageResponse) =>
         messageResponse.content.foreach {
-          case ContentBlock.TextContent(text) =>
+          case ContentBlock.TextContent(text, _) =>
             println("Structured JSON output:")
             println(text)
 
