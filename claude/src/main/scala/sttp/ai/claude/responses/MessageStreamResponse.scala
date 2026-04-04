@@ -81,8 +81,39 @@ object MessageStreamResponse {
       val `type`: String = "text_delta"
     }
 
+    @key("input_json_delta")
+    case class InputJsonDelta(partialJson: String) extends ContentDelta {
+      val `type`: String = "input_json_delta"
+    }
+
+    @key("thinking_delta")
+    case class ThinkingDelta(thinking: String) extends ContentDelta {
+      val `type`: String = "thinking_delta"
+    }
+
+    @key("signature_delta")
+    case class SignatureDelta(signature: String) extends ContentDelta {
+      val `type`: String = "signature_delta"
+    }
+
+    @key("citations_delta")
+    case class CitationsDelta(citation: Citation) extends ContentDelta {
+      val `type`: String = "citations_delta"
+    }
+
     implicit val textDeltaRW: ReadWriter[TextDelta] = macroRW
-    implicit val rw: ReadWriter[ContentDelta] = ReadWriter.merge(textDeltaRW)
+    implicit val inputJsonDeltaRW: ReadWriter[InputJsonDelta] = macroRW
+    implicit val thinkingDeltaRW: ReadWriter[ThinkingDelta] = macroRW
+    implicit val signatureDeltaRW: ReadWriter[SignatureDelta] = macroRW
+    implicit val citationsDeltaRW: ReadWriter[CitationsDelta] = macroRW
+
+    implicit val rw: ReadWriter[ContentDelta] = ReadWriter.merge(
+      textDeltaRW,
+      inputJsonDeltaRW,
+      thinkingDeltaRW,
+      signatureDeltaRW,
+      citationsDeltaRW
+    )
   }
 
   case class MessageDeltaData(

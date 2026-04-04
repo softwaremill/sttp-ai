@@ -144,6 +144,18 @@ class ClaudeOxClientSpec extends AnyFlatSpec with Matchers with EitherValues {
     }
   }
 
+  "ContentDelta" should "deserialize all delta types" in {
+    import MessageStreamFixture.*
+    import sttp.ai.claude.responses.MessageStreamResponse.ContentDelta.*
+    import sttp.ai.claude.responses.MessageStreamResponse.ContentBlockDelta
+
+    read[MessageStreamResponse](contentBlockDelta).asInstanceOf[ContentBlockDelta].delta shouldBe a[TextDelta]
+    read[MessageStreamResponse](inputJsonDelta).asInstanceOf[ContentBlockDelta].delta shouldBe a[InputJsonDelta]
+    read[MessageStreamResponse](thinkingDelta).asInstanceOf[ContentBlockDelta].delta shouldBe a[ThinkingDelta]
+    read[MessageStreamResponse](signatureDelta).asInstanceOf[ContentBlockDelta].delta shouldBe a[SignatureDelta]
+    read[MessageStreamResponse](citationsDelta).asInstanceOf[ContentBlockDelta].delta shouldBe a[CitationsDelta]
+  }
+
   private def assertStreamedMessage(givenResponse: InputStream, expectedResponse: Seq[MessageStreamResponse])(using Ox) = {
     val stub = DefaultSyncBackend.stub.whenAnyRequest.thenRespond(ResponseStub.adjust(givenResponse))
     val client = ClaudeClient(ClaudeConfig("test-token"))
@@ -172,4 +184,16 @@ object MessageStreamFixture {
   // Note: type must be first for uPickle's tagged union deserialization
   val contentBlockDelta: String =
     """{"type":"content_block_delta","index":0,"delta":{"type":"text_delta","text":"Hello"}}"""
+
+  val inputJsonDelta: String =
+    """{"type":"content_block_delta","index":1,"delta":{"type":"input_json_delta","partial_json":"{\"key\":"}}"""
+
+  val thinkingDelta: String =
+    """{"type":"content_block_delta","index":0,"delta":{"type":"thinking_delta","thinking":"Let me think..."}}"""
+
+  val signatureDelta: String =
+    """{"type":"content_block_delta","index":0,"delta":{"type":"signature_delta","signature":"abc123=="}}"""
+
+  val citationsDelta: String =
+    """{"type":"content_block_delta","index":0,"delta":{"type":"citations_delta","citation":{"type":"char_location","cited_text":"hello","document_index":0,"document_title":null,"end_char_index":5,"file_id":null,"start_char_index":0}}}"""
 }

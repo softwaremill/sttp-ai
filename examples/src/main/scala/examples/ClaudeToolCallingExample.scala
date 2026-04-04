@@ -69,7 +69,7 @@ object ClaudeToolCallingExample extends App {
     case Right(messageResponse) =>
       println("Claude's response:")
       messageResponse.content.foreach {
-        case ContentBlock.TextContent(text) =>
+        case ContentBlock.TextContent(text, _) =>
           println(s"Text: $text")
         case ContentBlock.ToolUseContent(id, name, input) =>
           println(s"Tool called: $name")
@@ -108,7 +108,7 @@ object ClaudeToolCallingExample extends App {
     case Right(messageResponse) =>
       println("Claude's tool-assisted calculation:")
       messageResponse.content.foreach {
-        case ContentBlock.TextContent(text) =>
+        case ContentBlock.TextContent(text, _) =>
           println(text)
         case ContentBlock.ToolUseContent(id, name, input) =>
           val result = simulateToolExecution(name, input)
