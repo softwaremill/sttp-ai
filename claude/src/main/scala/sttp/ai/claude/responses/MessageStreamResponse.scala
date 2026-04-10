@@ -62,14 +62,16 @@ object MessageStreamResponse {
   }
 
   // Data classes for nested objects
+  // All optional fields are provided default value so upickle can handle compatibility more gracefully:
+  // Certain providers/proxies instead of passing null valued fields, omit them entirely from the object
   case class MessageStartData(
       id: String,
       `type`: String,
       role: String,
       content: List[ContentBlock],
       model: String,
-      stopReason: Option[String],
-      stopSequence: Option[String],
+      stopReason: Option[String] = None,
+      stopSequence: Option[String] = None,
       usage: Usage
   )
 
@@ -117,9 +119,9 @@ object MessageStreamResponse {
   }
 
   case class MessageDeltaData(
-      stopReason: Option[String],
-      stopSequence: Option[String],
-      usage: Option[Usage]
+      stopReason: Option[String] = None,
+      stopSequence: Option[String] = None,
+      usage: Option[Usage] = None
   )
 
   // Companion object for event parsing
