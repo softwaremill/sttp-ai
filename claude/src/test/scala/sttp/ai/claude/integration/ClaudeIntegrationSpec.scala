@@ -180,6 +180,42 @@ class ClaudeIntegrationSpec extends AnyFlatSpec with Matchers with BeforeAndAfte
       ()
     }
 
+  it should "handle image content (via URL) successfully" in
+    withClient { client =>
+      // given
+      val imageUrl = "https://github.com/softwaremill/sttp-ai/raw/master/banner.png"
+
+      val imageMessage = Message.user(
+        List(
+          ContentBlock.TextContent("What do you see?"),
+          ContentBlock.ImageContent(
+            ContentBlock.ImageSource.url(imageUrl)
+          )
+        )
+      )
+
+      val request = MessageRequest.simple(
+        model = testModel,
+        messages = List(imageMessage),
+        maxTokens = 20
+      )
+
+      // when
+      val response = client.createMessage(request)
+
+      // then
+      response should not be null
+      response.role shouldBe "assistant"
+      response.content should not be empty
+      // Claude should acknowledge the image in some way
+      val textContent = response.content.collectFirst { case ContentBlock.TextContent(text, _) =>
+        text
+      }
+      textContent should be(defined)
+      textContent.get.toLowerCase should (include("image") or include("see") or include("sttp") or include("softwaremill"))
+      ()
+    }
+
   it should "handle tool calling successfully" in
     withClient { client =>
       // given

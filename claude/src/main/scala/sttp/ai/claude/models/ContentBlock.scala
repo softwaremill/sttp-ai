@@ -72,19 +72,31 @@ object ContentBlock {
     implicit val rw: ReadWriter[CitationsConfig] = macroRW
   }
 
-  case class ImageSource(
-      `type`: String,
-      mediaType: String,
-      data: String
-  )
+  sealed trait ImageSource {
+    def `type`: String
+  }
 
   object ImageSource {
-    def base64(mediaType: String, data: String): ImageSource = ImageSource(
-      `type` = "base64",
+
+    @key("base64")
+    case class Base64ImageSource(mediaType: String, data: String) extends ImageSource {
+      val `type`: String = "base64"
+    }
+
+    @key("url")
+    case class URLImageSource(url: String) extends ImageSource {
+      val `type`: String = "url"
+    }
+
+    def base64(mediaType: String, data: String): ImageSource = Base64ImageSource(
       mediaType = mediaType,
       data = data
     )
 
+    def url(url: String): ImageSource = URLImageSource(url)
+
+    implicit val base64ImageSourceRW: ReadWriter[Base64ImageSource] = macroRW
+    implicit val urlImageSourceRW: ReadWriter[URLImageSource] = macroRW
     implicit val rw: ReadWriter[ImageSource] = macroRW
   }
 
