@@ -9,7 +9,7 @@ class Agent[F[_]](
     config: AgentConfig
 )(implicit monad: MonadError[F]) {
 
-  private val allTools = config.userTools ++ AgentConfig.systemTools
+  private val allTools = config.userTools ++ AgentConfig.systemTools(config)
   private val toolMap = allTools.map(t => t.name -> t).toMap
 
   def run(

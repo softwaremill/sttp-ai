@@ -536,4 +536,96 @@ class AgentSpec extends AnyFlatSpec with Matchers {
 
     result.toolCalls.head.output shouldBe "CUSTOM ERROR in error_tool: IllegalArgumentException"
   }
+
+  case class WeatherSummary(city: String, tempC: Double, conditions: String)
+  object WeatherSummary {
+    implicit val rw: SnakePickle.ReadWriter[WeatherSummary] = SnakePickle.macroRW
+    implicit val schema: Schema[WeatherSummary] = Schema.derived
+  }
+
+  "Agent with responseSchema" should "round-trip the typed payload through the finish tool" in {
+    val cfg = AgentConfig(
+      maxIterations = 3,
+      responseSchema = Some(ResponseSchema.derived[WeatherSummary]())
+    ).toOption.get
+
+    val (loop, _) = createLoop(
+      Seq(
+        AgentResponse(
+          "",
+          Seq(
+            ToolCall(
+              id = "call_1",
+              toolName = "finish",
+              input = """{"city":"Krakow","temp_c":12.0,"conditions":"sunny"}"""
+            )
+          ),
+          StopReason.ToolUse
+        )
+      ),
+      cfg
+    )
+
+    val result = loop.run("What's the weather?")(backend)
+
+    result.finishReason shouldBe FinishReason.ToolFinish: Unit
+    val parsed = SnakePickle.read[WeatherSummary](result.finalAnswer)
+    parsed shouldBe WeatherSummary("Krakow", 12.0, "sunny")
+  }
+
+  it should "swap the default finish tool with a typed one whose schema is the user's schema" in {
+    val rs = ResponseSchema.derived[WeatherSummary]()
+    val cfg = AgentConfig(maxIterations = 1, responseSchema = Some(rs)).toOption.get
+
+    val systemTools = AgentConfig.systemTools(cfg)
+
+    systemTools should have size 1: Unit
+    systemTools.head.name shouldBe FinishTool.ToolName: Unit
+    systemTools.head.jsonSchema shouldBe rs.schema
+  }
+
+  it should "use the default String finish tool when no responseSchema is set" in {
+    val cfg = AgentConfig(maxIterations = 1).toOption.get
+
+    val systemTools = AgentConfig.systemTools(cfg)
+
+    systemTools should have size 1: Unit
+    systemTools.head.name shouldBe FinishTool.ToolName: Unit
+    // default finish tool's schema is for FinishInput(answer: String) — schema for a different shape
+    systemTools.head.jsonSchema should not be ResponseSchema.derived[WeatherSummary]().schema
+  }
+
+  it should "include a structured-output reminder in the system prompt when responseSchema is set" in {
+    val cfg = AgentConfig(
+      maxIterations = 3,
+      responseSchema = Some(ResponseSchema.derived[WeatherSummary]())
+    ).toOption.get
+
+    cfg.systemPrompt.getOrElse("") should include("JSON object matching the provided input schema")
+  }
+
+  it should "terminate with the parse-error message as finalAnswer when finish is called with a malformed payload" in {
+    val cfg = AgentConfig(
+      maxIterations = 3,
+      responseSchema = Some(ResponseSchema.derived[WeatherSummary]())
+    ).toOption.get
+
+    val (loop, _) = createLoop(
+      Seq(
+        AgentResponse(
+          "",
+          Seq(ToolCall(id = "call_1", toolName = "finish", input = """{"wrong":"shape"}""")),
+          StopReason.ToolUse
+        )
+      ),
+      cfg
+    )
+
+    val result = loop.run("What's the weather?")(backend)
+
+    result.finishReason shouldBe FinishReason.ToolFinish: Unit
+    result.iterations shouldBe 1: Unit
+    // finalAnswer holds the descriptive parse error sent to the LLM, not a typed payload — Phase 3's runAs[T] surfaces this as Left(ParseError)
+    result.finalAnswer should include("Invalid arguments")
+  }
 }
