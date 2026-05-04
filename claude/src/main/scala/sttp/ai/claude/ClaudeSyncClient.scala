@@ -1,9 +1,13 @@
 package sttp.ai.claude
 
+import sttp.ai.claude.ClaudeExceptions.ClaudeException.DeserializationClaudeException
 import sttp.ai.claude.config.ClaudeConfig
+import sttp.ai.claude.models.{ContentBlock, OutputFormat}
 import sttp.ai.claude.requests.MessageRequest
 import sttp.ai.claude.responses.{MessageResponse, ModelsResponse}
+import sttp.ai.core.json.SnakePickle
 import sttp.client4.{DefaultSyncBackend, SyncBackend}
+import sttp.tapir.{Schema => TapirSchema}
 
 class ClaudeSyncClient(config: ClaudeConfig, backend: SyncBackend = DefaultSyncBackend()) {
   private val client = new ClaudeClientImpl(config)
@@ -13,6 +17,30 @@ class ClaudeSyncClient(config: ClaudeConfig, backend: SyncBackend = DefaultSyncB
       case Left(exception) => throw exception
       case Right(response) => response
     }
+
+  /** Creates a typed message response. The response schema is derived from `T` via Tapir and set on the request as a structured-output
+    * format (unless one is already set), and the response's text content is parsed back into `T` via uPickle.
+    *
+    * @param request
+    *   Message request. If [[MessageRequest.usesStructuredOutput]] is false, a JSON schema for `T` is set automatically.
+    * @tparam T
+    *   The return type, which must have both a [[TapirSchema]] and a [[SnakePickle.Reader]] available.
+    */
+  def createMessageAs[T: TapirSchema: SnakePickle.Reader](request: MessageRequest): T = {
+    val withSchema =
+      if (request.usesStructuredOutput) request
+      else request.withStructuredOutput(OutputFormat.JsonSchema.withTapirSchema[T])
+
+    val response = createMessage(withSchema)
+
+    val text = response.content.collect { case ContentBlock.TextContent(t, _) => t }.mkString
+
+    try SnakePickle.read[T](text)
+    catch {
+      case e: Exception =>
+        throw new DeserializationClaudeException(s"Failed to parse structured output: ${e.getMessage}", null)
+    }
+  }
 
   def listModels(): ModelsResponse =
     client.listModels().send(backend).body match {

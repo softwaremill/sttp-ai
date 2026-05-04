@@ -13,6 +13,7 @@ import sttp.ai.openai.fixtures.ErrorFixture
 import sttp.ai.openai.requests.completions.chat.ChatRequestBody.{ChatBody, ChatCompletionModel}
 import sttp.ai.openai.requests.models.ModelsResponseData._
 import sttp.ai.openai.requests.responses.ResponsesModel.GPT4oMini
+import sttp.ai.core.json.SnakePickle
 import sttp.ai.openai.{CustomizeOpenAIRequest, OpenAISyncClient}
 import sttp.tapir.Schema
 
@@ -85,8 +86,14 @@ class SyncClientSpec extends AnyFlatSpec with Matchers with EitherValues {
   }
 
   case class Step(explanation: String, output: String)
+  object Step {
+    implicit val rw: SnakePickle.ReadWriter[Step] = SnakePickle.macroRW
+  }
 
   case class MathReasoning(steps: List[Step], finalAnswer: String)
+  object MathReasoning {
+    implicit val rw: SnakePickle.ReadWriter[MathReasoning] = SnakePickle.macroRW
+  }
 
   "typed createChatCompletion" should "be ok" in {
     // given
@@ -131,6 +138,38 @@ class SyncClientSpec extends AnyFlatSpec with Matchers with EitherValues {
     caught.code shouldBe expectedError.code: Unit
     caught.param shouldBe expectedError.param: Unit
     caught.`type` shouldBe expectedError.`type`
+  }
+
+  "createChatCompletionAs" should "parse the response into the typed value via uPickle" in {
+    // given
+    val syncBackendStub = DefaultSyncBackend.stub.whenAnyRequest.thenRespondAdjust(
+      sttp.ai.openai.fixtures.CompletionsFixture.structuredOutputsResponse,
+      StatusCode.Ok
+    )
+    val syncClient = OpenAISyncClient(authToken = "test-token", backend = syncBackendStub)
+
+    // when
+    import sttp.tapir.generic.auto._
+    val res: MathReasoning = syncClient.createChatCompletionAs[MathReasoning](ChatBody(Nil, ChatCompletionModel.GPT4oMini))
+
+    // then
+    res.finalAnswer should include("x ="): Unit
+    res.steps should have size 6
+    res.steps.head.output shouldBe "8x + 7 = -23"
+  }
+
+  "createChatCompletionAs" should "throw a DeserializationOpenAIException when the content is not valid JSON for T" in {
+    // given
+    val unparseableContent =
+      """{"id":"x","object":"chat.completion","created":0,"model":"m","choices":[{"index":0,"message":{"role":"assistant","content":"not-json"},"finish_reason":"stop"}],"usage":{"prompt_tokens":0,"completion_tokens":0,"total_tokens":0}}"""
+    val syncBackendStub = DefaultSyncBackend.stub.whenAnyRequest.thenRespondAdjust(unparseableContent, StatusCode.Ok)
+    val syncClient = OpenAISyncClient(authToken = "test-token", backend = syncBackendStub)
+
+    // when
+    import sttp.tapir.generic.auto._
+    intercept[DeserializationOpenAIException](
+      syncClient.createChatCompletionAs[MathReasoning](ChatBody(Nil, ChatCompletionModel.GPT4oMini))
+    ): Unit
   }
 
   "typed createChatCompletion" should "throw exception without choices" in {

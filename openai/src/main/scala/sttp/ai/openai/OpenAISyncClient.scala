@@ -53,6 +53,7 @@ import sttp.ai.openai.requests.vectorstore.file.VectorStoreFileResponseData.{
   VectorStoreFile
 }
 import sttp.ai.openai.requests.{admin, batch, finetuning}
+import sttp.ai.core.json.SnakePickle
 import sttp.tapir.{Schema => TapirSchema}
 
 import java.io.File
@@ -234,6 +235,25 @@ class OpenAISyncClient private (
       case Left(exception) => throw exception
     }
   }
+
+  /** Creates a typed model response using uPickle for parsing. The response schema is derived from `T` via Tapir, and the response content
+    * is parsed back into `T` via the implicit [[SnakePickle.Reader]].
+    *
+    * Use this when `T` has a uPickle [[SnakePickle.ReadWriter]] (or [[SnakePickle.Reader]]). For custom parsing, use the parser-based
+    * [[createChatCompletion]] overload instead.
+    *
+    * @param chatBody
+    *   Chat request body. If [[ChatBody.responseFormat]] is empty, a JSON schema for `T` is set automatically.
+    * @param responseName
+    *   Optional name for the response schema (defaults to "response").
+    * @tparam T
+    *   The return type, which must have both a [[TapirSchema]] and a [[SnakePickle.Reader]] available.
+    */
+  def createChatCompletionAs[T: TapirSchema: SnakePickle.Reader](chatBody: ChatBody, responseName: Option[String] = None): T =
+    createChatCompletion[T](chatBody, responseName) { content =>
+      try Right(SnakePickle.read[T](content))
+      catch { case e: Exception => Left(e.getMessage) }
+    }
 
   /** Get a stored chat completion. Only chat completions that have been created with the store parameter set to true will be returned.
     *
