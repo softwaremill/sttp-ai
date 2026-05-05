@@ -591,7 +591,6 @@ class AgentSpec extends AnyFlatSpec with Matchers {
 
     systemTools should have size 1: Unit
     systemTools.head.name shouldBe FinishTool.ToolName: Unit
-    // default finish tool's schema is for FinishInput(answer: String) — schema for a different shape
     systemTools.head.jsonSchema should not be ResponseSchema.derived[WeatherSummary]().schema
   }
 
@@ -682,7 +681,6 @@ class AgentSpec extends AnyFlatSpec with Matchers {
 
     result.finishReason shouldBe FinishReason.ToolFinish: Unit
     result.iterations shouldBe 1: Unit
-    // finalAnswer holds the descriptive parse error sent to the LLM, not a typed payload — Phase 3's runAs[T] surfaces this as Left(ParseError)
     result.finalAnswer should include("Invalid arguments")
   }
 }
