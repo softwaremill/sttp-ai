@@ -1,3 +1,10 @@
+//> using repository ivy2Local
+//> using dep com.softwaremill.sttp.ai::claude:0.4.0
+//> using dep ch.qos.logback:logback-classic:1.5.19
+
+// remember to set the ANTHROPIC_API_KEY env variable!
+// run with: ANTHROPIC_API_KEY=... scala-cli run ClaudeStructuredOutputExample.scala
+
 package examples
 
 import sttp.ai.claude.ClaudeSyncClient
@@ -8,16 +15,24 @@ import sttp.tapir.Schema
 
 object ClaudeStructuredOutputExample extends App {
 
-  case class WeatherSummary(city: String, temperatureCelsius: Double, conditions: String) derives SnakePickle.ReadWriter, Schema
+  case class Language(name: String, paradigm: String, summary: String) derives SnakePickle.ReadWriter, Schema
+
+  case class LanguageList(languages: List[Language]) derives SnakePickle.ReadWriter, Schema
 
   val claude = ClaudeSyncClient.fromEnv
   try {
     val request = MessageRequest.simple(
       model = "claude-haiku-4-5-20251001",
-      messages = List(Message.user("Summarise the weather in Krakow today.")),
-      maxTokens = 200
+      messages = List(
+        Message.user(
+          "List 10 well-known programming languages. For each, give the dominant paradigm and a one-sentence summary."
+        )
+      ),
+      maxTokens = 1500
     )
-    val summary: WeatherSummary = claude.createMessageAs[WeatherSummary](request)
-    println(summary)
+    val result: LanguageList = claude.createMessageAs[LanguageList](request)
+    result.languages.foreach { l =>
+      println(s"${l.name} [${l.paradigm}] — ${l.summary}")
+    }
   } finally claude.close()
 }
