@@ -11,9 +11,6 @@ case class AgentConfig private (
 object AgentConfig {
   private val reservedToolNames: Set[String] = Set(FinishTool.ToolName)
 
-  /** System tools resolved against a config: when [[AgentConfig.responseSchema]] is set, the default `finish` tool is replaced with a typed
-    * one whose input schema is the user's response schema.
-    */
   private[ai] def systemTools(cfg: AgentConfig): Seq[AgentTool[_]] = cfg.responseSchema match {
     case Some(rs) => Seq(FinishTool.withResponseSchema(rs))
     case None     => Seq(FinishTool())
