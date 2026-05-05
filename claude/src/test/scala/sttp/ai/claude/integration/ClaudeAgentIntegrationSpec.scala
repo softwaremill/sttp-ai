@@ -17,7 +17,7 @@ class ClaudeAgentIntegrationSpec extends AgentIntegrationSpecBase {
     val config = ClaudeConfig.fromEnv
     val client = ClaudeClient(config)
     val agentConfig = AgentConfig(maxIterations = maxIterations, userTools = tools).right.get
-    val allTools = agentConfig.userTools ++ AgentConfig.systemTools
+    val allTools = agentConfig.userTools ++ AgentConfig.systemTools(agentConfig)
     val agentBackend = new ClaudeAgentBackend[Identity](
       client,
       "claude-haiku-4-5-20251001",
@@ -25,5 +25,18 @@ class ClaudeAgentIntegrationSpec extends AgentIntegrationSpecBase {
       agentConfig.systemPrompt
     )(IdentityMonad)
     Agent(agentBackend, agentConfig)(IdentityMonad)
+  }
+
+  override def createTypedAgent[T](
+      maxIterations: Int,
+      tools: Seq[AgentTool[_]],
+      responseSchema: ResponseSchema[T]
+  ): Agent[Identity] = {
+    val agentConfig = AgentConfig(
+      maxIterations = maxIterations,
+      userTools = tools,
+      responseSchema = Some(responseSchema)
+    ).right.get
+    ClaudeAgent.synchronous(ClaudeConfig.fromEnv, "claude-haiku-4-5-20251001", agentConfig)
   }
 }

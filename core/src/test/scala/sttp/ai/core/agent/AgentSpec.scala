@@ -604,6 +604,63 @@ class AgentSpec extends AnyFlatSpec with Matchers {
     cfg.systemPrompt.getOrElse("") should include("JSON object matching the provided input schema")
   }
 
+  "Agent.runAs[T]" should "return Right(T) when the model emits a well-formed structured payload" in {
+    val cfg = AgentConfig(
+      maxIterations = 3,
+      responseSchema = Some(ResponseSchema.derived[WeatherSummary]())
+    ).toOption.get
+
+    val (loop, _) = createLoop(
+      Seq(
+        AgentResponse(
+          "",
+          Seq(
+            ToolCall(
+              id = "call_1",
+              toolName = "finish",
+              input = """{"city":"Krakow","temp_c":12.0,"conditions":"sunny"}"""
+            )
+          ),
+          StopReason.ToolUse
+        )
+      ),
+      cfg
+    )
+
+    val result = loop.runAs[WeatherSummary]("What's the weather?")(backend)
+
+    result.finishReason shouldBe FinishReason.ToolFinish: Unit
+    result.iterations shouldBe 1: Unit
+    result.finalAnswer shouldBe Right(WeatherSummary("Krakow", 12.0, "sunny"))
+  }
+
+  it should "return Left(AgentParseError) preserving the trace when the answer can't be parsed as T" in {
+    val cfg = AgentConfig(
+      maxIterations = 3,
+      responseSchema = Some(ResponseSchema.derived[WeatherSummary]())
+    ).toOption.get
+
+    val (loop, _) = createLoop(
+      Seq(
+        AgentResponse(
+          "",
+          Seq(ToolCall(id = "call_1", toolName = "finish", input = """{"wrong":"shape"}""")),
+          StopReason.ToolUse
+        )
+      ),
+      cfg
+    )
+
+    val result = loop.runAs[WeatherSummary]("What's the weather?")(backend)
+
+    result.iterations shouldBe 1: Unit
+    result.finishReason shouldBe FinishReason.ToolFinish: Unit
+    result.finalAnswer.isLeft shouldBe true: Unit
+    val err = result.finalAnswer.left.toOption.get
+    err.rawAnswer should include("Invalid arguments"): Unit
+    err.cause should not be null
+  }
+
   it should "terminate with the parse-error message as finalAnswer when finish is called with a malformed payload" in {
     val cfg = AgentConfig(
       maxIterations = 3,

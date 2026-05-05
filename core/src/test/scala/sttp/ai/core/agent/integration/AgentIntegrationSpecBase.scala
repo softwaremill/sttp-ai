@@ -14,6 +14,13 @@ abstract class AgentIntegrationSpecBase extends AnyFlatSpec with Matchers {
   def apiKeyEnvVar: String
   def createAgent(maxIterations: Int, tools: Seq[AgentTool[_]]): Agent[Identity]
 
+  def createTypedAgent[T](
+      maxIterations: Int,
+      tools: Seq[AgentTool[_]],
+      responseSchema: ResponseSchema[T]
+  ): Agent[Identity] =
+    cancel(s"$providerName typed agent factory not implemented for this spec")
+
   protected val maybeApiKey: Option[String] = sys.env.get(apiKeyEnvVar)
 
   case class CalculatorInput(operation: String, a: Double, b: Double)
@@ -150,5 +157,29 @@ abstract class AgentIntegrationSpecBase extends AnyFlatSpec with Matchers {
     result.finishReason shouldBe FinishReason.MaxIterations
     result.iterations shouldBe 1
     ()
+  }
+
+  case class TripSummary(weather: String, calculation: String, conclusion: String)
+  implicit val tripSummaryRW: SnakePickle.ReadWriter[TripSummary] = SnakePickle.macroRW
+  implicit val tripSummarySchema: Schema[TripSummary] = Schema.derived
+
+  it should "return a typed structured answer via runAs[T]" in {
+    if (maybeApiKey.isEmpty) cancel(s"$apiKeyEnvVar not defined - skipping integration test")
+    val backend = DefaultSyncBackend()
+    try {
+      val rs = ResponseSchema.derived[TripSummary]()
+      val agent = createTypedAgent(maxIterations = 6, tools = Seq(weatherTool, calculatorTool), responseSchema = rs)
+
+      val result = agent.runAs[TripSummary](
+        "What's the weather in Paris? Also, what is 15 multiplied by 3? Then summarise both into the structured response."
+      )(backend)
+
+      result.finishReason shouldBe FinishReason.ToolFinish: Unit
+      result.finalAnswer.isRight shouldBe true: Unit
+      val summary = result.finalAnswer.toOption.get
+      summary.weather should not be empty: Unit
+      summary.calculation should not be empty: Unit
+      summary.conclusion should not be empty
+    } finally backend.close()
   }
 }
