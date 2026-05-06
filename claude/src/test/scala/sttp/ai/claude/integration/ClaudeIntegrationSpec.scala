@@ -256,6 +256,35 @@ class ClaudeIntegrationSpec extends AnyFlatSpec with Matchers with BeforeAndAfte
       ()
     }
 
+  it should "handle web search predefined tool successfully" in
+    withClient { client =>
+      // given
+      val request = MessageRequest.withTools(
+        model = testModel,
+        messages = List(Message.user("What was the most recent SpaceX launch? Use web search to find out.")),
+        maxTokens = 1024,
+        tools = List(Tool.WebSearch(maxUses = Some(1)))
+      )
+
+      // when
+      val response = client.createMessage(request)
+
+      // then
+      response should not be null
+      response.role shouldBe "assistant"
+      response.content should not be empty
+
+      val serverToolUse = response.content.collectFirst { case s: ContentBlock.ServerToolUseContent => s }
+      serverToolUse should be(defined)
+      serverToolUse.get.name shouldBe "web_search"
+
+      val toolResult = response.content.collectFirst { case r: ContentBlock.WebSearchToolResultContent => r }
+      toolResult should be(defined)
+      toolResult.get.toolUseId shouldBe serverToolUse.get.id
+      toolResult.get.content shouldBe a[ContentBlock.WebSearchToolResult.Results]
+      ()
+    }
+
   "Claude Error Handling" should "throw AuthenticationException for invalid API key" in {
     // given
     val invalidConfig = ClaudeConfig(
