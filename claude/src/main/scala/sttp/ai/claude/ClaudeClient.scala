@@ -2,7 +2,7 @@ package sttp.ai.claude
 
 import sttp.ai.claude.ClaudeExceptions.{ClaudeException, UnsupportedModelForStructuredOutputException}
 import sttp.ai.claude.config.ClaudeConfig
-import sttp.ai.claude.models.ClaudeModel
+import sttp.ai.claude.models.{ClaudeModel, Tool}
 import sttp.ai.claude.requests.MessageRequest
 import sttp.ai.claude.responses.{MessageResponse, ModelsResponse}
 import sttp.ai.core.http.ResponseHandlers
@@ -38,8 +38,13 @@ class ClaudeClientImpl(config: ClaudeConfig) extends ClaudeClient with ResponseH
     if (request.usesStructuredOutput) {
       validateModelForStructuredOutput(request.model)
     }
-    claudeAuthRequest
+    val betaFeatures = collectBetaFeatures(request)
+    if (betaFeatures.nonEmpty) claudeAuthRequest.header("anthropic-beta", betaFeatures.mkString(","))
+    else claudeAuthRequest
   }
+
+  private def collectBetaFeatures(request: MessageRequest): List[String] =
+    request.tools.toList.flatten.collect { case _: Tool.WebFetch => Tool.WebFetch.BetaHeader }.distinct
 
   private def validateModelForStructuredOutput(modelId: String): Unit =
     if (!ClaudeModel.modelSupportsStructuredOutput(modelId)) {
