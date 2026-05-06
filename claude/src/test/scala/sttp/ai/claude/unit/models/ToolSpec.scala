@@ -76,31 +76,6 @@ class ToolSpec extends AnyFlatSpec with Matchers {
     read[Tool](write(tool)) shouldBe tool
   }
 
-  "Tool.WebFetch" should "serialize with type, name, and citations" in {
-    val tool = Tool.WebFetch(
-      maxUses = Some(2),
-      allowedDomains = Some(List("docs.example.com")),
-      citations = Some(Citations(enabled = true)),
-      maxContentTokens = Some(50000)
-    )
-
-    val json = ujson.read(write[Tool](tool))
-
-    json("type").str shouldBe "web_fetch_20250910"
-    json("name").str shouldBe "web_fetch"
-    json("max_uses").num shouldBe 2
-    json("citations")("enabled").bool shouldBe true
-    json("max_content_tokens").num shouldBe 50000
-  }
-
-  it should "round-trip" in {
-    val tool: Tool = Tool.WebFetch(
-      maxUses = Some(1),
-      citations = Some(Citations(enabled = false))
-    )
-    read[Tool](write(tool)) shouldBe tool
-  }
-
   "Tool list" should "mix custom and predefined tools in a single array" in {
     val tools: List[Tool] = List(
       Tool.Custom(
@@ -108,15 +83,13 @@ class ToolSpec extends AnyFlatSpec with Matchers {
         description = "weather",
         inputSchema = ToolInputSchema.forObject(Map("city" -> PropertySchema.string("city")))
       ),
-      Tool.WebSearch(maxUses = Some(5)),
-      Tool.WebFetch(maxUses = Some(3))
+      Tool.WebSearch(maxUses = Some(5))
     )
 
     val arr = ujson.read(write(tools)).arr.toList
 
     arr.head.obj.contains("type") shouldBe false
     arr(1)("type").str shouldBe "web_search_20250305"
-    arr(2)("type").str shouldBe "web_fetch_20250910"
 
     read[List[Tool]](write(tools)) shouldBe tools
   }

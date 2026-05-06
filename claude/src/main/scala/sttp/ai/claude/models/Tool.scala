@@ -78,12 +78,6 @@ object UserLocation {
   implicit val rw: ReadWriter[UserLocation] = macroRW
 }
 
-case class Citations(enabled: Boolean)
-
-object Citations {
-  implicit val rw: ReadWriter[Citations] = macroRW
-}
-
 object Tool {
   case class Custom(
       name: String,
@@ -102,21 +96,6 @@ object Tool {
   object WebSearch {
     final val ToolType = "web_search_20250305"
     final val ToolName = "web_search"
-  }
-
-  @upickle.implicits.key(WebFetch.ToolType)
-  case class WebFetch(
-      maxUses: Option[Int] = None,
-      allowedDomains: Option[List[String]] = None,
-      blockedDomains: Option[List[String]] = None,
-      citations: Option[Citations] = None,
-      maxContentTokens: Option[Int] = None
-  ) extends Tool
-
-  object WebFetch {
-    final val ToolType = "web_fetch_20250910"
-    final val ToolName = "web_fetch"
-    final val BetaHeader = "web-fetch-2025-09-10"
   }
 
   def apply(name: String, description: String, inputSchema: ToolInputSchema): Custom =
@@ -141,7 +120,6 @@ object Tool {
     )
 
   private val webSearchRW: ReadWriter[WebSearch] = macroRW
-  private val webFetchRW: ReadWriter[WebFetch] = macroRW
 
   private def withName(json: Value, toolName: String): Value = {
     val obj = scala.collection.mutable.LinkedHashMap[String, Value]()
@@ -158,12 +136,10 @@ object Tool {
       {
         case c: Custom     => SnakePickle.writeJs(c)(customRW)
         case ws: WebSearch => withName(SnakePickle.writeJs(ws)(webSearchRW), WebSearch.ToolName)
-        case wf: WebFetch  => withName(SnakePickle.writeJs(wf)(webFetchRW), WebFetch.ToolName)
       },
       json =>
         json.obj.get(SnakePickle.tagName).map(_.str) match {
           case Some(WebSearch.ToolType) => SnakePickle.read[WebSearch](json)(webSearchRW)
-          case Some(WebFetch.ToolType)  => SnakePickle.read[WebFetch](json)(webFetchRW)
           case _                        => SnakePickle.read[Custom](json)(customRW)
         }
     )
