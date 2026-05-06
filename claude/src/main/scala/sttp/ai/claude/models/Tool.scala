@@ -85,7 +85,7 @@ object Tool {
       inputSchema: ToolInputSchema
   ) extends Tool
 
-  @upickle.implicits.key(WebSearch.ToolType)
+  @upickle.implicits.key("web_search_20250305")
   case class WebSearch(
       maxUses: Option[Int] = None,
       allowedDomains: Option[List[String]] = None,
