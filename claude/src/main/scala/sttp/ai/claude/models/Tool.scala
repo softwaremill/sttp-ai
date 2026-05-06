@@ -91,6 +91,7 @@ object Tool {
       inputSchema: ToolInputSchema
   ) extends Tool
 
+  @upickle.implicits.key(WebSearch.ToolType)
   case class WebSearch(
       maxUses: Option[Int] = None,
       allowedDomains: Option[List[String]] = None,
@@ -103,6 +104,7 @@ object Tool {
     final val ToolName = "web_search"
   }
 
+  @upickle.implicits.key(WebFetch.ToolType)
   case class WebFetch(
       maxUses: Option[Int] = None,
       allowedDomains: Option[List[String]] = None,
@@ -120,9 +122,8 @@ object Tool {
   def apply(name: String, description: String, inputSchema: ToolInputSchema): Custom =
     Custom(name, description, inputSchema)
 
-  // Per-subtype RWs treat each case class as a standalone (no auto-tag), so we get clean field-only JSON.
-  // We then dispatch and inject "type"/"name" ourselves in the trait's RW below.
-  private val customStandaloneRW: ReadWriter[Custom] = SnakePickle
+  // manual rw so custom JSON has no `type` field, matching Anthropic documented format
+  private val customRW: ReadWriter[Custom] = SnakePickle
     .readwriter[Value]
     .bimap[Custom](
       c =>
@@ -139,81 +140,31 @@ object Tool {
         )
     )
 
-  private def opt[T: SnakePickle.Writer](key: String, value: Option[T], into: scala.collection.mutable.LinkedHashMap[String, Value]): Unit =
-    value.foreach(v => into.update(key, SnakePickle.writeJs(v)))
+  private val webSearchRW: ReadWriter[WebSearch] = macroRW
+  private val webFetchRW: ReadWriter[WebFetch] = macroRW
 
-  private def readOpt[T: SnakePickle.Reader](json: Value, key: String): Option[T] =
-    json.obj.get(key).flatMap {
-      case ujson.Null => None
-      case v          => Some(SnakePickle.read[T](v))
+  private def withName(json: Value, toolName: String): Value = {
+    val obj = scala.collection.mutable.LinkedHashMap[String, Value]()
+    json.obj.foreach { case (k, v) =>
+      obj.update(k, v)
+      if (k == SnakePickle.tagName) obj.update("name", ujson.Str(toolName))
     }
-
-  private val webSearchStandaloneRW: ReadWriter[WebSearch] = SnakePickle
-    .readwriter[Value]
-    .bimap[WebSearch](
-      ws => {
-        val obj = scala.collection.mutable.LinkedHashMap[String, Value]()
-        opt("max_uses", ws.maxUses, obj)
-        opt("allowed_domains", ws.allowedDomains, obj)
-        opt("blocked_domains", ws.blockedDomains, obj)
-        opt("user_location", ws.userLocation, obj)
-        ujson.Obj.from(obj)
-      },
-      json =>
-        WebSearch(
-          maxUses = readOpt[Int](json, "max_uses"),
-          allowedDomains = readOpt[List[String]](json, "allowed_domains"),
-          blockedDomains = readOpt[List[String]](json, "blocked_domains"),
-          userLocation = readOpt[UserLocation](json, "user_location")
-        )
-    )
-
-  private val webFetchStandaloneRW: ReadWriter[WebFetch] = SnakePickle
-    .readwriter[Value]
-    .bimap[WebFetch](
-      wf => {
-        val obj = scala.collection.mutable.LinkedHashMap[String, Value]()
-        opt("max_uses", wf.maxUses, obj)
-        opt("allowed_domains", wf.allowedDomains, obj)
-        opt("blocked_domains", wf.blockedDomains, obj)
-        opt("citations", wf.citations, obj)
-        opt("max_content_tokens", wf.maxContentTokens, obj)
-        ujson.Obj.from(obj)
-      },
-      json =>
-        WebFetch(
-          maxUses = readOpt[Int](json, "max_uses"),
-          allowedDomains = readOpt[List[String]](json, "allowed_domains"),
-          blockedDomains = readOpt[List[String]](json, "blocked_domains"),
-          citations = readOpt[Citations](json, "citations"),
-          maxContentTokens = readOpt[Int](json, "max_content_tokens")
-        )
-    )
-
-  private val TypeKey = "type"
-  private val NameKey = "name"
-
-  private def withTypeAndName(body: Value, toolType: String, toolName: String): Value = {
-    val merged = scala.collection.mutable.LinkedHashMap[String, Value]()
-    merged.update(TypeKey, ujson.Str(toolType))
-    merged.update(NameKey, ujson.Str(toolName))
-    body.obj.foreach { case (k, v) => if (k != TypeKey && k != NameKey) merged.update(k, v) }
-    ujson.Obj.from(merged)
+    ujson.Obj.from(obj)
   }
 
   implicit val toolRW: ReadWriter[Tool] = SnakePickle
     .readwriter[Value]
     .bimap[Tool](
       {
-        case c: Custom     => SnakePickle.writeJs(c)(customStandaloneRW)
-        case ws: WebSearch => withTypeAndName(SnakePickle.writeJs(ws)(webSearchStandaloneRW), WebSearch.ToolType, WebSearch.ToolName)
-        case wf: WebFetch  => withTypeAndName(SnakePickle.writeJs(wf)(webFetchStandaloneRW), WebFetch.ToolType, WebFetch.ToolName)
+        case c: Custom     => SnakePickle.writeJs(c)(customRW)
+        case ws: WebSearch => withName(SnakePickle.writeJs(ws)(webSearchRW), WebSearch.ToolName)
+        case wf: WebFetch  => withName(SnakePickle.writeJs(wf)(webFetchRW), WebFetch.ToolName)
       },
       json =>
-        json.obj.get(TypeKey).map(_.str) match {
-          case Some(WebSearch.ToolType) => SnakePickle.read[WebSearch](json)(webSearchStandaloneRW)
-          case Some(WebFetch.ToolType)  => SnakePickle.read[WebFetch](json)(webFetchStandaloneRW)
-          case _                        => SnakePickle.read[Custom](json)(customStandaloneRW)
+        json.obj.get(SnakePickle.tagName).map(_.str) match {
+          case Some(WebSearch.ToolType) => SnakePickle.read[WebSearch](json)(webSearchRW)
+          case Some(WebFetch.ToolType)  => SnakePickle.read[WebFetch](json)(webFetchRW)
+          case _                        => SnakePickle.read[Custom](json)(customRW)
         }
     )
 }
