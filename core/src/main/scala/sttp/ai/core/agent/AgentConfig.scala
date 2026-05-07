@@ -39,7 +39,7 @@ object AgentConfig {
   private def buildSystemPrompt(maxIterations: Int, structuredFinish: Boolean): String = {
     val structuredAddendum =
       if (structuredFinish)
-        "\n\nWhen calling the finish tool, you MUST pass a JSON object matching the provided input schema for the final answer."
+        "\n\nWhen calling the finish tool, you MUST pass a JSON object matching the provided output schema for the final answer."
       else ""
 
     s"""You are a simple loop-based agent that solves the user's task step by step using tool calling when appropriate.
