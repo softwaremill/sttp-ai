@@ -600,7 +600,7 @@ class AgentSpec extends AnyFlatSpec with Matchers {
       responseSchema = Some(ResponseSchema.derived[WeatherSummary]())
     ).toOption.get
 
-    cfg.systemPrompt.getOrElse("") should include("JSON object matching the provided input schema")
+    cfg.systemPrompt.getOrElse("") should include("JSON object matching the provided output schema")
   }
 
   "Agent.runAs[T]" should "return Right(T) when the model emits a well-formed structured payload" in {
