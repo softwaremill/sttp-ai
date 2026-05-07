@@ -436,20 +436,14 @@ Currently supported:
 - **`Tool.WebSearch`** (`web_search_20250305`)
 
 ```scala
-import sttp.ai.claude.models.{ContentBlock, Message, Tool, UserLocation}
+import sttp.ai.claude.models.{ContentBlock, Message, Tool}
 import sttp.ai.claude.requests.MessageRequest
 
 val request = MessageRequest.withTools(
   model = "claude-sonnet-4-5-20250514",
   messages = List(Message.user(List(ContentBlock.text("What was the most recent SpaceX launch?")))),
   maxTokens = 1024,
-  tools = List(
-    Tool.WebSearch(
-      maxUses = Some(3),
-      allowedDomains = Some(List("spacex.com", "wikipedia.org")),
-      userLocation = Some(UserLocation.approximate(country = Some("US")))
-    )
-  )
+  tools = List(Tool.WebSearch.default)
 )
 
 val response = client.createMessage(request)

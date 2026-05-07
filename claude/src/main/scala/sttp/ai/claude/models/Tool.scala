@@ -96,6 +96,8 @@ object Tool {
   object WebSearch {
     final val ToolType = "web_search_20250305"
     final val ToolName = "web_search"
+
+    val default: WebSearch = WebSearch()
   }
 
   def apply(name: String, description: String, inputSchema: ToolInputSchema): Custom =
