@@ -1,5 +1,6 @@
 package sttp.ai.claude.models
 
+import sttp.ai.core.json.SnakePickle
 import sttp.ai.core.json.SnakePickle.{macroRW, ReadWriter}
 import ujson.Value
 import upickle.implicits.key
@@ -50,6 +51,67 @@ object ContentBlock {
       citations: Option[CitationsConfig] = None
   ) extends ContentBlock {
     val `type`: String = "document"
+  }
+
+  @key("server_tool_use")
+  case class ServerToolUseContent(
+      id: String,
+      name: String,
+      input: Map[String, Value]
+  ) extends ContentBlock {
+    val `type`: String = "server_tool_use"
+  }
+
+  @key("web_search_tool_result")
+  case class WebSearchToolResultContent(
+      toolUseId: String,
+      content: WebSearchToolResult,
+      caller: Option[Value] = None
+  ) extends ContentBlock {
+    val `type`: String = "web_search_tool_result"
+  }
+
+  case class WebSearchResult(
+      url: String,
+      title: String,
+      pageAge: Option[String] = None,
+      encryptedContent: Option[String] = None
+  ) {
+    val `type`: String = "web_search_result"
+  }
+
+  object WebSearchResult {
+    implicit val rw: ReadWriter[WebSearchResult] = macroRW
+  }
+
+  sealed trait WebSearchToolResult
+
+  object WebSearchToolResult {
+    case class Results(items: List[WebSearchResult]) extends WebSearchToolResult
+
+    case class Error(errorCode: String) extends WebSearchToolResult
+
+    private val ErrorTypeValue = "web_search_tool_result_error"
+
+    implicit val rw: ReadWriter[WebSearchToolResult] = SnakePickle
+      .readwriter[Value]
+      .bimap[WebSearchToolResult](
+        {
+          case Results(items) => SnakePickle.writeJs(items)
+          case Error(code) =>
+            ujson.Obj(
+              "type" -> ujson.Str(ErrorTypeValue),
+              "error_code" -> ujson.Str(code)
+            )
+        },
+        {
+          case arr: ujson.Arr => Results(SnakePickle.read[List[WebSearchResult]](arr))
+          case obj: ujson.Obj if obj.value.get("type").contains(ujson.Str(ErrorTypeValue)) =>
+            Error(obj("error_code").str)
+          case other =>
+            throw new IllegalArgumentException(s"Unrecognised web_search_tool_result content: $other")
+        }
+      )
   }
 
   sealed trait DocumentSource {
@@ -120,6 +182,8 @@ object ContentBlock {
   implicit val toolUseContentRW: ReadWriter[ToolUseContent] = macroRW
   implicit val toolResultContentRW: ReadWriter[ToolResultContent] = macroRW
   implicit val documentContentRW: ReadWriter[DocumentContent] = macroRW
+  implicit val serverToolUseContentRW: ReadWriter[ServerToolUseContent] = macroRW
+  implicit val webSearchToolResultContentRW: ReadWriter[WebSearchToolResultContent] = macroRW
 
   implicit val rw: ReadWriter[ContentBlock] = ReadWriter.merge(
     textContentRW,
@@ -127,6 +191,8 @@ object ContentBlock {
     imageContentRW,
     toolUseContentRW,
     toolResultContentRW,
-    documentContentRW
+    documentContentRW,
+    serverToolUseContentRW,
+    webSearchToolResultContentRW
   )
 }
