@@ -302,6 +302,40 @@ Claude's structured output feature (currently in beta) allows you to enforce tha
 - ❌ **Legacy models**: Claude 3.x series don't support structured outputs
 - ✅ **Forward compatibility**: Unknown/future models default to supported
 
+#### Typed responses with `createMessageAs[T]`
+
+For the shortest path, use `ClaudeSyncClient.createMessageAs[T]` — the response schema is derived from `T` via Tapir, set on the request automatically, and the model's response is parsed back into `T` via uPickle.
+
+```scala mdoc:compile-only
+//> using dep com.softwaremill.sttp.ai::claude:0.4.11
+
+import sttp.ai.claude.ClaudeSyncClient
+import sttp.ai.claude.models.Message
+import sttp.ai.claude.requests.MessageRequest
+import sttp.ai.core.json.SnakePickle
+import sttp.tapir.Schema
+
+case class Language(name: String, paradigm: String, summary: String) derives SnakePickle.ReadWriter, Schema
+case class LanguageList(languages: List[Language]) derives SnakePickle.ReadWriter, Schema
+
+object Main:
+  def main(args: Array[String]): Unit =
+    val claude = ClaudeSyncClient.fromEnv
+    try {
+      val request = MessageRequest.simple(
+        model = "claude-haiku-4-5-20251001",
+        messages = List(Message.user(
+          "List 10 well-known programming languages. For each, give the dominant paradigm and a one-sentence summary."
+        )),
+        maxTokens = 1500
+      )
+      val result: LanguageList = claude.createMessageAs[LanguageList](request)
+      result.languages.foreach(l => println(s"${l.name} [${l.paradigm}] — ${l.summary}"))
+    } finally claude.close()
+```
+
+`T` must have both a `sttp.tapir.Schema[T]` (for schema generation) and a `SnakePickle.ReadWriter[T]` (for parsing) — the `derives` clause supplies both in Scala 3.
+
 #### Basic Structured Output Example
 
 ```scala mdoc:compile-only
@@ -647,9 +681,10 @@ object BasicExample extends App {
 
 ```scala
 val config = AgentConfig(
-  maxIterations = 10,                    // Max reasoning steps
-  systemPrompt = Some("Custom prompt"),  // Optional instructions
-  userTools = Seq(tool1, tool2)         // Your tools
+  maxIterations = 10,                              // Max reasoning steps
+  systemPrompt = Some("Custom prompt"),            // Optional instructions
+  userTools = Seq(tool1, tool2),                   // Your tools
+  responseSchema = Some(ResponseSchema.derived[T]) // Optional typed result (see runAs[T] below)
 )
 ```
 
@@ -772,13 +807,58 @@ The framework automatically provides a `finish` tool that agents call to termina
 #### Agent Result
 
 ```scala
-case class AgentResult(
-  finalAnswer: String,
+case class AgentResult[T](
+  finalAnswer: T,
   iterations: Int,
   toolCalls: Seq[ToolCallRecord],
   finishReason: FinishReason  // MaxIterations | ToolFinish | NaturalStop | Error
 )
 ```
+
+`agent.run(prompt)(backend)` returns `AgentResult[String]`. For typed results, see `runAs[T]` below.
+
+#### Typed responses with `runAs[T]`
+
+Set `responseSchema` on `AgentConfig` and use `runAs[T]` to receive a parsed Scala value as the agent's final answer. The model is constrained — through the `finish` tool's input schema, derived from `T` — to call `finish(...)` with a JSON payload matching the case class. The agent's final answer is then parsed back into `T` via uPickle.
+
+On parse failure the iteration trace is preserved: `finalAnswer` is `Left(AgentParseError)` rather than a thrown exception.
+
+```scala mdoc:compile-only
+//> using dep com.softwaremill.sttp.ai::openai:0.4.11
+
+import sttp.ai.core.agent.*
+import sttp.ai.core.json.SnakePickle
+import sttp.ai.openai.OpenAI
+import sttp.ai.openai.agent.OpenAIAgent
+import sttp.client4.DefaultSyncBackend
+import sttp.tapir.Schema
+
+case class TripSummary(weather: String, calculation: String, conclusion: String) derives SnakePickle.ReadWriter, Schema
+case class WeatherInput(location: String) derives SnakePickle.ReadWriter, Schema
+
+object TypedAgentExample extends App {
+  val weatherTool = AgentTool.fromFunction("get_weather", "Get the current weather for a location") {
+    (input: WeatherInput) => s"The weather in ${input.location} is 22°C, sunny"
+  }
+
+  val cfg = AgentConfig(
+    maxIterations = 5,
+    userTools = Seq(weatherTool),
+    responseSchema = Some(ResponseSchema.derived[TripSummary]())
+  ).toOption.get
+
+  val backend = DefaultSyncBackend()
+  try {
+    val agent = OpenAIAgent.synchronous(OpenAI.fromEnv, "gpt-4o-mini", cfg)
+    agent.runAs[TripSummary]("What's the weather in Paris?")(backend).finalAnswer match {
+      case Right(summary) => println(s"Weather: ${summary.weather}")
+      case Left(err)      => println(s"Parse failed: ${err.cause.getMessage}; raw=${err.rawAnswer}")
+    }
+  } finally backend.close()
+}
+```
+
+The same `runAs[T]` works against `ClaudeAgent.synchronous(...)`.
 
 ### Custom Backend
 
@@ -1208,10 +1288,40 @@ See also the [ChatProxy](https://github.com/softwaremill/sttp-openai/blob/master
 
 #### Structured Outputs/JSON Schema support
 
-To take advantage of [OpenAI's Structured Outputs](https://platform.openai.com/docs/guides/structured-outputs/introduction)
-and support for JSON Schema, you can use `ResponseFormat.JsonSchema` when creating a completion.
+[OpenAI's Structured Outputs](https://platform.openai.com/docs/guides/structured-outputs/introduction) constrain the model to produce JSON matching a given JSON Schema. The simplest way to use them is `OpenAISyncClient.createChatCompletionAs[T]` — the response schema is derived from a Scala case class via Tapir, set as `responseFormat` automatically, and the model's response is parsed back into `T` via uPickle:
 
-The example below produces a JSON object:
+```scala mdoc:compile-only
+//> using dep com.softwaremill.sttp.ai::openai:0.4.11
+
+import sttp.ai.openai.OpenAISyncClient
+import sttp.ai.openai.requests.completions.chat.ChatRequestBody.{ChatBody, ChatCompletionModel}
+import sttp.ai.openai.requests.completions.chat.message.*
+import sttp.ai.core.json.SnakePickle
+import sttp.tapir.Schema
+
+case class Step(explanation: String, output: String) derives SnakePickle.ReadWriter, Schema
+case class MathReasoning(steps: List[Step], finalAnswer: String) derives SnakePickle.ReadWriter, Schema
+
+object Main:
+  def main(args: Array[String]): Unit =
+    val openAI = OpenAISyncClient(System.getenv("OPENAI_KEY"))
+    val chatBody = ChatBody(
+      model = ChatCompletionModel.GPT4oMini,
+      messages = Seq(
+        Message.SystemMessage("You are a helpful math tutor. Guide the user through the solution step by step."),
+        Message.UserMessage(Content.TextContent("How can I solve 8x + 7 = -23?"))
+      )
+    )
+    val result: MathReasoning = openAI.createChatCompletionAs[MathReasoning](chatBody)
+    println(result.finalAnswer)
+    result.steps.foreach(s => println(s"  ${s.explanation} -> ${s.output}"))
+```
+
+`T` must have both a `sttp.tapir.Schema[T]` (for schema generation) and a `SnakePickle.ReadWriter[T]` (for parsing). For custom parsing, the parser-based `createChatCompletion[T](body, name)(parseFunction)` overload remains available.
+
+##### Lower-level: building `ResponseFormat.JsonSchema` yourself
+
+If you need finer control — a hand-built schema, custom parsing, or a non-Tapir schema source — use `ResponseFormat.JsonSchema` directly. The example below produces a JSON object:
 
 ```scala mdoc:compile-only
 //> using dep com.softwaremill.sttp.ai::openai:0.4.11

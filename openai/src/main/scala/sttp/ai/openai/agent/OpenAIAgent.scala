@@ -132,7 +132,7 @@ object OpenAIAgent {
       modelName: String,
       config: AgentConfig
   )(implicit monad: sttp.monad.MonadError[F]): Agent[F] = {
-    val allTools = config.userTools ++ AgentConfig.systemTools
+    val allTools = config.userTools ++ AgentConfig.systemTools(config)
     val backend = new OpenAIAgentBackend[F](
       new OpenAI(apiKey),
       modelName,
@@ -147,7 +147,7 @@ object OpenAIAgent {
       modelName: String,
       config: AgentConfig
   )(implicit monad: sttp.monad.MonadError[F]): Agent[F] = {
-    val allTools = config.userTools ++ AgentConfig.systemTools
+    val allTools = config.userTools ++ AgentConfig.systemTools(config)
     val backend = new OpenAIAgentBackend[F](
       openAI,
       modelName,

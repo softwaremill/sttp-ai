@@ -10,16 +10,21 @@ object FinishReason {
   case class Error(message: String) extends FinishReason
 }
 
-case class ToolCallRecord(
+final case class ToolCallRecord(
     toolName: String,
     input: String,
     output: String,
     iteration: Int
 )
 
-case class AgentResult[T](
+final case class AgentResult[T](
     finalAnswer: T,
     iterations: Int,
     toolCalls: Seq[ToolCallRecord],
     finishReason: FinishReason
+)
+
+final case class AgentParseError(
+    rawAnswer: String,
+    cause: Throwable
 )

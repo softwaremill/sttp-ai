@@ -1,15 +1,15 @@
 package sttp.ai.core.agent
 
+import sttp.ai.core.json.SnakePickle
 import sttp.client4.Backend
 import sttp.monad.MonadError
-import sttp.ai.core.json.SnakePickle
 
 class Agent[F[_]](
     agentBackend: AgentBackend[F],
     config: AgentConfig
 )(implicit monad: MonadError[F]) {
 
-  private val allTools = config.userTools ++ AgentConfig.systemTools
+  private val allTools = config.userTools ++ AgentConfig.systemTools(config)
   private val toolMap = allTools.map(t => t.name -> t).toMap
 
   def run(
@@ -95,6 +95,16 @@ class Agent[F[_]](
 
     loop(initialHistory, 0, Seq.empty)
   }
+
+  def runAs[T](
+      initialPrompt: String
+  )(backend: Backend[F])(implicit r: SnakePickle.Reader[T]): F[AgentResult[Either[AgentParseError, T]]] =
+    monad.map(run(initialPrompt)(backend)) { res =>
+      val parsed: Either[AgentParseError, T] =
+        try Right(SnakePickle.read[T](res.finalAnswer))
+        catch { case e: Exception => Left(AgentParseError(res.finalAnswer, e)) }
+      AgentResult(parsed, res.iterations, res.toolCalls, res.finishReason)
+    }
 
   private def executeTool[T](tool: AgentTool[T], toolCall: ToolCall): Either[String, String] = {
     val parseResult: Either[Exception, T] =

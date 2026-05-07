@@ -142,7 +142,7 @@ object ClaudeAgent {
       modelName: String,
       config: AgentConfig
   )(implicit monad: sttp.monad.MonadError[F]): Agent[F] = {
-    val allTools = config.userTools ++ AgentConfig.systemTools
+    val allTools = config.userTools ++ AgentConfig.systemTools(config)
     val backend = new ClaudeAgentBackend[F](
       ClaudeClient(claudeConfig),
       modelName,
@@ -157,7 +157,7 @@ object ClaudeAgent {
       modelName: String,
       config: AgentConfig
   )(implicit monad: sttp.monad.MonadError[F]): Agent[F] = {
-    val allTools = config.userTools ++ AgentConfig.systemTools
+    val allTools = config.userTools ++ AgentConfig.systemTools(config)
     val backend = new ClaudeAgentBackend[F](
       client,
       modelName,
