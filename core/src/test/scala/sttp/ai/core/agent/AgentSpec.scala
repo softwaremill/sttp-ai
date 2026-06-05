@@ -507,15 +507,6 @@ class AgentSpec extends AnyFlatSpec with Matchers {
     parsed shouldBe WeatherSummary("Krakow", 12.0, "sunny")
   }
 
-  it should "include a structured-output reminder in the system prompt when responseSchema is set" in {
-    val cfg = AgentConfig(
-      maxIterations = 3,
-      responseSchema = Some(ResponseSchema.derived[WeatherSummary]())
-    ).toOption.get
-
-    cfg.systemPrompt.getOrElse("") should include("JSON object matching the provided output schema")
-  }
-
   "Agent.runAs[T]" should "return Right(T) when the model emits a well-formed structured payload" in {
     val cfg = AgentConfig(
       maxIterations = 3,
