@@ -16,9 +16,9 @@ object AgentConfig {
       userTools: Seq[AgentTool[_]] = Seq.empty,
       exceptionHandler: ExceptionHandler = ExceptionHandler.default,
       responseSchema: Option[ResponseSchema[_]] = None
-  ): Either[String, AgentConfig] = {
+  ): AgentConfig = {
     val finalSystemPrompt = systemPrompt.orElse(Some(buildSystemPrompt(maxIterations)))
-    Right(new AgentConfig(maxIterations, finalSystemPrompt, userTools, exceptionHandler, responseSchema))
+    new AgentConfig(maxIterations, finalSystemPrompt, userTools, exceptionHandler, responseSchema)
   }
 
   private def buildSystemPrompt(maxIterations: Int): String =

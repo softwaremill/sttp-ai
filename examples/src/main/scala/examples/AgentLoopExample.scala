@@ -39,7 +39,7 @@ object AgentLoopExample extends App {
   val tools = Seq(weatherTool, calculatorTool)
 
   val openai = OpenAI.fromEnv
-  private val configResult = AgentConfig(
+  private val config = AgentConfig(
     maxIterations = 8,
     userTools = tools
   )
@@ -51,26 +51,20 @@ object AgentLoopExample extends App {
   println(s"User: $prompt\n")
 
   val backend = DefaultSyncBackend()
-  try
-    configResult match {
-      case Right(config) =>
-        val agent = OpenAIAgent.synchronous(openai, "gpt-4o-mini", config)
+  try {
+    val agent = OpenAIAgent.synchronous(openai, "gpt-4o-mini", config)
 
-        val result = agent.run(prompt)(backend)
+    val result = agent.run(prompt)(backend)
 
-        println("\n=== Agent Result ===")
-        println(s"Final Answer: ${result.finalAnswer}")
-        println(s"Iterations: ${result.iterations}")
-        println(s"Finish Reason: ${result.finishReason}")
-        println(s"\nTool Calls (${result.toolCalls.length}):")
-        result.toolCalls.foreach { tc =>
-          println(s"  [Iteration ${tc.iteration}] ${tc.toolName}")
-          println(s"    Input: ${tc.input}")
-          println(s"    Output: ${tc.output}")
-        }
-
-      case Left(error) =>
-        println(s"Configuration error: $error")
+    println("\n=== Agent Result ===")
+    println(s"Final Answer: ${result.finalAnswer}")
+    println(s"Iterations: ${result.iterations}")
+    println(s"Finish Reason: ${result.finishReason}")
+    println(s"\nTool Calls (${result.toolCalls.length}):")
+    result.toolCalls.foreach { tc =>
+      println(s"  [Iteration ${tc.iteration}] ${tc.toolName}")
+      println(s"    Input: ${tc.input}")
+      println(s"    Output: ${tc.output}")
     }
-  finally backend.close()
+  } finally backend.close()
 }

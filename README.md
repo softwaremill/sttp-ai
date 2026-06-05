@@ -728,8 +728,6 @@ val config = AgentConfig(
 )
 ```
 
-Returns `Either[String, AgentConfig]` to validate against reserved tool names like `finish`.
-
 #### Exception Handling
 
 The `ExceptionHandler` controls how tool execution errors and argument parsing failures are handled. You can choose between built-in handlers or create custom ones.
@@ -840,10 +838,6 @@ val calculatorTool = AgentTool.fromFunction(
 
 The `derives SnakePickle.ReadWriter, Schema` clause automatically generates the necessary serialization and schema information for the tool.
 
-**Built-in `finish` Tool:**
-
-The framework automatically provides a `finish` tool that agents call to terminate execution. Reserved name, cannot be overridden.
-
 #### Agent Result
 
 ```scala
@@ -851,7 +845,7 @@ case class AgentResult[T](
   finalAnswer: T,
   iterations: Int,
   toolCalls: Seq[ToolCallRecord],
-  finishReason: FinishReason  // MaxIterations | ToolFinish | NaturalStop | Error
+  finishReason: FinishReason  // MaxIterations | NaturalStop | Error
 )
 ```
 
@@ -859,7 +853,7 @@ case class AgentResult[T](
 
 #### Typed responses with `runAs[T]`
 
-Set `responseSchema` on `AgentConfig` and use `runAs[T]` to receive a parsed Scala value as the agent's final answer. The model is constrained — through the `finish` tool's input schema, derived from `T` — to call `finish(...)` with a JSON payload matching the case class. The agent's final answer is then parsed back into `T` via uPickle.
+Set `responseSchema` on `AgentConfig` and use `runAs[T]` to receive a parsed Scala value as the agent's final answer. The response schema, derived from `T`, is sent to the model to define the structured output of the agent's final answer. The answer is then parsed back into `T` via uPickle.
 
 On parse failure the iteration trace is preserved: `finalAnswer` is `Left(AgentParseError)` rather than a thrown exception.
 

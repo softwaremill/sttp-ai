@@ -52,7 +52,7 @@ class AgentSpec extends AnyFlatSpec with Matchers {
   }
 
   private def runLoop(responses: Seq[AgentResponse], tools: Seq[AgentTool[_]] = Seq.empty): AgentResult[String] = {
-    val testConfig = AgentConfig(maxIterations = 5, userTools = tools).right.get
+    val testConfig = AgentConfig(maxIterations = 5, userTools = tools)
     val (loop, _) = createLoop(responses, testConfig)
     loop.run("Test")(backend)
   }
@@ -207,7 +207,7 @@ class AgentSpec extends AnyFlatSpec with Matchers {
       "Dummy tool"
     )((_: DummyInput) => "dummy result")
 
-    val config = AgentConfig(maxIterations = 3, userTools = Seq(dummyTool)).toOption.get
+    val config = AgentConfig(maxIterations = 3, userTools = Seq(dummyTool))
     val (loop, stubBackend) = createLoop(
       Seq(
         AgentResponse("", Seq(ToolCall(id = "call_1", toolName = "dummy", input = "{}")), StopReason.ToolUse),
@@ -231,10 +231,8 @@ class AgentSpec extends AnyFlatSpec with Matchers {
       "Custom tool"
     )((_: DummyInput) => "result")
 
-    val configResult = AgentConfig(userTools = Seq(customTool))
+    val config = AgentConfig(userTools = Seq(customTool))
 
-    configResult shouldBe a[Right[_, _]]
-    val config = configResult.toOption.get
     config.userTools should have size 1
     config.userTools.head.name shouldBe "custom"
   }
@@ -245,7 +243,7 @@ class AgentSpec extends AnyFlatSpec with Matchers {
       "Dummy tool"
     )((_: DummyInput) => "final tool result")
 
-    val config = AgentConfig(maxIterations = 3, userTools = Seq(dummyTool)).right.get
+    val config = AgentConfig(maxIterations = 3, userTools = Seq(dummyTool))
     val (loop, _) = createLoop(
       Seq(
         AgentResponse("First response", Seq(ToolCall(id = "call_1", toolName = "dummy", input = "{}")), StopReason.ToolUse),
@@ -274,7 +272,7 @@ class AgentSpec extends AnyFlatSpec with Matchers {
       maxIterations = 3,
       userTools = Seq(ioTool),
       exceptionHandler = ExceptionHandler.default
-    ).toOption.get
+    )
 
     val (loop, _) = createLoop(
       Seq(AgentResponse("", Seq(ToolCall(id = "call_1", toolName = "io_tool", input = "{}")), StopReason.ToolUse)),
@@ -298,7 +296,7 @@ class AgentSpec extends AnyFlatSpec with Matchers {
       maxIterations = 3,
       userTools = Seq(interruptedTool),
       exceptionHandler = ExceptionHandler.default
-    ).toOption.get
+    )
 
     val (loop, _) = createLoop(
       Seq(AgentResponse("", Seq(ToolCall(id = "call_1", toolName = "interrupted_tool", input = "{}")), StopReason.ToolUse)),
@@ -322,7 +320,7 @@ class AgentSpec extends AnyFlatSpec with Matchers {
       maxIterations = 3,
       userTools = Seq(errorTool),
       exceptionHandler = ExceptionHandler.default
-    ).toOption.get
+    )
 
     val (loop, _) = createLoop(
       Seq(
@@ -352,7 +350,7 @@ class AgentSpec extends AnyFlatSpec with Matchers {
       maxIterations = 3,
       userTools = Seq(ioTool),
       exceptionHandler = ExceptionHandler.sendAllToLLM
-    ).toOption.get
+    )
 
     val (loop, _) = createLoop(
       Seq(
@@ -381,7 +379,7 @@ class AgentSpec extends AnyFlatSpec with Matchers {
       maxIterations = 3,
       userTools = Seq(errorTool),
       exceptionHandler = ExceptionHandler.propagateAll
-    ).toOption.get
+    )
 
     val (loop, _) = createLoop(
       Seq(AgentResponse("", Seq(ToolCall(id = "call_1", toolName = "error_tool", input = "{}")), StopReason.ToolUse)),
@@ -404,7 +402,7 @@ class AgentSpec extends AnyFlatSpec with Matchers {
     val config = AgentConfig(
       maxIterations = 3,
       userTools = Seq(numberTool)
-    ).toOption.get
+    )
 
     val (loop, _) = createLoop(
       Seq(
@@ -426,7 +424,7 @@ class AgentSpec extends AnyFlatSpec with Matchers {
     val config = AgentConfig(
       maxIterations = 3,
       userTools = Seq(calculatorTool)
-    ).toOption.get
+    )
 
     val (loop, _) = createLoop(
       Seq(
@@ -466,7 +464,7 @@ class AgentSpec extends AnyFlatSpec with Matchers {
       maxIterations = 3,
       userTools = Seq(errorTool),
       exceptionHandler = customHandler
-    ).toOption.get
+    )
 
     val (loop, _) = createLoop(
       Seq(
@@ -491,7 +489,7 @@ class AgentSpec extends AnyFlatSpec with Matchers {
     val cfg = AgentConfig(
       maxIterations = 3,
       responseSchema = Some(ResponseSchema.derived[WeatherSummary]())
-    ).toOption.get
+    )
 
     val (loop, _) = createLoop(
       Seq(
@@ -511,7 +509,7 @@ class AgentSpec extends AnyFlatSpec with Matchers {
     val cfg = AgentConfig(
       maxIterations = 3,
       responseSchema = Some(ResponseSchema.derived[WeatherSummary]())
-    ).toOption.get
+    )
 
     val (loop, _) = createLoop(
       Seq(
@@ -531,7 +529,7 @@ class AgentSpec extends AnyFlatSpec with Matchers {
     val cfg = AgentConfig(
       maxIterations = 3,
       responseSchema = Some(ResponseSchema.derived[WeatherSummary]())
-    ).toOption.get
+    )
 
     val (loop, _) = createLoop(
       Seq(
