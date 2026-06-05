@@ -688,26 +688,20 @@ object BasicExample extends App {
     s"The weather in ${input.location} is 22°C, sunny"
   }
 
-  val configResult = AgentConfig(
+  val config = AgentConfig(
     maxIterations = 5,
     userTools = Seq(weatherTool)
   )
 
   val backend = DefaultSyncBackend()
-  try
-    configResult match {
-      case Right(config) =>
-        val agent = OpenAIAgent.synchronous(OpenAI.fromEnv, "gpt-4o-mini", config)
+  try {
+    val agent = OpenAIAgent.synchronous(OpenAI.fromEnv, "gpt-4o-mini", config)
 
-        val result = agent.run("What's the weather in Paris?")(backend)
+    val result = agent.run("What's the weather in Paris?")(backend)
 
-        println(s"Answer: ${result.finalAnswer}")
-        println(s"Iterations: ${result.iterations}")
-
-      case Left(error) =>
-        println(s"Configuration error: $error")
-    }
-  finally backend.close()
+    println(s"Answer: ${result.finalAnswer}")
+    println(s"Iterations: ${result.iterations}")
+  } finally backend.close()
 }
 ```
 
@@ -879,7 +873,7 @@ object TypedAgentExample extends App {
     maxIterations = 5,
     userTools = Seq(weatherTool),
     responseSchema = Some(ResponseSchema.derived[TripSummary]())
-  ).toOption.get
+  )
 
   val backend = DefaultSyncBackend()
   try {
@@ -930,16 +924,14 @@ import sttp.client4.httpclient.cats.HttpClientCatsBackend
 import sttp.ai.openai.agent.OpenAIAgent
 
 object CatsEffectExample extends IOApp.Simple {
-  def run: IO[Unit] =
-    AgentConfig(maxIterations = 5, userTools = Seq(weatherTool)) match {
-      case Right(config) =>
-        HttpClientCatsBackend.resource[IO]().use { backend =>
-          val agent = OpenAIAgent[IO](OpenAI.fromEnv, "gpt-4o-mini", config)
-          agent.run("What's the weather in London?")(backend)
-            .flatMap(r => IO.println(s"Answer: ${r.finalAnswer}"))
-        }
-      case Left(error) => IO.println(s"Config error: $error")
+  def run: IO[Unit] = {
+    val config = AgentConfig(maxIterations = 5, userTools = Seq(weatherTool))
+    HttpClientCatsBackend.resource[IO]().use { backend =>
+      val agent = OpenAIAgent[IO](OpenAI.fromEnv, "gpt-4o-mini", config)
+      agent.run("What's the weather in London?")(backend)
+        .flatMap(r => IO.println(s"Answer: ${r.finalAnswer}"))
     }
+  }
 }
 ```
 
@@ -951,19 +943,17 @@ import sttp.client4.httpclient.zio.HttpClientZioBackend
 import sttp.ai.openai.agent.OpenAIAgent
 
 object ZIOExample extends ZIOAppDefault {
-  def run =
-    AgentConfig(maxIterations = 5, userTools = Seq(weatherTool)) match {
-      case Right(config) =>
-        ZIO.scoped {
-          for {
-            backend <- HttpClientZioBackend.scoped()
-            agent = OpenAIAgent[Task](OpenAI.fromEnv, "gpt-4o-mini", config)
-            result <- agent.run("What's the weather in London?")(backend)
-            _ <- Console.printLine(s"Answer: ${result.finalAnswer}")
-          } yield ()
-        }
-      case Left(error) => Console.printLine(s"Config error: $error")
+  def run = {
+    val config = AgentConfig(maxIterations = 5, userTools = Seq(weatherTool))
+    ZIO.scoped {
+      for {
+        backend <- HttpClientZioBackend.scoped()
+        agent = OpenAIAgent[Task](OpenAI.fromEnv, "gpt-4o-mini", config)
+        result <- agent.run("What's the weather in London?")(backend)
+        _ <- Console.printLine(s"Answer: ${result.finalAnswer}")
+      } yield ()
     }
+  }
 }
 ```
 
