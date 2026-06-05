@@ -17,11 +17,10 @@ class ClaudeAgentIntegrationSpec extends AgentIntegrationSpecBase {
     val config = ClaudeConfig.fromEnv
     val client = ClaudeClient(config)
     val agentConfig = AgentConfig(maxIterations = maxIterations, userTools = tools).right.get
-    val allTools = agentConfig.userTools ++ AgentConfig.systemTools(agentConfig)
     val agentBackend = new ClaudeAgentBackend[Identity](
       client,
       "claude-haiku-4-5-20251001",
-      allTools,
+      agentConfig.userTools,
       agentConfig.systemPrompt
     )(IdentityMonad)
     Agent(agentBackend, agentConfig)(IdentityMonad)

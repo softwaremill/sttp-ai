@@ -98,13 +98,13 @@ abstract class AgentIntegrationSpecBase extends AnyFlatSpec with Matchers {
           |1. First, calculate 15 multiplied by 3
           |2. Then, add 20 to that result
           |3. Finally, multiply the result by 2
-          |Please use the calculator tool for each step and show your work. Return number""".stripMargin
+          |Please use the calculator tool for each step and show your work. Return the final result""".stripMargin
     )(backend)
 
     assertMinIterations(result, 3)
     assertToolCalled(result, "calculator", minTimes = 3)
     assertContainsAny(result.finalAnswer, "130", "one hundred thirty", "hundred and thirty")
-    result.finishReason should (be(FinishReason.ToolFinish) or be(FinishReason.NaturalStop))
+    result.finishReason shouldBe FinishReason.NaturalStop
     ()
   }
 
@@ -124,8 +124,8 @@ abstract class AgentIntegrationSpecBase extends AnyFlatSpec with Matchers {
     val result = agent.run(
       """Please do the following:
           |1. Calculate 10 plus 15
-          |2. If the result is greater than 20, multiply it by 2, otherwise add 5
-          |3. Then tell me the weather in Tokyo""".stripMargin
+          |2. If the result of the addition is greater than 20, multiply it by 2, otherwise add 5
+          |3. Then tell me the result of the calculation as well as the weather in Tokyo""".stripMargin
     )(backend)
 
     assertMinIterations(result, 2)
@@ -174,7 +174,7 @@ abstract class AgentIntegrationSpecBase extends AnyFlatSpec with Matchers {
         "What's the weather in Paris? Also, what is 15 multiplied by 3? Then summarise both into the structured response."
       )(backend)
 
-      result.finishReason shouldBe FinishReason.ToolFinish: Unit
+      result.finishReason shouldBe FinishReason.NaturalStop: Unit
       result.finalAnswer.isRight shouldBe true: Unit
       val summary = result.finalAnswer.toOption.get
       summary.weather should not be empty: Unit

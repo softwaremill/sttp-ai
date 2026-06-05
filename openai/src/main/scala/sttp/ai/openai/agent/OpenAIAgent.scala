@@ -3,7 +3,7 @@ package sttp.ai.openai.agent
 import sttp.ai.core.agent._
 import sttp.ai.core.json.SnakePickle
 import sttp.ai.openai.OpenAI
-import sttp.ai.openai.requests.completions.chat.ChatRequestBody.{ChatBody, ChatCompletionModel}
+import sttp.ai.openai.requests.completions.chat.ChatRequestBody.{ChatBody, ChatCompletionModel, ResponseFormat}
 import sttp.ai.openai.requests.completions.chat.message.{Content, Message, Tool}
 import sttp.ai.openai.requests.completions.chat.{FunctionCall, SchemaSupport, ToolCall => OpenAIToolCall}
 import sttp.client4.Backend
@@ -14,11 +14,21 @@ private[openai] class OpenAIAgentBackend[F[_]](
     openAI: OpenAI,
     modelName: String,
     val tools: Seq[AgentTool[_]],
-    val systemPrompt: Option[String]
+    val systemPrompt: Option[String],
+    responseSchema: Option[ResponseSchema[_]]
 )(implicit monad: sttp.monad.MonadError[F])
     extends AgentBackend[F] {
 
   private val convertedTools: Seq[Tool.FunctionTool] = tools.map(convertTool)
+
+  private val responseFormat: Option[ResponseFormat] = responseSchema.map { rs =>
+    ResponseFormat.JsonSchema(
+      name = "final_response",
+      strict = Some(true),
+      schema = Some(rs.schema),
+      description = rs.description
+    )
+  }
 
   private def convertTool(tool: AgentTool[_]): Tool.FunctionTool = {
     val schema = tool.jsonSchema
@@ -28,7 +38,7 @@ private[openai] class OpenAIAgentBackend[F[_]](
       name = tool.name,
       description = Some(tool.description),
       parameters = Some(schemaJson.obj.toMap),
-      strict = Some(false)
+      strict = Some(true)
     )
   }
 
@@ -76,9 +86,9 @@ private[openai] class OpenAIAgentBackend[F[_]](
     val request = ChatBody(
       model = ChatCompletionModel.CustomChatCompletionModel(modelName),
       messages = messages,
-      tools = if (convertedTools.nonEmpty) Some(convertedTools) else None
+      tools = if (convertedTools.nonEmpty) Some(convertedTools) else None,
+      responseFormat = responseFormat
     )
-
     monad.flatMap(monad.map(openAI.createChatCompletion(request).send(backend))(_.body)) {
       case Right(response) =>
         val textContent = response.choices.headOption
@@ -132,12 +142,12 @@ object OpenAIAgent {
       modelName: String,
       config: AgentConfig
   )(implicit monad: sttp.monad.MonadError[F]): Agent[F] = {
-    val allTools = config.userTools ++ AgentConfig.systemTools(config)
     val backend = new OpenAIAgentBackend[F](
       new OpenAI(apiKey),
       modelName,
-      allTools,
-      config.systemPrompt
+      config.userTools,
+      config.systemPrompt,
+      config.responseSchema
     )
     Agent(backend, config)
   }
@@ -147,12 +157,12 @@ object OpenAIAgent {
       modelName: String,
       config: AgentConfig
   )(implicit monad: sttp.monad.MonadError[F]): Agent[F] = {
-    val allTools = config.userTools ++ AgentConfig.systemTools(config)
     val backend = new OpenAIAgentBackend[F](
       openAI,
       modelName,
-      allTools,
-      config.systemPrompt
+      config.userTools,
+      config.systemPrompt,
+      config.responseSchema
     )
     Agent(backend, config)
   }

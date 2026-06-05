@@ -15,12 +15,12 @@ class OpenAIAgentIntegrationSpec extends AgentIntegrationSpecBase {
   override def createAgent(maxIterations: Int, tools: Seq[AgentTool[_]]): Agent[Identity] = {
     val openai = OpenAI.fromEnv
     val agentConfig = AgentConfig(maxIterations = maxIterations, userTools = tools).right.get
-    val allTools = agentConfig.userTools ++ AgentConfig.systemTools(agentConfig)
     val agentBackend = new OpenAIAgentBackend[Identity](
       openai,
       "gpt-4o-mini",
-      allTools,
-      agentConfig.systemPrompt
+      agentConfig.userTools,
+      agentConfig.systemPrompt,
+      agentConfig.responseSchema
     )(IdentityMonad)
     Agent(agentBackend, agentConfig)(IdentityMonad)
   }
