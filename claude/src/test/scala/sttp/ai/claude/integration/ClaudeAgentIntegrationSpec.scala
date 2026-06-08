@@ -21,7 +21,8 @@ class ClaudeAgentIntegrationSpec extends AgentIntegrationSpecBase {
       client,
       "claude-haiku-4-5-20251001",
       agentConfig.userTools,
-      agentConfig.systemPrompt
+      agentConfig.systemPrompt,
+      agentConfig.responseSchema
     )(IdentityMonad)
     Agent(agentBackend, agentConfig)(IdentityMonad)
   }

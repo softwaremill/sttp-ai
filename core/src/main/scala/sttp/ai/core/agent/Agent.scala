@@ -37,7 +37,7 @@ class Agent[F[_]](
         val response = agentBackend.sendRequest(historyWithMarker, backend)
 
         monad.flatMap(response) { response =>
-          if (response.toolCalls.isEmpty && response.textContent.nonEmpty) {
+          if (response.toolCalls.isEmpty) {
             // No tool calls - the agent has produced its final answer, so complete the loop.
             monad.unit(
               AgentResult(

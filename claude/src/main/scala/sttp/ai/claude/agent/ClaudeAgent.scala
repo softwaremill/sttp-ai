@@ -17,14 +17,14 @@ private[claude] class ClaudeAgentBackend[F[_]](
     modelName: String,
     val tools: Seq[AgentTool[_]],
     val systemPrompt: Option[String],
-    responseSchema: Option[ResponseSchema[_]] = None
+    responseSchema: Option[ResponseSchema[_]]
 )(implicit monad: sttp.monad.MonadError[F])
     extends AgentBackend[F] {
 
   private val convertedTools: Seq[Tool] = tools.map(convertTool)
 
-  private val outputConfig: OutputConfig =
-    OutputConfig(format = responseSchema.map(rs => OutputFormat.JsonSchema(rs.schema)))
+  private val outputConfig: Option[OutputConfig] =
+    responseSchema.map(rs => OutputConfig(format = Some(OutputFormat.JsonSchema(rs.schema))))
 
   private def convertTool(tool: AgentTool[_]): Tool = {
     val schema = tool.jsonSchema
@@ -106,7 +106,7 @@ private[claude] class ClaudeAgentBackend[F[_]](
       maxTokens = 4096,
       system = systemPrompt,
       tools = if (convertedTools.nonEmpty) Some(convertedTools.toList) else None,
-      outputConfig = Some(outputConfig)
+      outputConfig = outputConfig
     )
 
     monad.flatMap(monad.map(client.createMessage(request).send(backend))(_.body)) {

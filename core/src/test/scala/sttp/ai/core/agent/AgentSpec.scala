@@ -100,6 +100,15 @@ class AgentSpec extends AnyFlatSpec with Matchers {
     result.toolCalls shouldBe empty
   }
 
+  it should "complete the loop when the response has no tool calls and empty text" in {
+    val result = runLoop(Seq(AgentResponse("", Seq.empty, StopReason.EndTurn)))
+
+    result.finishReason shouldBe FinishReason.NaturalStop
+    result.finalAnswer shouldBe ""
+    result.iterations shouldBe 1
+    result.toolCalls shouldBe empty
+  }
+
   it should "execute multiple tool calls in one iteration" in {
     val result = runLoop(
       Seq(
@@ -153,6 +162,7 @@ class AgentSpec extends AnyFlatSpec with Matchers {
     result.toolCalls.head.toolName shouldBe "error_tool"
     result.toolCalls.head.output should include("Error executing tool")
     result.toolCalls.head.output should include("Tool error")
+    result.finishReason shouldBe FinishReason.NaturalStop
   }
 
   it should "handle unknown tool gracefully" in {
@@ -306,36 +316,6 @@ class AgentSpec extends AnyFlatSpec with Matchers {
     assertThrows[InterruptedException] {
       loop.run("Test")(backend)
     }
-  }
-
-  it should "send RuntimeException to LLM and continue loop" in {
-    val errorTool = AgentTool.fromFunction(
-      "error_tool",
-      "Error tool"
-    ) { (_: DummyInput) =>
-      throw new RuntimeException("Logic error")
-    }
-
-    val config = AgentConfig(
-      maxIterations = 3,
-      userTools = Seq(errorTool),
-      exceptionHandler = ExceptionHandler.default
-    )
-
-    val (loop, _) = createLoop(
-      Seq(
-        AgentResponse("", Seq(ToolCall(id = "call_1", toolName = "error_tool", input = "{}")), StopReason.ToolUse),
-        AgentResponse("Recovered", Seq.empty, StopReason.EndTurn)
-      ),
-      config
-    )
-
-    val result = loop.run("Test")(backend)
-
-    result.toolCalls should have size 1
-    result.toolCalls.head.output should include("Error executing tool 'error_tool'")
-    result.toolCalls.head.output should include("Logic error")
-    result.finishReason shouldBe FinishReason.NaturalStop
   }
 
   "Agent with sendAllToLLM ExceptionHandler" should "send IOException to LLM instead of propagating" in {
