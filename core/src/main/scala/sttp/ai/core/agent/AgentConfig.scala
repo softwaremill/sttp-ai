@@ -1,24 +1,30 @@
 package sttp.ai.core.agent
 
-case class AgentConfig private (
+case class AgentConfig[F[_]] private (
     maxIterations: Int,
     systemPrompt: Option[String],
     userTools: Seq[AgentTool[_]],
     exceptionHandler: ExceptionHandler,
-    responseSchema: Option[ResponseSchema[_]]
-)
+    responseSchema: Option[ResponseSchema[_]],
+    afterToolCall: Option[ToolCallRecord => F[Unit]]
+) {
+
+  def hookAfterToolCall(hook: ToolCallRecord => F[Unit]): AgentConfig[F] =
+    copy(afterToolCall = Some(hook))
+}
 
 object AgentConfig {
 
-  def apply(
+  def apply[F[_]](
       maxIterations: Int = 10,
       systemPrompt: Option[String] = None,
       userTools: Seq[AgentTool[_]] = Seq.empty,
       exceptionHandler: ExceptionHandler = ExceptionHandler.default,
-      responseSchema: Option[ResponseSchema[_]] = None
-  ): AgentConfig = {
+      responseSchema: Option[ResponseSchema[_]] = None,
+      afterToolCall: Option[ToolCallRecord => F[Unit]] = None
+  ): AgentConfig[F] = {
     val finalSystemPrompt = systemPrompt.orElse(Some(buildSystemPrompt(maxIterations)))
-    new AgentConfig(maxIterations, finalSystemPrompt, userTools, exceptionHandler, responseSchema)
+    new AgentConfig[F](maxIterations, finalSystemPrompt, userTools, exceptionHandler, responseSchema, afterToolCall)
   }
 
   private def buildSystemPrompt(maxIterations: Int): String =

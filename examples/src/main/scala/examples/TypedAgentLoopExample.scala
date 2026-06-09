@@ -5,6 +5,7 @@ import sttp.ai.core.json.SnakePickle
 import sttp.ai.openai.OpenAI
 import sttp.ai.openai.agent.OpenAIAgent
 import sttp.client4.DefaultSyncBackend
+import sttp.shared.Identity
 import sttp.tapir.Schema
 
 object TypedAgentLoopExample extends App {
@@ -31,7 +32,7 @@ object TypedAgentLoopExample extends App {
     s"${input.a} ${input.operation} ${input.b} = $result"
   }
 
-  val cfg = AgentConfig(
+  val cfg = AgentConfig[Identity](
     maxIterations = 8,
     userTools = Seq(weatherTool, calculatorTool),
     responseSchema = Some(ResponseSchema.derived[TripSummary]())

@@ -145,7 +145,7 @@ object ClaudeAgent {
   def apply[F[_]](
       claudeConfig: ClaudeConfig,
       modelName: String,
-      config: AgentConfig
+      config: AgentConfig[F]
   )(implicit monad: sttp.monad.MonadError[F]): Agent[F] = {
     val backend = new ClaudeAgentBackend[F](
       ClaudeClient(claudeConfig),
@@ -160,7 +160,7 @@ object ClaudeAgent {
   def apply[F[_]](
       client: ClaudeClient,
       modelName: String,
-      config: AgentConfig
+      config: AgentConfig[F]
   )(implicit monad: sttp.monad.MonadError[F]): Agent[F] = {
     val backend = new ClaudeAgentBackend[F](
       client,
@@ -175,12 +175,12 @@ object ClaudeAgent {
   def synchronous(
       claudeConfig: ClaudeConfig,
       modelName: String,
-      config: AgentConfig
+      config: AgentConfig[Identity]
   ): Agent[Identity] = apply(claudeConfig, modelName, config)(IdentityMonad)
 
   def synchronous(
       client: ClaudeClient,
       modelName: String,
-      config: AgentConfig
+      config: AgentConfig[Identity]
   ): Agent[Identity] = apply(client, modelName, config)(IdentityMonad)
 }

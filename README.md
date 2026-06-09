@@ -677,6 +677,7 @@ import sttp.ai.core.json.SnakePickle
 import sttp.ai.openai.OpenAI
 import sttp.ai.openai.agent.OpenAIAgent
 import sttp.client4.DefaultSyncBackend
+import sttp.shared.Identity
 import sttp.tapir.Schema
 
 object BasicExample extends App {
@@ -689,7 +690,7 @@ object BasicExample extends App {
     s"The weather in ${input.location} is 22°C, sunny"
   }
 
-  val config = AgentConfig(
+  val config = AgentConfig[Identity](
     maxIterations = 5,
     userTools = Seq(weatherTool)
   )
@@ -714,14 +715,30 @@ object BasicExample extends App {
 
 #### Agent Configuration
 
+`AgentConfig` is parameterized by the effect type `F` (matching `Agent[F]`); use `AgentConfig[Identity]` for the synchronous clients, or `AgentConfig[IO]` / `AgentConfig[Task]` / etc. for an effect system.
+
 ```scala
-val config = AgentConfig(
+val config = AgentConfig[Identity](
   maxIterations = 10,                              // Max reasoning steps
   systemPrompt = Some("Custom prompt"),            // Optional instructions
   userTools = Seq(tool1, tool2),                   // Your tools
   responseSchema = Some(ResponseSchema.derived[T]) // Optional typed result (see runAs[T] below)
 )
 ```
+
+#### Hooks
+
+If defined, the loop invokes an effectful hook `afterToolCall` once after each tool call, passing the `ToolCallRecord`.
+
+```scala
+val config = AgentConfig[IO](
+  maxIterations = 10,
+  userTools = Seq(tool1, tool2)
+).hookAfterToolCall(call => IO.println(s"[step ${call.iteration}] ${call.toolName} -> ${call.output}"))
+```
+
+`ToolCallRecord` carries `toolName`, `input`, `output` (the successful output, or the error message fed back to the LLM on failure), and `iteration`.
+An error in the hook will interrupt the agent loop.
 
 #### Exception Handling
 
@@ -738,7 +755,7 @@ The `ExceptionHandler` controls how tool execution errors and argument parsing f
 **Default Handler (recommended):**
 
 ```scala
-val config = AgentConfig(
+val config = AgentConfig[Identity](
   maxIterations = 5,
   userTools = Seq(myTool),
   exceptionHandler = ExceptionHandler.default  // This is the default, can be omitted
@@ -752,7 +769,7 @@ The default handler:
 **Send All to LLM:**
 
 ```scala
-val config = AgentConfig(
+val config = AgentConfig[Identity](
   maxIterations = 5,
   userTools = Seq(myTool),
   exceptionHandler = ExceptionHandler.sendAllToLLM
@@ -764,7 +781,7 @@ All errors are converted to messages and sent to the LLM, giving it maximum oppo
 **Propagate All (Strict Mode):**
 
 ```scala
-val config = AgentConfig(
+val config = AgentConfig[Identity](
   maxIterations = 5,
   userTools = Seq(myTool),
   exceptionHandler = ExceptionHandler.propagateAll
@@ -793,7 +810,7 @@ val customHandler = new ExceptionHandler {
     Left(s"Invalid arguments for $toolName - please check the schema")
 }
 
-val config = AgentConfig(
+val config = AgentConfig[Identity](
   maxIterations = 5,
   userTools = Seq(myTool),
   exceptionHandler = customHandler
@@ -860,6 +877,7 @@ import sttp.ai.core.json.SnakePickle
 import sttp.ai.openai.OpenAI
 import sttp.ai.openai.agent.OpenAIAgent
 import sttp.client4.DefaultSyncBackend
+import sttp.shared.Identity
 import sttp.tapir.Schema
 
 case class TripSummary(weather: String, calculation: String, conclusion: String) derives SnakePickle.ReadWriter, Schema
@@ -870,7 +888,7 @@ object TypedAgentExample extends App {
     (input: WeatherInput) => s"The weather in ${input.location} is 22°C, sunny"
   }
 
-  val cfg = AgentConfig(
+  val cfg = AgentConfig[Identity](
     maxIterations = 5,
     userTools = Seq(weatherTool),
     responseSchema = Some(ResponseSchema.derived[TripSummary]())
@@ -926,7 +944,7 @@ import sttp.ai.openai.agent.OpenAIAgent
 
 object CatsEffectExample extends IOApp.Simple {
   def run: IO[Unit] = {
-    val config = AgentConfig(maxIterations = 5, userTools = Seq(weatherTool))
+    val config = AgentConfig[IO](maxIterations = 5, userTools = Seq(weatherTool))
     HttpClientCatsBackend.resource[IO]().use { backend =>
       val agent = OpenAIAgent[IO](OpenAI.fromEnv, "gpt-4o-mini", config)
       agent.run("What's the weather in London?")(backend)
@@ -945,7 +963,7 @@ import sttp.ai.openai.agent.OpenAIAgent
 
 object ZIOExample extends ZIOAppDefault {
   def run = {
-    val config = AgentConfig(maxIterations = 5, userTools = Seq(weatherTool))
+    val config = AgentConfig[Task](maxIterations = 5, userTools = Seq(weatherTool))
     ZIO.scoped {
       for {
         backend <- HttpClientZioBackend.scoped()

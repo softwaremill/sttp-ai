@@ -45,14 +45,14 @@ class AgentSpec extends AnyFlatSpec with Matchers {
     s"Result: ${input.a + input.b}"
   }
 
-  private def createLoop(responses: Seq[AgentResponse], config: AgentConfig): (Agent[Identity], StubAgentBackend) = {
+  private def createLoop(responses: Seq[AgentResponse], config: AgentConfig[Identity]): (Agent[Identity], StubAgentBackend) = {
     val stubBackend = new StubAgentBackend(responses)
     val loop = new Agent[Identity](stubBackend, config)(IdentityMonad)
     (loop, stubBackend)
   }
 
   private def runLoop(responses: Seq[AgentResponse], tools: Seq[AgentTool[_]] = Seq.empty): AgentResult[String] = {
-    val testConfig = AgentConfig(maxIterations = 5, userTools = tools)
+    val testConfig = AgentConfig[Identity](maxIterations = 5, userTools = tools)
     val (loop, _) = createLoop(responses, testConfig)
     loop.run("Test")(backend)
   }
@@ -204,7 +204,7 @@ class AgentSpec extends AnyFlatSpec with Matchers {
       "Dummy tool"
     )((_: DummyInput) => "dummy result")
 
-    val config = AgentConfig(maxIterations = 3, userTools = Seq(dummyTool))
+    val config = AgentConfig[Identity](maxIterations = 3, userTools = Seq(dummyTool))
     val (loop, stubBackend) = createLoop(
       Seq(
         AgentResponse("", Seq(ToolCall(id = "call_1", toolName = "dummy", input = "{}")), StopReason.ToolUse),
@@ -228,7 +228,7 @@ class AgentSpec extends AnyFlatSpec with Matchers {
       "Custom tool"
     )((_: DummyInput) => "result")
 
-    val config = AgentConfig(userTools = Seq(customTool))
+    val config = AgentConfig[Identity](userTools = Seq(customTool))
 
     config.userTools should have size 1
     config.userTools.head.name shouldBe "custom"
@@ -240,7 +240,7 @@ class AgentSpec extends AnyFlatSpec with Matchers {
       "Dummy tool"
     )((_: DummyInput) => "final tool result")
 
-    val config = AgentConfig(maxIterations = 3, userTools = Seq(dummyTool))
+    val config = AgentConfig[Identity](maxIterations = 3, userTools = Seq(dummyTool))
     val (loop, _) = createLoop(
       Seq(
         AgentResponse("First response", Seq(ToolCall(id = "call_1", toolName = "dummy", input = "{}")), StopReason.ToolUse),
@@ -265,7 +265,7 @@ class AgentSpec extends AnyFlatSpec with Matchers {
       throw new java.io.IOException("Network error")
     }
 
-    val config = AgentConfig(
+    val config = AgentConfig[Identity](
       maxIterations = 3,
       userTools = Seq(ioTool),
       exceptionHandler = ExceptionHandler.default
@@ -289,7 +289,7 @@ class AgentSpec extends AnyFlatSpec with Matchers {
       throw new InterruptedException("Thread interrupted")
     }
 
-    val config = AgentConfig(
+    val config = AgentConfig[Identity](
       maxIterations = 3,
       userTools = Seq(interruptedTool),
       exceptionHandler = ExceptionHandler.default
@@ -313,7 +313,7 @@ class AgentSpec extends AnyFlatSpec with Matchers {
       throw new java.io.IOException("Network error")
     }
 
-    val config = AgentConfig(
+    val config = AgentConfig[Identity](
       maxIterations = 3,
       userTools = Seq(ioTool),
       exceptionHandler = ExceptionHandler.sendAllToLLM
@@ -342,7 +342,7 @@ class AgentSpec extends AnyFlatSpec with Matchers {
       throw new RuntimeException("Any error")
     }
 
-    val config = AgentConfig(
+    val config = AgentConfig[Identity](
       maxIterations = 3,
       userTools = Seq(errorTool),
       exceptionHandler = ExceptionHandler.propagateAll
@@ -366,7 +366,7 @@ class AgentSpec extends AnyFlatSpec with Matchers {
       s"Got: ${input.value}"
     }
 
-    val config = AgentConfig(
+    val config = AgentConfig[Identity](
       maxIterations = 3,
       userTools = Seq(numberTool)
     )
@@ -388,7 +388,7 @@ class AgentSpec extends AnyFlatSpec with Matchers {
   }
 
   it should "handle malformed JSON" in {
-    val config = AgentConfig(
+    val config = AgentConfig[Identity](
       maxIterations = 3,
       userTools = Seq(calculatorTool)
     )
@@ -427,7 +427,7 @@ class AgentSpec extends AnyFlatSpec with Matchers {
       throw new IllegalArgumentException("Bad argument")
     }
 
-    val config = AgentConfig(
+    val config = AgentConfig[Identity](
       maxIterations = 3,
       userTools = Seq(errorTool),
       exceptionHandler = customHandler
@@ -453,7 +453,7 @@ class AgentSpec extends AnyFlatSpec with Matchers {
   }
 
   "Agent with responseSchema" should "round-trip the typed payload through the final answer" in {
-    val cfg = AgentConfig(
+    val cfg = AgentConfig[Identity](
       maxIterations = 3,
       responseSchema = Some(ResponseSchema.derived[WeatherSummary]())
     )
@@ -473,7 +473,7 @@ class AgentSpec extends AnyFlatSpec with Matchers {
   }
 
   "Agent.runAs[T]" should "return Right(T) when the model emits a well-formed structured payload" in {
-    val cfg = AgentConfig(
+    val cfg = AgentConfig[Identity](
       maxIterations = 3,
       responseSchema = Some(ResponseSchema.derived[WeatherSummary]())
     )
@@ -493,7 +493,7 @@ class AgentSpec extends AnyFlatSpec with Matchers {
   }
 
   it should "return Left(AgentParseError) preserving the trace when the answer can't be parsed as T" in {
-    val cfg = AgentConfig(
+    val cfg = AgentConfig[Identity](
       maxIterations = 3,
       responseSchema = Some(ResponseSchema.derived[WeatherSummary]())
     )
@@ -547,5 +547,41 @@ class AgentSpec extends AnyFlatSpec with Matchers {
     result.finishReason shouldBe FinishReason.TokenLimit
     result.finalAnswer shouldBe "partial answer"
     result.iterations shouldBe 1
+  }
+
+  "Agent with hooks" should "invoke afterToolCall once per tool call" in {
+    val results = scala.collection.mutable.ListBuffer.empty[String]
+    val config = AgentConfig[Identity](
+      maxIterations = 5,
+      userTools = Seq(calculatorTool),
+      afterToolCall = Some { (r: ToolCallRecord) =>
+        results += r.output.takeWhile(_ != '\n'); ()
+      },
+      exceptionHandler = ExceptionHandler.sendAllToLLM
+    )
+
+    val (loop, _) = createLoop(
+      Seq(
+        AgentResponse(
+          "",
+          Seq(
+            ToolCall(id = "call_1", toolName = "calculator", input = """{"a":5,"b":10}"""),
+            ToolCall(id = "call_2", toolName = "calculator", input = """{"a":"bad","b":"input"}"""),
+            ToolCall(id = "call_3", toolName = "non_existing_tool", input = """{"a":3,"b":7}""")
+          ),
+          StopReason.ToolUse
+        ),
+        AgentResponse("Done", Seq.empty, StopReason.EndTurn)
+      ),
+      config
+    )
+
+    loop.run("Test")(backend)
+
+    results should contain inOrderOnly (
+      "Result: 15.0",
+      "Failed to parse arguments for tool 'calculator': $['a']",
+      "Tool not found: non_existing_tool"
+    )
   }
 }

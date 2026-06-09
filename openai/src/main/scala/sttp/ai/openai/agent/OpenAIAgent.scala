@@ -140,7 +140,7 @@ object OpenAIAgent {
   def apply[F[_]](
       apiKey: String,
       modelName: String,
-      config: AgentConfig
+      config: AgentConfig[F]
   )(implicit monad: sttp.monad.MonadError[F]): Agent[F] = {
     val backend = new OpenAIAgentBackend[F](
       new OpenAI(apiKey),
@@ -155,7 +155,7 @@ object OpenAIAgent {
   def apply[F[_]](
       openAI: OpenAI,
       modelName: String,
-      config: AgentConfig
+      config: AgentConfig[F]
   )(implicit monad: sttp.monad.MonadError[F]): Agent[F] = {
     val backend = new OpenAIAgentBackend[F](
       openAI,
@@ -170,12 +170,12 @@ object OpenAIAgent {
   def synchronous(
       apiKey: String,
       modelName: String,
-      config: AgentConfig
+      config: AgentConfig[Identity]
   ): Agent[Identity] = apply(apiKey, modelName, config)(IdentityMonad)
 
   def synchronous(
       openAI: OpenAI,
       modelName: String,
-      config: AgentConfig
+      config: AgentConfig[Identity]
   ): Agent[Identity] = apply(openAI, modelName, config)(IdentityMonad)
 }
