@@ -661,7 +661,8 @@ Framework for building autonomous AI agents that iteratively solve tasks using t
 **Key Features:**
 
 - Unified API for OpenAI and Claude
-- Type-safe tool definitions with automatic finish mechanism
+- Type-safe tool definitions
+- Type-safe structured output (optionally)
 - Full execution history tracking
 - Support for Identity, cats-effect, ZIO, and other effect systems
 - Easy custom backend implementation
@@ -839,7 +840,7 @@ case class AgentResult[T](
   finalAnswer: T,
   iterations: Int,
   toolCalls: Seq[ToolCallRecord],
-  finishReason: FinishReason  // MaxIterations | NaturalStop | Error
+  finishReason: FinishReason  // MaxIterations | NaturalStop | TokenLimit | Errpr
 )
 ```
 

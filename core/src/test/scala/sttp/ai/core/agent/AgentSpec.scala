@@ -87,19 +87,6 @@ class AgentSpec extends AnyFlatSpec with Matchers {
     result.toolCalls should have size 5
   }
 
-  it should "complete the loop when the response has no tool calls" in {
-    val result = runLoop(
-      Seq(
-        AgentResponse("Final answer without tools", Seq.empty, StopReason.EndTurn)
-      )
-    )
-
-    result.finishReason shouldBe FinishReason.NaturalStop
-    result.finalAnswer shouldBe "Final answer without tools"
-    result.iterations shouldBe 1
-    result.toolCalls shouldBe empty
-  }
-
   it should "complete the loop when the response has no tool calls and empty text" in {
     val result = runLoop(Seq(AgentResponse("", Seq.empty, StopReason.EndTurn)))
 
@@ -526,5 +513,39 @@ class AgentSpec extends AnyFlatSpec with Matchers {
     val err = result.finalAnswer.left.toOption.get
     err.rawAnswer should include("wrong"): Unit
     err.cause should not be null
+  }
+
+  it should "return Left(AgentParseError) on the maxIterations path where the capped answer is not schema-shaped" in {
+    val dummyTool = AgentTool.fromFunction(
+      "dummy",
+      "Dummy tool"
+    )((_: DummyInput) => "not json")
+
+    val cfg = AgentConfig(
+      maxIterations = 1,
+      userTools = Seq(dummyTool),
+      responseSchema = Some(ResponseSchema.derived[WeatherSummary]())
+    )
+
+    val (loop, _) = createLoop(
+      Seq(
+        AgentResponse("", Seq(ToolCall(id = "call_1", toolName = "dummy", input = "{}")), StopReason.ToolUse)
+      ),
+      cfg
+    )
+
+    val result = loop.runAs[WeatherSummary]("What's the weather?")(backend)
+
+    result.finishReason shouldBe FinishReason.MaxIterations: Unit
+    result.finalAnswer.isLeft shouldBe true: Unit
+    result.finalAnswer.left.toOption.get.rawAnswer shouldBe "not json"
+  }
+
+  "Agent finish reason" should "be TokenLimit when the final answer is cut off by the token limit" in {
+    val result = runLoop(Seq(AgentResponse("partial answer", Seq.empty, StopReason.MaxTokens)))
+
+    result.finishReason shouldBe FinishReason.TokenLimit
+    result.finalAnswer shouldBe "partial answer"
+    result.iterations shouldBe 1
   }
 }

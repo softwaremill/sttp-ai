@@ -2,6 +2,10 @@
 
 Date: 2026-01-15
 
+## Status
+
+Superseded by [ADR 0002](0002-terminate-on-no-tool-calls.md).
+
 ## Context
 
 When designing the agent execution loop, we need a reliable and unambiguous way to determine when an agent has finished its work. Two common approaches are used in existing agent frameworks:
