@@ -12,6 +12,7 @@ class Agent[F[_]](
 
   private val toolMap = config.userTools.map(t => t.name -> t).toMap
 
+  private val beforeToolCall: ToolCall => F[Unit] = config.beforeToolCall.getOrElse((_: ToolCall) => monad.unit(()))
   private val afterToolCall: ToolCallRecord => F[Unit] = config.afterToolCall.getOrElse((_: ToolCallRecord) => monad.unit(()))
 
   def run(
@@ -91,10 +92,13 @@ class Agent[F[_]](
     toolCalls match {
       case Nil => monad.unit((history, results))
       case toolCall :: rest =>
-        runToolCall(toolCall, iteration).flatTap(afterToolCall).flatMap { record =>
-          val updatedHistory = history.addToolResult(toolCall.id, record.toolName, record.output)
-          runToolCalls(rest, iteration, updatedHistory, results :+ record)
-        }
+        for {
+          _ <- beforeToolCall(toolCall)
+          result <- runToolCall(toolCall, iteration)
+          _ <- afterToolCall(result)
+          updatedHistory = history.addToolResult(result)
+          acc <- runToolCalls(rest, iteration, updatedHistory, results :+ result)
+        } yield acc
     }
 
   private def runToolCall(
@@ -108,6 +112,7 @@ class Agent[F[_]](
 
     output.map { result =>
       ToolCallRecord(
+        id = toolCall.id,
         toolName = toolCall.toolName,
         input = toolCall.input,
         output = result,

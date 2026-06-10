@@ -521,7 +521,7 @@ class AgentSpec extends AnyFlatSpec with Matchers {
       "Dummy tool"
     )((_: DummyInput) => "not json")
 
-    val cfg = AgentConfig(
+    val cfg = AgentConfig[Identity](
       maxIterations = 1,
       userTools = Seq(dummyTool),
       responseSchema = Some(ResponseSchema.derived[WeatherSummary]())
@@ -550,15 +550,16 @@ class AgentSpec extends AnyFlatSpec with Matchers {
   }
 
   "Agent with hooks" should "invoke afterToolCall once per tool call" in {
-    val results = scala.collection.mutable.ListBuffer.empty[String]
+    val results = scala.collection.mutable.ListBuffer.empty[Any]
     val config = AgentConfig[Identity](
       maxIterations = 5,
       userTools = Seq(calculatorTool),
-      afterToolCall = Some { (r: ToolCallRecord) =>
-        results += r.output.takeWhile(_ != '\n'); ()
-      },
       exceptionHandler = ExceptionHandler.sendAllToLLM
-    )
+    ).hookBeforeToolCall { (c: ToolCall) =>
+      results += c; ()
+    }.hookAfterToolCall { (r: ToolCallRecord) =>
+      results += r; ()
+    }
 
     val (loop, _) = createLoop(
       Seq(
@@ -579,9 +580,12 @@ class AgentSpec extends AnyFlatSpec with Matchers {
     loop.run("Test")(backend)
 
     results should contain inOrderOnly (
-      "Result: 15.0",
-      "Failed to parse arguments for tool 'calculator': $['a']",
-      "Tool not found: non_existing_tool"
+      ToolCall("call_1", "calculator", """{"a":5,"b":10}"""),
+      ToolCallRecord("call_1", "calculator", """{"a":5,"b":10}""", "Result: 15.0", 1),
+      ToolCall("call_2", "calculator", """{"a":"bad","b":"input"}"""),
+      ToolCallRecord("call_2", "calculator", """{"a":"bad","b":"input"}""", "Failed to parse arguments for tool 'calculator': $['a']", 1),
+      ToolCall("call_3", "non_existing_tool", """{"a":3,"b":7}"""),
+      ToolCallRecord("call_3", "non_existing_tool", """{"a":3,"b":7}""", "Tool not found: non_existing_tool", 1)
     )
   }
 }

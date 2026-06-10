@@ -70,7 +70,7 @@ class ConversationHistorySpec extends AnyFlatSpec with Matchers {
 
   "addToolResult" should "add tool result to history" in {
     val history = ConversationHistory.empty
-      .addToolResult("call_1", "calculator", "Result: 42")
+      .addToolResult(ToolCallRecord("call_1", "calculator", "{}", "Result: 42", 1))
 
     history.entries should have size 1
     history.entries.head shouldBe ConversationEntry.ToolResult("call_1", "calculator", "Result: 42")
@@ -80,7 +80,7 @@ class ConversationHistorySpec extends AnyFlatSpec with Matchers {
     val toolCall = ToolCall(id = "call_1", toolName = "calc", input = """{"x":"5"}""")
     val history = ConversationHistory.empty
       .addAssistantResponse("Calculating", Seq(toolCall))
-      .addToolResult("call_1", "calc", "5")
+      .addToolResult(ToolCallRecord("call_1", "calc", """{"x":"5"}""", "5", 1))
 
     history.entries should have size 2
     history.entries(0) shouldBe a[ConversationEntry.AssistantResponse]
@@ -123,8 +123,8 @@ class ConversationHistorySpec extends AnyFlatSpec with Matchers {
     val history = ConversationHistory
       .withInitialPrompt("Calculate 5+10 and get weather")
       .addAssistantResponse("I'll help with that", Seq(toolCall1, toolCall2))
-      .addToolResult("call_1", "calc", "15")
-      .addToolResult("call_2", "weather", "Sunny, 22C")
+      .addToolResult(ToolCallRecord("call_1", "calc", """{"x":"5"}""", "15", 1))
+      .addToolResult(ToolCallRecord("call_2", "weather", """{"city":"Paris"}""", "Sunny, 22C", 1))
       .addIterationMarker(2, 5)
       .addAssistantResponse("The result is 15 and it's sunny in Paris", Seq.empty)
 

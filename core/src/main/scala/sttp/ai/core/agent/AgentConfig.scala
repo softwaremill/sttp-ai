@@ -6,8 +6,12 @@ case class AgentConfig[F[_]] private (
     userTools: Seq[AgentTool[_]],
     exceptionHandler: ExceptionHandler,
     responseSchema: Option[ResponseSchema[_]],
+    beforeToolCall: Option[ToolCall => F[Unit]],
     afterToolCall: Option[ToolCallRecord => F[Unit]]
 ) {
+
+  def hookBeforeToolCall(hook: ToolCall => F[Unit]): AgentConfig[F] =
+    copy(beforeToolCall = Some(hook))
 
   def hookAfterToolCall(hook: ToolCallRecord => F[Unit]): AgentConfig[F] =
     copy(afterToolCall = Some(hook))
@@ -21,10 +25,11 @@ object AgentConfig {
       userTools: Seq[AgentTool[_]] = Seq.empty,
       exceptionHandler: ExceptionHandler = ExceptionHandler.default,
       responseSchema: Option[ResponseSchema[_]] = None,
+      beforeToolCall: Option[ToolCall => F[Unit]] = None,
       afterToolCall: Option[ToolCallRecord => F[Unit]] = None
   ): AgentConfig[F] = {
     val finalSystemPrompt = systemPrompt.orElse(Some(buildSystemPrompt(maxIterations)))
-    new AgentConfig[F](maxIterations, finalSystemPrompt, userTools, exceptionHandler, responseSchema, afterToolCall)
+    new AgentConfig[F](maxIterations, finalSystemPrompt, userTools, exceptionHandler, responseSchema, beforeToolCall, afterToolCall)
   }
 
   private def buildSystemPrompt(maxIterations: Int): String =

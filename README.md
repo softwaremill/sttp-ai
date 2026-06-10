@@ -728,7 +728,24 @@ val config = AgentConfig[Identity](
 
 #### Hooks
 
-If defined, the loop invokes an effectful hook `afterToolCall` once after each tool call, passing the `ToolCallRecord`.
+The loop can invoke optional effectful hooks around each tool call. Both run inside the agent loop, so an error in either hook interrupts the run.
+
+##### beforeToolCall
+
+If defined, the loop invokes `beforeToolCall` once before each tool call is executed, passing the pending `ToolCall`.
+
+```scala
+val config = AgentConfig[IO](
+  maxIterations = 10,
+  userTools = Seq(tool1, tool2)
+).hookBeforeToolCall(call => IO.println(s"calling ${call.toolName}(${call.input})"))
+```
+
+`ToolCall` carries `id`, `toolName`, and `input`.
+
+##### afterToolCall
+
+If defined, the loop invokes `afterToolCall` once after each tool call, passing the `ToolCallRecord`.
 
 ```scala
 val config = AgentConfig[IO](
@@ -737,8 +754,7 @@ val config = AgentConfig[IO](
 ).hookAfterToolCall(call => IO.println(s"[step ${call.iteration}] ${call.toolName} -> ${call.output}"))
 ```
 
-`ToolCallRecord` carries `toolName`, `input`, `output` (the successful output, or the error message fed back to the LLM on failure), and `iteration`.
-An error in the hook will interrupt the agent loop.
+`ToolCallRecord` carries `id`, `toolName`, `input`, `output` (the successful output, or the error message fed back to the LLM on failure), and `iteration`.
 
 #### Exception Handling
 
