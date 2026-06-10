@@ -35,7 +35,7 @@ object TypedAgentLoopExample extends App {
     maxIterations = 8,
     userTools = Seq(weatherTool, calculatorTool),
     responseSchema = Some(ResponseSchema.derived[TripSummary]())
-  ).toOption.get
+  )
 
   val openai = OpenAI.fromEnv
   val backend = DefaultSyncBackend()

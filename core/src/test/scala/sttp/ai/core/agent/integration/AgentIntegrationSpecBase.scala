@@ -1,5 +1,6 @@
 package sttp.ai.core.agent.integration
 
+import org.scalactic.{source, Prettifier}
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
 import sttp.ai.core.agent._
@@ -29,7 +30,7 @@ abstract class AgentIntegrationSpecBase extends AnyFlatSpec with Matchers {
 
   protected val calculatorTool: AgentTool[CalculatorInput] = AgentTool.fromFunction(
     "calculator",
-    "Perform basic arithmetic operations"
+    "Perform basic arithmetic operations (one of: `add`, `subtract`, `multiply`, `divide`)"
   ) { (input: CalculatorInput) =>
     val result = input.operation match {
       case "add"      => input.a + input.b
@@ -52,20 +53,23 @@ abstract class AgentIntegrationSpecBase extends AnyFlatSpec with Matchers {
     s"The weather in ${input.city} is sunny, 22°C"
   }
 
-  protected def assertContainsAny(text: String, options: String*): Unit = {
+  protected def assertContainsAny(text: String, options: String*)(implicit prettifier: Prettifier, pos: source.Position): Unit = {
     val lowerText = text.toLowerCase
     val found = options.exists(opt => lowerText.contains(opt.toLowerCase))
     assert(found, s"Text should contain at least one of: ${options.mkString(", ")}\nActual text: $text")
   }
 
-  protected def assertContainsAll(text: String, required: String*): Unit = {
+  protected def assertContainsAll(text: String, required: String*)(implicit prettifier: Prettifier, pos: source.Position): Unit = {
     val lowerText = text.toLowerCase
     required.foreach { req =>
       assert(lowerText.contains(req.toLowerCase), s"Text should contain '$req'\nActual text: $text")
     }
   }
 
-  protected def assertToolCalled(result: AgentResult[String], toolName: String, minTimes: Int = 1): Unit = {
+  protected def assertToolCalled(result: AgentResult[String], toolName: String, minTimes: Int = 1)(implicit
+      prettifier: Prettifier,
+      pos: source.Position
+  ): Unit = {
     val callCount = result.toolCalls.count(_.toolName == toolName)
     assert(
       callCount >= minTimes,
@@ -73,7 +77,7 @@ abstract class AgentIntegrationSpecBase extends AnyFlatSpec with Matchers {
     )
   }
 
-  protected def assertMinIterations(result: AgentResult[String], min: Int): Unit =
+  protected def assertMinIterations(result: AgentResult[String], min: Int)(implicit prettifier: Prettifier, pos: source.Position): Unit =
     assert(
       result.iterations >= min,
       s"Should have at least $min iterations, but had ${result.iterations}"
@@ -98,13 +102,13 @@ abstract class AgentIntegrationSpecBase extends AnyFlatSpec with Matchers {
           |1. First, calculate 15 multiplied by 3
           |2. Then, add 20 to that result
           |3. Finally, multiply the result by 2
-          |Please use the calculator tool for each step and show your work. Return number""".stripMargin
+          |Please use the calculator tool for each step and show your work. Return the final result""".stripMargin
     )(backend)
 
     assertMinIterations(result, 3)
     assertToolCalled(result, "calculator", minTimes = 3)
     assertContainsAny(result.finalAnswer, "130", "one hundred thirty", "hundred and thirty")
-    result.finishReason should (be(FinishReason.ToolFinish) or be(FinishReason.NaturalStop))
+    result.finishReason shouldBe FinishReason.NaturalStop
     ()
   }
 
@@ -124,8 +128,8 @@ abstract class AgentIntegrationSpecBase extends AnyFlatSpec with Matchers {
     val result = agent.run(
       """Please do the following:
           |1. Calculate 10 plus 15
-          |2. If the result is greater than 20, multiply it by 2, otherwise add 5
-          |3. Then tell me the weather in Tokyo""".stripMargin
+          |2. If the result of the addition is greater than 20, multiply it by 2, otherwise add 5
+          |3. Then return your final response containing the result of the calculation as well as the weather in Tokyo""".stripMargin
     )(backend)
 
     assertMinIterations(result, 2)
@@ -174,7 +178,7 @@ abstract class AgentIntegrationSpecBase extends AnyFlatSpec with Matchers {
         "What's the weather in Paris? Also, what is 15 multiplied by 3? Then summarise both into the structured response."
       )(backend)
 
-      result.finishReason shouldBe FinishReason.ToolFinish: Unit
+      result.finishReason shouldBe FinishReason.NaturalStop: Unit
       result.finalAnswer.isRight shouldBe true: Unit
       val summary = result.finalAnswer.toOption.get
       summary.weather should not be empty: Unit

@@ -9,8 +9,7 @@ class Agent[F[_]](
     config: AgentConfig
 )(implicit monad: MonadError[F]) {
 
-  private val allTools = config.userTools ++ AgentConfig.systemTools(config)
-  private val toolMap = allTools.map(t => t.name -> t).toMap
+  private val toolMap = config.userTools.map(t => t.name -> t).toMap
 
   def run(
       initialPrompt: String
@@ -38,10 +37,25 @@ class Agent[F[_]](
         val response = agentBackend.sendRequest(historyWithMarker, backend)
 
         monad.flatMap(response) { response =>
-          if (response.toolCalls.isEmpty) {
-            // No tool calls - add assistant response to history and continue the loop
-            val updatedHistory = history.addAssistantResponse(response.textContent, response.toolCalls)
-            loop(updatedHistory, iteration + 1, toolCallRecords)
+          if (response.stopReason == StopReason.MaxTokens) {
+            monad.unit(
+              AgentResult(
+                finalAnswer = response.textContent,
+                iterations = iteration + 1,
+                toolCalls = toolCallRecords,
+                finishReason = FinishReason.TokenLimit
+              )
+            )
+          } else if (response.toolCalls.isEmpty) {
+            // No tool calls - the agent has produced its final answer, so complete the loop.
+            monad.unit(
+              AgentResult(
+                finalAnswer = response.textContent,
+                iterations = iteration + 1,
+                toolCalls = toolCallRecords,
+                finishReason = FinishReason.NaturalStop
+              )
+            )
           } else {
             val updatedHistory = history.addAssistantResponse(response.textContent, response.toolCalls)
 
@@ -67,28 +81,11 @@ class Agent[F[_]](
               (toolCall, result, record)
             }
 
-            val finishToolResult = toolResults.find { case (toolCall, _, _) =>
-              toolCall.toolName == FinishTool.ToolName
+            val historyWithResults = toolResults.foldLeft(updatedHistory) { case (hist, (toolCall, result, _)) =>
+              hist.addToolResult(toolCall.id, toolCall.toolName, result)
             }
 
-            finishToolResult match {
-              case Some((_, result, _)) =>
-                monad.unit(
-                  AgentResult(
-                    finalAnswer = result,
-                    iterations = iteration + 1,
-                    toolCalls = toolCallRecords ++ toolResults.map(_._3),
-                    finishReason = FinishReason.ToolFinish
-                  )
-                )
-
-              case None =>
-                val historyWithResults = toolResults.foldLeft(updatedHistory) { case (hist, (toolCall, result, _)) =>
-                  hist.addToolResult(toolCall.id, toolCall.toolName, result)
-                }
-
-                loop(historyWithResults, iteration + 1, toolCallRecords ++ toolResults.map(_._3))
-            }
+            loop(historyWithResults, iteration + 1, toolCallRecords ++ toolResults.map(_._3))
           }
         }
       }

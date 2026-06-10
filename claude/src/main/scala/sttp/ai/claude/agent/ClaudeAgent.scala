@@ -2,7 +2,7 @@ package sttp.ai.claude.agent
 
 import sttp.ai.claude.ClaudeClient
 import sttp.ai.claude.config.ClaudeConfig
-import sttp.ai.claude.models.{ContentBlock, Message, PropertySchema, Tool, ToolInputSchema}
+import sttp.ai.claude.models.{ContentBlock, Message, OutputConfig, OutputFormat, PropertySchema, Tool, ToolInputSchema}
 import sttp.ai.claude.requests.MessageRequest
 import sttp.ai.core.agent._
 import sttp.apispec.circe._
@@ -16,11 +16,15 @@ private[claude] class ClaudeAgentBackend[F[_]](
     client: ClaudeClient,
     modelName: String,
     val tools: Seq[AgentTool[_]],
-    val systemPrompt: Option[String]
+    val systemPrompt: Option[String],
+    responseSchema: Option[ResponseSchema[_]]
 )(implicit monad: sttp.monad.MonadError[F])
     extends AgentBackend[F] {
 
   private val convertedTools: Seq[Tool] = tools.map(convertTool)
+
+  private val outputConfig: Option[OutputConfig] =
+    responseSchema.map(rs => OutputConfig(format = Some(OutputFormat.JsonSchema(rs.schema))))
 
   private def convertTool(tool: AgentTool[_]): Tool = {
     val schema = tool.jsonSchema
@@ -101,7 +105,8 @@ private[claude] class ClaudeAgentBackend[F[_]](
       messages = messages.toList,
       maxTokens = 4096,
       system = systemPrompt,
-      tools = if (convertedTools.nonEmpty) Some(convertedTools.toList) else None
+      tools = if (convertedTools.nonEmpty) Some(convertedTools.toList) else None,
+      outputConfig = outputConfig
     )
 
     monad.flatMap(monad.map(client.createMessage(request).send(backend))(_.body)) {
@@ -142,12 +147,12 @@ object ClaudeAgent {
       modelName: String,
       config: AgentConfig
   )(implicit monad: sttp.monad.MonadError[F]): Agent[F] = {
-    val allTools = config.userTools ++ AgentConfig.systemTools(config)
     val backend = new ClaudeAgentBackend[F](
       ClaudeClient(claudeConfig),
       modelName,
-      allTools,
-      config.systemPrompt
+      config.userTools,
+      config.systemPrompt,
+      config.responseSchema
     )
     Agent(backend, config)
   }
@@ -157,12 +162,12 @@ object ClaudeAgent {
       modelName: String,
       config: AgentConfig
   )(implicit monad: sttp.monad.MonadError[F]): Agent[F] = {
-    val allTools = config.userTools ++ AgentConfig.systemTools(config)
     val backend = new ClaudeAgentBackend[F](
       client,
       modelName,
-      allTools,
-      config.systemPrompt
+      config.userTools,
+      config.systemPrompt,
+      config.responseSchema
     )
     Agent(backend, config)
   }

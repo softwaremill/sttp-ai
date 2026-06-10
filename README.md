@@ -661,7 +661,8 @@ Framework for building autonomous AI agents that iteratively solve tasks using t
 **Key Features:**
 
 - Unified API for OpenAI and Claude
-- Type-safe tool definitions with automatic finish mechanism
+- Type-safe tool definitions
+- Type-safe structured output (optionally)
 - Full execution history tracking
 - Support for Identity, cats-effect, ZIO, and other effect systems
 - Easy custom backend implementation
@@ -688,26 +689,20 @@ object BasicExample extends App {
     s"The weather in ${input.location} is 22°C, sunny"
   }
 
-  val configResult = AgentConfig(
+  val config = AgentConfig(
     maxIterations = 5,
     userTools = Seq(weatherTool)
   )
 
   val backend = DefaultSyncBackend()
-  try
-    configResult match {
-      case Right(config) =>
-        val agent = OpenAIAgent.synchronous(OpenAI.fromEnv, "gpt-4o-mini", config)
+  try {
+    val agent = OpenAIAgent.synchronous(OpenAI.fromEnv, "gpt-4o-mini", config)
 
-        val result = agent.run("What's the weather in Paris?")(backend)
+    val result = agent.run("What's the weather in Paris?")(backend)
 
-        println(s"Answer: ${result.finalAnswer}")
-        println(s"Iterations: ${result.iterations}")
-
-      case Left(error) =>
-        println(s"Configuration error: $error")
-    }
-  finally backend.close()
+    println(s"Answer: ${result.finalAnswer}")
+    println(s"Iterations: ${result.iterations}")
+  } finally backend.close()
 }
 ```
 
@@ -727,8 +722,6 @@ val config = AgentConfig(
   responseSchema = Some(ResponseSchema.derived[T]) // Optional typed result (see runAs[T] below)
 )
 ```
-
-Returns `Either[String, AgentConfig]` to validate against reserved tool names like `finish`.
 
 #### Exception Handling
 
@@ -840,10 +833,6 @@ val calculatorTool = AgentTool.fromFunction(
 
 The `derives SnakePickle.ReadWriter, Schema` clause automatically generates the necessary serialization and schema information for the tool.
 
-**Built-in `finish` Tool:**
-
-The framework automatically provides a `finish` tool that agents call to terminate execution. Reserved name, cannot be overridden.
-
 #### Agent Result
 
 ```scala
@@ -851,7 +840,7 @@ case class AgentResult[T](
   finalAnswer: T,
   iterations: Int,
   toolCalls: Seq[ToolCallRecord],
-  finishReason: FinishReason  // MaxIterations | ToolFinish | NaturalStop | Error
+  finishReason: FinishReason  // MaxIterations | NaturalStop | TokenLimit | Errpr
 )
 ```
 
@@ -859,7 +848,7 @@ case class AgentResult[T](
 
 #### Typed responses with `runAs[T]`
 
-Set `responseSchema` on `AgentConfig` and use `runAs[T]` to receive a parsed Scala value as the agent's final answer. The model is constrained — through the `finish` tool's input schema, derived from `T` — to call `finish(...)` with a JSON payload matching the case class. The agent's final answer is then parsed back into `T` via uPickle.
+Set `responseSchema` on `AgentConfig` and use `runAs[T]` to receive a parsed Scala value as the agent's final answer. The response schema, derived from `T`, is sent to the model to define the structured output of the agent's final answer. The answer is then parsed back into `T` via uPickle.
 
 On parse failure the iteration trace is preserved: `finalAnswer` is `Left(AgentParseError)` rather than a thrown exception.
 
@@ -885,7 +874,7 @@ object TypedAgentExample extends App {
     maxIterations = 5,
     userTools = Seq(weatherTool),
     responseSchema = Some(ResponseSchema.derived[TripSummary]())
-  ).toOption.get
+  )
 
   val backend = DefaultSyncBackend()
   try {
@@ -936,16 +925,14 @@ import sttp.client4.httpclient.cats.HttpClientCatsBackend
 import sttp.ai.openai.agent.OpenAIAgent
 
 object CatsEffectExample extends IOApp.Simple {
-  def run: IO[Unit] =
-    AgentConfig(maxIterations = 5, userTools = Seq(weatherTool)) match {
-      case Right(config) =>
-        HttpClientCatsBackend.resource[IO]().use { backend =>
-          val agent = OpenAIAgent[IO](OpenAI.fromEnv, "gpt-4o-mini", config)
-          agent.run("What's the weather in London?")(backend)
-            .flatMap(r => IO.println(s"Answer: ${r.finalAnswer}"))
-        }
-      case Left(error) => IO.println(s"Config error: $error")
+  def run: IO[Unit] = {
+    val config = AgentConfig(maxIterations = 5, userTools = Seq(weatherTool))
+    HttpClientCatsBackend.resource[IO]().use { backend =>
+      val agent = OpenAIAgent[IO](OpenAI.fromEnv, "gpt-4o-mini", config)
+      agent.run("What's the weather in London?")(backend)
+        .flatMap(r => IO.println(s"Answer: ${r.finalAnswer}"))
     }
+  }
 }
 ```
 
@@ -957,19 +944,17 @@ import sttp.client4.httpclient.zio.HttpClientZioBackend
 import sttp.ai.openai.agent.OpenAIAgent
 
 object ZIOExample extends ZIOAppDefault {
-  def run =
-    AgentConfig(maxIterations = 5, userTools = Seq(weatherTool)) match {
-      case Right(config) =>
-        ZIO.scoped {
-          for {
-            backend <- HttpClientZioBackend.scoped()
-            agent = OpenAIAgent[Task](OpenAI.fromEnv, "gpt-4o-mini", config)
-            result <- agent.run("What's the weather in London?")(backend)
-            _ <- Console.printLine(s"Answer: ${result.finalAnswer}")
-          } yield ()
-        }
-      case Left(error) => Console.printLine(s"Config error: $error")
+  def run = {
+    val config = AgentConfig(maxIterations = 5, userTools = Seq(weatherTool))
+    ZIO.scoped {
+      for {
+        backend <- HttpClientZioBackend.scoped()
+        agent = OpenAIAgent[Task](OpenAI.fromEnv, "gpt-4o-mini", config)
+        result <- agent.run("What's the weather in London?")(backend)
+        _ <- Console.printLine(s"Answer: ${result.finalAnswer}")
+      } yield ()
     }
+  }
 }
 ```
 
