@@ -28,3 +28,6 @@ metals.sbt
 
 # Claude Code
 .claude/settings.local.json
+
+.orca
+.devcontainer
