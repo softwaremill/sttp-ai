@@ -57,14 +57,27 @@ object SttpUpickleApiExtension extends SttpUpickleApi with ResponseHandlers[Open
       }
       .showAs("either(as error, as string)")
 
+  /** Max number of characters of a raw error body kept as the fallback message when it can't be parsed as a standard OpenAI error. */
+  private val MaxRawErrorBodyLength = 500
+
   private def httpToOpenAIError(he: UnexpectedStatusCode[String]): OpenAIException = {
+    // Fallback for bodies that aren't the standard {"error": {...}} OpenAI shape (e.g. Azure's {"statusCode":...,"message":...},
+    // a non-object JSON root, or non-JSON): expose a truncated raw body and the status code rather than throwing.
+    val fallback = (Some(he.body.take(MaxRawErrorBodyLength)), None, None, Some(he.response.code.toString))
+
     val (message, tpe, param, code) =
-      try {
-        val errorMessageBody = upickleApi.read[ujson.Value](he.body).apply("error")
-        val error = upickleApi.read[Error](errorMessageBody)
-        (error.message, error.`type`, error.param, error.code)
-      } catch {
-        case _: ujson.ParseException => (None, None, None, None)
+      try
+        upickleApi
+          .read[ujson.Value](he.body)
+          .objOpt
+          .flatMap(_.get("error")) match {
+          case Some(errorNode) =>
+            val error = upickleApi.read[Error](errorNode)
+            (error.message, error.`type`, error.param, error.code)
+          case None => fallback
+        }
+      catch {
+        case _: Exception => fallback
       }
 
     he.response.code match {
