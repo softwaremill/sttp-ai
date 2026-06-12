@@ -1628,31 +1628,34 @@ object OpenAI {
 }
 
 private class OpenAIUris(val baseUri: Uri) {
-  private val imageBase: Uri = uri"$baseUri/images"
-  private val audioBase: Uri = uri"$baseUri/audio/"
+  // Endpoint URIs are built by appending path segments to baseUri (via addPath) rather than string-interpolating the segments
+  // after $baseUri. This keeps any query string present on baseUri (e.g. Azure's ?api-version=...) attached after the full path,
+  // instead of producing .../?api-version=.../chat/completions.
+  private val imageBase: Uri = baseUri.addPath("images")
+  private val audioBase: Uri = baseUri.addPath("audio")
 
-  val ChatCompletions: Uri = uri"$baseUri/chat/completions"
-  val Completions: Uri = uri"$baseUri/completions"
+  val ChatCompletions: Uri = baseUri.addPath("chat", "completions")
+  val Completions: Uri = baseUri.addPath("completions")
   val CreateImage: Uri = imageBase.addPath("generations")
-  val Embeddings: Uri = uri"$baseUri/embeddings"
+  val Embeddings: Uri = baseUri.addPath("embeddings")
   val EditImage: Uri = imageBase.addPath("edits")
-  val Files: Uri = uri"$baseUri/files"
-  val Models: Uri = uri"$baseUri/models"
-  val Moderations: Uri = uri"$baseUri/moderations"
-  val FineTuningJobs: Uri = uri"$baseUri/fine_tuning/jobs"
-  val Batches: Uri = uri"$baseUri/batches"
-  val Uploads: Uri = uri"$baseUri/uploads"
-  val AdminApiKeys: Uri = uri"$baseUri/organization/admin_api_keys"
+  val Files: Uri = baseUri.addPath("files")
+  val Models: Uri = baseUri.addPath("models")
+  val Moderations: Uri = baseUri.addPath("moderations")
+  val FineTuningJobs: Uri = baseUri.addPath("fine_tuning", "jobs")
+  val Batches: Uri = baseUri.addPath("batches")
+  val Uploads: Uri = baseUri.addPath("uploads")
+  val AdminApiKeys: Uri = baseUri.addPath("organization", "admin_api_keys")
   val Transcriptions: Uri = audioBase.addPath("transcriptions")
   val Translations: Uri = audioBase.addPath("translations")
   val Speech: Uri = audioBase.addPath("speech")
   val VariationsImage: Uri = imageBase.addPath("variations")
-  val Responses: Uri = uri"$baseUri/responses"
+  val Responses: Uri = baseUri.addPath("responses")
 
-  val Assistants: Uri = uri"$baseUri/assistants"
-  val Threads: Uri = uri"$baseUri/threads"
-  val ThreadsRuns: Uri = uri"$baseUri/threads/runs"
-  val VectorStores: Uri = uri"$baseUri/vector_stores"
+  val Assistants: Uri = baseUri.addPath("assistants")
+  val Threads: Uri = baseUri.addPath("threads")
+  val ThreadsRuns: Uri = baseUri.addPath("threads", "runs")
+  val VectorStores: Uri = baseUri.addPath("vector_stores")
 
   def upload(uploadId: String): Uri = Uploads.addPath(uploadId)
   def uploadParts(uploadId: String): Uri = upload(uploadId).addPath("parts")

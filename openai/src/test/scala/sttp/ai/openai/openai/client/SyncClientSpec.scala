@@ -3,6 +3,7 @@ package sttp.ai.openai.client
 import org.scalatest.EitherValues
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
+import sttp.client4.ResponseException.UnexpectedStatusCode
 import sttp.client4._
 import sttp.client4.testing.ResponseStub
 import sttp.model.StatusCode
@@ -37,6 +38,103 @@ class SyncClientSpec extends AnyFlatSpec with Matchers with EitherValues {
       caught.param shouldBe expectedError.param: Unit
       caught.`type` shouldBe expectedError.`type`
     }
+
+  "Service response with an Azure-style error body" should "fall back to the raw body and status code" in {
+    // given
+    val azureBody = """{"statusCode":404,"message":"Resource not found"}"""
+    val syncBackendStub = DefaultSyncBackend.stub.whenAnyRequest.thenRespondAdjust(azureBody, NotFound)
+    val syncClient = OpenAISyncClient(authToken = "test-token", backend = syncBackendStub)
+
+    // when
+    val caught = intercept[OpenAIException](syncClient.getModels)
+
+    // then
+    caught.getClass shouldBe classOf[OpenAIException.InvalidRequestException]: Unit
+    caught.message shouldBe Some(azureBody): Unit
+    caught.code shouldBe Some(NotFound.code.toString): Unit
+    caught.param shouldBe None: Unit
+    caught.`type` shouldBe None: Unit
+    caught.cause.getClass shouldBe classOf[UnexpectedStatusCode[String]]
+  }
+
+  "Service response with a non-object JSON root" should "fall back to the raw body and status code" in {
+    // given
+    val arrayBody = """["unexpected","array"]"""
+    val syncBackendStub = DefaultSyncBackend.stub.whenAnyRequest.thenRespondAdjust(arrayBody, BadRequest)
+    val syncClient = OpenAISyncClient(authToken = "test-token", backend = syncBackendStub)
+
+    // when
+    val caught = intercept[OpenAIException](syncClient.getModels)
+
+    // then
+    caught.getClass shouldBe classOf[OpenAIException.InvalidRequestException]: Unit
+    caught.message shouldBe Some(arrayBody): Unit
+    caught.code shouldBe Some(BadRequest.code.toString): Unit
+    caught.param shouldBe None: Unit
+    caught.`type` shouldBe None
+  }
+
+  "Service response with a malformed non-JSON body" should "fall back to the raw body and status code" in {
+    // given
+    val malformedBody = "not even json <html>500</html>"
+    val syncBackendStub = DefaultSyncBackend.stub.whenAnyRequest.thenRespondAdjust(malformedBody, ServiceUnavailable)
+    val syncClient = OpenAISyncClient(authToken = "test-token", backend = syncBackendStub)
+
+    // when
+    val caught = intercept[OpenAIException](syncClient.getModels)
+
+    // then
+    caught.getClass shouldBe classOf[OpenAIException.ServiceUnavailableException]: Unit
+    caught.message shouldBe Some(malformedBody): Unit
+    caught.code shouldBe Some(ServiceUnavailable.code.toString)
+  }
+
+  "Service response with an error body longer than the max" should "truncate the fallback message" in {
+    // given
+    val longBody = "x" * 600
+    val syncBackendStub = DefaultSyncBackend.stub.whenAnyRequest.thenRespondAdjust(longBody, BadRequest)
+    val syncClient = OpenAISyncClient(authToken = "test-token", backend = syncBackendStub)
+
+    // when
+    val caught = intercept[OpenAIException](syncClient.getModels)
+
+    // then
+    caught.message.map(_.length) shouldBe Some(500): Unit
+    caught.message shouldBe Some(longBody.take(500))
+  }
+
+  "Service response with a present but malformed error node" should "fall back to the raw body and status code" in {
+    // given
+    val malformedErrorBody = """{"error":"unstructured string"}"""
+    val syncBackendStub = DefaultSyncBackend.stub.whenAnyRequest.thenRespondAdjust(malformedErrorBody, BadRequest)
+    val syncClient = OpenAISyncClient(authToken = "test-token", backend = syncBackendStub)
+
+    // when
+    val caught = intercept[OpenAIException](syncClient.getModels)
+
+    // then
+    caught.getClass shouldBe classOf[OpenAIException.InvalidRequestException]: Unit
+    caught.message shouldBe Some(malformedErrorBody): Unit
+    caught.code shouldBe Some(BadRequest.code.toString): Unit
+    caught.param shouldBe None: Unit
+    caught.`type` shouldBe None
+  }
+
+  "Service response with the standard OpenAI error body" should "still map to the right subclass with parsed fields" in {
+    // given
+    val syncBackendStub = DefaultSyncBackend.stub.whenAnyRequest.thenRespondAdjust(ErrorFixture.errorResponse, Unauthorized)
+    val syncClient = OpenAISyncClient(authToken = "test-token", backend = syncBackendStub)
+
+    // when
+    val caught = intercept[OpenAIException](syncClient.getModels)
+
+    // then
+    caught.getClass shouldBe classOf[OpenAIException.AuthenticationException]: Unit
+    caught.message shouldBe Some("Some error message."): Unit
+    caught.`type` shouldBe Some("error_type"): Unit
+    caught.param shouldBe None: Unit
+    caught.code shouldBe Some("invalid_api_key")
+  }
 
   "Fetching models with successful response" should "return properly deserialized list of available models" in {
     // given
