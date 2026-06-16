@@ -3,13 +3,17 @@ package sttp.ai.core.agent
 import sttp.ai.core.json.SnakePickle
 import sttp.client4.Backend
 import sttp.monad.MonadError
+import sttp.monad.syntax.MonadErrorOps
 
 class Agent[F[_]](
     agentBackend: AgentBackend[F],
-    config: AgentConfig
+    config: AgentConfig[F]
 )(implicit monad: MonadError[F]) {
 
   private val toolMap = config.userTools.map(t => t.name -> t).toMap
+
+  private val beforeToolCall: ToolCall => F[Unit] = config.beforeToolCall.getOrElse((_: ToolCall) => monad.unit(()))
+  private val afterToolCall: ToolCallRecord => F[Unit] = config.afterToolCall.getOrElse((_: ToolCallRecord) => monad.unit(()))
 
   def run(
       initialPrompt: String
@@ -18,10 +22,9 @@ class Agent[F[_]](
 
     def loop(history: ConversationHistory, iteration: Int, toolCallRecords: Seq[ToolCallRecord]): F[AgentResult[String]] =
       if (iteration >= config.maxIterations) {
-        val finalAnswer = extractFinalAnswer(history)
         monad.unit(
           AgentResult(
-            finalAnswer = finalAnswer,
+            finalAnswer = extractFinalAnswer(history),
             iterations = iteration,
             toolCalls = toolCallRecords,
             finishReason = FinishReason.MaxIterations
@@ -36,7 +39,7 @@ class Agent[F[_]](
 
         val response = agentBackend.sendRequest(historyWithMarker, backend)
 
-        monad.flatMap(response) { response =>
+        response.flatMap { response =>
           if (response.stopReason == StopReason.MaxTokens) {
             monad.unit(
               AgentResult(
@@ -59,33 +62,10 @@ class Agent[F[_]](
           } else {
             val updatedHistory = history.addAssistantResponse(response.textContent, response.toolCalls)
 
-            val toolResults = response.toolCalls.map { toolCall =>
-              val tool = toolMap.get(toolCall.toolName)
-              val result: String = tool match {
-                case Some(t) =>
-                  executeTool(t, toolCall) match {
-                    case Right(successResult) => successResult
-                    case Left(errorForLLM)    => errorForLLM
-                  }
-                case None =>
-                  s"Tool not found: ${toolCall.toolName}"
-              }
-
-              val record = ToolCallRecord(
-                toolName = toolCall.toolName,
-                input = toolCall.input,
-                output = result,
-                iteration = iteration + 1
-              )
-
-              (toolCall, result, record)
+            runToolCalls(response.toolCalls.toList, iteration + 1, updatedHistory, toolCallRecords).flatMap {
+              case (historyWithResults, results) =>
+                loop(historyWithResults, iteration + 1, results)
             }
-
-            val historyWithResults = toolResults.foldLeft(updatedHistory) { case (hist, (toolCall, result, _)) =>
-              hist.addToolResult(toolCall.id, toolCall.toolName, result)
-            }
-
-            loop(historyWithResults, iteration + 1, toolCallRecords ++ toolResults.map(_._3))
           }
         }
       }
@@ -103,37 +83,64 @@ class Agent[F[_]](
       AgentResult(parsed, res.iterations, res.toolCalls, res.finishReason)
     }
 
-  private def executeTool[T](tool: AgentTool[T], toolCall: ToolCall): Either[String, String] = {
-    val parseResult: Either[Exception, T] =
-      try
-        Right(SnakePickle.read[T](toolCall.input)(tool.readWriter))
-      catch {
-        case e: Exception => Left(e)
-      }
+  private def runToolCalls(
+      toolCalls: List[ToolCall],
+      iteration: Int,
+      history: ConversationHistory,
+      results: Seq[ToolCallRecord]
+  ): F[(ConversationHistory, Seq[ToolCallRecord])] =
+    toolCalls match {
+      case Nil => monad.unit((history, results))
+      case toolCall :: rest =>
+        for {
+          _ <- beforeToolCall(toolCall)
+          result <- runToolCall(toolCall, iteration)
+          _ <- afterToolCall(result)
+          updatedHistory = history.addToolResult(result)
+          acc <- runToolCalls(rest, iteration, updatedHistory, results :+ result)
+        } yield acc
+    }
 
-    parseResult match {
-      case Left(parseException) =>
-        config.exceptionHandler.handleParseError(
-          toolCall.toolName,
-          toolCall.input,
-          parseException
-        ) match {
-          case Left(errorMessage) => Left(errorMessage)
-          case Right(ex)          => throw ex
-        }
+  private def runToolCall(
+      toolCall: ToolCall,
+      iteration: Int
+  ): F[ToolCallRecord] = {
+    val output = toolMap.get(toolCall.toolName) match {
+      case Some(tool) => executeTool(tool, toolCall)
+      case None       => monad.unit(s"Tool not found: ${toolCall.toolName}")
+    }
 
-      case Right(typedInput) =>
-        try
-          Right(tool.execute(typedInput))
-        catch {
-          case e: Exception =>
-            config.exceptionHandler.handleToolException(toolCall.toolName, e) match {
-              case Left(errorMessage) => Left(errorMessage)
-              case Right(ex)          => throw ex
-            }
-        }
+    output.map { result =>
+      ToolCallRecord(
+        id = toolCall.id,
+        toolName = toolCall.toolName,
+        input = toolCall.input,
+        output = result,
+        iteration = iteration
+      )
     }
   }
+
+  private def executeTool[T](tool: AgentTool[T], toolCall: ToolCall): F[String] =
+    monad
+      .eval(SnakePickle.read[T](toolCall.input)(tool.readWriter))
+      .map[Either[String, T]](Right(_))
+      .handleError { case parseException: Exception =>
+        config.exceptionHandler.handleParseError(toolCall.toolName, toolCall.input, parseException) match {
+          case Left(errorMessage) => monad.unit(Left(errorMessage))
+          case Right(ex)          => monad.error(ex)
+        }
+      }
+      .flatMap {
+        case Left(errorMessage) => monad.unit(errorMessage)
+        case Right(typedInput) =>
+          monad.eval(tool.execute(typedInput)).handleError { case e: Exception =>
+            config.exceptionHandler.handleToolException(toolCall.toolName, e) match {
+              case Left(errorMessage) => monad.unit(errorMessage)
+              case Right(ex)          => monad.error(ex)
+            }
+          }
+      }
 
   private def extractFinalAnswer(history: ConversationHistory): String =
     history.entries.reverseIterator
@@ -147,7 +154,7 @@ class Agent[F[_]](
 object Agent {
   def apply[F[_]](
       agentBackend: AgentBackend[F],
-      config: AgentConfig
+      config: AgentConfig[F]
   )(implicit monad: MonadError[F]): Agent[F] =
     new Agent[F](agentBackend, config)(monad)
 }

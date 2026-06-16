@@ -39,10 +39,6 @@ object AgentLoopExample extends App {
   val tools = Seq(weatherTool, calculatorTool)
 
   val openai = OpenAI.fromEnv
-  private val config = AgentConfig(
-    maxIterations = 8,
-    userTools = tools
-  )
 
   println("=== Agent Loop Example ===\n")
 
@@ -52,7 +48,11 @@ object AgentLoopExample extends App {
 
   val backend = DefaultSyncBackend()
   try {
-    val agent = OpenAIAgent.synchronous(openai, "gpt-4o-mini", config)
+    val agent = OpenAIAgent
+      .synchronous(openai, "gpt-4o-mini")
+      .maxIterations(8)
+      .tools(tools)
+      .build
 
     val result = agent.run(prompt)(backend)
 

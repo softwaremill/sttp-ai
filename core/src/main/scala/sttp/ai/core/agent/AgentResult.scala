@@ -10,6 +10,7 @@ object FinishReason {
 }
 
 final case class ToolCallRecord(
+    id: String,
     toolName: String,
     input: String,
     output: String,

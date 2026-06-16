@@ -689,14 +689,13 @@ object BasicExample extends App {
     s"The weather in ${input.location} is 22°C, sunny"
   }
 
-  val config = AgentConfig(
-    maxIterations = 5,
-    userTools = Seq(weatherTool)
-  )
-
   val backend = DefaultSyncBackend()
   try {
-    val agent = OpenAIAgent.synchronous(OpenAI.fromEnv, "gpt-4o-mini", config)
+    val agent = OpenAIAgent
+      .synchronous(OpenAI.fromEnv, "gpt-4o-mini")
+      .maxIterations(5)
+      .tools(weatherTool)
+      .build
 
     val result = agent.run("What's the weather in Paris?")(backend)
 
@@ -706,22 +705,57 @@ object BasicExample extends App {
 }
 ```
 
-**For Claude:** Use `ClaudeAgent.synchronous(ClaudeConfig.fromEnv, "claude-3-haiku-20240307", config)` instead.
+**For Claude:** Use `ClaudeAgent.synchronous(ClaudeConfig.fromEnv, "claude-3-haiku-20240307")` instead.
 
-**For effect systems:** use `OpenAIAgent.apply[F]` and `ClaudeAgent.apply[F]`.
+**For effect systems:** use `OpenAIAgent.builder[F]` / `ClaudeAgent.builder[F]` (e.g. `builder[IO]`), then add configuration and `.build`.
 
 ### Core Components
 
 #### Agent Configuration
 
+Configure the agent with the fluent builder. Use `OpenAIAgent.builder[F]` / `ClaudeAgent.builder[F]` for an effect system (e.g. `builder[IO]`), or `synchronous(...)` for the blocking `Identity` clients:
+
 ```scala
-val config = AgentConfig(
-  maxIterations = 10,                              // Max reasoning steps
-  systemPrompt = Some("Custom prompt"),            // Optional instructions
-  userTools = Seq(tool1, tool2),                   // Your tools
-  responseSchema = Some(ResponseSchema.derived[T]) // Optional typed result (see runAs[T] below)
-)
+val agent = OpenAIAgent
+  .synchronous(OpenAI.fromEnv, "gpt-4o-mini")
+  .maxIterations(10)                               // Max reasoning steps
+  .systemPrompt("Custom prompt")                   // Optional instructions
+  .tools(tool1, tool2)                             // Your tools
+  .deriveResponseSchema[T]                          // Optional typed result (see runAs[T] below)
+  .build
 ```
+
+#### Hooks
+
+The loop can invoke optional effectful hooks around each tool call. Both run inside the agent loop, so an error in either hook interrupts the run.
+
+##### beforeToolCall
+
+If defined, the loop invokes `beforeToolCall` once before each tool call is executed, passing the pending `ToolCall`.
+
+```scala
+val agent = OpenAIAgent.builder[IO](OpenAI.fromEnv, "gpt-4o-mini")
+  .maxIterations(10)
+  .tools(tool1, tool2)
+  .hookBeforeToolCall(call => IO.println(s"calling ${call.toolName}(${call.input})"))
+  .build
+```
+
+`ToolCall` carries `id`, `toolName`, and `input`.
+
+##### afterToolCall
+
+If defined, the loop invokes `afterToolCall` once after each tool call, passing the `ToolCallRecord`.
+
+```scala
+val agent = OpenAIAgent.builder[IO](OpenAI.fromEnv, "gpt-4o-mini")
+  .maxIterations(10)
+  .tools(tool1, tool2)
+  .hookAfterToolCall(call => IO.println(s"[step ${call.iteration}] ${call.toolName} -> ${call.output}"))
+  .build
+```
+
+`ToolCallRecord` carries `id`, `toolName`, `input`, `output` (the successful output, or the error message fed back to the LLM on failure), and `iteration`.
 
 #### Exception Handling
 
@@ -738,11 +772,12 @@ The `ExceptionHandler` controls how tool execution errors and argument parsing f
 **Default Handler (recommended):**
 
 ```scala
-val config = AgentConfig(
-  maxIterations = 5,
-  userTools = Seq(myTool),
-  exceptionHandler = ExceptionHandler.default  // This is the default, can be omitted
-)
+val agent = OpenAIAgent
+  .synchronous(OpenAI.fromEnv, "gpt-4o-mini")
+  .maxIterations(5)
+  .tools(myTool)
+  .exceptionHandler(ExceptionHandler.default) // This is the default, can be omitted
+  .build
 ```
 
 The default handler:
@@ -752,11 +787,12 @@ The default handler:
 **Send All to LLM:**
 
 ```scala
-val config = AgentConfig(
-  maxIterations = 5,
-  userTools = Seq(myTool),
-  exceptionHandler = ExceptionHandler.sendAllToLLM
-)
+val agent = OpenAIAgent
+  .synchronous(OpenAI.fromEnv, "gpt-4o-mini")
+  .maxIterations(5)
+  .tools(myTool)
+  .exceptionHandler(ExceptionHandler.sendAllToLLM)
+  .build
 ```
 
 All errors are converted to messages and sent to the LLM, giving it maximum opportunity to recover.
@@ -764,11 +800,12 @@ All errors are converted to messages and sent to the LLM, giving it maximum oppo
 **Propagate All (Strict Mode):**
 
 ```scala
-val config = AgentConfig(
-  maxIterations = 5,
-  userTools = Seq(myTool),
-  exceptionHandler = ExceptionHandler.propagateAll
-)
+val agent = OpenAIAgent
+  .synchronous(OpenAI.fromEnv, "gpt-4o-mini")
+  .maxIterations(5)
+  .tools(myTool)
+  .exceptionHandler(ExceptionHandler.propagateAll)
+  .build
 ```
 
 All errors immediately terminate the agent loop by propagating the exception. Use this for strict error handling where any failure should stop execution.
@@ -793,11 +830,12 @@ val customHandler = new ExceptionHandler {
     Left(s"Invalid arguments for $toolName - please check the schema")
 }
 
-val config = AgentConfig(
-  maxIterations = 5,
-  userTools = Seq(myTool),
-  exceptionHandler = customHandler
-)
+val agent = OpenAIAgent
+  .synchronous(OpenAI.fromEnv, "gpt-4o-mini")
+  .maxIterations(5)
+  .tools(myTool)
+  .exceptionHandler(customHandler)
+  .build
 ```
 
 Return `Left(message)` to send the error to the LLM and continue the loop, or `Right(exception)` to propagate and terminate.
@@ -870,15 +908,14 @@ object TypedAgentExample extends App {
     (input: WeatherInput) => s"The weather in ${input.location} is 22°C, sunny"
   }
 
-  val cfg = AgentConfig(
-    maxIterations = 5,
-    userTools = Seq(weatherTool),
-    responseSchema = Some(ResponseSchema.derived[TripSummary]())
-  )
-
   val backend = DefaultSyncBackend()
   try {
-    val agent = OpenAIAgent.synchronous(OpenAI.fromEnv, "gpt-4o-mini", cfg)
+    val agent = OpenAIAgent
+      .synchronous(OpenAI.fromEnv, "gpt-4o-mini")
+      .maxIterations(5)
+      .tools(weatherTool)
+      .deriveResponseSchema[TripSummary]
+      .build
     agent.runAs[TripSummary]("What's the weather in Paris?")(backend).finalAnswer match {
       case Right(summary) => println(s"Weather: ${summary.weather}")
       case Left(err)      => println(s"Parse failed: ${err.cause.getMessage}; raw=${err.rawAnswer}")
@@ -926,9 +963,8 @@ import sttp.ai.openai.agent.OpenAIAgent
 
 object CatsEffectExample extends IOApp.Simple {
   def run: IO[Unit] = {
-    val config = AgentConfig(maxIterations = 5, userTools = Seq(weatherTool))
+    val agent = OpenAIAgent.builder[IO](OpenAI.fromEnv, "gpt-4o-mini").maxIterations(5).tools(weatherTool).build
     HttpClientCatsBackend.resource[IO]().use { backend =>
-      val agent = OpenAIAgent[IO](OpenAI.fromEnv, "gpt-4o-mini", config)
       agent.run("What's the weather in London?")(backend)
         .flatMap(r => IO.println(s"Answer: ${r.finalAnswer}"))
     }
@@ -945,11 +981,10 @@ import sttp.ai.openai.agent.OpenAIAgent
 
 object ZIOExample extends ZIOAppDefault {
   def run = {
-    val config = AgentConfig(maxIterations = 5, userTools = Seq(weatherTool))
+    val agent = OpenAIAgent.builder[Task](OpenAI.fromEnv, "gpt-4o-mini").maxIterations(5).tools(weatherTool).build
     ZIO.scoped {
       for {
         backend <- HttpClientZioBackend.scoped()
-        agent = OpenAIAgent[Task](OpenAI.fromEnv, "gpt-4o-mini", config)
         result <- agent.run("What's the weather in London?")(backend)
         _ <- Console.printLine(s"Answer: ${result.finalAnswer}")
       } yield ()

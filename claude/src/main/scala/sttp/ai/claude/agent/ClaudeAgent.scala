@@ -142,45 +142,26 @@ private[claude] class ClaudeAgentBackend[F[_]](
 }
 
 object ClaudeAgent {
-  def apply[F[_]](
-      claudeConfig: ClaudeConfig,
-      modelName: String,
-      config: AgentConfig
-  )(implicit monad: sttp.monad.MonadError[F]): Agent[F] = {
-    val backend = new ClaudeAgentBackend[F](
-      ClaudeClient(claudeConfig),
-      modelName,
-      config.userTools,
-      config.systemPrompt,
-      config.responseSchema
-    )
-    Agent(backend, config)
-  }
 
-  def apply[F[_]](
+  def builder[F[_]](
+      claudeConfig: ClaudeConfig,
+      modelName: String
+  )(implicit monad: sttp.monad.MonadError[F]): AgentBuilder[F] =
+    builder(ClaudeClient(claudeConfig), modelName)
+
+  def builder[F[_]](
       client: ClaudeClient,
-      modelName: String,
-      config: AgentConfig
-  )(implicit monad: sttp.monad.MonadError[F]): Agent[F] = {
-    val backend = new ClaudeAgentBackend[F](
-      client,
-      modelName,
-      config.userTools,
-      config.systemPrompt,
-      config.responseSchema
-    )
-    Agent(backend, config)
-  }
+      modelName: String
+  )(implicit monad: sttp.monad.MonadError[F]): AgentBuilder[F] =
+    AgentBuilder[F](config => new ClaudeAgentBackend[F](client, modelName, config.userTools, config.systemPrompt, config.responseSchema))
 
   def synchronous(
       claudeConfig: ClaudeConfig,
-      modelName: String,
-      config: AgentConfig
-  ): Agent[Identity] = apply(claudeConfig, modelName, config)(IdentityMonad)
+      modelName: String
+  ): AgentBuilder[Identity] = builder[Identity](claudeConfig, modelName)(IdentityMonad)
 
   def synchronous(
       client: ClaudeClient,
-      modelName: String,
-      config: AgentConfig
-  ): Agent[Identity] = apply(client, modelName, config)(IdentityMonad)
+      modelName: String
+  ): AgentBuilder[Identity] = builder[Identity](client, modelName)(IdentityMonad)
 }

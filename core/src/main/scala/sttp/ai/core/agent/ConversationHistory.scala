@@ -22,8 +22,8 @@ case class ConversationHistory(entries: Seq[ConversationEntry]) {
   def addAssistantResponse(content: String, toolCalls: Seq[ToolCall]): ConversationHistory =
     ConversationHistory(entries :+ ConversationEntry.AssistantResponse(content, toolCalls))
 
-  def addToolResult(toolCallId: String, toolName: String, result: String): ConversationHistory =
-    ConversationHistory(entries :+ ConversationEntry.ToolResult(toolCallId, toolName, result))
+  def addToolResult(result: ToolCallRecord): ConversationHistory =
+    ConversationHistory(entries :+ ConversationEntry.ToolResult(result.id, result.toolName, result.output))
 
   def addIterationMarker(currentIteration: Int, maxIterations: Int): ConversationHistory =
     ConversationHistory(entries :+ ConversationEntry.IterationMarker(currentIteration, maxIterations))
