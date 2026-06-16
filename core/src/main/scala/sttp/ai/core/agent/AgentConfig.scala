@@ -1,42 +1,28 @@
 package sttp.ai.core.agent
 
-case class AgentConfig[F[_]] private (
-    maxIterations: Int,
-    systemPrompt: Option[String],
-    userTools: Seq[AgentTool[_]],
-    exceptionHandler: ExceptionHandler,
-    responseSchema: Option[ResponseSchema[_]],
-    beforeToolCall: Option[ToolCall => F[Unit]],
-    afterToolCall: Option[ToolCallRecord => F[Unit]]
+import sttp.ai.core.agent.AgentConfig.SystemPromptParameters
+
+case class AgentConfig[F[_]](
+    maxIterations: Int = 10,
+    systemPromptBuilder: Option[SystemPromptParameters => String] = Some(AgentConfig.buildSystemPrompt),
+    userTools: Seq[AgentTool[_]] = Seq.empty,
+    exceptionHandler: ExceptionHandler = ExceptionHandler.default,
+    responseSchema: Option[ResponseSchema[_]] = None,
+    beforeToolCall: Option[ToolCall => F[Unit]] = None,
+    afterToolCall: Option[ToolCallRecord => F[Unit]] = None
 ) {
-
-  def hookBeforeToolCall(hook: ToolCall => F[Unit]): AgentConfig[F] =
-    copy(beforeToolCall = Some(hook))
-
-  def hookAfterToolCall(hook: ToolCallRecord => F[Unit]): AgentConfig[F] =
-    copy(afterToolCall = Some(hook))
+  val systemPrompt: Option[String] = systemPromptBuilder.map(_.apply(SystemPromptParameters(maxIterations)))
 }
 
 object AgentConfig {
 
-  def apply[F[_]](
-      maxIterations: Int = 10,
-      systemPrompt: Option[String] = None,
-      userTools: Seq[AgentTool[_]] = Seq.empty,
-      exceptionHandler: ExceptionHandler = ExceptionHandler.default,
-      responseSchema: Option[ResponseSchema[_]] = None,
-      beforeToolCall: Option[ToolCall => F[Unit]] = None,
-      afterToolCall: Option[ToolCallRecord => F[Unit]] = None
-  ): AgentConfig[F] = {
-    val finalSystemPrompt = systemPrompt.orElse(Some(buildSystemPrompt(maxIterations)))
-    new AgentConfig[F](maxIterations, finalSystemPrompt, userTools, exceptionHandler, responseSchema, beforeToolCall, afterToolCall)
-  }
+  case class SystemPromptParameters(maxIterations: Int)
 
-  private def buildSystemPrompt(maxIterations: Int): String =
+  private def buildSystemPrompt(params: SystemPromptParameters): String =
     s"""You are a simple loop-based agent that solves the user's task step by step using tool calling when appropriate.
          |
          |OPERATING RULES:
-         |1. The agent may run for a maximum of $maxIterations iterations.
+         |1. The agent may run for a maximum of ${params.maxIterations} iterations.
          |2. In each iteration, decide whether to:
          |   - continue reasoning about the task and use one of the available tools to make progress,
          |   - or provide your final answer.

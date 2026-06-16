@@ -137,45 +137,26 @@ private[openai] class OpenAIAgentBackend[F[_]](
 }
 
 object OpenAIAgent {
-  def apply[F[_]](
-      apiKey: String,
-      modelName: String,
-      config: AgentConfig[F]
-  )(implicit monad: sttp.monad.MonadError[F]): Agent[F] = {
-    val backend = new OpenAIAgentBackend[F](
-      new OpenAI(apiKey),
-      modelName,
-      config.userTools,
-      config.systemPrompt,
-      config.responseSchema
-    )
-    Agent(backend, config)
-  }
 
-  def apply[F[_]](
+  def builder[F[_]](
       openAI: OpenAI,
-      modelName: String,
-      config: AgentConfig[F]
-  )(implicit monad: sttp.monad.MonadError[F]): Agent[F] = {
-    val backend = new OpenAIAgentBackend[F](
-      openAI,
-      modelName,
-      config.userTools,
-      config.systemPrompt,
-      config.responseSchema
-    )
-    Agent(backend, config)
-  }
+      modelName: String
+  )(implicit monad: sttp.monad.MonadError[F]): AgentBuilder[F] =
+    AgentBuilder[F](config => new OpenAIAgentBackend[F](openAI, modelName, config.userTools, config.systemPrompt, config.responseSchema))
 
-  def synchronous(
+  def builder[F[_]](
       apiKey: String,
-      modelName: String,
-      config: AgentConfig[Identity]
-  ): Agent[Identity] = apply(apiKey, modelName, config)(IdentityMonad)
+      modelName: String
+  )(implicit monad: sttp.monad.MonadError[F]): AgentBuilder[F] =
+    builder(new OpenAI(apiKey), modelName)
 
   def synchronous(
       openAI: OpenAI,
-      modelName: String,
-      config: AgentConfig[Identity]
-  ): Agent[Identity] = apply(openAI, modelName, config)(IdentityMonad)
+      modelName: String
+  ): AgentBuilder[Identity] = builder[Identity](openAI, modelName)(IdentityMonad)
+
+  def synchronous(
+      apiKey: String,
+      modelName: String
+  ): AgentBuilder[Identity] = builder[Identity](apiKey, modelName)(IdentityMonad)
 }

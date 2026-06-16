@@ -31,11 +31,11 @@ class OpenAIAgentIntegrationSpec extends AgentIntegrationSpecBase {
       responseSchema: ResponseSchema[T]
   ): Agent[Identity] = {
     val openai = OpenAI.fromEnv
-    val agentConfig = AgentConfig[Identity](
-      maxIterations = maxIterations,
-      userTools = tools,
-      responseSchema = Some(responseSchema)
-    )
-    OpenAIAgent.synchronous(openai, "gpt-4o-mini", agentConfig)
+    OpenAIAgent
+      .synchronous(openai, "gpt-4o-mini")
+      .maxIterations(maxIterations)
+      .tools(tools)
+      .responseSchema(responseSchema)
+      .build
   }
 }

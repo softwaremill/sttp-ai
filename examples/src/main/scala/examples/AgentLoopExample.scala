@@ -5,7 +5,6 @@ import sttp.ai.core.json.SnakePickle
 import sttp.ai.openai.OpenAI
 import sttp.ai.openai.agent.OpenAIAgent
 import sttp.client4.DefaultSyncBackend
-import sttp.shared.Identity
 import sttp.tapir.Schema
 
 object AgentLoopExample extends App {
@@ -40,10 +39,6 @@ object AgentLoopExample extends App {
   val tools = Seq(weatherTool, calculatorTool)
 
   val openai = OpenAI.fromEnv
-  private val config = AgentConfig[Identity](
-    maxIterations = 8,
-    userTools = tools
-  )
 
   println("=== Agent Loop Example ===\n")
 
@@ -53,7 +48,11 @@ object AgentLoopExample extends App {
 
   val backend = DefaultSyncBackend()
   try {
-    val agent = OpenAIAgent.synchronous(openai, "gpt-4o-mini", config)
+    val agent = OpenAIAgent
+      .synchronous(openai, "gpt-4o-mini")
+      .maxIterations(8)
+      .tools(tools)
+      .build
 
     val result = agent.run(prompt)(backend)
 

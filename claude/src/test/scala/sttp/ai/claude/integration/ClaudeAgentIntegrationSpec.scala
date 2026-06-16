@@ -31,12 +31,11 @@ class ClaudeAgentIntegrationSpec extends AgentIntegrationSpecBase {
       maxIterations: Int,
       tools: Seq[AgentTool[_]],
       responseSchema: ResponseSchema[T]
-  ): Agent[Identity] = {
-    val agentConfig = AgentConfig[Identity](
-      maxIterations = maxIterations,
-      userTools = tools,
-      responseSchema = Some(responseSchema)
-    )
-    ClaudeAgent.synchronous(ClaudeConfig.fromEnv, "claude-haiku-4-5-20251001", agentConfig)
-  }
+  ): Agent[Identity] =
+    ClaudeAgent
+      .synchronous(ClaudeConfig.fromEnv, "claude-haiku-4-5-20251001")
+      .maxIterations(maxIterations)
+      .tools(tools)
+      .responseSchema(responseSchema)
+      .build
 }
