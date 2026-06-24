@@ -11,7 +11,8 @@ sealed trait ContentBlock {
 
 object ContentBlock {
   @key("text")
-  case class TextContent(text: String, citations: Option[List[Citation]] = None) extends ContentBlock {
+  case class TextContent(text: String, citations: Option[List[Citation]] = None, cacheControl: Option[CacheControl] = None)
+      extends ContentBlock {
     val `type`: String = "text"
   }
 
@@ -21,7 +22,7 @@ object ContentBlock {
   }
 
   @key("image")
-  case class ImageContent(source: ImageSource) extends ContentBlock {
+  case class ImageContent(source: ImageSource, cacheControl: Option[CacheControl] = None) extends ContentBlock {
     val `type`: String = "image"
   }
 
@@ -38,7 +39,8 @@ object ContentBlock {
   case class ToolResultContent(
       toolUseId: String,
       content: String,
-      isError: Option[Boolean] = None
+      isError: Option[Boolean] = None,
+      cacheControl: Option[CacheControl] = None
   ) extends ContentBlock {
     val `type`: String = "tool_result"
   }
@@ -48,7 +50,8 @@ object ContentBlock {
       source: DocumentSource,
       title: Option[String] = None,
       context: Option[String] = None,
-      citations: Option[CitationsConfig] = None
+      citations: Option[CitationsConfig] = None,
+      cacheControl: Option[CacheControl] = None
   ) extends ContentBlock {
     val `type`: String = "document"
   }
@@ -75,7 +78,8 @@ object ContentBlock {
       url: String,
       title: String,
       pageAge: Option[String] = None,
-      encryptedContent: Option[String] = None
+      encryptedContent: Option[String] = None,
+      cacheControl: Option[CacheControl] = None
   ) {
     val `type`: String = "web_search_result"
   }

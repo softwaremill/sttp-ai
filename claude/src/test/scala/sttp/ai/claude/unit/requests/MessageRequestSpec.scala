@@ -2,7 +2,7 @@ package sttp.ai.claude.unit.requests
 
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
-import sttp.ai.claude.models.{ContentBlock, Message, OutputFormat}
+import sttp.ai.claude.models.{CacheControl, ContentBlock, Message, OutputFormat}
 import sttp.ai.claude.requests.MessageRequest
 import sttp.ai.core.json.SnakePickle
 import sttp.tapir.{Schema => TSchema}
@@ -22,6 +22,11 @@ class MessageRequestSpec extends AnyFlatSpec with Matchers {
 
   val sampleMessages: List[Message] = List(
     Message.user(List(ContentBlock.TextContent("Hello")))
+  )
+
+  // not ttl test
+  val sampleMessagesWithCacheControl: List[Message] = List(
+    Message.user(List(ContentBlock.TextContent("Hello", cacheControl = Some(CacheControl.Ephemeral()))))
   )
 
   "MessageRequest serialization" should "include output_config with format and schema" in {
@@ -69,5 +74,15 @@ class MessageRequestSpec extends AnyFlatSpec with Matchers {
     deserialized.outputConfig shouldBe defined
     deserialized.outputConfig.get.format shouldBe defined
     deserialized.outputConfig.get.format.get shouldBe a[OutputFormat.JsonSchema]
+  }
+
+  it should "round-trip with caching control" in {
+    val request = MessageRequest
+      .simple("claude-sonnet-4-5-20250514", sampleMessagesWithCacheControl, 1024)
+      .withCacheControl(CacheControl.Ephemeral())
+
+    val json = SnakePickle.write(request)
+    val deserialized = SnakePickle.read[MessageRequest](json)
+    deserialized shouldEqual request
   }
 }

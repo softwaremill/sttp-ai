@@ -1,12 +1,14 @@
 package sttp.ai.openai.integration
 
 import org.scalatest.BeforeAndAfterAll
+import org.scalatest.Inside.inside
 import org.scalatest.concurrent.Eventually
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.time.{Millis, Seconds, Span}
 import sttp.ai.openai.OpenAIExceptions.OpenAIException
 import sttp.ai.openai.OpenAISyncClient
+import sttp.ai.openai.requests.caching.CacheRetentionPolicy
 import sttp.ai.openai.requests.completions.chat.ChatRequestBody.{ChatBody, ChatCompletionModel}
 import sttp.ai.openai.requests.completions.chat.message.{Content, Message}
 import sttp.ai.openai.requests.embeddings.EmbeddingsRequestBody.{EmbeddingsBody, EmbeddingsInput, EmbeddingsModel}
@@ -190,6 +192,32 @@ class OpenAIIntegrationSpec extends AnyFlatSpec with Matchers with BeforeAndAfte
       response.usage.totalTokens should be <= 20 // Should be very low due to our constraints
       ()
     }
+
+  it should "properly pass cache control parameters" in withClient { client =>
+    // given
+    val messages = Seq(
+      Message.UserMessage(
+        content = Content.TextContent("Hi")
+      )
+    )
+
+    val chatBody = ChatBody(
+      model = ChatCompletionModel.GPT4oMini,
+      messages = messages,
+      maxTokens = Some(50),
+      promptCacheKey = Some("sttp-ai-test-cache-key"),
+      promptCacheRetention = Some(CacheRetentionPolicy.InMemory)
+    )
+
+    // when
+    val response = client.createChatCompletion(chatBody)
+
+    // then
+    inside(response.usage.promptTokensDetails.flatMap(_.cachedTokens)) { case Some(tokens) =>
+      tokens should be > 0
+    }
+
+  }
 
   "OpenAI Responses API" should "create, retrieve, list input items, and delete a model response successfully" in
     withClient { client =>

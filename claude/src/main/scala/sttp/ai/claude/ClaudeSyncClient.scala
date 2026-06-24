@@ -25,7 +25,7 @@ class ClaudeSyncClient(config: ClaudeConfig, backend: SyncBackend = DefaultSyncB
 
     val response = createMessage(withSchema)
 
-    val text = response.content.collect { case ContentBlock.TextContent(t, _) => t }.mkString
+    val text = response.content.collect { case ContentBlock.TextContent(t, _, _) => t }.mkString
 
     try SnakePickle.read[T](text)
     catch {
