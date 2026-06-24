@@ -1,6 +1,6 @@
 package sttp.ai.claude.requests
 
-import sttp.ai.claude.models.{Effort, Message, OutputConfig, OutputFormat, Tool}
+import sttp.ai.claude.models.{CacheControl, Effort, Message, OutputConfig, OutputFormat, Tool}
 
 case class MessageRequest(
     model: String,
@@ -13,7 +13,8 @@ case class MessageRequest(
     stopSequences: Option[List[String]] = None,
     stream: Option[Boolean] = None,
     tools: Option[List[Tool]] = None,
-    outputConfig: Option[OutputConfig] = None
+    outputConfig: Option[OutputConfig] = None,
+    cacheControl: Option[CacheControl] = None
 ) {
   def usesStructuredOutput: Boolean = outputConfig.exists(_.format.exists(_.isInstanceOf[OutputFormat.JsonSchema]))
 
@@ -21,6 +22,9 @@ case class MessageRequest(
     val updated = outputConfig.getOrElse(OutputConfig()).copy(format = Some(format))
     this.copy(outputConfig = Some(updated))
   }
+
+  def withCacheControl(cacheControl: CacheControl): MessageRequest =
+    this.copy(cacheControl = Some(cacheControl))
 
   def withEffort(effort: Effort): MessageRequest = {
     val updated = outputConfig.getOrElse(OutputConfig()).copy(effort = Some(effort))

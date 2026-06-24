@@ -115,7 +115,7 @@ private[claude] class ClaudeAgentBackend[F[_]](
     monad.flatMap(monad.map(client.createMessage(request).send(backend))(_.body)) {
       case Right(response) =>
         val textContent = response.content
-          .collectFirst { case ContentBlock.Text(text, _) => text }
+          .collectFirst { case ContentBlock.Text(text, _, _) => text }
           .getOrElse("")
 
         val toolCalls = response.content.collect { case ContentBlock.ToolUse(id, name, input) =>

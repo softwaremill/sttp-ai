@@ -45,4 +45,5 @@ object ClaudeDerivedCodecs {
   implicit val outputConfigCodec: Codec[OutputConfig] = ConfiguredCodec.derived
   implicit val messageRequestCodec: Codec[MessageRequest] = ConfiguredCodec.derived
   implicit val messageResponseCodec: Codec[sttp.ai.claude.responses.MessageResponse] = ConfiguredCodec.derived
+  implicit val cacheControlCodec: Codec[CacheControl] = ConfiguredCodec.derived
 }
