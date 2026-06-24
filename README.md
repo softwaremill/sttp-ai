@@ -196,7 +196,7 @@ object Main:
     response.body match {
       case Right(messageResponse) =>
         messageResponse.content.foreach {
-          case ContentBlock.Text(text, _) => println(text)
+          case ContentBlock.Text(text, _, _) => println(text)
           case _ => // Handle other content types if needed
         }
         println(s"Usage: ${messageResponse.usage}")
@@ -292,6 +292,8 @@ val request = MessageRequest.simple(
 #### Advanced Parameters
 
 ```scala
+import sttp.ai.claude.models.CacheControl
+
 val request = MessageRequest(
   model = "claude-3-sonnet-20240229",
   messages = messages,
@@ -301,9 +303,26 @@ val request = MessageRequest(
   topK = Some(40),                   // Top-k sampling
   stopSequences = Some(List("\n\n")), // Stop generation at sequences
   system = Some("Be concise and helpful."),
-  tools = Some(tools)                // Tool calling support
+  tools = Some(tools),                // Tool calling support
+  cacheControl = Some(CacheControl.Ephemeral())  // Optional cache control
 )
 ```
+
+Regarding caching and usage, it is important to highlight model and formula used to calculate the number of input tokens 
+consumed by the model (relevant for billing and context window management): 
+
+```scala
+case class Usage(
+    inputTokens: Int,
+    outputTokens: Int,
+    cacheReadInputTokens: Option[Int] = None,
+    cacheCreationInputTokens: Option[Int] = None
+) {
+  def totalInputTokens: Int = inputTokens + cacheReadInputTokens.getOrElse(0) + cacheCreationInputTokens.getOrElse(0)
+  def totalTokens: Int = totalInputTokens + outputTokens
+}
+```
+This is a breaking change compared to old version of this library (which ignored cache tokens).
 
 ### Claude Structured Outputs
 
@@ -401,7 +420,7 @@ object StructuredOutputExample:
     response.body match {
       case Right(messageResponse) =>
         messageResponse.content.foreach {
-          case ContentBlock.Text(text, _) =>
+          case ContentBlock.Text(text, _, _) =>
             println("Structured JSON output:")
             println(text)
 

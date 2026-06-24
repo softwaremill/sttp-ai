@@ -74,11 +74,18 @@ object ClaudeManualCodecs {
     ),
     Encoder.instance {
       case x: Tool.Custom =>
-        Json.obj(
-          "name" := x.name,
-          "description" := x.description,
-          "input_schema" := x.inputSchema
-        )
+        Json
+          .obj(
+            "name" := x.name,
+            "description" := x.description,
+            "input_schema" := x.inputSchema
+          )
+          .mapObject { obj =>
+            x.cacheControl match {
+              case Some(cc) => obj.add("cache_control", cc.asJson)
+              case None     => obj
+            }
+          }
       case x: Tool.WebSearch =>
         x.asJson
           .mapObject(_.add("type", Json.fromString(Tool.WebSearch.ToolType)).add("name", Json.fromString(Tool.WebSearch.ToolName)))
