@@ -1,11 +1,15 @@
 package sttp.ai.openai.requests.responses
 
+import sttp.ai.openai.json.OpenAIDerivedCodecs._
+import sttp.ai.openai.json.OpenAIManualCodecs._
+
+import io.circe.parser.decode
+import org.scalatest.EitherValues
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
-import sttp.ai.core.json.SnakePickle
 import sttp.ai.openai.requests.responses.InputItemsListResponseBody.InputItem
 
-class InputItemsListDataSpec extends AnyFlatSpec with Matchers {
+class InputItemsListDataSpec extends AnyFlatSpec with Matchers with EitherValues {
 
   "InputItemsListResponseBody" should "deserialize simple input message correctly" in {
     // given
@@ -32,7 +36,7 @@ class InputItemsListDataSpec extends AnyFlatSpec with Matchers {
         |}""".stripMargin
 
     // when
-    val deserializedResponse = SnakePickle.read[InputItemsListResponseBody](jsonResponse)
+    val deserializedResponse = decode[InputItemsListResponseBody](jsonResponse).value
 
     // then
     deserializedResponse.`object` shouldBe "list"

@@ -1,22 +1,8 @@
 package sttp.ai.openai.requests.responses
-import sttp.ai.core.json.SnakePickle
-import ujson.Str
 
 sealed abstract class ResponsesModel(val value: String)
 
 object ResponsesModel {
-
-  implicit val responsesModelRW: SnakePickle.ReadWriter[ResponsesModel] = SnakePickle
-    .readwriter[ujson.Value]
-    .bimap[ResponsesModel](
-      model => SnakePickle.writeJs(model.value),
-      jsonValue =>
-        SnakePickle.read[ujson.Value](jsonValue) match {
-          case Str(value) =>
-            byResponsesModelValue.getOrElse(value, CustomResponsesModel(value))
-          case e => throw new Exception(s"Could not deserialize: $e")
-        }
-    )
 
   val values: Set[ResponsesModel] =
     Set(
@@ -137,6 +123,4 @@ object ResponsesModel {
   case object O4MiniDeepResearch extends ResponsesModel("o4-mini-deep-research")
   case object O4MiniDeepResearch20250626 extends ResponsesModel("o4-mini-deep-research-2025-06-26")
   case class CustomResponsesModel(customResponsesModel: String) extends ResponsesModel(customResponsesModel)
-
-  private val byResponsesModelValue = values.map(model => model.value -> model).toMap
 }

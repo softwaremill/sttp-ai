@@ -6,7 +6,9 @@ import sttp.ai.claude.ClaudeExceptions.ClaudeException
 import sttp.ai.claude.requests.MessageRequest
 import sttp.ai.claude.responses.MessageStreamResponse
 import sttp.ai.claude.responses.MessageStreamResponse.EventData.DoneEvent
-import sttp.ai.core.json.SnakePickle.*
+import io.circe.parser.decode
+import sttp.ai.claude.json.ClaudeManualCodecs._
+import sttp.ai.claude.json.ClaudeDerivedCodecs._
 import sttp.client4.Request
 import sttp.client4.impl.ox.sse.OxServerSentEvents
 import sttp.model.ResponseMetadata
@@ -40,7 +42,7 @@ private def mapEventToResponse(
       .filter(event => event.data.exists(data => data.trim.nonEmpty && data != DoneEvent))
       .collect { case ServerSentEvent(Some(data), _, _, _) =>
         try
-          Right(read[MessageStreamResponse](data))
+          Right(decode[MessageStreamResponse](data).fold(throw _, identity))
         catch {
           case e: Exception =>
             Left(ClaudeException.DeserializationClaudeException(e, metadata))

@@ -1,6 +1,5 @@
 package sttp.ai.openai.requests.threads.runs
 
-import sttp.ai.core.json.SnakePickle
 import sttp.ai.openai.requests.assistants.Tool
 import sttp.ai.openai.requests.completions.chat.message.ToolResources
 import sttp.ai.openai.requests.threads.ThreadsRequestBody.CreateThreadBody
@@ -39,10 +38,6 @@ object ThreadRunsRequestBody {
       metadata: Map[String, String] = Map.empty
   )
 
-  object CreateRun {
-    implicit val createRunW: SnakePickle.Writer[CreateRun] = SnakePickle.macroW[CreateRun]
-  }
-
   /** @param assistantId
     *   The ID of the assistant to use to execute this run.
     *
@@ -74,10 +69,6 @@ object ThreadRunsRequestBody {
       metadata: Map[String, String] = Map.empty
   )
 
-  object CreateThreadAndRun {
-    implicit val createThreadAndRunW: SnakePickle.Writer[CreateThreadAndRun] = SnakePickle.macroW[CreateThreadAndRun]
-  }
-
   /** @param metadata
     *   Set of 16 key-value pairs that can be attached to an object. This can be useful for storing additional information about the object
     *   in a structured format. Keys can be a maximum of 64 characters long and values can be a maxium of 512 characters long.
@@ -88,10 +79,6 @@ object ThreadRunsRequestBody {
       metadata: Map[String, String] = Map.empty
   )
 
-  object ModifyRun {
-    implicit val modifyRunW: SnakePickle.Writer[ModifyRun] = SnakePickle.macroW[ModifyRun]
-  }
-
   /** @param toolOutputs
     *   A list of tools for which the outputs are being submitted.
     *
@@ -100,9 +87,6 @@ object ThreadRunsRequestBody {
   case class SubmitToolOutputsToRun(
       toolOutputs: Seq[ToolOutput]
   )
-  object SubmitToolOutputsToRun {
-    implicit val submitToolOutputsToRunW: SnakePickle.Writer[SubmitToolOutputsToRun] = SnakePickle.macroW[SubmitToolOutputsToRun]
-  }
 
   /** @param toolCallId
     *   The ID of the tool call in the required_action object within the run object the output is being submitted for.
@@ -112,7 +96,4 @@ object ThreadRunsRequestBody {
     */
   case class ToolOutput(toolCallId: Option[String], output: String)
 
-  object ToolOutput {
-    implicit val toolOutputW: SnakePickle.Writer[ToolOutput] = SnakePickle.macroW[ToolOutput]
-  }
 }

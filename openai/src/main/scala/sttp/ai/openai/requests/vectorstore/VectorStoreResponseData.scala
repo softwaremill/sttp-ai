@@ -1,8 +1,5 @@
 package sttp.ai.openai.requests.vectorstore
 
-import sttp.ai.core.json.SnakePickle
-import ujson.Value
-
 object VectorStoreResponseData {
 
   /** Represents a vector store object.
@@ -41,10 +38,6 @@ object VectorStoreResponseData {
       metadata: Map[String, String] = Map.empty
   )
 
-  object VectorStore {
-    implicit val vectorStoreR: SnakePickle.Reader[VectorStore] = SnakePickle.macroR[VectorStore]
-  }
-
   /** Describes number of files in different statuses.
     *
     * @param inProgress
@@ -66,26 +59,10 @@ object VectorStoreResponseData {
       total: Int
   )
 
-  object FileCounts {
-    implicit val fileCountsR: SnakePickle.Reader[FileCounts] = SnakePickle.macroR[FileCounts]
-  }
-
   sealed trait StoreStatus
   case object InProgress extends StoreStatus
   case object Completed extends StoreStatus
   case object Expired extends StoreStatus
-
-  object StoreStatus {
-    implicit val storeStatusR: SnakePickle.Reader[StoreStatus] = SnakePickle
-      .reader[Value]
-      .map(json =>
-        json.str match {
-          case "in_progress" => InProgress
-          case "completed"   => Completed
-          case "expired"     => Expired
-        }
-      )
-  }
 
   /** @param object
     *   Always "list"
@@ -106,10 +83,6 @@ object VectorStoreResponseData {
       hasMore: Boolean
   )
 
-  object ListVectorStoresResponse {
-    implicit val listVectorStoresResponseR: SnakePickle.Reader[ListVectorStoresResponse] = SnakePickle.macroR[ListVectorStoresResponse]
-  }
-
   /** @param id
     *   Id of deleted object
     * @param `object`
@@ -124,7 +97,4 @@ object VectorStoreResponseData {
       deleted: Boolean
   )
 
-  object DeleteVectorStoreResponse {
-    implicit val deleteVectorStoreResponseR: SnakePickle.Reader[DeleteVectorStoreResponse] = SnakePickle.macroR[DeleteVectorStoreResponse]
-  }
 }

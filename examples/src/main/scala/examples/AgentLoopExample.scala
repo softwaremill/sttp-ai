@@ -1,7 +1,6 @@
 package examples
 
 import sttp.ai.core.agent.*
-import sttp.ai.core.json.SnakePickle
 import sttp.ai.openai.OpenAI
 import sttp.ai.openai.agent.OpenAIAgent
 import sttp.client4.DefaultSyncBackend
@@ -9,7 +8,7 @@ import sttp.tapir.Schema
 
 object AgentLoopExample extends App {
 
-  case class WeatherInput(location: String, unit: Option[String]) derives SnakePickle.ReadWriter, Schema
+  case class WeatherInput(location: String, unit: Option[String]) derives io.circe.Codec.AsObject, Schema
 
   val weatherTool = AgentTool.fromFunction(
     "get_weather",
@@ -19,7 +18,7 @@ object AgentLoopExample extends App {
     s"The weather in ${input.location} is 22°${if (unit == "celsius") "C" else "F"}, sunny"
   }
 
-  case class CalculatorInput(operation: String, a: Double, b: Double) derives SnakePickle.ReadWriter, Schema
+  case class CalculatorInput(operation: String, a: Double, b: Double) derives io.circe.Codec.AsObject, Schema
 
   val calculatorTool = AgentTool.fromFunction(
     "calculate",

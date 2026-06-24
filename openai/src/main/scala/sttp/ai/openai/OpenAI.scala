@@ -4,7 +4,9 @@ import sttp.capabilities.Streams
 import sttp.client4._
 import sttp.model.{Header, Uri}
 import sttp.ai.openai.OpenAIExceptions.OpenAIException
-import sttp.ai.openai.json.SttpUpickleApiExtension._
+import sttp.ai.openai.json.OpenAIJson._
+import sttp.ai.openai.json.OpenAIDerivedCodecs._
+import sttp.ai.openai.json.OpenAIManualCodecs._
 import sttp.ai.openai.requests.admin.{QueryParameters => _, _}
 import sttp.ai.openai.requests.assistants.AssistantsRequestBody.{CreateAssistantBody, ModifyAssistantBody}
 import sttp.ai.openai.requests.assistants.AssistantsResponseData.{AssistantData, DeleteAssistantResponse, ListAssistantsResponse}
@@ -28,6 +30,7 @@ import sttp.ai.openai.requests.embeddings.EmbeddingsRequestBody.EmbeddingsBody
 import sttp.ai.openai.requests.embeddings.EmbeddingsResponseBody.EmbeddingResponse
 import sttp.ai.openai.requests.files.FilesResponseData._
 import sttp.ai.openai.requests.finetuning._
+import sttp.ai.openai.requests.images.ResponseFormat
 import sttp.ai.openai.requests.images.ImageResponseData.ImageResponse
 import sttp.ai.openai.requests.images.creation.ImageCreationRequestBody.ImageCreationBody
 import sttp.ai.openai.requests.images.edit.ImageEditsConfig
@@ -198,7 +201,7 @@ class OpenAI(authToken: String, baseUri: Uri = OpenAIUris.OpenAIBaseUri, organiz
           partialImages.map(p => multipart("partial_images", p.toString)),
           quality.map(q => multipart("quality", q)),
           size.map(s => multipart("size", s.value)),
-          responseFormat.map(format => multipart("response_format", format.value)),
+          responseFormat.map(format => multipart("response_format", ResponseFormat.asString(format))),
           stream.map(s => multipart("stream", s.toString)),
           user.map(u => multipart("user", u))
         ).flatten
@@ -261,7 +264,7 @@ class OpenAI(authToken: String, baseUri: Uri = OpenAIUris.OpenAIBaseUri, organiz
           Some(multipartFile("image", image)),
           n.map(i => multipart("n", i.toString)),
           size.map(s => multipart("size", s.value)),
-          responseFormat.map(format => multipart("response_format", format.value)),
+          responseFormat.map(format => multipart("response_format", ResponseFormat.asString(format))),
           user.map(multipart("user", _))
         ).flatten
       }
@@ -800,7 +803,7 @@ class OpenAI(authToken: String, baseUri: Uri = OpenAIUris.OpenAIBaseUri, organiz
           Some(multipartFile("file", file)),
           Some(multipart("model", model.value)),
           prompt.map(multipart("prompt", _)),
-          responseFormat.map(format => multipart("response_format", format.value)),
+          responseFormat.map(format => multipart("response_format", ResponseFormat.asString(format))),
           temperature.map(t => multipart("temperature", t.toString)),
           language.map(lang => multipart("language", lang.value))
         ).flatten

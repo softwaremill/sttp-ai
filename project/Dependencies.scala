@@ -12,7 +12,8 @@ object Dependencies {
     val pekkoStreams = "1.2.1"
     val akkaStreams = "2.6.20"
     val tapir = "1.13.8"
-    val uPickle = "4.3.2"
+    val circe = "0.14.14"
+    val circeGenericExtras = "0.14.4"
   }
 
   object Libraries {
@@ -29,9 +30,22 @@ object Dependencies {
     val sttpClient = Def.setting(
       Seq(
         "com.softwaremill.sttp.client4" %%% "core" % V.sttpClient,
-        "com.softwaremill.sttp.client4" %%% "upickle" % V.sttpClient
+        "com.softwaremill.sttp.client4" %%% "upickle" % V.sttpClient,
+        "com.softwaremill.sttp.client4" %%% "circe" % V.sttpClient
       )
     )
+
+    val circe = Def.setting(
+      Seq(
+        "io.circe" %%% "circe-core" % V.circe,
+        "io.circe" %%% "circe-parser" % V.circe,
+        "io.circe" %%% "circe-generic" % V.circe
+      )
+    )
+
+    // circe-generic-extras provides `Configuration` (snake_case + discriminator) only on Scala 2.13.
+    // On Scala 3 the equivalent lives in circe-generic's `io.circe.derivation` package.
+    val circeGenericExtras = Def.setting("io.circe" %%% "circe-generic-extras" % V.circeGenericExtras)
 
     val sttpClientFs2 = Seq(
       "com.softwaremill.sttp.client4" %% "fs2" % V.sttpClient,
@@ -55,10 +69,6 @@ object Dependencies {
     )
 
     val tapirApispecDocs = Def.setting("com.softwaremill.sttp.tapir" %%% "tapir-apispec-docs" % V.tapir)
-
-    val uJsonCirce = Def.setting("com.lihaoyi" %%% "ujson-circe" % V.uPickle)
-
-    val uPickle = Def.setting("com.lihaoyi" %%% "upickle" % V.uPickle)
 
   }
 

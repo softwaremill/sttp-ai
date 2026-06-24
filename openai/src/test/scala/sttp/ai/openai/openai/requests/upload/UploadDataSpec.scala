@@ -4,8 +4,10 @@ import org.scalatest.EitherValues
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
 import sttp.ai.openai.fixtures.UploadFixture
-import sttp.ai.core.json.SnakePickle
-import sttp.ai.openai.utils.JsonUtils
+import io.circe.parser.{decode, parse}
+import io.circe.syntax._
+import sttp.ai.openai.json.OpenAIDerivedCodecs._
+import sttp.ai.openai.json.OpenAIManualCodecs._
 
 class UploadDataSpec extends AnyFlatSpec with Matchers with EitherValues {
 
@@ -17,9 +19,9 @@ class UploadDataSpec extends AnyFlatSpec with Matchers with EitherValues {
       bytes = 123,
       mimeType = "file/mime-type"
     )
-    val jsonRequest: ujson.Value = ujson.read(UploadFixture.jsonCreateUpload)
+    val jsonRequest: io.circe.Json = parse(UploadFixture.jsonCreateUpload).value
     // when
-    val serializedJson: ujson.Value = SnakePickle.writeJs(givenRequest)
+    val serializedJson: io.circe.Json = givenRequest.asJson.deepDropNullValues
     // then
     serializedJson shouldBe jsonRequest
   }
@@ -30,9 +32,9 @@ class UploadDataSpec extends AnyFlatSpec with Matchers with EitherValues {
       partIds = Seq("part_abc123", "part_def456"),
       md5 = Some("md5-checksum")
     )
-    val jsonRequest: ujson.Value = ujson.read(UploadFixture.jsonCompleteUpload)
+    val jsonRequest: io.circe.Json = parse(UploadFixture.jsonCompleteUpload).value
     // when
-    val serializedJson: ujson.Value = SnakePickle.writeJs(givenRequest)
+    val serializedJson: io.circe.Json = givenRequest.asJson.deepDropNullValues
     // then
     serializedJson shouldBe jsonRequest
   }
@@ -61,7 +63,7 @@ class UploadDataSpec extends AnyFlatSpec with Matchers with EitherValues {
     )
     // when
     val deserializedJsonResponse: Either[Exception, UploadResponse] =
-      JsonUtils.deserializeJsonSnake[UploadResponse].apply(jsonResponse)
+      decode[UploadResponse](jsonResponse)
     // then
     deserializedJsonResponse.value shouldBe expectedResponse
   }
@@ -76,7 +78,7 @@ class UploadDataSpec extends AnyFlatSpec with Matchers with EitherValues {
     )
     // when
     val deserializedJsonResponse: Either[Exception, UploadPartResponse] =
-      JsonUtils.deserializeJsonSnake[UploadPartResponse].apply(jsonResponse)
+      decode[UploadPartResponse](jsonResponse)
     // then
     deserializedJsonResponse.value shouldBe expectedResponse
   }

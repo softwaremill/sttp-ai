@@ -1,7 +1,5 @@
 package sttp.ai.openai.requests.finetuning
 
-import sttp.ai.core.json.SnakePickle
-
 /** @param model
   *   The name of the model to fine-tune. You can select one of the supported models
   *   [[https://platform.openai.com/docs/guides/fine-tuning#which-models-can-be-fine-tuned]].
@@ -40,6 +38,3 @@ case class FineTuningJobRequestBody(
     method: Option[Method] = None,
     metadata: Option[Map[String, String]] = None
 )
-object FineTuningJobRequestBody {
-  implicit val fineTuningRequestBodyWriter: SnakePickle.Writer[FineTuningJobRequestBody] = SnakePickle.macroW[FineTuningJobRequestBody]
-}

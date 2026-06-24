@@ -4,14 +4,16 @@ import org.scalatest.EitherValues
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
 import sttp.ai.openai.fixtures
-import sttp.ai.core.json.SnakePickle
 import sttp.ai.openai.requests.completions.Stop.SingleStop
 import sttp.ai.openai.requests.completions.chat.ChatRequestBody.Format.Mp3
 import sttp.ai.openai.requests.completions.chat.ChatRequestBody.Voice.Ash
 import sttp.ai.openai.requests.completions.chat.Role.Assistant
 import sttp.ai.openai.requests.completions.{CompletionTokensDetails, PromptTokensDetails, Usage}
 import sttp.ai.openai.utils.ChatCompletionFixtures._
-import sttp.ai.openai.utils.JsonUtils
+import io.circe.parser.{decode, parse}
+import io.circe.syntax._
+import sttp.ai.openai.json.OpenAIDerivedCodecs._
+import sttp.ai.openai.json.OpenAIManualCodecs._
 
 class ChatDataSpec extends AnyFlatSpec with Matchers with EitherValues {
 
@@ -26,7 +28,8 @@ class ChatDataSpec extends AnyFlatSpec with Matchers with EitherValues {
       deleted = true
     )
     // when
-    val givenResponse: Either[Exception, DeleteChatCompletionResponse] = JsonUtils.deserializeJsonSnake.apply(jsonResponse)
+    val givenResponse: Either[Exception, DeleteChatCompletionResponse] =
+      decode[DeleteChatCompletionResponse](jsonResponse)
     // then
     givenResponse.value shouldBe expectedResponse
   }
@@ -44,7 +47,7 @@ class ChatDataSpec extends AnyFlatSpec with Matchers with EitherValues {
       hasMore = false
     )
     // when
-    val givenResponse: Either[Exception, ListChatResponse] = JsonUtils.deserializeJsonSnake.apply(jsonResponse)
+    val givenResponse: Either[Exception, ListChatResponse] = decode[ListChatResponse](jsonResponse)
     // then
     givenResponse.value shouldBe expectedResponse
   }
@@ -75,7 +78,7 @@ class ChatDataSpec extends AnyFlatSpec with Matchers with EitherValues {
       hasMore = true
     )
     // when
-    val givenResponse: Either[Exception, ListMessageResponse] = JsonUtils.deserializeJsonSnake.apply(jsonResponse)
+    val givenResponse: Either[Exception, ListMessageResponse] = decode[ListMessageResponse](jsonResponse)
     // then
     givenResponse.value shouldBe expectedResponse
   }
@@ -150,7 +153,7 @@ class ChatDataSpec extends AnyFlatSpec with Matchers with EitherValues {
     )
 
     // when
-    val givenResponse: Either[Exception, ChatResponse] = JsonUtils.deserializeJsonSnake.apply(jsonResponse)
+    val givenResponse: Either[Exception, ChatResponse] = decode[ChatResponse](jsonResponse)
 
     // then
     givenResponse.value shouldBe expectedResponse
@@ -172,7 +175,7 @@ class ChatDataSpec extends AnyFlatSpec with Matchers with EitherValues {
       topP = Some(1),
       tools = Some(tools),
       responseFormat = Some(ResponseFormat.JsonObject),
-      toolChoice = Some(ToolChoice.ToolFunction("function")),
+      toolChoice = Some(ToolChoice.Function("function")),
       stop = Some(SingleStop("\n")),
       user = Some("testUser"),
       store = Some(true),
@@ -190,13 +193,13 @@ class ChatDataSpec extends AnyFlatSpec with Matchers with EitherValues {
       audio = Some(Audio(voice = Ash, format = Mp3))
     )
 
-    val jsonRequest: ujson.Value = ujson.read(fixtures.ChatFixture.jsonRequest)
+    val jsonRequest: io.circe.Json = parse(fixtures.ChatFixture.jsonRequest).value
 
     // when
-    val serializedJson = SnakePickle.writeJs(givenRequest)
+    val serializedJson = givenRequest.asJson.deepDropNullValues
 
     // then
-    serializedJson shouldBe jsonRequest
+    serializedJson shouldBe jsonRequest.deepDropNullValues
   }
 
   "Given update chat completions request as case class" should "be properly serialized to Json" in {
@@ -206,10 +209,10 @@ class ChatDataSpec extends AnyFlatSpec with Matchers with EitherValues {
     val givenRequest = ChatRequestBody.UpdateChatCompletionRequestBody(
       metadata = Map("key" -> "value")
     )
-    val jsonRequest: ujson.Value = ujson.read(fixtures.ChatFixture.jsonUpdateRequest)
+    val jsonRequest: io.circe.Json = parse(fixtures.ChatFixture.jsonUpdateRequest).value
     // when
-    val serializedJson = SnakePickle.writeJs(givenRequest)
+    val serializedJson = givenRequest.asJson.deepDropNullValues
     // then
-    serializedJson shouldBe jsonRequest
+    serializedJson shouldBe jsonRequest.deepDropNullValues
   }
 }

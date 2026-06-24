@@ -1,25 +1,10 @@
 package sttp.ai.openai.requests.assistants
 
-import sttp.ai.core.json.SnakePickle
-import ujson.Str
-
 sealed abstract class AssistantsModel(val value: String)
 
 object AssistantsModel {
 
-  implicit val assistantsModelRW: SnakePickle.ReadWriter[AssistantsModel] = SnakePickle
-    .readwriter[ujson.Value]
-    .bimap[AssistantsModel](
-      model => SnakePickle.writeJs(model.value),
-      jsonValue =>
-        SnakePickle.read[ujson.Value](jsonValue) match {
-          case Str(value) =>
-            byAssistantsModelValue.getOrElse(value, CustomAssistantsModel(value))
-          case e => throw new Exception(s"Could not deserialize: $e")
-        }
-    )
-
-  val values: Set[AssistantsModel] =
+  def get(value: String): AssistantsModel =
     Set(
       GPT4,
       GPT40125Preview,
@@ -51,7 +36,7 @@ object AssistantsModel {
       O1Preview20240912,
       O3Mini,
       O3Mini20250131
-    )
+    ).map(m => m.value -> m).toMap.getOrElse(value, CustomAssistantsModel(value))
 
   case object GPT4 extends AssistantsModel("gpt-4")
   case object GPT40125Preview extends AssistantsModel("gpt-4-0125-preview")
@@ -84,6 +69,4 @@ object AssistantsModel {
   case object O3Mini extends AssistantsModel("o3-mini")
   case object O3Mini20250131 extends AssistantsModel("o3-mini-2025-01-31")
   case class CustomAssistantsModel(customAssistantsModel: String) extends AssistantsModel(customAssistantsModel)
-
-  private val byAssistantsModelValue = values.map(model => model.value -> model).toMap
 }

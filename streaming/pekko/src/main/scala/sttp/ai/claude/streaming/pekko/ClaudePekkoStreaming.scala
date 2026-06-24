@@ -11,7 +11,9 @@ import sttp.client4.StreamRequest
 import sttp.client4.pekkohttp.PekkoHttpServerSentEvents
 import sttp.model.ResponseMetadata
 import sttp.model.sse.ServerSentEvent
-import sttp.ai.core.json.SnakePickle._
+import io.circe.parser.decode
+import sttp.ai.claude.json.ClaudeManualCodecs._
+import sttp.ai.claude.json.ClaudeDerivedCodecs._
 
 object ClaudePekkoStreaming {
   import MessageStreamResponse.EventData.DoneEvent
@@ -48,7 +50,7 @@ object ClaudePekkoStreaming {
       .filter(event => event.data.exists(data => data.trim.nonEmpty && data != DoneEvent))
       .collect { case ServerSentEvent(Some(data), _, _, _) =>
         try
-          read[MessageStreamResponse](data)
+          decode[MessageStreamResponse](data).fold(throw _, identity)
         catch {
           case e: Exception =>
             throw ClaudeException.DeserializationClaudeException(e, metadata)

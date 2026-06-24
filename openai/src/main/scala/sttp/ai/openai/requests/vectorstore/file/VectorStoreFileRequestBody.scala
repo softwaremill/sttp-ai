@@ -1,7 +1,5 @@
 package sttp.ai.openai.requests.vectorstore.file
 
-import sttp.ai.core.json.SnakePickle
-
 object VectorStoreFileRequestBody {
 
   /** Create a vector store file by attaching a File to a vector store.
@@ -12,10 +10,6 @@ object VectorStoreFileRequestBody {
   case class CreateVectorStoreFileBody(
       fileId: String
   )
-
-  object CreateVectorStoreFileBody {
-    implicit val createVectorStoreFileBodyR: SnakePickle.Writer[CreateVectorStoreFileBody] = SnakePickle.macroW[CreateVectorStoreFileBody]
-  }
 
   /** Represents options for listing objects with pagination and filtering.
     *
@@ -50,7 +44,4 @@ object VectorStoreFileRequestBody {
     }
   }
 
-  object ListVectorStoreFilesBody {
-    implicit val listVectorStoreFilesBodyR: SnakePickle.Writer[ListVectorStoreFilesBody] = SnakePickle.macroW[ListVectorStoreFilesBody]
-  }
 }

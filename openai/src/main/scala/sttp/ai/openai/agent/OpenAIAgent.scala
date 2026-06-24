@@ -1,7 +1,6 @@
 package sttp.ai.openai.agent
 
 import sttp.ai.core.agent._
-import sttp.ai.core.json.SnakePickle
 import sttp.ai.openai.OpenAI
 import sttp.ai.openai.requests.completions.chat.ChatRequestBody.{ChatBody, ChatCompletionModel, ResponseFormat}
 import sttp.ai.openai.requests.completions.chat.message.{Content, Message, Tool}
@@ -19,7 +18,7 @@ private[openai] class OpenAIAgentBackend[F[_]](
 )(implicit monad: sttp.monad.MonadError[F])
     extends AgentBackend[F] {
 
-  private val convertedTools: Seq[Tool.FunctionTool] = tools.map(convertTool)
+  private val convertedTools: Seq[Tool.Function] = tools.map(convertTool)
 
   private val responseFormat: Option[ResponseFormat] = responseSchema.map { rs =>
     ResponseFormat.JsonSchema(
@@ -30,26 +29,26 @@ private[openai] class OpenAIAgentBackend[F[_]](
     )
   }
 
-  private def convertTool(tool: AgentTool[_]): Tool.FunctionTool = {
+  private def convertTool(tool: AgentTool[_]): Tool.Function = {
     val schema = tool.jsonSchema
-    val schemaJson = SnakePickle.writeJs(schema)(SchemaSupport.schemaRW)
+    val schemaJson = SchemaSupport.schemaCodec(schema)
 
-    Tool.FunctionTool(
+    Tool.Function(
       name = tool.name,
       description = Some(tool.description),
-      parameters = Some(schemaJson.obj.toMap),
+      parameters = Some(schemaJson.asObject.map(_.toMap).getOrElse(Map.empty)),
       strict = Some(true)
     )
   }
 
   private def buildMessages(history: ConversationHistory): Seq[Message] = {
     val systemMessages = systemPrompt.map { prompt =>
-      Message.SystemMessage(content = prompt)
+      Message.System(content = prompt)
     }.toSeq
 
     val conversationMessages = history.entries.flatMap {
       case ConversationEntry.UserPrompt(content) =>
-        Seq(Message.UserMessage(content = Content.TextContent(content)))
+        Seq(Message.User(content = Content.TextContent(content)))
 
       case ConversationEntry.AssistantResponse(content, toolCalls) =>
         val openaiToolCalls = toolCalls.map { tc =>
@@ -62,17 +61,17 @@ private[openai] class OpenAIAgentBackend[F[_]](
           )
         }
         Seq(
-          Message.AssistantMessage(
+          Message.Assistant(
             content = content,
             toolCalls = openaiToolCalls
           )
         )
 
       case ConversationEntry.ToolResult(toolCallId, _, result) =>
-        Seq(Message.ToolMessage(content = result, toolCallId = toolCallId))
+        Seq(Message.Tool(content = result, toolCallId = toolCallId))
 
       case ConversationEntry.IterationMarker(current, max) =>
-        Seq(Message.UserMessage(content = Content.TextContent(s"[Iteration $current of $max]")))
+        Seq(Message.User(content = Content.TextContent(s"[Iteration $current of $max]")))
     }
 
     systemMessages ++ conversationMessages

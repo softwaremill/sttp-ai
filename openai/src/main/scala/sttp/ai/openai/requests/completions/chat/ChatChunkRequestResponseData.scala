@@ -1,7 +1,6 @@
 package sttp.ai.openai.requests.completions.chat
 
 import sttp.model.sse.ServerSentEvent
-import sttp.ai.core.json.SnakePickle
 import sttp.ai.openai.requests.completions.Usage
 
 object ChatChunkRequestResponseData {
@@ -20,19 +19,11 @@ object ChatChunkRequestResponseData {
       functionCall: Option[FunctionCall] = None
   )
 
-  object Delta {
-    implicit val deltaR: SnakePickle.Reader[Delta] = SnakePickle.macroR[Delta]
-  }
-
   case class Choices(
       delta: Delta,
       finishReason: Option[String] = None,
       index: Int
   )
-
-  object Choices {
-    implicit val choicesR: SnakePickle.Reader[Choices] = SnakePickle.macroR[Choices]
-  }
 
   case class ChatChunkResponse(
       id: String,
@@ -47,8 +38,6 @@ object ChatChunkRequestResponseData {
   object ChatChunkResponse {
     val DoneEventMessage = "[DONE]"
     val DoneEvent = ServerSentEvent(Some(DoneEventMessage))
-
-    implicit val chunkChatR: SnakePickle.Reader[ChatChunkResponse] = SnakePickle.macroR[ChatChunkResponse]
   }
 
 }

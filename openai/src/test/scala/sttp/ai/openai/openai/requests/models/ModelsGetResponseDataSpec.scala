@@ -6,7 +6,9 @@ import org.scalatest.matchers.should.Matchers
 import sttp.ai.openai.fixtures
 import sttp.ai.openai.requests.models.ModelsResponseData.ModelsResponse._
 import sttp.ai.openai.requests.models.ModelsResponseData.{DeletedModelData, ModelData, ModelsResponse}
-import sttp.ai.openai.utils.JsonUtils
+import io.circe.parser.decode
+import sttp.ai.openai.json.OpenAIDerivedCodecs._
+import sttp.ai.openai.json.OpenAIManualCodecs._
 
 class ModelsGetResponseDataSpec extends AnyFlatSpec with Matchers with EitherValues {
 
@@ -24,7 +26,7 @@ class ModelsGetResponseDataSpec extends AnyFlatSpec with Matchers with EitherVal
       deleted = true
     )
     // when
-    val givenResponse: Either[Exception, DeletedModelData] = JsonUtils.deserializeJsonSnake[DeletedModelData].apply(response)
+    val givenResponse: Either[Exception, DeletedModelData] = decode[DeletedModelData](response)
     // then
     givenResponse.value shouldBe expectedResponse
   }
@@ -52,7 +54,7 @@ class ModelsGetResponseDataSpec extends AnyFlatSpec with Matchers with EitherVal
     val expectedResponse: ModelsResponse = ModelsResponse(`object` = "list", data = serializedData)
     // when
 
-    val givenResponse: Either[Exception, ModelsResponse] = JsonUtils.deserializeJsonSnake.apply(response)
+    val givenResponse: Either[Exception, ModelsResponse] = decode[ModelsResponse](response)
 
     // then
     givenResponse.value shouldBe expectedResponse

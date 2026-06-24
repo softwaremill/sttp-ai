@@ -1,7 +1,6 @@
 //> using repository ivy2Local
 //> using dep com.softwaremill.sttp.ai::claude:0.4.0
 //> using dep ch.qos.logback:logback-classic:1.5.19
-//> using dep com.softwaremill.sttp.client4::upickle:4.0.12
 
 // remember to set the ANTHROPIC_API_KEY env variable!
 // run with: ANTHROPIC_API_KEY=... scala-cli run ClaudeToolCallingExample.scala
@@ -69,9 +68,9 @@ object ClaudeToolCallingExample extends App {
     case Right(messageResponse) =>
       println("Claude's response:")
       messageResponse.content.foreach {
-        case ContentBlock.TextContent(text, _) =>
+        case ContentBlock.Text(text, _) =>
           println(s"Text: $text")
-        case ContentBlock.ToolUseContent(id, name, input) =>
+        case ContentBlock.ToolUse(id, name, input) =>
           println(s"Tool called: $name")
           println(s"Tool ID: $id")
           println(s"Tool input: $input")
@@ -108,9 +107,9 @@ object ClaudeToolCallingExample extends App {
     case Right(messageResponse) =>
       println("Claude's tool-assisted calculation:")
       messageResponse.content.foreach {
-        case ContentBlock.TextContent(text, _) =>
+        case ContentBlock.Text(text, _) =>
           println(text)
-        case ContentBlock.ToolUseContent(id, name, input) =>
+        case ContentBlock.ToolUse(id, name, input) =>
           val result = simulateToolExecution(name, input)
           println(s"Calculated result: $result")
         case _ => // Handle other content types if needed
@@ -122,17 +121,17 @@ object ClaudeToolCallingExample extends App {
   backend.close()
 
   // Simulate tool execution (in a real implementation, these would call actual services)
-  private def simulateToolExecution(toolName: String, input: Map[String, ujson.Value]): String =
+  private def simulateToolExecution(toolName: String, input: Map[String, io.circe.Json]): String =
     toolName match {
       case "get_weather" =>
-        val location = input.get("location").map(_.str).getOrElse("Unknown")
-        val unit = input.get("unit").map(_.str).getOrElse("celsius")
+        val location = input.get("location").flatMap(_.asString).getOrElse("Unknown")
+        val unit = input.get("unit").flatMap(_.asString).getOrElse("celsius")
         s"Weather in $location: 22°${if (unit == "celsius") "C" else "F"}, partly cloudy"
 
       case "calculate" =>
-        val operation = input.get("operation").map(_.str).getOrElse("")
-        val a = input.get("a").map(_.num).getOrElse(0.0)
-        val b = input.get("b").map(_.num).getOrElse(0.0)
+        val operation = input.get("operation").flatMap(_.asString).getOrElse("")
+        val a = input.get("a").flatMap(_.asNumber.map(_.toDouble)).getOrElse(0.0)
+        val b = input.get("b").flatMap(_.asNumber.map(_.toDouble)).getOrElse(0.0)
 
         val result = operation match {
           case "add"      => a + b

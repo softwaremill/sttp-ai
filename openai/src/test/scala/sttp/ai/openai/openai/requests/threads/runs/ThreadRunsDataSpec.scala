@@ -4,8 +4,7 @@ import org.scalatest.EitherValues
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
 import sttp.ai.openai.fixtures
-import sttp.ai.core.json.SnakePickle
-import sttp.ai.openai.requests.assistants.Tool.{CodeInterpreterTool, FileSearchTool, FunctionTool}
+import sttp.ai.openai.requests.assistants.Tool.{CodeInterpreter, FileSearch, Function}
 import sttp.ai.openai.requests.completions.chat.message.ToolResource.CodeInterpreterToolResource
 import sttp.ai.openai.requests.completions.chat.message.ToolResources
 import sttp.ai.openai.requests.threads.ThreadsRequestBody.CreateThreadBody
@@ -18,8 +17,11 @@ import sttp.ai.openai.requests.threads.runs.ThreadRunsResponseData.{
   RunStepData,
   Usage
 }
-import sttp.ai.openai.utils.JsonUtils
-import ujson.{Arr, Obj, Str}
+import io.circe.parser.{decode, parse}
+import io.circe.syntax._
+import sttp.ai.openai.json.OpenAIDerivedCodecs._
+import sttp.ai.openai.json.OpenAIManualCodecs._
+import io.circe.Json
 
 class ThreadRunsDataSpec extends AnyFlatSpec with Matchers with EitherValues {
 
@@ -29,10 +31,10 @@ class ThreadRunsDataSpec extends AnyFlatSpec with Matchers with EitherValues {
       assistantId = "asst_abc123"
     )
 
-    val jsonRequest: ujson.Value = ujson.read(fixtures.ThreadRunsFixture.jsonCreateRunRequest)
+    val jsonRequest: io.circe.Json = parse(fixtures.ThreadRunsFixture.jsonCreateRunRequest).value
 
     // when
-    val serializedJson: ujson.Value = SnakePickle.writeJs(givenRequest)
+    val serializedJson: io.circe.Json = givenRequest.asJson.deepDropNullValues
 
     // then
     serializedJson shouldBe jsonRequest
@@ -59,14 +61,14 @@ class ThreadRunsDataSpec extends AnyFlatSpec with Matchers with EitherValues {
       lastError = None,
       model = "gpt-4",
       instructions = None,
-      tools = Seq(CodeInterpreterTool),
+      tools = Seq(CodeInterpreter),
       toolResources = Some(ToolResources(Some(CodeInterpreterToolResource(Some(Seq("file-abc123", "file-abc456")))))),
       metadata = Map.empty,
       usage = None
     )
 
     // when
-    val givenResponse: Either[Exception, RunData] = JsonUtils.deserializeJsonSnake.apply(jsonResponse)
+    val givenResponse: Either[Exception, RunData] = decode[RunData](jsonResponse)
 
     // then
     givenResponse.value shouldBe expectedResponse
@@ -81,10 +83,10 @@ class ThreadRunsDataSpec extends AnyFlatSpec with Matchers with EitherValues {
       )
     )
 
-    val jsonRequest: ujson.Value = ujson.read(fixtures.ThreadRunsFixture.jsonCreateThreadAndRunRequest)
+    val jsonRequest: io.circe.Json = parse(fixtures.ThreadRunsFixture.jsonCreateThreadAndRunRequest).value
 
     // when
-    val serializedJson: ujson.Value = SnakePickle.writeJs(givenRequest)
+    val serializedJson: io.circe.Json = givenRequest.asJson.deepDropNullValues
 
     // then
     serializedJson shouldBe jsonRequest
@@ -118,7 +120,7 @@ class ThreadRunsDataSpec extends AnyFlatSpec with Matchers with EitherValues {
     )
 
     // when
-    val givenResponse: Either[Exception, RunData] = JsonUtils.deserializeJsonSnake.apply(jsonResponse)
+    val givenResponse: Either[Exception, RunData] = decode[RunData](jsonResponse)
 
     // then
     givenResponse.value shouldBe expectedResponse
@@ -149,7 +151,7 @@ class ThreadRunsDataSpec extends AnyFlatSpec with Matchers with EitherValues {
             lastError = None,
             model = "gpt-3.5-turbo",
             instructions = None,
-            tools = Seq(CodeInterpreterTool),
+            tools = Seq(CodeInterpreter),
             toolResources = Some(ToolResources(Some(CodeInterpreterToolResource(Some(Seq("file-abc123", "file-abc456")))))),
             metadata = Map.empty,
             usage = Some(Usage(promptTokens = 123, completionTokens = 456, totalTokens = 579))
@@ -169,7 +171,7 @@ class ThreadRunsDataSpec extends AnyFlatSpec with Matchers with EitherValues {
             lastError = None,
             model = "gpt-3.5-turbo",
             instructions = None,
-            tools = Seq(CodeInterpreterTool),
+            tools = Seq(CodeInterpreter),
             toolResources = Some(ToolResources(Some(CodeInterpreterToolResource(Some(Seq("file-abc123", "file-abc456")))))),
             metadata = Map.empty,
             usage = Some(
@@ -187,7 +189,7 @@ class ThreadRunsDataSpec extends AnyFlatSpec with Matchers with EitherValues {
       )
 
     // when
-    val givenResponse: Either[Exception, ListRunsResponse] = JsonUtils.deserializeJsonSnake.apply(jsonResponse)
+    val givenResponse: Either[Exception, ListRunsResponse] = decode[ListRunsResponse](jsonResponse)
 
     // then
     givenResponse.value shouldBe expectedResponse
@@ -234,7 +236,7 @@ class ThreadRunsDataSpec extends AnyFlatSpec with Matchers with EitherValues {
       )
 
     // when
-    val givenResponse: Either[Exception, ListRunStepsResponse] = JsonUtils.deserializeJsonSnake.apply(jsonResponse)
+    val givenResponse: Either[Exception, ListRunStepsResponse] = decode[ListRunStepsResponse](jsonResponse)
 
     // then
     givenResponse.value shouldBe expectedResponse
@@ -262,14 +264,14 @@ class ThreadRunsDataSpec extends AnyFlatSpec with Matchers with EitherValues {
         lastError = None,
         model = "gpt-3.5-turbo",
         instructions = None,
-        tools = Seq(CodeInterpreterTool),
+        tools = Seq(CodeInterpreter),
         toolResources = Some(ToolResources(Some(CodeInterpreterToolResource(Some(Seq("file-abc123", "file-abc456")))))),
         metadata = Map.empty,
         usage = Some(Usage(promptTokens = 123, completionTokens = 456, totalTokens = 579))
       )
 
     // when
-    val givenResponse: Either[Exception, RunData] = JsonUtils.deserializeJsonSnake.apply(jsonResponse)
+    val givenResponse: Either[Exception, RunData] = decode[RunData](jsonResponse)
 
     // then
     givenResponse.value shouldBe expectedResponse
@@ -301,7 +303,7 @@ class ThreadRunsDataSpec extends AnyFlatSpec with Matchers with EitherValues {
       )
 
     // when
-    val givenResponse: Either[Exception, RunStepData] = JsonUtils.deserializeJsonSnake.apply(jsonResponse)
+    val givenResponse: Either[Exception, RunStepData] = decode[RunStepData](jsonResponse)
 
     // then
     givenResponse.value shouldBe expectedResponse
@@ -313,10 +315,10 @@ class ThreadRunsDataSpec extends AnyFlatSpec with Matchers with EitherValues {
       metadata = Map("user_id" -> "user_abc123")
     )
 
-    val jsonRequest: ujson.Value = ujson.read(fixtures.ThreadRunsFixture.jsonModifyRunRequest)
+    val jsonRequest: io.circe.Json = parse(fixtures.ThreadRunsFixture.jsonModifyRunRequest).value
 
     // when
-    val serializedJson: ujson.Value = SnakePickle.writeJs(givenRequest)
+    val serializedJson: io.circe.Json = givenRequest.asJson.deepDropNullValues
 
     // then
     serializedJson shouldBe jsonRequest
@@ -344,14 +346,14 @@ class ThreadRunsDataSpec extends AnyFlatSpec with Matchers with EitherValues {
         lastError = None,
         model = "gpt-3.5-turbo",
         instructions = None,
-        tools = Seq(CodeInterpreterTool),
+        tools = Seq(CodeInterpreter),
         toolResources = Some(ToolResources(Some(CodeInterpreterToolResource(Some(Seq("file-abc123", "file-abc456")))))),
         metadata = Map("user_id" -> "user_abc123"),
         usage = Some(Usage(promptTokens = 123, completionTokens = 456, totalTokens = 579))
       )
 
     // when
-    val givenResponse: Either[Exception, RunData] = JsonUtils.deserializeJsonSnake.apply(jsonResponse)
+    val givenResponse: Either[Exception, RunData] = decode[RunData](jsonResponse)
 
     // then
     givenResponse.value shouldBe expectedResponse
@@ -368,10 +370,10 @@ class ThreadRunsDataSpec extends AnyFlatSpec with Matchers with EitherValues {
       )
     )
 
-    val jsonRequest: ujson.Value = ujson.read(fixtures.ThreadRunsFixture.jsonSubmitToolOutputsRequest)
+    val jsonRequest: io.circe.Json = parse(fixtures.ThreadRunsFixture.jsonSubmitToolOutputsRequest).value
 
     // when
-    val serializedJson: ujson.Value = SnakePickle.writeJs(givenRequest)
+    val serializedJson: io.circe.Json = givenRequest.asJson.deepDropNullValues
 
     // then
     serializedJson shouldBe jsonRequest
@@ -400,22 +402,22 @@ class ThreadRunsDataSpec extends AnyFlatSpec with Matchers with EitherValues {
         model = "gpt-4",
         instructions = Some("You tell the weather."),
         tools = Seq(
-          FunctionTool(
+          Function(
             name = "get_weather",
             description = "Determine weather in my location",
             parameters = Map(
-              "type" -> Str("object"),
-              "properties" -> Obj(
-                "location" -> Obj(
-                  "type" -> Str("string"),
-                  "description" -> Str("The city and state e.g. San Francisco, CA")
+              "type" := "object",
+              "properties" := Map(
+                "location" := Map(
+                  "type" := "string",
+                  "description" := "The city and state e.g. San Francisco, CA"
                 ),
-                "unit" -> Obj(
-                  "type" -> Str("string"),
-                  "enum" -> Arr(Str("c"), Str("f"))
+                "unit" := Map(
+                  "type" := "string",
+                  "enum" := Seq("c", "f")
                 )
               ),
-              "required" -> Arr(Str("location"))
+              "required" := Seq("location")
             )
           )
         ),
@@ -425,7 +427,7 @@ class ThreadRunsDataSpec extends AnyFlatSpec with Matchers with EitherValues {
       )
 
     // when
-    val givenResponse: Either[Exception, RunData] = JsonUtils.deserializeJsonSnake.apply(jsonResponse)
+    val givenResponse: Either[Exception, RunData] = decode[RunData](jsonResponse)
 
     // then
     givenResponse.value shouldBe expectedResponse
@@ -453,14 +455,14 @@ class ThreadRunsDataSpec extends AnyFlatSpec with Matchers with EitherValues {
         lastError = None,
         model = "gpt-4",
         instructions = Some("You summarize books."),
-        tools = Seq(FileSearchTool),
+        tools = Seq(FileSearch),
         toolResources = None,
         metadata = Map.empty,
         usage = None
       )
 
     // when
-    val givenResponse: Either[Exception, RunData] = JsonUtils.deserializeJsonSnake.apply(jsonResponse)
+    val givenResponse: Either[Exception, RunData] = decode[RunData](jsonResponse)
 
     // then
     givenResponse.value shouldBe expectedResponse

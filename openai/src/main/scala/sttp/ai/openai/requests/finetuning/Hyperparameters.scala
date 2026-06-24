@@ -1,7 +1,5 @@
 package sttp.ai.openai.requests.finetuning
 
-import sttp.ai.core.json.SnakePickle
-
 /** @param batchSize
   *   Number of examples in each batch. A larger batch size means that model parameters are updated less frequently, but with lower
   *   variance.
@@ -18,7 +16,3 @@ case class Hyperparameters(
     nEpochs: Option[Int] = None,
     beta: Option[Float] = None
 )
-
-object Hyperparameters {
-  implicit val hyperparametersW: SnakePickle.ReadWriter[Hyperparameters] = SnakePickle.macroRW[Hyperparameters]
-}

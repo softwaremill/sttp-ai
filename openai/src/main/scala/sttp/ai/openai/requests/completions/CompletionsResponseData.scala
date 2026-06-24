@@ -1,6 +1,5 @@
 package sttp.ai.openai.requests.completions
 
-import sttp.ai.core.json.SnakePickle
 import sttp.ai.openai.requests.completions.CompletionsRequestBody.CompletionModel
 
 object CompletionsResponseData {
@@ -10,9 +9,6 @@ object CompletionsResponseData {
       finishReason: String,
       logprobs: Option[String] = None
   )
-  object Choices {
-    implicit val choicesR: SnakePickle.Reader[Choices] = SnakePickle.macroR[Choices]
-  }
 
   case class CompletionsResponse(
       id: String,
@@ -22,7 +18,4 @@ object CompletionsResponseData {
       choices: Seq[Choices],
       usage: Usage
   )
-  object CompletionsResponse {
-    implicit val choicesR: SnakePickle.Reader[CompletionsResponse] = SnakePickle.macroR[CompletionsResponse]
-  }
 }

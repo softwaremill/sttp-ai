@@ -7,7 +7,8 @@ import sttp.model.ResponseMetadata
 import sttp.model.sse.ServerSentEvent
 import sttp.ai.openai.OpenAI
 import sttp.ai.openai.OpenAIExceptions.OpenAIException
-import sttp.ai.openai.json.SttpUpickleApiExtension.deserializeJsonSnake
+import sttp.ai.openai.json.OpenAIJson.deserializeJsonSnake
+import sttp.ai.openai.json.OpenAIDerivedCodecs._
 import sttp.ai.openai.requests.completions.chat.ChatChunkRequestResponseData.ChatChunkResponse
 import sttp.ai.openai.requests.completions.chat.ChatChunkRequestResponseData.ChatChunkResponse.DoneEvent
 import sttp.ai.openai.requests.completions.chat.ChatRequestBody.ChatBody

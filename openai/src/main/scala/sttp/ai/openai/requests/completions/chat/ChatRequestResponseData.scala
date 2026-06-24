@@ -1,6 +1,5 @@
 package sttp.ai.openai.requests.completions.chat
 
-import sttp.ai.core.json.SnakePickle
 import sttp.ai.openai.requests.completions.Usage
 
 object ChatRequestResponseData {
@@ -28,10 +27,6 @@ object ChatRequestResponseData {
       audio: Option[Audio] = None
   )
 
-  object Message {
-    implicit val messageR: SnakePickle.Reader[Message] = SnakePickle.macroR[Message]
-  }
-
   /** An object representing a list of chat completion messages.
     *
     * @param `object`
@@ -53,10 +48,6 @@ object ChatRequestResponseData {
       hasMore: Boolean
   )
 
-  object ListMessageResponse {
-    implicit val listMessageR: SnakePickle.Reader[ListMessageResponse] = SnakePickle.macroR[ListMessageResponse]
-  }
-
   /** Represents a choice in the chat completion.
     *
     * @param message
@@ -77,10 +68,6 @@ object ChatRequestResponseData {
       logprobs: Option[Logprobs] = None
   )
 
-  object Choices {
-    implicit val choicesR: SnakePickle.Reader[Choices] = SnakePickle.macroR[Choices]
-  }
-
   /** @param content
     *   A list of message content tokens with log probability information.
     * @param refusal
@@ -90,10 +77,6 @@ object ChatRequestResponseData {
       content: Option[Seq[LogprobData]] = None,
       refusal: Option[Seq[LogprobData]] = None
   )
-
-  object Logprobs {
-    implicit val logprobsR: SnakePickle.Reader[Logprobs] = SnakePickle.macroR[Logprobs]
-  }
 
   /** @param token
     *   The token.
@@ -115,10 +98,6 @@ object ChatRequestResponseData {
       topLogprobs: Seq[TopLogprobs]
   )
 
-  object LogprobData {
-    implicit val contentR: SnakePickle.Reader[LogprobData] = SnakePickle.macroR[LogprobData]
-  }
-
   /** @param token
     *   The token.
     * @param logprob
@@ -134,10 +113,6 @@ object ChatRequestResponseData {
       logprob: Float,
       bytes: Option[Seq[Int]] = None
   )
-
-  object TopLogprobs {
-    implicit val topLogprobsR: SnakePickle.Reader[TopLogprobs] = SnakePickle.macroR[TopLogprobs]
-  }
 
   /** Represents the response of a chat completion.
     *
@@ -170,10 +145,6 @@ object ChatRequestResponseData {
       serviceTier: Option[String] = None
   )
 
-  object ChatResponse {
-    implicit val chatResponseR: SnakePickle.Reader[ChatResponse] = SnakePickle.macroR[ChatResponse]
-  }
-
   /** An object representing a list of chat completions.
     *
     * @param `object`
@@ -195,19 +166,10 @@ object ChatRequestResponseData {
       hasMore: Boolean
   )
 
-  object ListChatResponse {
-    implicit val listChatResponseR: SnakePickle.Reader[ListChatResponse] = SnakePickle.macroR[ListChatResponse]
-  }
-
   case class DeleteChatCompletionResponse(
       `object`: String = "chat.completion.deleted",
       id: String,
       deleted: Boolean
   )
-
-  object DeleteChatCompletionResponse {
-    implicit val deleteChatCompletionResponseR: SnakePickle.Reader[DeleteChatCompletionResponse] =
-      SnakePickle.macroR[DeleteChatCompletionResponse]
-  }
 
 }

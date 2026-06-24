@@ -12,7 +12,9 @@ import sttp.ai.claude.models.{ClaudeModel, Message}
 import sttp.ai.claude.requests.MessageRequest
 import sttp.ai.claude.responses.MessageStreamResponse
 import sttp.ai.claude.responses.MessageStreamResponse.EventData.DoneEvent
-import sttp.ai.core.json.SnakePickle.*
+import io.circe.parser.decode
+import sttp.ai.claude.json.ClaudeManualCodecs._
+import sttp.ai.claude.json.ClaudeDerivedCodecs._
 import sttp.client4.DefaultSyncBackend
 import sttp.client4.testing.ResponseStub
 import sttp.model.StatusCode
@@ -118,7 +120,7 @@ class ClaudeOxClientSpec extends AnyFlatSpec with Matchers with EitherValues {
       )
 
       // when & then
-      assertStreamedMessage(streamedResponse, messageChunks.map(read[MessageStreamResponse](_)))
+      assertStreamedMessage(streamedResponse, messageChunks.map(decode[MessageStreamResponse](_).fold(throw _, identity)))
     }
   }
 
@@ -140,7 +142,7 @@ class ClaudeOxClientSpec extends AnyFlatSpec with Matchers with EitherValues {
       )
 
       // when & then
-      assertStreamedMessage(streamedResponse, messageChunks.map(read[MessageStreamResponse](_)))
+      assertStreamedMessage(streamedResponse, messageChunks.map(decode[MessageStreamResponse](_).fold(throw _, identity)))
     }
   }
 
@@ -149,11 +151,11 @@ class ClaudeOxClientSpec extends AnyFlatSpec with Matchers with EitherValues {
     import sttp.ai.claude.responses.MessageStreamResponse.ContentDelta.*
     import sttp.ai.claude.responses.MessageStreamResponse.ContentBlockDelta
 
-    read[MessageStreamResponse](contentBlockDelta).asInstanceOf[ContentBlockDelta].delta shouldBe a[TextDelta]
-    read[MessageStreamResponse](inputJsonDelta).asInstanceOf[ContentBlockDelta].delta shouldBe a[InputJsonDelta]
-    read[MessageStreamResponse](thinkingDelta).asInstanceOf[ContentBlockDelta].delta shouldBe a[ThinkingDelta]
-    read[MessageStreamResponse](signatureDelta).asInstanceOf[ContentBlockDelta].delta shouldBe a[SignatureDelta]
-    read[MessageStreamResponse](citationsDelta).asInstanceOf[ContentBlockDelta].delta shouldBe a[CitationsDelta]
+    decode[MessageStreamResponse](contentBlockDelta).fold(throw _, identity).asInstanceOf[ContentBlockDelta].delta shouldBe a[TextDelta]
+    decode[MessageStreamResponse](inputJsonDelta).fold(throw _, identity).asInstanceOf[ContentBlockDelta].delta shouldBe a[InputJsonDelta]
+    decode[MessageStreamResponse](thinkingDelta).fold(throw _, identity).asInstanceOf[ContentBlockDelta].delta shouldBe a[ThinkingDelta]
+    decode[MessageStreamResponse](signatureDelta).fold(throw _, identity).asInstanceOf[ContentBlockDelta].delta shouldBe a[SignatureDelta]
+    decode[MessageStreamResponse](citationsDelta).fold(throw _, identity).asInstanceOf[ContentBlockDelta].delta shouldBe a[CitationsDelta]
   }
 
   private def assertStreamedMessage(givenResponse: InputStream, expectedResponse: Seq[MessageStreamResponse])(using Ox) = {

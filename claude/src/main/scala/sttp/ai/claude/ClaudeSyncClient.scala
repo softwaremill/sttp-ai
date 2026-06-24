@@ -5,7 +5,8 @@ import sttp.ai.claude.config.ClaudeConfig
 import sttp.ai.claude.models.{ContentBlock, OutputFormat}
 import sttp.ai.claude.requests.MessageRequest
 import sttp.ai.claude.responses.{MessageResponse, ModelsResponse}
-import sttp.ai.core.json.SnakePickle
+import io.circe.Decoder
+import io.circe.parser.decode
 import sttp.client4.{DefaultSyncBackend, SyncBackend}
 import sttp.tapir.{Schema => TapirSchema}
 
@@ -18,18 +19,18 @@ class ClaudeSyncClient(config: ClaudeConfig, backend: SyncBackend = DefaultSyncB
       case Right(response) => response
     }
 
-  def createMessageAs[T: TapirSchema: SnakePickle.Reader](request: MessageRequest): T = {
+  def createMessageAs[T: TapirSchema: Decoder](request: MessageRequest): T = {
     val withSchema =
       if (request.usesStructuredOutput) request
       else request.withStructuredOutput(OutputFormat.JsonSchema.withTapirSchema[T])
 
     val response = createMessage(withSchema)
 
-    val text = response.content.collect { case ContentBlock.TextContent(t, _) => t }.mkString
+    val text = response.content.collect { case ContentBlock.Text(t, _) => t }.mkString
 
-    try SnakePickle.read[T](text)
-    catch {
-      case e: Exception =>
+    decode[T](text) match {
+      case Right(value) => value
+      case Left(e) =>
         throw new DeserializationClaudeException(s"Failed to parse structured output: ${e.getMessage}", null)
     }
   }

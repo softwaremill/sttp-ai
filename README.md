@@ -184,7 +184,7 @@ object Main:
     response.body match {
       case Right(messageResponse) =>
         messageResponse.content.foreach {
-          case ContentBlock.TextContent(text, _) => println(text)
+          case ContentBlock.Text(text, _) => println(text)
           case _ => // Handle other content types if needed
         }
         println(s"Usage: ${messageResponse.usage}")
@@ -304,7 +304,7 @@ Claude's structured output feature (currently in beta) allows you to enforce tha
 
 #### Typed responses with `createMessageAs[T]`
 
-For the shortest path, use `ClaudeSyncClient.createMessageAs[T]` — the response schema is derived from `T` via Tapir, set on the request automatically, and the model's response is parsed back into `T` via uPickle.
+For the shortest path, use `ClaudeSyncClient.createMessageAs[T]` — the response schema is derived from `T` via Tapir, set on the request automatically, and the model's response is parsed back into `T` via circe.
 
 ```scala mdoc:compile-only
 //> using dep com.softwaremill.sttp.ai::claude:0.4.14
@@ -312,11 +312,10 @@ For the shortest path, use `ClaudeSyncClient.createMessageAs[T]` — the respons
 import sttp.ai.claude.ClaudeSyncClient
 import sttp.ai.claude.models.Message
 import sttp.ai.claude.requests.MessageRequest
-import sttp.ai.core.json.SnakePickle
 import sttp.tapir.Schema
 
-case class Language(name: String, paradigm: String, summary: String) derives SnakePickle.ReadWriter, Schema
-case class LanguageList(languages: List[Language]) derives SnakePickle.ReadWriter, Schema
+case class Language(name: String, paradigm: String, summary: String) derives io.circe.Codec.AsObject, Schema
+case class LanguageList(languages: List[Language]) derives io.circe.Codec.AsObject, Schema
 
 object Main:
   def main(args: Array[String]): Unit =
@@ -334,7 +333,7 @@ object Main:
     } finally claude.close()
 ```
 
-`T` must have both a `sttp.tapir.Schema[T]` (for schema generation) and a `SnakePickle.ReadWriter[T]` (for parsing) — the `derives` clause supplies both in Scala 3.
+`T` must have both a `sttp.tapir.Schema[T]` (for schema generation) and a a circe `Codec[T]` (for parsing) — the `derives` clause supplies both in Scala 3.
 
 #### Basic Structured Output Example
 
@@ -346,7 +345,6 @@ import sttp.ai.claude.*
 import sttp.ai.claude.config.ClaudeConfig
 import sttp.ai.claude.models.{ContentBlock, Message, OutputFormat}
 import sttp.ai.claude.requests.MessageRequest
-import sttp.ai.core.json.SnakePickle
 import sttp.apispec.{Schema => ASchema}
 import sttp.client4.*
 import sttp.tapir.Schema
@@ -363,7 +361,7 @@ object StructuredOutputExample:
   )
 
   object PersonInfo:
-    given SnakePickle.Reader[PersonInfo] = SnakePickle.macroR[PersonInfo]
+    given io.circe.Decoder[PersonInfo] = io.circe.generic.semiauto.deriveDecoder[PersonInfo]
 
   def main(args: Array[String]): Unit =
     val config = ClaudeConfig.fromEnv
@@ -391,12 +389,12 @@ object StructuredOutputExample:
     response.body match {
       case Right(messageResponse) =>
         messageResponse.content.foreach {
-          case ContentBlock.TextContent(text, _) =>
+          case ContentBlock.Text(text, _) =>
             println("Structured JSON output:")
             println(text)
 
             // Parse JSON response back to case class
-            val personInfo = SnakePickle.read[PersonInfo](text)
+            val personInfo = io.circe.parser.decode[PersonInfo](text).toTry.get
             println(s"Parsed: ${personInfo.name}, age ${personInfo.age}, ${personInfo.occupation}")
             println(s"Skills: ${personInfo.skills.mkString(", ")}")
           case _ => // Handle other content types
@@ -483,14 +481,14 @@ val request = MessageRequest.withTools(
 val response = client.createMessage(request)
 
 response.content.foreach {
-  case t: ContentBlock.TextContent              => println(t.text)
-  case s: ContentBlock.ServerToolUseContent     =>
+  case t: ContentBlock.Text              => println(t.text)
+  case s: ContentBlock.ServerToolUse     =>
     println(s"Searched for: ${s.input.get("query").map(_.str).getOrElse("")}")
-  case r: ContentBlock.WebSearchToolResultContent =>
+  case r: ContentBlock.WebSearchToolResult =>
     r.content match {
-      case ContentBlock.WebSearchToolResult.Results(items) =>
+      case ContentBlock.WebSearchToolResultBlock.Results(items) =>
         items.foreach(it => println(s"- ${it.title} — ${it.url}"))
-      case ContentBlock.WebSearchToolResult.Error(code) =>
+      case ContentBlock.WebSearchToolResultBlock.Error(code) =>
         println(s"Web search failed: $code")
     }
   case _                                        => ()
@@ -673,14 +671,13 @@ Framework for building autonomous AI agents that iteratively solve tasks using t
 //> using dep com.softwaremill.sttp.ai::openai:0.4.14
 
 import sttp.ai.core.agent.*
-import sttp.ai.core.json.SnakePickle
 import sttp.ai.openai.OpenAI
 import sttp.ai.openai.agent.OpenAIAgent
 import sttp.client4.DefaultSyncBackend
 import sttp.tapir.Schema
 
 object BasicExample extends App {
-  case class WeatherInput(location: String) derives SnakePickle.ReadWriter, Schema
+  case class WeatherInput(location: String) derives io.circe.Codec.AsObject, Schema
 
   val weatherTool = AgentTool.fromFunction(
     "get_weather",
@@ -845,14 +842,13 @@ Return `Left(message)` to send the error to the LLM and continue the loop, or `R
 Tools are defined using type-safe case classes with the `derives` syntax:
 
 ```scala
-import sttp.ai.core.json.SnakePickle
 import sttp.tapir.Schema
 
 case class CalculatorInput(
   operation: String,
   a: Double,
   b: Double
-) derives SnakePickle.ReadWriter, Schema
+) derives io.circe.Codec.AsObject, Schema
 
 val calculatorTool = AgentTool.fromFunction(
   "calculate",
@@ -869,7 +865,7 @@ val calculatorTool = AgentTool.fromFunction(
 }
 ```
 
-The `derives SnakePickle.ReadWriter, Schema` clause automatically generates the necessary serialization and schema information for the tool.
+The `derives io.circe.Codec.AsObject, Schema` clause automatically generates the necessary serialization and schema information for the tool.
 
 #### Agent Result
 
@@ -886,7 +882,7 @@ case class AgentResult[T](
 
 #### Typed responses with `runAs[T]`
 
-Set `responseSchema` on `AgentConfig` and use `runAs[T]` to receive a parsed Scala value as the agent's final answer. The response schema, derived from `T`, is sent to the model to define the structured output of the agent's final answer. The answer is then parsed back into `T` via uPickle.
+Set `responseSchema` on `AgentConfig` and use `runAs[T]` to receive a parsed Scala value as the agent's final answer. The response schema, derived from `T`, is sent to the model to define the structured output of the agent's final answer. The answer is then parsed back into `T` via circe.
 
 On parse failure the iteration trace is preserved: `finalAnswer` is `Left(AgentParseError)` rather than a thrown exception.
 
@@ -894,14 +890,13 @@ On parse failure the iteration trace is preserved: `finalAnswer` is `Left(AgentP
 //> using dep com.softwaremill.sttp.ai::openai:0.4.14
 
 import sttp.ai.core.agent.*
-import sttp.ai.core.json.SnakePickle
 import sttp.ai.openai.OpenAI
 import sttp.ai.openai.agent.OpenAIAgent
 import sttp.client4.DefaultSyncBackend
 import sttp.tapir.Schema
 
-case class TripSummary(weather: String, calculation: String, conclusion: String) derives SnakePickle.ReadWriter, Schema
-case class WeatherInput(location: String) derives SnakePickle.ReadWriter, Schema
+case class TripSummary(weather: String, calculation: String, conclusion: String) derives io.circe.Codec.AsObject, Schema
+case class WeatherInput(location: String) derives io.circe.Codec.AsObject, Schema
 
 object TypedAgentExample extends App {
   val weatherTool = AgentTool.fromFunction("get_weather", "Get the current weather for a location") {
@@ -1348,7 +1343,7 @@ See also the [ChatProxy](https://github.com/softwaremill/sttp-openai/blob/master
 
 #### Structured Outputs/JSON Schema support
 
-[OpenAI's Structured Outputs](https://platform.openai.com/docs/guides/structured-outputs/introduction) constrain the model to produce JSON matching a given JSON Schema. The simplest way to use them is `OpenAISyncClient.createChatCompletionAs[T]` — the response schema is derived from a Scala case class via Tapir, set as `responseFormat` automatically, and the model's response is parsed back into `T` via uPickle:
+[OpenAI's Structured Outputs](https://platform.openai.com/docs/guides/structured-outputs/introduction) constrain the model to produce JSON matching a given JSON Schema. The simplest way to use them is `OpenAISyncClient.createChatCompletionAs[T]` — the response schema is derived from a Scala case class via Tapir, set as `responseFormat` automatically, and the model's response is parsed back into `T` via circe:
 
 ```scala mdoc:compile-only
 //> using dep com.softwaremill.sttp.ai::openai:0.4.14
@@ -1356,11 +1351,10 @@ See also the [ChatProxy](https://github.com/softwaremill/sttp-openai/blob/master
 import sttp.ai.openai.OpenAISyncClient
 import sttp.ai.openai.requests.completions.chat.ChatRequestBody.{ChatBody, ChatCompletionModel}
 import sttp.ai.openai.requests.completions.chat.message.*
-import sttp.ai.core.json.SnakePickle
 import sttp.tapir.Schema
 
-case class Step(explanation: String, output: String) derives SnakePickle.ReadWriter, Schema
-case class MathReasoning(steps: List[Step], finalAnswer: String) derives SnakePickle.ReadWriter, Schema
+case class Step(explanation: String, output: String) derives io.circe.Codec.AsObject, Schema
+case class MathReasoning(steps: List[Step], finalAnswer: String) derives io.circe.Codec.AsObject, Schema
 
 object Main:
   def main(args: Array[String]): Unit =
@@ -1377,7 +1371,7 @@ object Main:
     result.steps.foreach(s => println(s"  ${s.explanation} -> ${s.output}"))
 ```
 
-`T` must have both a `sttp.tapir.Schema[T]` (for schema generation) and a `SnakePickle.ReadWriter[T]` (for parsing). For custom parsing, the parser-based `createChatCompletion[T](body, name)(parseFunction)` overload remains available.
+`T` must have both a `sttp.tapir.Schema[T]` (for schema generation) and a a circe `Codec[T]` (for parsing). For custom parsing, the parser-based `createChatCompletion[T](body, name)(parseFunction)` overload remains available.
 
 ##### Lower-level: building `ResponseFormat.JsonSchema` yourself
 
@@ -1505,7 +1499,7 @@ In the example below I define such use case. User tries to book a flight, using 
 
 The key point here is using `FunctionTool.withSchema[T]` method. With this method, Json Schema can be automatically generated using TapirSchemaToJsonSchema functionality. All we need to do is to define case class with [Tapir Schema](https://tapir.softwaremill.com/en/latest/endpoint/schemas.html) defined for it.
 
-Another helpful feature is adding possibility to create ToolMessage object passing object instead of String, which will be automatically serialized to Json. All you have to do is just define SnakePickle.Writer for specific class.
+Another helpful feature is adding possibility to create ToolMessage object passing object instead of String, which will be automatically serialized to Json. All you have to do is just define a circe `Encoder` for the specific class.
 
 With all this in mind please remember that it is still required to deserialized arguments, which are sent back by Assistant to call our function.
 
@@ -1513,7 +1507,6 @@ With all this in mind please remember that it is still required to deserialized 
 //> using dep com.softwaremill.sttp.ai::openai:0.4.14
 
 import sttp.ai.openai.OpenAISyncClient
-import sttp.ai.core.json.SnakePickle
 import sttp.ai.openai.requests.completions.chat.ChatRequestBody.ChatBody
 import sttp.ai.openai.requests.completions.chat.ChatRequestBody.ChatCompletionModel.GPT4oMini
 import sttp.ai.openai.requests.completions.chat.ToolCall.FunctionToolCall
@@ -1525,17 +1518,17 @@ import sttp.tapir.generic.auto.*
 case class Passenger(name: String, age: Int)
 
 object Passenger:
-  given SnakePickle.Reader[Passenger] = SnakePickle.macroR[Passenger]
+  given io.circe.Decoder[Passenger] = io.circe.generic.semiauto.deriveDecoder[Passenger]
 
 case class FlightDetails(passenger: Passenger, departureCity: String, destinationCity: String)
 
 object FlightDetails:
-  given SnakePickle.Reader[FlightDetails] = SnakePickle.macroR[FlightDetails]
+  given io.circe.Decoder[FlightDetails] = io.circe.generic.semiauto.deriveDecoder[FlightDetails]
 
 case class BookedFlight(confirmationNumber: String, status: String)
 
 object BookedFlight:
-  given SnakePickle.Writer[BookedFlight] = SnakePickle.macroW[BookedFlight]
+  given io.circe.Encoder[BookedFlight] = io.circe.generic.semiauto.deriveEncoder[BookedFlight]
 
 object Main:
   def main(args: Array[String]): Unit =
@@ -1603,7 +1596,7 @@ object Main:
       case functionToolCall: FunctionToolCall => functionToolCall
 
     // Function arguments are manually deserialized, 'bookFlight' function mimic external function definition.
-    val bookedFlight = bookFlight(SnakePickle.read[FlightDetails](functionToolCall.function.arguments))
+    val bookedFlight = bookFlight(io.circe.parser.decode[FlightDetails](functionToolCall.function.arguments).toTry.get)
 
     val secondRequest = givenRequest.copy(
       messages = initialRequestMessage

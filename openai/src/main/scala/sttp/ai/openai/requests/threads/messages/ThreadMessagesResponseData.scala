@@ -1,6 +1,5 @@
 package sttp.ai.openai.requests.threads.messages
 
-import sttp.ai.core.json.SnakePickle
 import sttp.ai.openai.requests.completions.chat.message.Attachment
 
 object ThreadMessagesResponseData {
@@ -42,10 +41,6 @@ object ThreadMessagesResponseData {
       metadata: Map[String, String] = Map.empty
   )
 
-  object MessageData {
-    implicit val messageDataR: SnakePickle.Reader[MessageData] = SnakePickle.macroR[MessageData]
-  }
-
   /** @param object
     *   Always "list"
     * @param data
@@ -62,94 +57,64 @@ object ThreadMessagesResponseData {
       lastId: String,
       hasMore: Boolean
   )
-  object ListMessagesResponse {
-    implicit val listMessagesResponseR: SnakePickle.Reader[ListMessagesResponse] = SnakePickle.macroR[ListMessagesResponse]
-  }
+
   case class DeleteMessageResponse(
       `object`: String = "thread.message.deleted",
       id: String,
       deleted: Boolean
   )
-  object DeleteMessageResponse {
-    implicit val deleteMessageResponseR: SnakePickle.Reader[DeleteMessageResponse] = SnakePickle.macroR[DeleteMessageResponse]
-  }
 
   sealed trait Annotation
 
-  /** @param fileId
-    *   The ID of the specific File the citation is from.
-    *
-    * @param quote
-    *   The specific quote in the file.
-    */
-  case class FileCitation(
-      fileId: String,
-      quote: String
-  )
+  object Annotation {
 
-  implicit val fileCitationR: SnakePickle.Reader[FileCitation] = SnakePickle.macroR[FileCitation]
-
-  /** A citation within the message that points to a specific quote from a specific File associated with the assistant or the message.
-    * Generated when the assistant uses the "file_search" tool to search files.
-    * @param type
-    *   Always file_citation.
-    *
-    * @param text
-    *   The text in the message content that needs to be replaced.
-    *
-    * @param fileCitation
-    * @param startIndex
-    * @param endIndex
-    */
-  case class FileCitationAnnotation(
-      `type`: String,
-      text: String,
-      fileCitation: FileCitation,
-      startIndex: Int,
-      endIndex: Int
-  ) extends Annotation
-
-  implicit val fileCitationAnnotationR: SnakePickle.Reader[FileCitationAnnotation] = SnakePickle.macroR[FileCitationAnnotation]
-
-  /** @param fileId
-    *   The ID of the file that was generated.
-    */
-  case class FilePath(fileId: String)
-
-  implicit val filePathR: SnakePickle.Reader[FilePath] = SnakePickle.macroR[FilePath]
-
-  /** URL for the file that's generated when the assistant used the code_interpreter tool to generate a file.
-    * @param type
-    *   Always "file_path".
-    *
-    * @param text
-    *   The text in the message content that needs to be replaced.
-    *
-    * @param filePath
-    * @param startIndex
-    * @param endIndex
-    */
-  case class FilePathAnnotation(
-      `type`: String,
-      text: String,
-      filePath: FilePath,
-      startIndex: Int,
-      endIndex: Int
-  ) extends Annotation
-
-  implicit val filePathAnnotationR: SnakePickle.Reader[FilePathAnnotation] = SnakePickle.macroR[FilePathAnnotation]
-
-  implicit val annotationR: SnakePickle.Reader[Annotation] = SnakePickle
-    .reader[ujson.Value]
-    .map(json =>
-      json("type").str match {
-        case "file_citation" => SnakePickle.read[FileCitationAnnotation](json)
-        case "file_path"     => SnakePickle.read[FilePathAnnotation](json)
-      }
+    /** @param fileId
+      *   The ID of the specific File the citation is from.
+      * @param quote
+      *   The specific quote in the file.
+      */
+    case class FileCitationDetails(
+        fileId: String,
+        quote: String
     )
 
-  // should be sealed trait but there are problems with $type fields
-  trait Content
+    /** A citation within the message that points to a specific quote from a specific File associated with the assistant or the message.
+      * Generated when the assistant uses the "file_search" tool to search files.
+      *
+      * @param text
+      *   The text in the message content that needs to be replaced.
+      * @param fileCitation
+      * @param startIndex
+      * @param endIndex
+      */
+    case class FileCitation(
+        text: String,
+        fileCitation: FileCitationDetails,
+        startIndex: Int,
+        endIndex: Int
+    ) extends Annotation
+
+    /** @param fileId
+      *   The ID of the file that was generated.
+      */
+    case class FilePathDetails(fileId: String)
+
+    /** URL for the file that's generated when the assistant used the code_interpreter tool to generate a file.
+      *
+      * @param text
+      *   The text in the message content that needs to be replaced.
+      * @param filePath
+      * @param startIndex
+      * @param endIndex
+      */
+    case class FilePath(
+        text: String,
+        filePath: FilePathDetails,
+        startIndex: Int,
+        endIndex: Int
+    ) extends Annotation
+  }
+  sealed trait Content
 
   object Content {
 
@@ -159,22 +124,14 @@ object ThreadMessagesResponseData {
       */
     case class TextContentValue(value: String, annotations: Seq[Annotation])
 
-    implicit val textContentValueR: SnakePickle.Reader[TextContentValue] = SnakePickle.macroR[TextContentValue]
-
     /** The text content that is part of a message
-      * @param `type`
-      *   Always text.
       */
-    case class TextContent(`type`: String, text: TextContentValue) extends Content
-
-    implicit val textContentR: SnakePickle.Reader[TextContent] = SnakePickle.macroR[TextContent]
+    case class Text(text: TextContentValue) extends Content
 
     /** @param fileId
       *   string The File ID of the image in the message content.
       */
-    case class ImageFile(fileId: String)
-
-    implicit val imageFileR: SnakePickle.Reader[ImageFile] = SnakePickle.macroR[ImageFile]
+    case class ImageFileDetails(fileId: String)
 
     /** References an image File in the content of a message
       *
@@ -184,19 +141,7 @@ object ThreadMessagesResponseData {
       * @param imageFile
       *   object
       */
-    case class ImageFileContent(`type`: String, imageFile: ImageFile) extends Content
-
-    implicit val imageFileContentR: SnakePickle.Reader[ImageFileContent] = SnakePickle.macroR[ImageFileContent]
-
-    implicit val contentR: SnakePickle.Reader[Content] = SnakePickle
-      .reader[ujson.Value]
-      .map(json =>
-        json("type").str match {
-          case "text" =>
-            SnakePickle.read[TextContent](json)
-          case "image_file" => SnakePickle.read[ImageFileContent](json)
-        }
-      )
+    case class ImageFile(imageFile: ImageFileDetails) extends Content
   }
 
 }

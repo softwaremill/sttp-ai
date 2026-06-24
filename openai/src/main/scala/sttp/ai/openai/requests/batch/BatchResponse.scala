@@ -1,7 +1,5 @@
 package sttp.ai.openai.requests.batch
 
-import sttp.ai.core.json.SnakePickle
-
 /** @param id
   *   The ID of the batch.
   * @param `object`
@@ -68,18 +66,10 @@ case class BatchResponse(
     metadata: Option[Map[String, String]]
 )
 
-object BatchResponse {
-  implicit val batchResponseR: SnakePickle.Reader[BatchResponse] = SnakePickle.macroR[BatchResponse]
-}
-
 case class Errors(
     `object`: String = "list",
     data: Seq[Data]
 )
-
-object Errors {
-  implicit val errorsR: SnakePickle.Reader[Errors] = SnakePickle.macroR[Errors]
-}
 
 /** @param code
   *   An error code identifying the error type.
@@ -97,10 +87,6 @@ case class Data(
     line: Option[Int] = None
 )
 
-object Data {
-  implicit val dataR: SnakePickle.Reader[Data] = SnakePickle.macroR[Data]
-}
-
 /** @param total
   *   Total number of requests in the batch.
   * @param completed
@@ -114,10 +100,6 @@ case class RequestCounts(
     failed: Int
 )
 
-object RequestCounts {
-  implicit val requestCountsR: SnakePickle.Reader[RequestCounts] = SnakePickle.macroR[RequestCounts]
-}
-
 case class ListBatchResponse(
     `object`: String = "list",
     data: Seq[BatchResponse],
@@ -125,7 +107,3 @@ case class ListBatchResponse(
     lastId: String,
     hasMore: Boolean
 )
-
-object ListBatchResponse {
-  implicit val listBatchResponseR: SnakePickle.Reader[ListBatchResponse] = SnakePickle.macroR[ListBatchResponse]
-}

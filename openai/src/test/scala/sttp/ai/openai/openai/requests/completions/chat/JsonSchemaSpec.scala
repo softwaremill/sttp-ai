@@ -1,12 +1,17 @@
 package sttp.ai.openai.requests.completions.chat
 
+import io.circe.parser.parse
+import io.circe.syntax._
+import sttp.ai.openai.json.OpenAIDerivedCodecs._
+import sttp.ai.openai.json.OpenAIManualCodecs._
+
 import cats.implicits.catsSyntaxOptionId
 import org.scalatest.EitherValues
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
 import sttp.apispec.{Schema, SchemaType}
 import sttp.ai.openai.fixtures
-import sttp.ai.core.json.SnakePickle
+import sttp.ai.openai.requests.completions.chat.ChatRequestBody.ResponseFormat
 import sttp.ai.openai.requests.completions.chat.ChatRequestBody.ResponseFormat.JsonSchema
 
 import scala.collection.immutable.ListMap
@@ -15,9 +20,9 @@ class JsonSchemaSpec extends AnyFlatSpec with Matchers with EitherValues {
   "Given string JSON schema" should "be properly serialized to Json" in {
     val schema = Schema(SchemaType.String)
 
-    val jsonStringSchema = ujson.read(fixtures.JsonSchemaFixture.stringSchema)
+    val jsonStringSchema = parse(fixtures.JsonSchemaFixture.stringSchema).value
 
-    val serializedSchema = SnakePickle.writeJs(JsonSchema("testString", true.some, schema.some, "description".some))
+    val serializedSchema = (JsonSchema("testString", true.some, schema.some, "description".some): ResponseFormat).asJson.deepDropNullValues
 
     serializedSchema shouldBe jsonStringSchema
   }
@@ -25,9 +30,9 @@ class JsonSchemaSpec extends AnyFlatSpec with Matchers with EitherValues {
   "Given string JSON schema without strict field" should "be properly serialized to Json" in {
     val schema = Schema(SchemaType.String)
 
-    val jsonStringSchema = ujson.read(fixtures.JsonSchemaFixture.stringSchemaWithoutStrictField)
+    val jsonStringSchema = parse(fixtures.JsonSchemaFixture.stringSchemaWithoutStrictField).value
 
-    val serializedSchema = SnakePickle.writeJs(JsonSchema("testString", None, schema.some, None))
+    val serializedSchema = (JsonSchema("testString", None, schema.some, None): ResponseFormat).asJson.deepDropNullValues
 
     serializedSchema shouldBe jsonStringSchema
   }
@@ -35,9 +40,9 @@ class JsonSchemaSpec extends AnyFlatSpec with Matchers with EitherValues {
   "Given number JSON schema" should "be properly serialized to Json" in {
     val schema = Schema(SchemaType.Number)
 
-    val jsonNumberSchema = ujson.read(fixtures.JsonSchemaFixture.numberSchema)
+    val jsonNumberSchema = parse(fixtures.JsonSchemaFixture.numberSchema).value
 
-    val serializedSchema = SnakePickle.writeJs(JsonSchema("testNumber", true.some, schema.some, None))
+    val serializedSchema = (JsonSchema("testNumber", true.some, schema.some, None): ResponseFormat).asJson.deepDropNullValues
 
     serializedSchema shouldBe jsonNumberSchema
   }
@@ -46,9 +51,9 @@ class JsonSchemaSpec extends AnyFlatSpec with Matchers with EitherValues {
     val schema = Schema(SchemaType.Object)
       .copy(properties = ListMap("foo" -> Schema(SchemaType.String), "bar" -> Schema(SchemaType.Number)))
 
-    val jsonObjectSchema = ujson.read(fixtures.JsonSchemaFixture.objectSchema)
+    val jsonObjectSchema = parse(fixtures.JsonSchemaFixture.objectSchema).value
 
-    val serializedSchema = SnakePickle.writeJs(JsonSchema("testObject", true.some, schema.some, None))
+    val serializedSchema = (JsonSchema("testObject", true.some, schema.some, None): ResponseFormat).asJson.deepDropNullValues
 
     serializedSchema shouldBe jsonObjectSchema
   }
@@ -56,9 +61,9 @@ class JsonSchemaSpec extends AnyFlatSpec with Matchers with EitherValues {
   "Given array JSON schema" should "be properly serialized to Json" in {
     val schema = Schema(SchemaType.Array).copy(items = Some(Schema(SchemaType.String)))
 
-    val jsonArraySchema = ujson.read(fixtures.JsonSchemaFixture.arraySchema)
+    val jsonArraySchema = parse(fixtures.JsonSchemaFixture.arraySchema).value
 
-    val serializedSchema = SnakePickle.writeJs(JsonSchema("testArray", true.some, schema.some, None))
+    val serializedSchema = (JsonSchema("testArray", true.some, schema.some, None): ResponseFormat).asJson.deepDropNullValues
 
     serializedSchema shouldBe jsonArraySchema
   }

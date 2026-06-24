@@ -5,11 +5,13 @@ import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
 import sttp.client4.IsOption._
 import sttp.ai.openai.fixtures
-import sttp.ai.core.json.SnakePickle
-import sttp.ai.openai.requests.assistants.Tool.{CodeInterpreterTool, FileSearchTool}
+import sttp.ai.openai.requests.assistants.Tool.{CodeInterpreter, FileSearch}
 import sttp.ai.openai.requests.completions.chat.message.ToolResource.FileSearchToolResource
 import sttp.ai.openai.requests.completions.chat.message.ToolResources
-import sttp.ai.openai.utils.JsonUtils
+import io.circe.parser.{decode, parse}
+import io.circe.syntax._
+import sttp.ai.openai.json.OpenAIDerivedCodecs._
+import sttp.ai.openai.json.OpenAIManualCodecs._
 
 class AssistantsDataSpec extends AnyFlatSpec with Matchers with EitherValues {
 
@@ -18,17 +20,17 @@ class AssistantsDataSpec extends AnyFlatSpec with Matchers with EitherValues {
     val givenRequest = AssistantsRequestBody.CreateAssistantBody(
       instructions = Some("You are a personal math tutor. When asked a question, write and run Python code to answer the question."),
       name = Some("Math Tutor"),
-      tools = Seq(CodeInterpreterTool),
+      tools = Seq(CodeInterpreter),
       model = AssistantsModel.GPT4,
       reasoningEffort = Some(ReasoningEffort.Low),
       temperature = Some(1.0f),
       topP = Some(1.0f)
     )
 
-    val jsonRequest: ujson.Value = ujson.read(fixtures.AssistantsFixture.jsonCreateAssistantRequest)
+    val jsonRequest: io.circe.Json = parse(fixtures.AssistantsFixture.jsonCreateAssistantRequest).value
 
     // when
-    val serializedJson: ujson.Value = SnakePickle.writeJs(givenRequest)
+    val serializedJson: io.circe.Json = givenRequest.asJson.deepDropNullValues
 
     // then
     serializedJson shouldBe jsonRequest
@@ -49,14 +51,14 @@ class AssistantsDataSpec extends AnyFlatSpec with Matchers with EitherValues {
       model = AssistantsModel.GPT4,
       instructions = Some("You are a personal math tutor. When asked a question, write and run Python code to answer the question."),
       tools = Seq(
-        CodeInterpreterTool
+        CodeInterpreter
       ),
       toolResources = None,
       metadata = Map.empty
     )
 
     // when
-    val givenResponse: Either[Exception, AssistantData] = JsonUtils.deserializeJsonSnake.apply(jsonResponse)
+    val givenResponse: Either[Exception, AssistantData] = decode[AssistantData](jsonResponse)
 
     // then
     val json = givenResponse.value
@@ -115,7 +117,8 @@ class AssistantsDataSpec extends AnyFlatSpec with Matchers with EitherValues {
     )
 
     // when
-    val givenResponse: Either[Exception, ListAssistantsResponse] = JsonUtils.deserializeJsonSnake.apply(jsonResponse)
+    val givenResponse: Either[Exception, ListAssistantsResponse] =
+      decode[ListAssistantsResponse](jsonResponse)
 
     // then
     givenResponse.value shouldBe expectedResponse
@@ -173,7 +176,8 @@ class AssistantsDataSpec extends AnyFlatSpec with Matchers with EitherValues {
     )
 
     // when
-    val givenResponse: Either[Exception, ListAssistantsResponse] = JsonUtils.deserializeJsonSnake.apply(jsonResponse)
+    val givenResponse: Either[Exception, ListAssistantsResponse] =
+      decode[ListAssistantsResponse](jsonResponse)
 
     // then
     givenResponse.value shouldBe expectedResponse
@@ -194,14 +198,14 @@ class AssistantsDataSpec extends AnyFlatSpec with Matchers with EitherValues {
       AssistantsModel.GPT4,
       instructions = Some("You are an HR bot, and you have access to files to answer employee questions about company policies."),
       tools = Seq(
-        FileSearchTool
+        FileSearch
       ),
       toolResources = Some(ToolResources(None, Some(FileSearchToolResource(Some(Seq("vs_1")))))),
       metadata = Map.empty
     )
 
     // when
-    val givenResponse: Either[Exception, AssistantData] = JsonUtils.deserializeJsonSnake.apply(jsonResponse)
+    val givenResponse: Either[Exception, AssistantData] = decode[AssistantData](jsonResponse)
 
     // then
     givenResponse.value shouldBe expectedResponse
@@ -213,7 +217,7 @@ class AssistantsDataSpec extends AnyFlatSpec with Matchers with EitherValues {
       instructions = Some(
         "You are an HR bot, and you have access to files to answer employee questions about company policies. Always response with info from either of the files."
       ),
-      tools = Seq(FileSearchTool),
+      tools = Seq(FileSearch),
       model = Some("gpt-4"),
       toolResources = Some(ToolResources(None, Some(FileSearchToolResource(Some(Seq("vs_1", "vs_3")))))),
       reasoningEffort = Some(ReasoningEffort.Low),
@@ -221,10 +225,10 @@ class AssistantsDataSpec extends AnyFlatSpec with Matchers with EitherValues {
       topP = Some(1.0f)
     )
 
-    val jsonRequest: ujson.Value = ujson.read(fixtures.AssistantsFixture.jsonModifyAssistantRequest)
+    val jsonRequest: io.circe.Json = parse(fixtures.AssistantsFixture.jsonModifyAssistantRequest).value
 
     // when
-    val serializedJson: ujson.Value = SnakePickle.writeJs(givenRequest)
+    val serializedJson: io.circe.Json = givenRequest.asJson.deepDropNullValues
 
     // then
     serializedJson shouldBe jsonRequest
@@ -246,13 +250,13 @@ class AssistantsDataSpec extends AnyFlatSpec with Matchers with EitherValues {
       instructions = Some(
         "You are an HR bot, and you have access to files to answer employee questions about company policies. Always response with info from either of the files."
       ),
-      tools = Seq(FileSearchTool),
+      tools = Seq(FileSearch),
       toolResources = Some(ToolResources(None, Some(FileSearchToolResource(Some(Seq("vs_1", "vs_2")))))),
       metadata = Map.empty
     )
 
     // when
-    val givenResponse: Either[Exception, AssistantData] = JsonUtils.deserializeJsonSnake.apply(jsonResponse)
+    val givenResponse: Either[Exception, AssistantData] = decode[AssistantData](jsonResponse)
 
     // then
     givenResponse.value shouldBe expectedResponse
@@ -271,7 +275,8 @@ class AssistantsDataSpec extends AnyFlatSpec with Matchers with EitherValues {
     )
 
     // when
-    val givenResponse: Either[Exception, DeleteAssistantResponse] = JsonUtils.deserializeJsonSnake.apply(jsonResponse)
+    val givenResponse: Either[Exception, DeleteAssistantResponse] =
+      decode[DeleteAssistantResponse](jsonResponse)
 
     // then
     givenResponse.value shouldBe expectedResponse

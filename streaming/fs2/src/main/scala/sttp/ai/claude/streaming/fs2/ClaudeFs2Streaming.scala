@@ -10,7 +10,9 @@ import sttp.client4.StreamRequest
 import sttp.client4.impl.fs2.Fs2ServerSentEvents
 import sttp.model.ResponseMetadata
 import sttp.model.sse.ServerSentEvent
-import sttp.ai.core.json.SnakePickle._
+import io.circe.parser.decode
+import sttp.ai.claude.json.ClaudeManualCodecs._
+import sttp.ai.claude.json.ClaudeDerivedCodecs._
 
 object ClaudeFs2Streaming {
   import MessageStreamResponse.EventData.DoneEvent
@@ -47,7 +49,7 @@ object ClaudeFs2Streaming {
     _.filter(_.data.exists(data => data.trim.nonEmpty && data != DoneEvent))
       .collect { case ServerSentEvent(Some(data), _, _, _) =>
         try
-          Right(read[MessageStreamResponse](data))
+          Right(decode[MessageStreamResponse](data).fold(throw _, identity))
         catch {
           case e: Exception =>
             Left(ClaudeException.DeserializationClaudeException(e, metadata))

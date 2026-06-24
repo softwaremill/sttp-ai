@@ -1,5 +1,8 @@
 package sttp.ai.openai.client
 
+import io.circe.Decoder
+import io.circe.generic.semiauto.deriveDecoder
+
 import org.scalatest.EitherValues
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
@@ -11,10 +14,11 @@ import sttp.model.StatusCode._
 import sttp.ai.openai.OpenAIExceptions.OpenAIException
 import sttp.ai.openai.OpenAIExceptions.OpenAIException.DeserializationOpenAIException
 import sttp.ai.openai.fixtures.ErrorFixture
+import sttp.ai.openai.json.OpenAIDerivedCodecs._
+import sttp.ai.openai.json.OpenAIManualCodecs._
 import sttp.ai.openai.requests.completions.chat.ChatRequestBody.{ChatBody, ChatCompletionModel}
 import sttp.ai.openai.requests.models.ModelsResponseData._
 import sttp.ai.openai.requests.responses.ResponsesModel.GPT4oMini
-import sttp.ai.core.json.SnakePickle
 import sttp.ai.openai.{CustomizeOpenAIRequest, OpenAISyncClient}
 import sttp.tapir.Schema
 
@@ -185,12 +189,12 @@ class SyncClientSpec extends AnyFlatSpec with Matchers with EitherValues {
 
   case class Step(explanation: String, output: String)
   object Step {
-    implicit val rw: SnakePickle.ReadWriter[Step] = SnakePickle.macroRW
+    implicit val decoder: Decoder[Step] = deriveDecoder
   }
 
   case class MathReasoning(steps: List[Step], finalAnswer: String)
   object MathReasoning {
-    implicit val rw: SnakePickle.ReadWriter[MathReasoning] = SnakePickle.macroRW
+    implicit val decoder: Decoder[MathReasoning] = Decoder.forProduct2("steps", "finalAnswer")(MathReasoning.apply)
   }
 
   "typed createChatCompletion" should "be ok" in {
@@ -238,7 +242,7 @@ class SyncClientSpec extends AnyFlatSpec with Matchers with EitherValues {
     caught.`type` shouldBe expectedError.`type`
   }
 
-  "createChatCompletionAs" should "parse the response into the typed value via uPickle" in {
+  "createChatCompletionAs" should "parse the response into the typed value via circe" in {
     // given
     val syncBackendStub = DefaultSyncBackend.stub.whenAnyRequest.thenRespondAdjust(
       sttp.ai.openai.fixtures.CompletionsFixture.structuredOutputsResponse,

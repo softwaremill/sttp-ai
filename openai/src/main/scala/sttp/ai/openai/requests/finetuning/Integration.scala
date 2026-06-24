@@ -1,7 +1,5 @@
 package sttp.ai.openai.requests.finetuning
 
-import sttp.ai.core.json.SnakePickle
-
 /** @param `type`
   *   The type of integration to enable. Currently, only "wandb" (Weights and Biases) is supported.
   * @param wandb
@@ -15,15 +13,7 @@ case class Integration(
 )
 
 object Integration {
-  implicit val integrationRW: SnakePickle.ReadWriter[Integration] = SnakePickle.macroRW[Integration]
-
   case object Wandb extends Type("wandb")
-
-  private val values: Set[Type] = Set(Wandb)
-
-  private val byTypeValue = values.map(`type` => `type`.value -> `type`).toMap
-
-  implicit val typeRW: SnakePickle.ReadWriter[Type] = Type.typeRW(byTypeValue)
 }
 
 /** @param project
@@ -43,7 +33,3 @@ case class Wandb(
     entity: Option[String] = None,
     tags: Option[Seq[String]]
 )
-
-object Wandb {
-  implicit val wandbRW: SnakePickle.ReadWriter[Wandb] = SnakePickle.macroRW[Wandb]
-}

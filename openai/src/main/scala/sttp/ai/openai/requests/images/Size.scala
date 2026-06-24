@@ -1,7 +1,5 @@
 package sttp.ai.openai.requests.images
 
-import sttp.ai.core.json.SnakePickle
-
 sealed abstract class Size(val value: String)
 
 object Size {
@@ -17,8 +15,4 @@ object Size {
   case class Custom(customSize: String) extends Size(customSize)
 
   val values: Set[Size] = Set(Small, Medium, Large)
-
-  implicit val sizeW: SnakePickle.Writer[Size] = SnakePickle
-    .writer[ujson.Value]
-    .comap[Size](_.value)
 }

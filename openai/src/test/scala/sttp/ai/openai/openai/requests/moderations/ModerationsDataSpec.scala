@@ -6,7 +6,9 @@ import org.scalatest.matchers.should.Matchers
 import sttp.ai.openai.fixtures
 import sttp.ai.openai.requests.moderations.ModerationsRequestBody.ModerationModel
 import sttp.ai.openai.requests.moderations.ModerationsResponseData._
-import sttp.ai.openai.utils.JsonUtils
+import io.circe.parser.decode
+import sttp.ai.openai.json.OpenAIDerivedCodecs._
+import sttp.ai.openai.json.OpenAIManualCodecs._
 
 class ModerationsDataSpec extends AnyFlatSpec with Matchers with EitherValues {
   "Given create moderation response as Json" should "be properly deserialized to case class" in {
@@ -41,7 +43,7 @@ class ModerationsDataSpec extends AnyFlatSpec with Matchers with EitherValues {
     )
     // when
     val givenResponse: Either[Exception, ModerationData] =
-      JsonUtils.deserializeJsonSnake[ModerationData].apply(createModerationResponse)
+      decode[ModerationData](createModerationResponse)
 
     // then
     givenResponse.value shouldBe expectedResponse
@@ -51,7 +53,7 @@ class ModerationsDataSpec extends AnyFlatSpec with Matchers with EitherValues {
     val createModerationResponse = fixtures.ModerationsFixture.jsonCreateModerationResponseUnknownModel
     // when
     val givenResponse: Either[Exception, ModerationData] =
-      JsonUtils.deserializeJsonSnake[ModerationData].apply(createModerationResponse)
+      decode[ModerationData](createModerationResponse)
 
     // then
     givenResponse.value.model shouldBe ModerationModel.TextModeration007

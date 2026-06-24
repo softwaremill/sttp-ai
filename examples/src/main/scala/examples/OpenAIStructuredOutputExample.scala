@@ -7,7 +7,6 @@
 
 package examples
 
-import sttp.ai.core.json.SnakePickle
 import sttp.ai.openai.OpenAISyncClient
 import sttp.ai.openai.requests.completions.chat.ChatRequestBody.{ChatBody, ChatCompletionModel}
 import sttp.ai.openai.requests.completions.chat.message.{Content, Message}
@@ -15,16 +14,16 @@ import sttp.tapir.Schema
 
 object OpenAIStructuredOutputExample extends App {
 
-  case class Language(name: String, paradigm: String, summary: String) derives SnakePickle.ReadWriter, Schema
+  case class Language(name: String, paradigm: String, summary: String) derives io.circe.Codec.AsObject, Schema
 
-  case class LanguageList(languages: List[Language]) derives SnakePickle.ReadWriter, Schema
+  case class LanguageList(languages: List[Language]) derives io.circe.Codec.AsObject, Schema
 
   val openai = OpenAISyncClient.fromEnv
   try {
     val chatBody = ChatBody(
       model = ChatCompletionModel.GPT4oMini,
       messages = Seq(
-        Message.UserMessage(
+        Message.User(
           Content.TextContent(
             "List 10 well-known programming languages. For each, give the dominant paradigm and a one-sentence summary."
           )

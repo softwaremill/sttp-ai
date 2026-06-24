@@ -1,6 +1,5 @@
 package sttp.ai.openai.requests.assistants
 
-import sttp.ai.core.json.SnakePickle
 import sttp.ai.openai.requests.completions.chat.message.ToolResources
 
 object AssistantsRequestBody {
@@ -48,9 +47,6 @@ object AssistantsRequestBody {
       temperature: Option[Float] = None,
       topP: Option[Float] = None
   )
-  object CreateAssistantBody {
-    implicit val createAssistantBodyW: SnakePickle.Writer[CreateAssistantBody] = SnakePickle.macroW[CreateAssistantBody]
-  }
 
   /** @param model
     *   ID of the model to use. You can use the List models API to see all of your available models, or see our Model overview for
@@ -98,25 +94,19 @@ object AssistantsRequestBody {
       topP: Option[Float] = None
   )
 
-  object ModifyAssistantBody {
-    implicit val modifyAssistantBodyW: SnakePickle.Writer[ModifyAssistantBody] = SnakePickle.macroW[ModifyAssistantBody]
-  }
 }
 
-sealed abstract class ReasoningEffort(val value: String)
+sealed trait ReasoningEffort
 
 object ReasoningEffort {
 
-  implicit val reasoningEffortW: SnakePickle.Writer[ReasoningEffort] = SnakePickle
-    .writer[ujson.Value]
-    .comap[ReasoningEffort](reasoningEffort => SnakePickle.writeJs(reasoningEffort.value))
+  sealed trait Standard extends ReasoningEffort
 
-  case object Low extends ReasoningEffort("low")
+  case object Low extends Standard
 
-  case object Medium extends ReasoningEffort("medium")
+  case object Medium extends Standard
 
-  case object High extends ReasoningEffort("high")
+  case object High extends Standard
 
-  case class CustomReasoningEffort(customReasoningEffort: String) extends ReasoningEffort(customReasoningEffort)
-
+  case class CustomReasoningEffort(customReasoningEffort: String) extends ReasoningEffort
 }

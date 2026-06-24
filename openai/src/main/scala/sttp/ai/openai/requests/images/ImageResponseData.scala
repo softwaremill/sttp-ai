@@ -1,7 +1,5 @@
 package sttp.ai.openai.requests.images
 
-import sttp.ai.core.json.SnakePickle
-
 object ImageResponseData {
 
   case class ImageResponse(
@@ -9,14 +7,5 @@ object ImageResponseData {
       data: Seq[GeneratedImageData]
   )
 
-  object ImageResponse {
-    implicit val imageCreationResponseR: SnakePickle.Reader[ImageResponse] = SnakePickle.macroR[ImageResponse]
-  }
-
   case class GeneratedImageData(url: String)
-
-  object GeneratedImageData {
-    implicit val generatedImageDataR: SnakePickle.Reader[GeneratedImageData] = SnakePickle.macroR[GeneratedImageData]
-  }
-
 }

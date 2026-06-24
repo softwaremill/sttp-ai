@@ -3,9 +3,14 @@ package sttp.ai.claude.unit.models
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
 import sttp.ai.claude.models._
-import sttp.ai.core.json.SnakePickle._
+import io.circe.parser.{decode, parse}
+import io.circe.syntax._
+import org.scalatest.EitherValues
+import org.scalatest.OptionValues
+import sttp.ai.claude.json.ClaudeDerivedCodecs._
+import sttp.ai.claude.json.ClaudeManualCodecs._
 
-class ToolSpec extends AnyFlatSpec with Matchers {
+class ToolSpec extends AnyFlatSpec with Matchers with EitherValues with OptionValues {
 
   "Tool.Custom" should "serialize without a type discriminator" in {
     val tool = Tool.Custom(
@@ -17,12 +22,12 @@ class ToolSpec extends AnyFlatSpec with Matchers {
       )
     )
 
-    val json = ujson.read(write[Tool](tool))
+    val json = parse((tool: Tool).asJson.deepDropNullValues.noSpaces).value
 
-    json.obj.contains("type") shouldBe false
-    json("name").str shouldBe "get_weather"
-    json("description").str shouldBe "Get weather for a city"
-    json("input_schema")("type").str shouldBe "object"
+    json.asObject.value.contains("type") shouldBe false
+    json.hcursor.get[String]("name").value shouldBe "get_weather"
+    json.hcursor.get[String]("description").value shouldBe "Get weather for a city"
+    json.hcursor.downField("input_schema").get[String]("type").value shouldBe "object"
   }
 
   it should "round-trip" in {
@@ -34,7 +39,7 @@ class ToolSpec extends AnyFlatSpec with Matchers {
         required = Some(List("city"))
       )
     )
-    read[Tool](write(tool)) shouldBe tool
+    decode[Tool](tool.asJson.deepDropNullValues.noSpaces).value shouldBe tool
   }
 
   "Tool.WebSearch" should "serialize with type and name discriminators" in {
@@ -44,27 +49,27 @@ class ToolSpec extends AnyFlatSpec with Matchers {
       userLocation = Some(UserLocation.approximate(city = Some("San Francisco"), country = Some("US")))
     )
 
-    val json = ujson.read(write[Tool](tool))
+    val json = parse((tool: Tool).asJson.deepDropNullValues.noSpaces).value
 
-    json("type").str shouldBe "web_search_20250305"
-    json("name").str shouldBe "web_search"
-    json("max_uses").num shouldBe 5
-    json("allowed_domains").arr.map(_.str).toList shouldBe List("example.com")
-    json("user_location")("type").str shouldBe "approximate"
-    json("user_location")("city").str shouldBe "San Francisco"
-    json("user_location")("country").str shouldBe "US"
+    json.hcursor.get[String]("type").value shouldBe "web_search_20250305"
+    json.hcursor.get[String]("name").value shouldBe "web_search"
+    json.hcursor.get[Int]("max_uses").value shouldBe 5
+    json.hcursor.get[List[String]]("allowed_domains").value shouldBe List("example.com")
+    json.hcursor.downField("user_location").get[String]("type").value shouldBe "approximate"
+    json.hcursor.downField("user_location").get[String]("city").value shouldBe "San Francisco"
+    json.hcursor.downField("user_location").get[String]("country").value shouldBe "US"
   }
 
   it should "omit unset fields" in {
     val tool: Tool = Tool.WebSearch()
-    val json = ujson.read(write[Tool](tool))
+    val json = parse((tool: Tool).asJson.deepDropNullValues.noSpaces).value
 
-    json("type").str shouldBe "web_search_20250305"
-    json("name").str shouldBe "web_search"
-    json.obj.contains("max_uses") shouldBe false
-    json.obj.contains("allowed_domains") shouldBe false
-    json.obj.contains("blocked_domains") shouldBe false
-    json.obj.contains("user_location") shouldBe false
+    json.hcursor.get[String]("type").value shouldBe "web_search_20250305"
+    json.hcursor.get[String]("name").value shouldBe "web_search"
+    json.asObject.value.contains("max_uses") shouldBe false
+    json.asObject.value.contains("allowed_domains") shouldBe false
+    json.asObject.value.contains("blocked_domains") shouldBe false
+    json.asObject.value.contains("user_location") shouldBe false
   }
 
   it should "round-trip" in {
@@ -73,7 +78,7 @@ class ToolSpec extends AnyFlatSpec with Matchers {
       blockedDomains = Some(List("bad.example")),
       userLocation = Some(UserLocation.approximate(timezone = Some("America/Los_Angeles")))
     )
-    read[Tool](write(tool)) shouldBe tool
+    decode[Tool](tool.asJson.deepDropNullValues.noSpaces).value shouldBe tool
   }
 
   "Tool list" should "mix custom and predefined tools in a single array" in {
@@ -86,11 +91,11 @@ class ToolSpec extends AnyFlatSpec with Matchers {
       Tool.WebSearch(maxUses = Some(5))
     )
 
-    val arr = ujson.read(write(tools)).arr.toList
+    val arr = parse(tools.asJson.deepDropNullValues.noSpaces).value.asArray.value.toList
 
-    arr.head.obj.contains("type") shouldBe false
-    arr(1)("type").str shouldBe "web_search_20250305"
+    arr.head.asObject.value.contains("type") shouldBe false
+    arr(1).hcursor.get[String]("type").value shouldBe "web_search_20250305"
 
-    read[List[Tool]](write(tools)) shouldBe tools
+    decode[List[Tool]](tools.asJson.deepDropNullValues.noSpaces).value shouldBe tools
   }
 }

@@ -9,7 +9,10 @@ import sttp.ai.core.http.ResponseHandlers
 import sttp.capabilities.Streams
 import sttp.client4._
 import sttp.model.{ResponseMetadata, Uri}
-import sttp.ai.core.json.SnakePickle._
+import io.circe.{Decoder, Json, JsonObject}
+import io.circe.parser.decode
+import io.circe.syntax._
+import sttp.ai.claude.json.ClaudeDerivedCodecs._
 import java.io.InputStream
 
 trait ClaudeClient {
@@ -24,7 +27,7 @@ trait ClaudeClient {
   def createMessageAsInputStream(messageRequest: MessageRequest): Request[Either[ClaudeException, java.io.InputStream]]
 }
 
-class ClaudeClientImpl(config: ClaudeConfig) extends ClaudeClient with ResponseHandlers[ClaudeException, Reader] {
+class ClaudeClientImpl(config: ClaudeConfig) extends ClaudeClient with ResponseHandlers[ClaudeException, Decoder] {
 
   private val claudeUris = new ClaudeUris(config.baseUrl)
 
@@ -46,7 +49,7 @@ class ClaudeClientImpl(config: ClaudeConfig) extends ClaudeClient with ResponseH
       throw new UnsupportedModelForStructuredOutputException(modelId)
     }
 
-  override def read[T: Reader](s: String): T = sttp.ai.core.json.SnakePickle.read[T](s)
+  override def read[T: Decoder](s: String): T = decode[T](s).fold(throw _, identity)
 
   override def deserializationException(cause: Exception, metadata: ResponseMetadata): ClaudeException =
     ClaudeException.DeserializationClaudeException(cause, metadata)
@@ -114,7 +117,7 @@ class ClaudeClientImpl(config: ClaudeConfig) extends ClaudeClient with ResponseH
   override def createMessage(request: MessageRequest): Request[Either[ClaudeException, MessageResponse]] =
     claudeAuthRequestForMessage(request)
       .post(claudeUris.Messages)
-      .body(write(request))
+      .body(request.asJson.deepDropNullValues.noSpaces)
       .response(asJson_parseErrors[MessageResponse])
 
   override def listModels(): Request[Either[ClaudeException, ModelsResponse]] =
@@ -130,7 +133,7 @@ class ClaudeClientImpl(config: ClaudeConfig) extends ClaudeClient with ResponseH
 
     claudeAuthRequestForMessage(streamingRequest)
       .post(claudeUris.Messages)
-      .body(write(streamingRequest))
+      .body(streamingRequest.asJson.deepDropNullValues.noSpaces)
       .response(asStreamUnsafe_parseErrors(streams))
   }
 
@@ -139,7 +142,7 @@ class ClaudeClientImpl(config: ClaudeConfig) extends ClaudeClient with ResponseH
 
     claudeAuthRequestForMessage(streamingRequest)
       .post(claudeUris.Messages)
-      .body(write(streamingRequest))
+      .body(streamingRequest.asJson.deepDropNullValues.noSpaces)
       .response(asInputStreamUnsafe_parseErrors)
   }
 }

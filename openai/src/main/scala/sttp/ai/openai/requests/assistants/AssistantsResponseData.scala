@@ -1,6 +1,5 @@
 package sttp.ai.openai.requests.assistants
 
-import sttp.ai.core.json.SnakePickle
 import sttp.ai.openai.requests.completions.chat.message.ToolResources
 
 object AssistantsResponseData {
@@ -55,10 +54,6 @@ object AssistantsResponseData {
       metadata: Map[String, String]
   )
 
-  object AssistantData {
-    implicit val assistantDataR: SnakePickle.Reader[AssistantData] = SnakePickle.macroR[AssistantData]
-  }
-
   /** @param object
     *   Always "list"
     * @param data
@@ -77,9 +72,6 @@ object AssistantsResponseData {
       lastId: String,
       hasMore: Boolean
   )
-  object ListAssistantsResponse {
-    implicit val listAssistantsResponseR: SnakePickle.Reader[ListAssistantsResponse] = SnakePickle.macroR[ListAssistantsResponse]
-  }
 
   /** @param id
     *   Id of deleted object
@@ -95,8 +87,4 @@ object AssistantsResponseData {
       deleted: Boolean
   )
 
-  object DeleteAssistantResponse {
-    implicit val deleteAssistantResponseReadWriter: SnakePickle.ReadWriter[DeleteAssistantResponse] =
-      SnakePickle.macroRW[DeleteAssistantResponse]
-  }
 }

@@ -10,14 +10,13 @@ package examples
 import sttp.ai.claude.ClaudeSyncClient
 import sttp.ai.claude.models.Message
 import sttp.ai.claude.requests.MessageRequest
-import sttp.ai.core.json.SnakePickle
 import sttp.tapir.Schema
 
 object ClaudeStructuredOutputExample extends App {
 
-  case class Language(name: String, paradigm: String, summary: String) derives SnakePickle.ReadWriter, Schema
+  case class Language(name: String, paradigm: String, summary: String) derives io.circe.Codec.AsObject, Schema
 
-  case class LanguageList(languages: List[Language]) derives SnakePickle.ReadWriter, Schema
+  case class LanguageList(languages: List[Language]) derives io.circe.Codec.AsObject, Schema
 
   val claude = ClaudeSyncClient.fromEnv
   try {

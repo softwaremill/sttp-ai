@@ -4,9 +4,11 @@ import org.scalatest.EitherValues
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
 import sttp.ai.openai.fixtures
-import sttp.ai.core.json.SnakePickle
 import sttp.ai.openai.requests.images.{ResponseFormat, Size}
-import sttp.ai.openai.utils.JsonUtils
+import io.circe.parser.{decode, parse}
+import io.circe.syntax._
+import sttp.ai.openai.json.OpenAIDerivedCodecs._
+import sttp.ai.openai.json.OpenAIManualCodecs._
 class ImageCreationDataSpec extends AnyFlatSpec with Matchers with EitherValues {
 
   "Given image generation response as Json" should "be properly deserialized to case class" in {
@@ -25,7 +27,7 @@ class ImageCreationDataSpec extends AnyFlatSpec with Matchers with EitherValues 
       data = generatedImageData
     )
     // when
-    val givenResponse = JsonUtils.deserializeJsonSnake.apply(jsonResponse)
+    val givenResponse = decode[ImageResponse](jsonResponse)
 
     // then
     givenResponse.value shouldBe expectedResponse
@@ -53,10 +55,10 @@ class ImageCreationDataSpec extends AnyFlatSpec with Matchers with EitherValues 
       Some("user1") // user
     )
 
-    val jsonRequest = ujson.read(fixtures.ImageCreationFixture.jsonRequest)
+    val jsonRequest = parse(fixtures.ImageCreationFixture.jsonRequest).value
 
     // when
-    val serializedJson: ujson.Value = SnakePickle.writeJs(givenRequest)
+    val serializedJson: io.circe.Json = givenRequest.asJson.deepDropNullValues
 
     // then
     serializedJson shouldBe jsonRequest
@@ -84,10 +86,10 @@ class ImageCreationDataSpec extends AnyFlatSpec with Matchers with EitherValues 
       Some("user1") // user
     )
 
-    val jsonRequest = ujson.read(fixtures.ImageCreationFixture.jsonRequestWithSomeOptionalsSetToNone)
+    val jsonRequest = parse(fixtures.ImageCreationFixture.jsonRequestWithSomeOptionalsSetToNone).value
 
     // when
-    val serializedJson: ujson.Value = SnakePickle.writeJs(givenRequest)
+    val serializedJson: io.circe.Json = givenRequest.asJson.deepDropNullValues
 
     // then
     serializedJson shouldBe jsonRequest
@@ -115,10 +117,10 @@ class ImageCreationDataSpec extends AnyFlatSpec with Matchers with EitherValues 
       Some("user1") // user
     )
 
-    val jsonRequest = ujson.read(fixtures.ImageCreationFixture.jsonRequest)
+    val jsonRequest = parse(fixtures.ImageCreationFixture.jsonRequest).value
 
     // when
-    val serializedJson: ujson.Value = SnakePickle.writeJs(givenRequest)
+    val serializedJson: io.circe.Json = givenRequest.asJson.deepDropNullValues
 
     // then
     serializedJson shouldBe jsonRequest
@@ -146,10 +148,10 @@ class ImageCreationDataSpec extends AnyFlatSpec with Matchers with EitherValues 
       Some("user1") // user
     )
 
-    val jsonRequest = ujson.read(fixtures.ImageCreationFixture.jsonRequestDalle2)
+    val jsonRequest = parse(fixtures.ImageCreationFixture.jsonRequestDalle2).value
 
     // when
-    val serializedJson: ujson.Value = SnakePickle.writeJs(givenRequest)
+    val serializedJson: io.circe.Json = givenRequest.asJson.deepDropNullValues
 
     // then
     serializedJson shouldBe jsonRequest

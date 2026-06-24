@@ -9,26 +9,27 @@ package examples
   * Run from the project root folder with: OPENAI_API_KEY=… sbt "examples3/runMain examples.StrictStructuredFunctionCallingExample"
   */
 object StrictStructuredFunctionCallingExample extends App {
-  import ujson.{Arr, Bool, Obj, Str}
+  import io.circe.Json
+  import io.circe.syntax.*
   import sttp.client4.{DefaultSyncBackend, SyncBackend}
   import sttp.ai.openai.OpenAI
   import sttp.ai.openai.requests.completions.chat.ChatRequestBody.{ChatBody, ChatCompletionModel, ResponseFormat}
   import sttp.ai.openai.requests.completions.chat.message.{Content, Message, ToolChoice}
-  import sttp.ai.openai.requests.completions.chat.message.Tool.FunctionTool
+  import sttp.ai.openai.requests.completions.chat.message.Tool.Function
 
   val apiKey = sys.env.getOrElse("OPENAI_API_KEY", sys.error("OPENAI_API_KEY env variable not set"))
 
-  val getNumberTool = FunctionTool(
+  val getNumberTool = Function(
     description = Some("Convert given text to upper-case"),
     name = "uppercase_text",
     parameters = Some(
       Map(
-        "type" -> Str("object"),
-        "properties" -> Obj(
-          "text" -> Obj("type" -> Str("number"))
+        "type" := "object",
+        "properties" -> Json.obj(
+          "text" -> Json.obj("type" := "number")
         ),
-        "required" -> Arr(Str("text")),
-        "additionalProperties" -> Bool(false)
+        "required" := Seq("text"),
+        "additionalProperties" := false
       )
     ),
     strict = Some(true)
@@ -36,9 +37,9 @@ object StrictStructuredFunctionCallingExample extends App {
 
   val chatBody = ChatBody(
     model = ChatCompletionModel.GPT4oMini,
-    messages = Seq(Message.UserMessage(Content.TextContent("Please uppercase the word 'hello'"))),
+    messages = Seq(Message.User(Content.TextContent("Please uppercase the word 'hello'"))),
     tools = Some(Seq(getNumberTool)),
-    toolChoice = Some(ToolChoice.ToolFunction("uppercase_text"))
+    toolChoice = Some(ToolChoice.Function("uppercase_text"))
   )
 
   val backend: SyncBackend = DefaultSyncBackend()
@@ -60,8 +61,8 @@ object StrictStructuredFunctionCallingExample extends App {
       maybeArgsRaw match {
         case Some(jsonStr) =>
           println(s"Function call arguments: $jsonStr")
-          val parsed = ujson.read(jsonStr)
-          val maybeNum = parsed.obj.get("text").flatMap(_.numOpt)
+          val parsed = io.circe.parser.parse(jsonStr).getOrElse(Json.Null)
+          val maybeNum = parsed.asObject.flatMap(_("text")).flatMap(_.asNumber.map(_.toDouble))
 
           maybeNum match {
             case Some(n) => println(s"Success, numeric value provided: $n")

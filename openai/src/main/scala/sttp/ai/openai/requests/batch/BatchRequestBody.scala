@@ -1,7 +1,5 @@
 package sttp.ai.openai.requests.batch
 
-import sttp.ai.core.json.SnakePickle
-
 /** @param inputFileId
   *   The ID of an uploaded file that contains requests for the new batch. Your input file must be formatted as a JSONL file, and must be
   *   uploaded with the purpose batch. The file can contain up to 50,000 requests, and can be up to 200 MB in size.
@@ -22,7 +20,3 @@ case class BatchRequestBody(
     completionWindow: String,
     metadata: Option[Map[String, String]] = None
 )
-
-object BatchRequestBody {
-  implicit val batchRequestBodyW: SnakePickle.Writer[BatchRequestBody] = SnakePickle.macroW[BatchRequestBody]
-}

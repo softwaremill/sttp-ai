@@ -4,9 +4,13 @@ import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
 import sttp.ai.claude.models.{Citation, ContentBlock}
 import sttp.ai.claude.responses.MessageResponse
-import sttp.ai.core.json.SnakePickle._
+import io.circe.parser.decode
+import io.circe.syntax._
+import org.scalatest.EitherValues
+import sttp.ai.claude.json.ClaudeDerivedCodecs._
+import sttp.ai.claude.json.ClaudeManualCodecs._
 
-class WebSearchResponseSpec extends AnyFlatSpec with Matchers {
+class WebSearchResponseSpec extends AnyFlatSpec with Matchers with EitherValues {
 
   private val successResponseJson =
     """{
@@ -84,25 +88,25 @@ class WebSearchResponseSpec extends AnyFlatSpec with Matchers {
       |}""".stripMargin
 
   "MessageResponse with web_search content" should "deserialize server_tool_use blocks" in {
-    val response = read[MessageResponse](successResponseJson)
+    val response = decode[MessageResponse](successResponseJson).value
 
-    val serverToolUse = response.content.collectFirst { case s: ContentBlock.ServerToolUseContent => s }
+    val serverToolUse = response.content.collectFirst { case s: ContentBlock.ServerToolUse => s }
     serverToolUse should be(defined)
     serverToolUse.get.id shouldBe "srvtoolu_01XYZ"
     serverToolUse.get.name shouldBe "web_search"
-    serverToolUse.get.input("query").str shouldBe "claude shannon birth date"
+    serverToolUse.get.input("query").asString shouldBe Some("claude shannon birth date")
   }
 
   it should "deserialize web_search_tool_result with results array" in {
-    val response = read[MessageResponse](successResponseJson)
+    val response = decode[MessageResponse](successResponseJson).value
 
-    val toolResult = response.content.collectFirst { case r: ContentBlock.WebSearchToolResultContent => r }
+    val toolResult = response.content.collectFirst { case r: ContentBlock.WebSearchToolResult => r }
     toolResult should be(defined)
     toolResult.get.toolUseId shouldBe "srvtoolu_01XYZ"
 
     val results = toolResult.get.content match {
-      case ContentBlock.WebSearchToolResult.Results(items) => items
-      case other                                           => fail(s"Expected Results, got $other")
+      case ContentBlock.WebSearchToolResultBlock.Results(items) => items
+      case other                                                => fail(s"Expected Results, got $other")
     }
     results should have size 1
     results.head.url shouldBe "https://en.wikipedia.org/wiki/Claude_Shannon"
@@ -112,17 +116,17 @@ class WebSearchResponseSpec extends AnyFlatSpec with Matchers {
   }
 
   it should "preserve the undocumented caller field" in {
-    val response = read[MessageResponse](successResponseJson)
-    val toolResult = response.content.collectFirst { case r: ContentBlock.WebSearchToolResultContent => r }.get
+    val response = decode[MessageResponse](successResponseJson).value
+    val toolResult = response.content.collectFirst { case r: ContentBlock.WebSearchToolResult => r }.get
 
     toolResult.caller should be(defined)
-    toolResult.caller.get("type").str shouldBe "direct"
+    toolResult.caller.get.hcursor.get[String]("type").toOption shouldBe Some("direct")
   }
 
   it should "deserialize web_search_result_location citations on text blocks" in {
-    val response = read[MessageResponse](successResponseJson)
+    val response = decode[MessageResponse](successResponseJson).value
 
-    val finalText = response.content.collect { case t: ContentBlock.TextContent => t }.last
+    val finalText = response.content.collect { case t: ContentBlock.Text => t }.last
     finalText.citations should be(defined)
     finalText.citations.get should have size 1
     finalText.citations.get.head shouldBe a[Citation.WebSearchResultLocation]
@@ -132,20 +136,20 @@ class WebSearchResponseSpec extends AnyFlatSpec with Matchers {
   }
 
   it should "deserialize web_search_tool_result error variant" in {
-    val response = read[MessageResponse](errorResponseJson)
+    val response = decode[MessageResponse](errorResponseJson).value
 
-    val toolResult = response.content.collectFirst { case r: ContentBlock.WebSearchToolResultContent => r }
+    val toolResult = response.content.collectFirst { case r: ContentBlock.WebSearchToolResult => r }
     toolResult should be(defined)
 
     toolResult.get.content match {
-      case ContentBlock.WebSearchToolResult.Error(code) => code shouldBe "max_uses_exceeded"
-      case other                                        => fail(s"Expected Error, got $other")
+      case ContentBlock.WebSearchToolResultBlock.Error(code) => code shouldBe "max_uses_exceeded"
+      case other                                             => fail(s"Expected Error, got $other")
     }
   }
 
-  "WebSearchToolResult content RW" should "round-trip Results variant" in {
-    val original: ContentBlock.WebSearchToolResult =
-      ContentBlock.WebSearchToolResult.Results(
+  "WebSearchToolResultBlock content RW" should "round-trip Results variant" in {
+    val original: ContentBlock.WebSearchToolResultBlock =
+      ContentBlock.WebSearchToolResultBlock.Results(
         List(
           ContentBlock.WebSearchResult(
             url = "https://example.com",
@@ -155,11 +159,11 @@ class WebSearchResponseSpec extends AnyFlatSpec with Matchers {
           )
         )
       )
-    read[ContentBlock.WebSearchToolResult](write(original)) shouldBe original
+    decode[ContentBlock.WebSearchToolResultBlock](original.asJson.deepDropNullValues.noSpaces).value shouldBe original
   }
 
   it should "round-trip Error variant" in {
-    val original: ContentBlock.WebSearchToolResult = ContentBlock.WebSearchToolResult.Error("too_many_requests")
-    read[ContentBlock.WebSearchToolResult](write(original)) shouldBe original
+    val original: ContentBlock.WebSearchToolResultBlock = ContentBlock.WebSearchToolResultBlock.Error("too_many_requests")
+    decode[ContentBlock.WebSearchToolResultBlock](original.asJson.deepDropNullValues.noSpaces).value shouldBe original
   }
 }

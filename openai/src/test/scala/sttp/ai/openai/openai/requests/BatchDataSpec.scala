@@ -4,9 +4,11 @@ import org.scalatest.EitherValues
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
 import sttp.ai.openai.fixtures.BatchFixture
-import sttp.ai.core.json.SnakePickle
 import sttp.ai.openai.requests.batch.{BatchRequestBody, BatchResponse, ListBatchResponse}
-import sttp.ai.openai.utils.JsonUtils
+import io.circe.parser.{decode, parse}
+import io.circe.syntax._
+import sttp.ai.openai.json.OpenAIDerivedCodecs._
+import sttp.ai.openai.json.OpenAIManualCodecs._
 
 class BatchDataSpec extends AnyFlatSpec with Matchers with EitherValues {
 
@@ -18,9 +20,9 @@ class BatchDataSpec extends AnyFlatSpec with Matchers with EitherValues {
       completionWindow = "24h",
       metadata = Some(Map("key1" -> "value1", "key2" -> "value2"))
     )
-    val jsonRequest: ujson.Value = ujson.read(BatchFixture.jsonCreateBatchRequest)
+    val jsonRequest: io.circe.Json = parse(BatchFixture.jsonCreateBatchRequest).value
     // when
-    val serializedJson: ujson.Value = SnakePickle.writeJs(givenRequest)
+    val serializedJson: io.circe.Json = givenRequest.asJson.deepDropNullValues
     // then
     serializedJson shouldBe jsonRequest
   }
@@ -31,7 +33,7 @@ class BatchDataSpec extends AnyFlatSpec with Matchers with EitherValues {
     val expectedResponse: BatchResponse = BatchFixture.batchResponse
     // when
     val deserializedJsonResponse: Either[Exception, BatchResponse] =
-      JsonUtils.deserializeJsonSnake[BatchResponse].apply(jsonResponse)
+      decode[BatchResponse](jsonResponse)
     // then
     deserializedJsonResponse.value shouldBe expectedResponse
   }
@@ -47,7 +49,7 @@ class BatchDataSpec extends AnyFlatSpec with Matchers with EitherValues {
     )
     // when
     val deserializedJsonResponse: Either[Exception, ListBatchResponse] =
-      JsonUtils.deserializeJsonSnake[ListBatchResponse].apply(jsonResponse)
+      decode[ListBatchResponse](jsonResponse)
 
     // then
     deserializedJsonResponse.value shouldBe expectedResponse

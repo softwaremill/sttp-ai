@@ -1,8 +1,5 @@
 package sttp.ai.openai.requests.completions
 
-import sttp.ai.core.json.SnakePickle
-import ujson.Str
-
 object CompletionsRequestBody {
 
   /** @param model
@@ -61,25 +58,9 @@ object CompletionsRequestBody {
       user: Option[String] = None
   )
 
-  object CompletionsBody {
-    implicit val completionBodyW: SnakePickle.Writer[CompletionsBody] = SnakePickle.macroW[CompletionsBody]
-  }
-
   sealed abstract class CompletionModel(val value: String)
 
   object CompletionModel {
-
-    implicit val completionModelRW: SnakePickle.ReadWriter[CompletionModel] = SnakePickle
-      .readwriter[ujson.Value]
-      .bimap[CompletionModel](
-        model => SnakePickle.writeJs(model.value),
-        jsonValue =>
-          SnakePickle.read[ujson.Value](jsonValue) match {
-            case Str(value) =>
-              byCompletionModelValue.getOrElse(value, CustomCompletionModel(value))
-            case e => throw new Exception(s"Could not deserialize: $e")
-          }
-      )
 
     case object Babbage002 extends CompletionModel("babbage-002")
     case object Davinci002 extends CompletionModel("davinci-002")
@@ -92,19 +73,9 @@ object CompletionsRequestBody {
         Davinci002,
         GPT35TurboInstruct
       )
-
-    private val byCompletionModelValue = values.map(model => model.value -> model).toMap
   }
 
   sealed trait Prompt
-  object Prompt {
-    implicit val promptRW: SnakePickle.Writer[Prompt] = SnakePickle
-      .writer[ujson.Value]
-      .comap[Prompt] {
-        case SinglePrompt(value)    => SnakePickle.writeJs(value)
-        case MultiplePrompt(values) => SnakePickle.writeJs(values)
-      }
-  }
   case class SinglePrompt(value: String) extends Prompt
   case class MultiplePrompt(values: Seq[String]) extends Prompt
 }

@@ -1,12 +1,13 @@
 package sttp.ai.openai.requests.completions.chat
 
+import io.circe.Json
+import io.circe.syntax._
 import sttp.apispec.Schema
-import sttp.ai.core.json.{SerializationHelpers, SnakePickle}
+import sttp.ai.openai.json.OpenAIDerivedCodecs.chatBodyEncoder
 import sttp.ai.openai.requests.completions.Stop
 import sttp.ai.openai.requests.completions.chat.message.{Message, Tool, ToolChoice}
 import sttp.tapir.docs.apispec.schema.TapirSchemaToJsonSchema
 import sttp.tapir.{Schema => TSchema}
-import ujson._
 
 object ChatRequestBody {
 
@@ -15,7 +16,6 @@ object ChatRequestBody {
   object ResponseFormat {
     case object Text extends ResponseFormat
     case object JsonObject extends ResponseFormat
-    @upickle.implicits.key("json_schema")
     case class JsonSchema(name: String, strict: Option[Boolean], schema: Option[Schema], description: Option[String]) extends ResponseFormat
 
     object JsonSchema {
@@ -38,27 +38,6 @@ object ChatRequestBody {
         JsonSchema(name, strict, Some(schema), description)
       }
     }
-
-    implicit private val schemaRW: SnakePickle.ReadWriter[Schema] = SchemaSupport.schemaRW
-
-    // Use SerializationHelpers to automatically create nested discriminator structure
-    // This creates: {"type": "json_schema", "json_schema": {...actual JsonSchema object...}}
-    implicit val jsonSchemaW: SnakePickle.Writer[JsonSchema] =
-      SerializationHelpers.withNestedDiscriminatorWriter("json_schema", "json_schema")(SnakePickle.macroW[JsonSchema])
-
-    implicit val textW: SnakePickle.Writer[Text.type] = SerializationHelpers.caseObjectWithDiscriminatorWriter("text")
-
-    implicit val jsonObjectW: SnakePickle.Writer[JsonObject.type] =
-      SerializationHelpers.caseObjectWithDiscriminatorWriter("json_object")
-
-    implicit val responseFormatW: SnakePickle.Writer[ResponseFormat] = SnakePickle
-      .writer[Value]
-      .comap {
-        case text: Text.type             => SnakePickle.writeJs(text)
-        case jsonObject: JsonObject.type => SnakePickle.writeJs(jsonObject)
-        case jsonSchema: JsonSchema      => SnakePickle.writeJs(jsonSchema)
-      }
-
   }
 
   /** @param messages
@@ -171,13 +150,8 @@ object ChatRequestBody {
   )
 
   object ChatBody {
-    def withStreaming(chatBody: ChatBody): ujson.Value = {
-      val json = SnakePickle.writeJs(chatBody)
-      json.obj("stream") = true
-      json
-    }
-
-    implicit val chatRequestW: SnakePickle.Writer[ChatBody] = SnakePickle.macroW[ChatBody]
+    def withStreaming(chatBody: ChatBody): Json =
+      chatBody.asJson.deepDropNullValues.deepMerge(Json.obj("stream" := true))
   }
 
   /** @param voice
@@ -186,46 +160,31 @@ object ChatRequestBody {
     * @param format
     *   Specifies the output audio format. Must be one of wav, mp3, flac, opus, or pcm16.
     */
-  case class Audio(
-      voice: Voice,
-      format: Format
-  )
+  case class Audio(voice: Voice, format: Format)
 
-  object Audio {
-    implicit val audioW: SnakePickle.Writer[Audio] = SnakePickle.macroW[Audio]
-  }
-
-  sealed abstract class Voice(val value: String)
-
+  sealed trait Voice
   object Voice {
-    case object Ash extends Voice("ash")
-    case object Ballad extends Voice("ballad")
-    case object Coral extends Voice("coral")
-    case object Sage extends Voice("sage")
-    case object Verse extends Voice("verse")
-    case object Alloy extends Voice("alloy")
-    case object Echo extends Voice("echo")
-    case object Shimmer extends Voice("shimmer")
-    case class CustomVoice(customVoice: String) extends Voice(customVoice)
-
-    implicit val voiceW: SnakePickle.Writer[Voice] = SnakePickle
-      .writer[ujson.Value]
-      .comap[Voice](voice => SnakePickle.writeJs(voice.value))
+    sealed trait Standard extends Voice
+    case object Ash extends Standard
+    case object Ballad extends Standard
+    case object Coral extends Standard
+    case object Sage extends Standard
+    case object Verse extends Standard
+    case object Alloy extends Standard
+    case object Echo extends Standard
+    case object Shimmer extends Standard
+    case class CustomVoice(customVoice: String) extends Voice
   }
 
-  sealed abstract class Format(val value: String)
-
+  sealed trait Format
   object Format {
-    case object Wav extends Format("wav")
-    case object Mp3 extends Format("mp3")
-    case object Flac extends Format("flac")
-    case object Opus extends Format("opus")
-    case object Pcm16 extends Format("pcm16")
-    case class CustomFormat(customFormat: String) extends Format(customFormat)
-
-    implicit val formatW: SnakePickle.Writer[Format] = SnakePickle
-      .writer[ujson.Value]
-      .comap[Format](format => SnakePickle.writeJs(format.value))
+    sealed trait Standard extends Format
+    case object Wav extends Standard
+    case object Mp3 extends Standard
+    case object Flac extends Standard
+    case object Opus extends Standard
+    case object Pcm16 extends Standard
+    case class CustomFormat(customFormat: String) extends Format
   }
 
   /** @param `type`
@@ -234,27 +193,11 @@ object ChatRequestBody {
     *   The content that should be matched when generating a model response. If generated tokens would match this content, the entire model
     *   response can be returned much more quickly.
     */
-  case class Prediction(
-      `type`: String,
-      content: Content
-  )
-
-  object Prediction {
-    implicit val predictionW: SnakePickle.Writer[Prediction] = SnakePickle.macroW[Prediction]
-  }
+  case class Prediction(`type`: String, content: Content)
 
   sealed trait Content
   case class SingleContent(value: String) extends Content
   case class MultipartContent(value: Seq[ContentPart]) extends Content
-
-  object Content {
-    implicit val contentW: SnakePickle.Writer[Content] = SnakePickle
-      .writer[ujson.Value]
-      .comap[Content] {
-        case SingleContent(value)    => SnakePickle.writeJs(value)
-        case MultipartContent(value) => SnakePickle.writeJs(value)
-      }
-  }
 
   /** An array of content parts with a defined type. Supported options differ based on the model being used to generate the response. Can
     * contain text inputs.
@@ -264,14 +207,7 @@ object ChatRequestBody {
     * @param text
     *   The text content.
     */
-  case class ContentPart(
-      `type`: String,
-      text: String
-  )
-
-  object ContentPart {
-    implicit val contentPartW: SnakePickle.Writer[ContentPart] = SnakePickle.macroW[ContentPart]
-  }
+  case class ContentPart(`type`: String, text: String)
 
   /** @param includeUsage
     *   If set, an additional chunk will be streamed before the data: [DONE] message. The usage field on this chunk shows the token usage
@@ -280,43 +216,18 @@ object ChatRequestBody {
     */
   case class StreamOptions(includeUsage: Option[Boolean] = None)
 
-  object StreamOptions {
-    implicit val streamOptionsW: SnakePickle.Writer[StreamOptions] = SnakePickle.macroW[StreamOptions]
-  }
-
-  sealed abstract class ReasoningEffort(val value: String)
-
+  sealed trait ReasoningEffort
   object ReasoningEffort {
-
-    implicit val reasoningEffortW: SnakePickle.Writer[ReasoningEffort] = SnakePickle
-      .writer[ujson.Value]
-      .comap[ReasoningEffort](reasoningEffort => SnakePickle.writeJs(reasoningEffort.value))
-
-    case object Low extends ReasoningEffort("low")
-
-    case object Medium extends ReasoningEffort("medium")
-
-    case object High extends ReasoningEffort("high")
-
-    case class CustomReasoningEffort(customReasoningEffort: String) extends ReasoningEffort(customReasoningEffort)
-
+    sealed trait Standard extends ReasoningEffort
+    case object Low extends Standard
+    case object Medium extends Standard
+    case object High extends Standard
+    case class CustomReasoningEffort(customReasoningEffort: String) extends ReasoningEffort
   }
 
   sealed abstract class ChatCompletionModel(val value: String)
 
   object ChatCompletionModel {
-    implicit val chatCompletionModelRW: SnakePickle.ReadWriter[ChatCompletionModel] = SnakePickle
-      .readwriter[ujson.Value]
-      .bimap[ChatCompletionModel](
-        model => SnakePickle.writeJs(model.value),
-        jsonValue =>
-          SnakePickle.read[ujson.Value](jsonValue) match {
-            case Str(value) =>
-              byChatModelValue.getOrElse(value, CustomChatCompletionModel(value))
-            case e => throw new Exception(s"Could not deserialize: $e")
-          }
-      )
-
     case object ChatGPT4oLatest extends ChatCompletionModel("chatgpt-4o-latest")
     case object GPT35Turbo extends ChatCompletionModel("gpt-3.5-turbo")
     case object GPT35Turbo0125 extends ChatCompletionModel("gpt-3.5-turbo-0125")
@@ -441,7 +352,6 @@ object ChatRequestBody {
         O4Mini20250416
       )
 
-    private val byChatModelValue = values.map(model => model.value -> model).toMap
   }
 
   /** @param metadata
@@ -450,10 +360,4 @@ object ChatRequestBody {
     *   Values are strings with a maximum length of 512 characters.
     */
   case class UpdateChatCompletionRequestBody(metadata: Map[String, String])
-
-  object UpdateChatCompletionRequestBody {
-    implicit val updateChatCompletionRequestBodyW: SnakePickle.Writer[UpdateChatCompletionRequestBody] =
-      SnakePickle.macroW[UpdateChatCompletionRequestBody]
-  }
-
 }

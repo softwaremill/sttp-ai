@@ -4,10 +4,12 @@ import org.scalatest.EitherValues
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
 import sttp.ai.openai.fixtures.VectorStoreFileFixture
-import sttp.ai.core.json.SnakePickle
 import sttp.ai.openai.requests.vectorstore.file.VectorStoreFileRequestBody.{CreateVectorStoreFileBody, ListVectorStoreFilesBody}
 import sttp.ai.openai.requests.vectorstore.file.VectorStoreFileResponseData._
-import sttp.ai.openai.utils.JsonUtils
+import io.circe.parser.{decode, parse}
+import io.circe.syntax._
+import sttp.ai.openai.json.OpenAIDerivedCodecs._
+import sttp.ai.openai.json.OpenAIManualCodecs._
 
 class VectorStoreFileDataSpec extends AnyFlatSpec with Matchers with EitherValues {
 
@@ -17,10 +19,10 @@ class VectorStoreFileDataSpec extends AnyFlatSpec with Matchers with EitherValue
       fileId = "file_1"
     )
 
-    val jsonRequest: ujson.Value = ujson.read(VectorStoreFileFixture.jsonCreateRequest)
+    val jsonRequest: io.circe.Json = parse(VectorStoreFileFixture.jsonCreateRequest).value
 
     // when
-    val serializedJson: ujson.Value = SnakePickle.writeJs(givenRequest)
+    val serializedJson: io.circe.Json = givenRequest.asJson.deepDropNullValues
 
     // then
     serializedJson shouldBe jsonRequest
@@ -36,10 +38,10 @@ class VectorStoreFileDataSpec extends AnyFlatSpec with Matchers with EitherValue
       filter = Some(InProgress)
     )
 
-    val jsonRequest: ujson.Value = ujson.read(VectorStoreFileFixture.jsonListRequest)
+    val jsonRequest: io.circe.Json = parse(VectorStoreFileFixture.jsonListRequest).value
 
     // when
-    val serializedJson: ujson.Value = SnakePickle.writeJs(givenRequest)
+    val serializedJson: io.circe.Json = givenRequest.asJson.deepDropNullValues
 
     // then
     serializedJson shouldBe jsonRequest
@@ -59,7 +61,7 @@ class VectorStoreFileDataSpec extends AnyFlatSpec with Matchers with EitherValue
     val jsonResponse = VectorStoreFileFixture.jsonObject
 
     // when
-    val serializedJson: Either[Exception, VectorStoreFile] = JsonUtils.deserializeJsonSnake.apply(jsonResponse)
+    val serializedJson: Either[Exception, VectorStoreFile] = decode[VectorStoreFile](jsonResponse)
 
     // then
     serializedJson.value shouldBe givenResponse
@@ -75,12 +77,12 @@ class VectorStoreFileDataSpec extends AnyFlatSpec with Matchers with EitherValue
       usageBytes = 123456,
       status = Completed,
       vectorStoreId = "vs_1",
-      lastError = Some(LastError(ServerError, "Failed"))
+      lastError = Some(LastError(ErrorCode.ServerError, "Failed"))
     )
     val jsonResponse = VectorStoreFileFixture.jsonObjectWithLastError
 
     // when
-    val serializedJson: Either[Exception, VectorStoreFile] = JsonUtils.deserializeJsonSnake.apply(jsonResponse)
+    val serializedJson: Either[Exception, VectorStoreFile] = decode[VectorStoreFile](jsonResponse)
 
     // then
     serializedJson.value shouldBe givenResponse
@@ -106,7 +108,7 @@ class VectorStoreFileDataSpec extends AnyFlatSpec with Matchers with EitherValue
       usageBytes = 1234567,
       status = Completed,
       vectorStoreId = "vs_1",
-      lastError = Some(LastError(RateLimitExceeded, "Failed2"))
+      lastError = Some(LastError(ErrorCode.RateLimitExceeded, "Failed2"))
     )
 
     val givenResponse = ListVectorStoreFilesResponse(
@@ -119,7 +121,8 @@ class VectorStoreFileDataSpec extends AnyFlatSpec with Matchers with EitherValue
     val jsonResponse = VectorStoreFileFixture.jsonList
 
     // when
-    val serializedJson: Either[Exception, ListVectorStoreFilesResponse] = JsonUtils.deserializeJsonSnake.apply(jsonResponse)
+    val serializedJson: Either[Exception, ListVectorStoreFilesResponse] =
+      decode[ListVectorStoreFilesResponse](jsonResponse)
 
     // then
     serializedJson.value shouldBe givenResponse
@@ -138,7 +141,8 @@ class VectorStoreFileDataSpec extends AnyFlatSpec with Matchers with EitherValue
     val jsonResponse = VectorStoreFileFixture.jsonDelete
 
     // when
-    val serializedJson: Either[Exception, DeleteVectorStoreFileResponse] = JsonUtils.deserializeJsonSnake.apply(jsonResponse)
+    val serializedJson: Either[Exception, DeleteVectorStoreFileResponse] =
+      decode[DeleteVectorStoreFileResponse](jsonResponse)
 
     // then
     serializedJson.value shouldBe givenResponse

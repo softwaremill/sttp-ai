@@ -1,8 +1,5 @@
 package sttp.ai.openai.requests.finetuning
 
-import sttp.ai.core.json.SnakePickle
-import ujson.Str
-
 /** The fine_tuning.job object represents a fine-tuning job that has been created through the API.
   *
   * @param id
@@ -65,10 +62,6 @@ case class FineTuningJobResponse(
     method: Method
 )
 
-object FineTuningJobResponse {
-  implicit val fineTuningResponseDataReader: SnakePickle.Reader[FineTuningJobResponse] = SnakePickle.macroR[FineTuningJobResponse]
-}
-
 /** @param code
   *   A machine-readable error code.
   * @param message
@@ -83,41 +76,25 @@ case class Error(
     param: Option[String] = None
 )
 
-object Error {
-  implicit val errorReader: SnakePickle.Reader[Error] = SnakePickle.macroR[Error]
-}
-
-sealed abstract class Status(val value: String)
+sealed trait Status
 
 object Status {
 
-  implicit val statusRW: SnakePickle.Reader[Status] = SnakePickle
-    .reader[ujson.Value]
-    .map[Status](jsonValue =>
-      SnakePickle.read[ujson.Value](jsonValue) match {
-        case Str(value) => byStatusValue.getOrElse(value, CustomStatus(value))
-        case e          => throw new Exception(s"Could not deserialize: $e")
-      }
-    )
+  sealed trait Standard extends Status
 
-  case object ValidatingFiles extends Status("validating_files")
+  case object ValidatingFiles extends Standard
 
-  case object Queued extends Status("queued")
+  case object Queued extends Standard
 
-  case object Running extends Status("running")
+  case object Running extends Standard
 
-  case object Succeeded extends Status("succeeded")
+  case object Succeeded extends Standard
 
-  case object Failed extends Status("failed")
+  case object Failed extends Standard
 
-  case object Cancelled extends Status("cancelled")
+  case object Cancelled extends Standard
 
-  case class CustomStatus(customStatus: String) extends Status(customStatus)
-
-  private val values: Set[Status] = Set(ValidatingFiles, Queued, Running, Succeeded, Failed, Cancelled)
-
-  private val byStatusValue = values.map(status => status.value -> status).toMap
-
+  case class Custom(customStatus: String) extends Status
 }
 
 case class ListFineTuningJobResponse(
@@ -125,10 +102,6 @@ case class ListFineTuningJobResponse(
     data: Seq[FineTuningJobResponse],
     hasMore: Boolean
 )
-
-object ListFineTuningJobResponse {
-  implicit val listFineTuningResponseR: SnakePickle.Reader[ListFineTuningJobResponse] = SnakePickle.macroR[ListFineTuningJobResponse]
-}
 
 /** Fine-tuning job event object
   *
@@ -154,23 +127,14 @@ case class FineTuningJobEventResponse(
     level: String,
     message: String,
     `type`: String,
-    data: Map[String, ujson.Value]
+    data: Option[Map[String, io.circe.Json]] = None
 )
-
-object FineTuningJobEventResponse {
-  implicit val fineTuningJobEventResponseR: SnakePickle.Reader[FineTuningJobEventResponse] = SnakePickle.macroR[FineTuningJobEventResponse]
-}
 
 case class ListFineTuningJobEventResponse(
     `object`: String = "list",
     data: Seq[FineTuningJobEventResponse],
     hasMore: Boolean
 )
-
-object ListFineTuningJobEventResponse {
-  implicit val listFineTuningJobEventResponseR: SnakePickle.Reader[ListFineTuningJobEventResponse] =
-    SnakePickle.macroR[ListFineTuningJobEventResponse]
-}
 
 /** The fine_tuning.job.checkpoint object represents a model checkpoint for a fine-tuning job that is ready to use.
   *
@@ -199,11 +163,6 @@ case class FineTuningJobCheckpointResponse(
     `object`: String = "fine_tuning.job.checkpoint"
 )
 
-object FineTuningJobCheckpointResponse {
-  implicit val fineTuningJobCheckpointResponseR: SnakePickle.Reader[FineTuningJobCheckpointResponse] =
-    SnakePickle.macroR[FineTuningJobCheckpointResponse]
-}
-
 case class ListFineTuningJobCheckpointResponse(
     `object`: String = "list",
     data: Seq[FineTuningJobCheckpointResponse],
@@ -211,11 +170,6 @@ case class ListFineTuningJobCheckpointResponse(
     lastId: String,
     hasMore: Boolean
 )
-
-object ListFineTuningJobCheckpointResponse {
-  implicit val listFineTuningJobCheckpointResponseR: SnakePickle.Reader[ListFineTuningJobCheckpointResponse] =
-    SnakePickle.macroR[ListFineTuningJobCheckpointResponse]
-}
 
 case class Metrics(
     step: Float,
@@ -226,7 +180,3 @@ case class Metrics(
     fullValidLoss: Float,
     fullValidMeanTokenAccuracy: Float
 )
-
-object Metrics {
-  implicit val metricsR: SnakePickle.Reader[Metrics] = SnakePickle.macroR[Metrics]
-}
