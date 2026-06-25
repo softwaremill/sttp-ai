@@ -9,7 +9,8 @@ sealed trait Tool
 case class ToolInputSchema(
     `type`: String,
     properties: Map[String, PropertySchema],
-    required: Option[List[String]] = None
+    required: Option[List[String]] = None,
+    cacheControl: Option[CacheControl] = None
 )
 
 case class PropertySchema(

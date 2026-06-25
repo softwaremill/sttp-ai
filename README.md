@@ -184,7 +184,7 @@ object Main:
     response.body match {
       case Right(messageResponse) =>
         messageResponse.content.foreach {
-          case ContentBlock.TextContent(text, _) => println(text)
+          case ContentBlock.TextContent(text, _, _) => println(text)
           case _ => // Handle other content types if needed
         }
         println(s"Usage: ${messageResponse.usage}")
@@ -290,6 +290,7 @@ val request = MessageRequest(
   stopSequences = Some(List("\n\n")), // Stop generation at sequences
   system = Some("Be concise and helpful."),
   tools = Some(tools)                // Tool calling support
+  cacheControl = Some(CacheControl.Ephemeral())  // Optional cache control
 )
 ```
 
@@ -391,7 +392,7 @@ object StructuredOutputExample:
     response.body match {
       case Right(messageResponse) =>
         messageResponse.content.foreach {
-          case ContentBlock.TextContent(text, _) =>
+          case ContentBlock.TextContent(text, _, _) =>
             println("Structured JSON output:")
             println(text)
 

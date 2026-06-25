@@ -2,6 +2,7 @@ package sttp.ai.openai.requests.responses
 
 import sttp.apispec.Schema
 import sttp.ai.core.json.SnakePickle
+import sttp.ai.openai.requests.caching.CacheRetentionPolicy
 import sttp.ai.openai.requests.completions.chat.SchemaSupport
 import sttp.ai.openai.requests.responses.ResponsesRequestBody.Input
 import sttp.ai.openai.requests.responses.ResponsesRequestBody.Input.OutputContentItem.OutputText.{Annotation, LogProb}
@@ -66,6 +67,9 @@ import ujson.Value
   *   The truncation strategy to use for the model response. Defaults to 'disabled'.
   * @param user
   *   Deprecated. Use safetyIdentifier and promptCacheKey instead.
+  * @param promptCacheRetention
+  *   Can be used to specify policy on how long the prompt cache should be retained, not every model support every policy, check the API
+  *   documentation for more details.
   */
 case class ResponsesRequestBody(
     background: Option[Boolean] = None,
@@ -92,7 +96,8 @@ case class ResponsesRequestBody(
     topLogprobs: Option[Int] = None,
     topP: Option[Double] = None,
     truncation: Option[String] = None,
-    user: Option[String] = None
+    user: Option[String] = None,
+    promptCacheRetention: Option[CacheRetentionPolicy] = None
 )
 
 object ResponsesRequestBody {

@@ -2,6 +2,7 @@ package sttp.ai.openai.requests.completions.chat
 
 import sttp.apispec.Schema
 import sttp.ai.core.json.{SerializationHelpers, SnakePickle}
+import sttp.ai.openai.requests.caching.CacheRetentionPolicy
 import sttp.ai.openai.requests.completions.Stop
 import sttp.ai.openai.requests.completions.chat.message.{Message, Tool, ToolChoice}
 import sttp.tapir.docs.apispec.schema.TapirSchemaToJsonSchema
@@ -98,7 +99,8 @@ object ChatRequestBody {
     * @param toolChoice
     *   Controls which (if any) function is called by the model.
     * @param user
-    *   A unique identifier representing your end-user, which can help OpenAI to monitor and detect abuse.
+    *   A unique identifier representing your end-user, which can help OpenAI to monitor and detect abuse. Do not combine with
+    *   promptCacheKey, as they are mutually exclusive.
     * @param store
     *   Whether or not to store the output of this chat completion request for use in our model distillation or evals products.
     * @param reasoningEffort
@@ -139,6 +141,11 @@ object ChatRequestBody {
     *   ahead of time. This is most common when you are regenerating a file with only minor changes to most of the content.
     * @param audio
     *   Parameters for audio output. Required when audio output is requested with modalities: ["audio"].
+    * @param promptCacheKey
+    *   Used by OpenAI to cache responses for similar requests to optimize your cache hit rates.
+    * @param promptCacheRetention
+    *   Can be used to specify policy on how long the prompt cache should be retained, not every model support every policy, check the API
+    *   documentation for more details.
     */
   case class ChatBody(
       messages: Seq[Message],
@@ -167,7 +174,9 @@ object ChatRequestBody {
       parallelToolCalls: Option[Boolean] = None,
       streamOptions: Option[StreamOptions] = None,
       prediction: Option[Prediction] = None,
-      audio: Option[Audio] = None
+      audio: Option[Audio] = None,
+      promptCacheKey: Option[String] = None,
+      promptCacheRetention: Option[CacheRetentionPolicy] = None
   )
 
   object ChatBody {
