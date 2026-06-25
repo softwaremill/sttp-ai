@@ -4,16 +4,16 @@ import org.portablescala.sbtplatformdeps.PlatformDepsPlugin.autoImport.*
 object Dependencies {
 
   object V {
-    val scalaTest = "3.2.19"
-    val scalaTestCats = "1.7.0"
+    val scalaTest = "3.2.20"
+    val scalaTestCats = "1.8.0"
 
     val sttpApispec = "0.11.10"
-    val sttpClient = "4.0.18"
-    val pekkoStreams = "1.2.1"
-    val akkaStreams = "2.6.20"
-    val tapir = "1.13.8"
-    val circe = "0.14.14"
-    val circeGenericExtras = "0.14.4"
+    val sttpClient = "4.0.25"
+    val pekkoStreams = "1.6.0"
+    val akkaStreams = "2.6.20" // last Apache-2.0 licensed Akka release; 2.7+ is under the BSL
+    val tapir = "1.13.23"
+    val circe = "0.14.16"
+    val circeGenericExtras = "0.14.4" // 0.14.5 is only available as RC
   }
 
   object Libraries {
