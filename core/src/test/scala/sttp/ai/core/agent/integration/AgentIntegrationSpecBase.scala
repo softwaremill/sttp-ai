@@ -14,11 +14,11 @@ abstract class AgentIntegrationSpecBase extends AnyFlatSpec with Matchers {
 
   def providerName: String
   def apiKeyEnvVar: String
-  def createAgent(maxIterations: Int, tools: Seq[AgentTool[_]]): Agent[Identity]
+  def createAgent(maxIterations: Int, tools: Seq[AgentTool[Identity, _]]): Agent[Identity]
 
   def createTypedAgent[T](
       maxIterations: Int,
-      tools: Seq[AgentTool[_]],
+      tools: Seq[AgentTool[Identity, _]],
       responseSchema: ResponseSchema[T]
   ): Agent[Identity] =
     cancel(s"$providerName typed agent factory not implemented for this spec")
@@ -29,7 +29,7 @@ abstract class AgentIntegrationSpecBase extends AnyFlatSpec with Matchers {
   implicit val calculatorInputCodec: Codec[CalculatorInput] = deriveCodec
   implicit val calculatorInputSchema: Schema[CalculatorInput] = Schema.derived
 
-  protected val calculatorTool: AgentTool[CalculatorInput] = AgentTool.fromFunction(
+  protected val calculatorTool: AgentTool[Identity, CalculatorInput] = AgentTool.fromFunction(
     "calculator",
     "Perform basic arithmetic operations (one of: `add`, `subtract`, `multiply`, `divide`)"
   ) { (input: CalculatorInput) =>
@@ -47,7 +47,7 @@ abstract class AgentIntegrationSpecBase extends AnyFlatSpec with Matchers {
   implicit val weatherInputCodec: Codec[WeatherInput] = deriveCodec
   implicit val weatherInputSchema: Schema[WeatherInput] = Schema.derived
 
-  protected val weatherTool: AgentTool[WeatherInput] = AgentTool.fromFunction(
+  protected val weatherTool: AgentTool[Identity, WeatherInput] = AgentTool.fromFunction(
     "get_weather",
     "Get current weather for a city"
   ) { (input: WeatherInput) =>
@@ -84,7 +84,7 @@ abstract class AgentIntegrationSpecBase extends AnyFlatSpec with Matchers {
       s"Should have at least $min iterations, but had ${result.iterations}"
     )
 
-  def withAgent[T](maxIter: Int, tools: Seq[AgentTool[_]])(test: (Agent[Identity], Backend[Identity]) => T): T = {
+  def withAgent[T](maxIter: Int, tools: Seq[AgentTool[Identity, _]])(test: (Agent[Identity], Backend[Identity]) => T): T = {
     if (maybeApiKey.isEmpty) {
       cancel(s"$apiKeyEnvVar not defined - skipping integration test")
     }

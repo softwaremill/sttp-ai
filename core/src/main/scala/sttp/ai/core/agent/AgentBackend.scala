@@ -17,7 +17,7 @@ import sttp.client4.Backend
 trait AgentBackend[F[_]] {
 
   /** The tools available to the agent */
-  def tools: Seq[AgentTool[_]]
+  def tools: Seq[AgentTool[F, _]]
 
   /** Optional system prompt to guide the agent's behavior */
   def systemPrompt: Option[String]

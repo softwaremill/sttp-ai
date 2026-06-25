@@ -12,7 +12,7 @@ import sttp.monad.IdentityMonad
 private[openai] class OpenAIAgentBackend[F[_]](
     openAI: OpenAI,
     modelName: String,
-    val tools: Seq[AgentTool[_]],
+    val tools: Seq[AgentTool[F, _]],
     val systemPrompt: Option[String],
     responseSchema: Option[ResponseSchema[_]]
 )(implicit monad: sttp.monad.MonadError[F])
@@ -29,7 +29,7 @@ private[openai] class OpenAIAgentBackend[F[_]](
     )
   }
 
-  private def convertTool(tool: AgentTool[_]): Tool.Function = {
+  private def convertTool(tool: AgentTool[F, _]): Tool.Function = {
     val schema = tool.jsonSchema
     val schemaJson = SchemaSupport.schemaCodec(schema)
 

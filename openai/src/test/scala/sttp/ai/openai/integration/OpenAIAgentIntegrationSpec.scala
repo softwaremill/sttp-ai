@@ -12,7 +12,7 @@ class OpenAIAgentIntegrationSpec extends AgentIntegrationSpecBase {
   override def providerName: String = "OpenAI"
   override def apiKeyEnvVar: String = "OPENAI_API_KEY"
 
-  override def createAgent(maxIterations: Int, tools: Seq[AgentTool[_]]): Agent[Identity] = {
+  override def createAgent(maxIterations: Int, tools: Seq[AgentTool[Identity, _]]): Agent[Identity] = {
     val openai = OpenAI.fromEnv
     val agentConfig = AgentConfig[Identity](maxIterations = maxIterations, userTools = tools)
     val agentBackend = new OpenAIAgentBackend[Identity](
@@ -27,7 +27,7 @@ class OpenAIAgentIntegrationSpec extends AgentIntegrationSpecBase {
 
   override def createTypedAgent[T](
       maxIterations: Int,
-      tools: Seq[AgentTool[_]],
+      tools: Seq[AgentTool[Identity, _]],
       responseSchema: ResponseSchema[T]
   ): Agent[Identity] = {
     val openai = OpenAI.fromEnv

@@ -121,7 +121,7 @@ class Agent[F[_]](
     }
   }
 
-  private def executeTool[T](tool: AgentTool[T], toolCall: ToolCall): F[String] =
+  private def executeTool[T](tool: AgentTool[F, T], toolCall: ToolCall): F[String] =
     monad
       .eval(decode[T](toolCall.input)(tool.codec).fold(throw _, identity))
       .map[Either[String, T]](Right(_))
@@ -134,7 +134,7 @@ class Agent[F[_]](
       .flatMap {
         case Left(errorMessage) => monad.unit(errorMessage)
         case Right(typedInput) =>
-          monad.eval(tool.execute(typedInput)).handleError { case e: Exception =>
+          tool.execute(typedInput).handleError { case e: Exception =>
             config.exceptionHandler.handleToolException(toolCall.toolName, e) match {
               case Left(errorMessage) => monad.unit(errorMessage)
               case Right(ex)          => monad.error(ex)

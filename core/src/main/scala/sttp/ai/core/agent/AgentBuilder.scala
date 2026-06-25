@@ -20,11 +20,11 @@ final class AgentBuilder[F[_]] private (
 
   def systemPrompt(prompt: String): AgentBuilder[F] = systemPrompt(_ => prompt)
 
-  def tools(values: Seq[AgentTool[_]]): AgentBuilder[F] = withConfig(config.copy(userTools = values))
+  def tools(values: Seq[AgentTool[F, _]]): AgentBuilder[F] = withConfig(config.copy(userTools = values))
 
-  def tools(first: AgentTool[_], rest: AgentTool[_]*): AgentBuilder[F] = tools(first +: rest)
+  def tools(first: AgentTool[F, _], rest: AgentTool[F, _]*): AgentBuilder[F] = tools(first +: rest)
 
-  def addTool(tool: AgentTool[_]): AgentBuilder[F] = withConfig(config.copy(userTools = config.userTools :+ tool))
+  def addTool(tool: AgentTool[F, _]): AgentBuilder[F] = withConfig(config.copy(userTools = config.userTools :+ tool))
 
   def exceptionHandler(handler: ExceptionHandler): AgentBuilder[F] = withConfig(config.copy(exceptionHandler = handler))
 

@@ -5,7 +5,7 @@ import sttp.ai.core.agent.AgentConfig.SystemPromptParameters
 case class AgentConfig[F[_]](
     maxIterations: Int = 10,
     systemPromptBuilder: Option[SystemPromptParameters => String] = Some(AgentConfig.buildSystemPrompt),
-    userTools: Seq[AgentTool[_]] = Seq.empty,
+    userTools: Seq[AgentTool[F, _]] = Seq.empty[AgentTool[F, _]],
     exceptionHandler: ExceptionHandler = ExceptionHandler.default,
     responseSchema: Option[ResponseSchema[_]] = None,
     beforeToolCall: Option[ToolCall => F[Unit]] = None,
