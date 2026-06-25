@@ -42,7 +42,7 @@ object OpenAIJson extends ResponseHandlers[OpenAIException, Decoder] {
   def deserializeJsonSnake[B: Decoder]: (String, ResponseMetadata) => Either[DeserializationOpenAIException, B] =
     (s: String, meta: ResponseMetadata) => parser.decode[B](s).left.map(e => DeserializationOpenAIException(e, meta))
 
-  /** Serializes a value to a JSON request body, omitting `None`/null fields (matching the previous uPickle behaviour). */
+  /** Serializes a value to a JSON request body, omitting `None`/null fields */
   def asJson[B: Encoder](b: B): StringBody =
     StringBody(b.asJson.deepDropNullValues.noSpaces, "utf-8", MediaType.ApplicationJson)
 

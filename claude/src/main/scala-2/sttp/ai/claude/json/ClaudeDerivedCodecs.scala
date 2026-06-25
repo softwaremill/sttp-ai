@@ -8,15 +8,10 @@ import sttp.ai.claude.requests.MessageRequest
 import sttp.ai.claude.responses._
 import sttp.ai.claude.responses.MessageStreamResponse._
 import sttp.ai.core.json.CirceConfiguration.jsonConfiguration
-import sttp.ai.core.json.CirceCodecs.{emptyIterableAsNone, emptyMapAsNone}
 import ClaudeManualCodecs._
 
-// Scala 2.13 derived-codec registry: configured (snake_case + "type" discriminator) codecs for plain Claude case classes.
-// Sealed-trait dispatch / string-enum / bimap codecs live in ClaudeManualCodecs (shared, circe-core only).
-// `emptyIterableAsNone` / `emptyMapAsNone` (empty collection -> None) are shared helpers in sttp.ai.core.json.CirceCodecs.
 object ClaudeDerivedCodecs {
 
-  // enumeration codec: the case-object names snake_case to the JSON strings (low / medium / high / max)
   implicit val effortCodec: Codec[Effort] = deriveEnumerationCodec[Effort]
 
   implicit val usageCodec: Codec[Usage] = deriveConfiguredCodec

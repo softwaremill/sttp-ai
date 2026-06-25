@@ -3,7 +3,6 @@ package sttp.ai.openai.requests.threads
 import org.scalatest.EitherValues
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
-import sttp.client4.IsOption._
 import sttp.ai.openai.fixtures
 import sttp.ai.openai.requests.assistants.Tool.{CodeInterpreter, FileSearch}
 import sttp.ai.openai.requests.completions.chat.message.Attachment

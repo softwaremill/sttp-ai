@@ -9,7 +9,7 @@ import sttp.ai.core.http.ResponseHandlers
 import sttp.capabilities.Streams
 import sttp.client4._
 import sttp.model.{ResponseMetadata, Uri}
-import io.circe.{Decoder, Json, JsonObject}
+import io.circe.Decoder
 import io.circe.parser.decode
 import io.circe.syntax._
 import sttp.ai.claude.json.ClaudeDerivedCodecs._

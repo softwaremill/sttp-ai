@@ -82,7 +82,6 @@ import sttp.ai.openai.requests.responses.{ResponsesResponseBody => RRESP}
 import sttp.ai.openai.requests.responses.DeleteModelResponseResponse
 import sttp.ai.openai.requests.completions.chat.SchemaSupport.schemaCodec
 import OpenAIManualCodecs.*
-import io.circe.syntax.*
 
 /** Scala 3 configured (snake_case) codec registry for OpenAI case classes whose JSON keys differ from their Scala field names. Single-word
   * case classes use `deriveCodec` in-companion; sealed-trait dispatch / enums use hand-written codecs in-companion. Entries are ordered

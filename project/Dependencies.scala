@@ -29,9 +29,7 @@ object Dependencies {
 
     val sttpClient = Def.setting(
       Seq(
-        "com.softwaremill.sttp.client4" %%% "core" % V.sttpClient,
-        "com.softwaremill.sttp.client4" %%% "upickle" % V.sttpClient,
-        "com.softwaremill.sttp.client4" %%% "circe" % V.sttpClient
+        "com.softwaremill.sttp.client4" %%% "core" % V.sttpClient
       )
     )
 

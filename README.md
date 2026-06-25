@@ -98,7 +98,7 @@ object Main:
 
     // Create body of Chat Completions Request
     val bodyMessages: Seq[Message] = Seq(
-      Message.UserMessage(
+      Message.User(
         content = Content.TextContent("Hello!"),
       )
     )
@@ -333,7 +333,7 @@ object Main:
     } finally claude.close()
 ```
 
-`T` must have both a `sttp.tapir.Schema[T]` (for schema generation) and a a circe `Codec[T]` (for parsing) — the `derives` clause supplies both in Scala 3.
+`T` must have both a `sttp.tapir.Schema[T]` (for schema generation) and a circe `Codec[T]` (for parsing) — the `derives` clause supplies both in Scala 3.
 
 #### Basic Structured Output Example
 
@@ -1020,7 +1020,7 @@ object Main:
 
     // Create body of Chat Completions Request
     val bodyMessages: Seq[Message] = Seq(
-      Message.UserMessage(
+      Message.User(
         content = Content.TextContent("Hello!"),
       )
     )
@@ -1077,7 +1077,7 @@ object Main:
     val openAI = new OpenAI(apiKey, uri"https://api.groq.com/openai/v1")
 
     val bodyMessages: Seq[Message] = Seq(
-      Message.UserMessage(
+      Message.User(
         content = Content.TextContent("Hello!"),
       )
     )
@@ -1152,7 +1152,7 @@ object Main:
     val openAI = new OpenAI(apiKey)
 
     val bodyMessages: Seq[Message] = Seq(
-      Message.UserMessage(
+      Message.User(
         content = Content.TextContent("Hello!"),
       )
     )
@@ -1231,7 +1231,7 @@ object Main:
     val openAI = new OpenAI(apiKey)
 
     val bodyMessages: Seq[Message] = Seq(
-      Message.UserMessage(
+      Message.User(
         content = Content.TextContent("Hello!"),
       )
     )
@@ -1318,7 +1318,7 @@ object Main extends OxApp:
     val openAI = new OpenAI(apiKey)
     
     val bodyMessages: Seq[Message] = Seq(
-      Message.UserMessage(
+      Message.User(
         content = Content.TextContent("Hello!")
       )
     )
@@ -1362,8 +1362,8 @@ object Main:
     val chatBody = ChatBody(
       model = ChatCompletionModel.GPT4oMini,
       messages = Seq(
-        Message.SystemMessage("You are a helpful math tutor. Guide the user through the solution step by step."),
-        Message.UserMessage(Content.TextContent("How can I solve 8x + 7 = -23?"))
+        Message.System("You are a helpful math tutor. Guide the user through the solution step by step."),
+        Message.User(Content.TextContent("How can I solve 8x + 7 = -23?"))
       )
     )
     val result: MathReasoning = openAI.createChatCompletionAs[MathReasoning](chatBody)
@@ -1371,7 +1371,7 @@ object Main:
     result.steps.foreach(s => println(s"  ${s.explanation} -> ${s.output}"))
 ```
 
-`T` must have both a `sttp.tapir.Schema[T]` (for schema generation) and a a circe `Codec[T]` (for parsing). For custom parsing, the parser-based `createChatCompletion[T](body, name)(parseFunction)` overload remains available.
+`T` must have both a `sttp.tapir.Schema[T]` (for schema generation) and a circe `Codec[T]` (for parsing). For custom parsing, the parser-based `createChatCompletion[T](body, name)(parseFunction)` overload remains available.
 
 ##### Lower-level: building `ResponseFormat.JsonSchema` yourself
 
@@ -1416,8 +1416,8 @@ object Main:
       )
 
     val bodyMessages: Seq[Message] = Seq(
-      Message.SystemMessage(content = "You are a helpful math tutor. Guide the user through the solution step by step."),
-      Message.UserMessage(content = Content.TextContent("How can I solve 8x + 7 = -23"))
+      Message.System(content = "You are a helpful math tutor. Guide the user through the solution step by step."),
+      Message.User(content = Content.TextContent("How can I solve 8x + 7 = -23"))
     )
 
     // Create body of Chat Completions Request, using our JSON Schema as the `responseFormat`
@@ -1497,9 +1497,9 @@ In the example below I define such use case. User tries to book a flight, using 
 - User sends result from the function call to Assistant.
 - Assistant sends a final result to User.
 
-The key point here is using `FunctionTool.withSchema[T]` method. With this method, Json Schema can be automatically generated using TapirSchemaToJsonSchema functionality. All we need to do is to define case class with [Tapir Schema](https://tapir.softwaremill.com/en/latest/endpoint/schemas.html) defined for it.
+The key point here is using `Tool.Function.withSchema[T]` method. With this method, Json Schema can be automatically generated using TapirSchemaToJsonSchema functionality. All we need to do is to define case class with [Tapir Schema](https://tapir.softwaremill.com/en/latest/endpoint/schemas.html) defined for it.
 
-Another helpful feature is adding possibility to create ToolMessage object passing object instead of String, which will be automatically serialized to Json. All you have to do is just define a circe `Encoder` for the specific class.
+Another helpful feature is adding possibility to create `Message.Tool` object passing object instead of String, which will be automatically serialized to Json. All you have to do is just define a circe `Encoder` for the specific class.
 
 With all this in mind please remember that it is still required to deserialized arguments, which are sent back by Assistant to call our function.
 
@@ -1511,8 +1511,8 @@ import sttp.ai.openai.requests.completions.chat.ChatRequestBody.ChatBody
 import sttp.ai.openai.requests.completions.chat.ChatRequestBody.ChatCompletionModel.GPT4oMini
 import sttp.ai.openai.requests.completions.chat.ToolCall.FunctionToolCall
 import sttp.ai.openai.requests.completions.chat.message.Content.TextContent
-import sttp.ai.openai.requests.completions.chat.message.Message.{AssistantMessage, ToolMessage, UserMessage}
-import sttp.ai.openai.requests.completions.chat.message.Tool.FunctionTool
+import sttp.ai.openai.requests.completions.chat.message.Message.{Assistant, Tool, User}
+import sttp.ai.openai.requests.completions.chat.message.Tool.Function
 import sttp.tapir.generic.auto.*
 
 case class Passenger(name: String, age: Int)
@@ -1535,14 +1535,14 @@ object Main:
     val apiKey = System.getenv("OPENAI_KEY")
     val openAI = OpenAISyncClient(apiKey)
 
-    val initialRequestMessage = Seq(UserMessage(content = TextContent("I want to book a flight from London to Tokyo for Jane Doe, age 34")))
+    val initialRequestMessage = Seq(User(content = TextContent("I want to book a flight from London to Tokyo for Jane Doe, age 34")))
 
-    // Request created using FunctionTool.withSchema, all we need to do here is just define the type. The schema is automatically generated using a macro, available via the `sttp.tapir.generic.auto.*` import.
+    // Request created using Tool.Function.withSchema, all we need to do here is just define the type. The schema is automatically generated using a macro, available via the `sttp.tapir.generic.auto.*` import.
     val givenRequest = ChatBody(
       model = GPT4oMini,
       messages = initialRequestMessage,
       tools = Some(Seq(
-        FunctionTool.withSchema[FlightDetails](
+        Function.withSchema[FlightDetails](
           name = "book_flight",
           description = Some("Books a flight for a passenger with full details")))
       )
@@ -1600,9 +1600,9 @@ object Main:
 
     val secondRequest = givenRequest.copy(
       messages = initialRequestMessage
-        :+ AssistantMessage(content = "", toolCalls = toolCalls)
-        // ToolMessage created using object instead of String with Json representation of object.
-        :+ ToolMessage(toolCallId = functionToolCall.id.get, content = bookedFlight)
+        :+ Assistant(content = "", toolCalls = toolCalls)
+        // Tool message created using object instead of String with Json representation of object.
+        :+ Tool(toolCallId = functionToolCall.id.get, content = bookedFlight)
     )
 
     val finalResult = openAI.createChatCompletion(secondRequest)
