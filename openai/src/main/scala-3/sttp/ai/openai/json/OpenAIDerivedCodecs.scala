@@ -3,7 +3,7 @@ package sttp.ai.openai.json
 import io.circe.{Codec, Decoder, DecodingFailure, Encoder, Json, JsonObject}
 import io.circe.derivation.{Configuration, ConfiguredCodec, ConfiguredDecoder, ConfiguredEncoder, ConfiguredEnumCodec}
 import sttp.ai.core.json.CirceConfiguration.jsonConfiguration
-import sttp.ai.core.json.CirceCodecs.dropEmptyTopLevel
+import sttp.ai.core.json.CirceHelpers.dropEmptyTopLevel
 import scala.deriving.Mirror
 import sttp.ai.openai.requests.completions.{CompletionTokensDetails, PromptTokensDetails, Usage}
 import sttp.ai.openai.requests.completions.chat.Audio
@@ -140,7 +140,7 @@ object OpenAIDerivedCodecs {
   implicit val chatResponseFormatEncoder: Encoder[ChatRequestBody.ResponseFormat] = deriveAdtEncoder[ChatRequestBody.ResponseFormat]
   implicit val msgCustomFormatCodec: Codec[MsgTool.Custom.Format] = ConfiguredCodec.derived
   implicit val msgToolEncoder: Encoder[MsgTool] = {
-    import sttp.ai.core.json.CirceCodecs.omitFalse
+    import sttp.ai.core.json.CirceHelpers.omitFalse
     deriveAdtEncoder[MsgTool]
   }
   implicit val msgToolDecoder: Decoder[MsgTool] = deriveAdtDecoder[MsgTool]
@@ -374,7 +374,7 @@ object OpenAIDerivedCodecs {
 
   // threads request bodies
   implicit val attachmentCodec: Codec[Attachment] = {
-    import sttp.ai.core.json.CirceCodecs.emptyIterableAsNone // local: empty `tools` array -> None
+    import sttp.ai.core.json.CirceHelpers.emptyIterableAsNone // local: empty `tools` array -> None
     ConfiguredCodec.derived
   }
   implicit val createMessageEncoder: Encoder[ThreadMessagesRequestBody.CreateMessage] = ConfiguredEncoder.derived
@@ -630,7 +630,7 @@ object OpenAIDerivedCodecs {
   implicit val rrespOutputItemDecoder: Decoder[RRESP.OutputItem] = ConfiguredDecoder.derived
   implicit val rrespTextConfigDecoder: Decoder[RRESP.TextConfig] = ConfiguredDecoder.derived
   implicit val responsesResponseBodyDecoder: Decoder[RRESP] = {
-    import sttp.ai.core.json.CirceCodecs.emptyMapAsNone // local: empty `metadata` object -> None
+    import sttp.ai.core.json.CirceHelpers.emptyMapAsNone // local: empty `metadata` object -> None
     ConfiguredDecoder.derived
   }
   implicit val deleteModelResponseResponseDecoder: Decoder[DeleteModelResponseResponse] = ConfiguredDecoder.derived

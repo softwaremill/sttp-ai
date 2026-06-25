@@ -2,7 +2,7 @@ package sttp.ai.core.json
 
 import io.circe.{Codec, Decoder, Encoder, Json}
 
-object CirceCodecs {
+object CirceHelpers {
 
   implicit def emptyIterableAsNone[A[x] <: Iterable[x], B](implicit encoder: Encoder[A[B]], decoder: Decoder[A[B]]): Codec[Option[A[B]]] =
     Codec.from(Decoder.decodeOption[A[B]].map(_.filter(_.nonEmpty)), Encoder.encodeOption[A[B]].contramap(_.filter(_.nonEmpty)))

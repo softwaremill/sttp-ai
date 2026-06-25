@@ -9,7 +9,7 @@ import io.circe.generic.extras.semiauto.{
   deriveEnumerationEncoder
 }
 import sttp.ai.core.json.CirceConfiguration.jsonConfiguration
-import sttp.ai.core.json.CirceCodecs.dropEmptyTopLevel
+import sttp.ai.core.json.CirceHelpers.dropEmptyTopLevel
 import sttp.ai.openai.requests.completions.{CompletionTokensDetails, PromptTokensDetails, Usage}
 import sttp.ai.openai.requests.completions.chat.Audio
 import sttp.ai.openai.requests.completions.chat.{ChatChunkRequestResponseData => Chunk, ChatRequestResponseData => Resp}
@@ -145,7 +145,7 @@ object OpenAIDerivedCodecs {
   implicit val msgCustomFormatCodec: Codec[MsgTool.Custom.Format] = deriveConfiguredCodec
   implicit val msgToolEncoder: Encoder[MsgTool] = {
     // local import only: omit the default `strict: false` on a function tool, without affecting any other `Option[Boolean]` field
-    import sttp.ai.core.json.CirceCodecs.omitFalse
+    import sttp.ai.core.json.CirceHelpers.omitFalse
     val base: Encoder[MsgTool] = deriveAdtEncoder
     base
   }
@@ -393,7 +393,7 @@ object OpenAIDerivedCodecs {
 
   // threads request bodies
   implicit val attachmentCodec: Codec[Attachment] = {
-    import sttp.ai.core.json.CirceCodecs.emptyIterableAsNone // local: empty `tools` array -> None
+    import sttp.ai.core.json.CirceHelpers.emptyIterableAsNone // local: empty `tools` array -> None
     deriveConfiguredCodec
   }
   implicit val createMessageEncoder: Encoder[ThreadMessagesRequestBody.CreateMessage] = deriveConfiguredEncoder
@@ -669,7 +669,7 @@ object OpenAIDerivedCodecs {
   implicit val rrespOutputItemDecoder: Decoder[RRESP.OutputItem] = deriveConfiguredDecoder
   implicit val rrespTextConfigDecoder: Decoder[RRESP.TextConfig] = deriveConfiguredDecoder
   implicit val responsesResponseBodyDecoder: Decoder[RRESP] = {
-    import sttp.ai.core.json.CirceCodecs.emptyMapAsNone // local: empty `metadata` object -> None
+    import sttp.ai.core.json.CirceHelpers.emptyMapAsNone // local: empty `metadata` object -> None
     deriveConfiguredDecoder
   }
   implicit val deleteModelResponseResponseDecoder: Decoder[DeleteModelResponseResponse] = deriveConfiguredDecoder
