@@ -16,7 +16,7 @@ import sttp.monad.IdentityMonad
 private[claude] class ClaudeAgentBackend[F[_]](
     client: ClaudeClient,
     modelName: String,
-    val tools: Seq[AgentTool[_]],
+    val tools: Seq[AgentTool[F, _]],
     val systemPrompt: Option[String],
     responseSchema: Option[ResponseSchema[_]]
 )(implicit monad: sttp.monad.MonadError[F])
@@ -27,7 +27,7 @@ private[claude] class ClaudeAgentBackend[F[_]](
   private val outputConfig: Option[OutputConfig] =
     responseSchema.map(rs => OutputConfig(format = Some(OutputFormat.JsonSchema(rs.schema))))
 
-  private def convertTool(tool: AgentTool[_]): Tool = {
+  private def convertTool(tool: AgentTool[F, _]): Tool = {
     val schemaCursor = tool.jsonSchema.asJson.hcursor
 
     val properties = schemaCursor

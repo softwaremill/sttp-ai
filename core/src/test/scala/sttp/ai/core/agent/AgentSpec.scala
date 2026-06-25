@@ -17,7 +17,7 @@ class AgentSpec extends AnyFlatSpec with Matchers with OptionValues {
     private var callCount = 0
     var receivedHistories: Seq[ConversationHistory] = Seq.empty
 
-    override def tools: Seq[AgentTool[_]] = Seq.empty
+    override def tools: Seq[AgentTool[Identity, _]] = Seq.empty
     override def systemPrompt: Option[String] = None
 
     override def sendRequest(
