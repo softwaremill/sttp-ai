@@ -1,6 +1,7 @@
 package sttp.ai.core.agent
 
-import sttp.ai.core.json.SnakePickle
+import io.circe.Decoder
+import io.circe.parser.decode
 import sttp.client4.Backend
 import sttp.monad.MonadError
 import sttp.monad.syntax.MonadErrorOps
@@ -75,11 +76,10 @@ class Agent[F[_]](
 
   def runAs[T](
       initialPrompt: String
-  )(backend: Backend[F])(implicit r: SnakePickle.Reader[T]): F[AgentResult[Either[AgentParseError, T]]] =
+  )(backend: Backend[F])(implicit r: Decoder[T]): F[AgentResult[Either[AgentParseError, T]]] =
     monad.map(run(initialPrompt)(backend)) { res =>
       val parsed: Either[AgentParseError, T] =
-        try Right(SnakePickle.read[T](res.finalAnswer))
-        catch { case e: Exception => Left(AgentParseError(res.finalAnswer, e)) }
+        decode[T](res.finalAnswer).left.map(e => AgentParseError(res.finalAnswer, e))
       AgentResult(parsed, res.iterations, res.toolCalls, res.finishReason)
     }
 
@@ -123,7 +123,7 @@ class Agent[F[_]](
 
   private def executeTool[T](tool: AgentTool[T], toolCall: ToolCall): F[String] =
     monad
-      .eval(SnakePickle.read[T](toolCall.input)(tool.readWriter))
+      .eval(decode[T](toolCall.input)(tool.codec).fold(throw _, identity))
       .map[Either[String, T]](Right(_))
       .handleError { case parseException: Exception =>
         config.exceptionHandler.handleParseError(toolCall.toolName, toolCall.input, parseException) match {

@@ -1,7 +1,6 @@
 package examples
 
 import sttp.ai.core.agent.*
-import sttp.ai.core.json.SnakePickle
 import sttp.ai.openai.OpenAI
 import sttp.ai.openai.agent.OpenAIAgent
 import sttp.client4.DefaultSyncBackend
@@ -9,16 +8,16 @@ import sttp.tapir.Schema
 
 object TypedAgentLoopExample extends App {
 
-  case class TripSummary(weatherSummary: String, calculation: String, conclusion: String) derives SnakePickle.ReadWriter, Schema
+  case class TripSummary(weatherSummary: String, calculation: String, conclusion: String) derives io.circe.Codec.AsObject, Schema
 
-  case class WeatherInput(location: String, unit: Option[String]) derives SnakePickle.ReadWriter, Schema
+  case class WeatherInput(location: String, unit: Option[String]) derives io.circe.Codec.AsObject, Schema
 
   val weatherTool = AgentTool.fromFunction("get_weather", "Get the current weather for a location") { (input: WeatherInput) =>
     val unit = input.unit.getOrElse("celsius")
     s"The weather in ${input.location} is 22°${if (unit == "celsius") "C" else "F"}, sunny"
   }
 
-  case class CalculatorInput(operation: String, a: Double, b: Double) derives SnakePickle.ReadWriter, Schema
+  case class CalculatorInput(operation: String, a: Double, b: Double) derives io.circe.Codec.AsObject, Schema
 
   val calculatorTool = AgentTool.fromFunction("calculate", "Perform a mathematical calculation") { (input: CalculatorInput) =>
     val result = input.operation match {

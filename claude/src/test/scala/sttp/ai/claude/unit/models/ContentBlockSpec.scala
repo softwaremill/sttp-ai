@@ -4,45 +4,48 @@ import org.scalatest.Inside.inside
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
 import sttp.ai.claude.models.ContentBlock
-import sttp.ai.core.json.SnakePickle._
+import io.circe.parser.{decode, parse}
+import io.circe.syntax._
+import org.scalatest.EitherValues
+import sttp.ai.claude.json.ClaudeDerivedCodecs._
+import sttp.ai.claude.json.ClaudeManualCodecs._
 
-class ContentBlockSpec extends AnyFlatSpec with Matchers {
+class ContentBlockSpec extends AnyFlatSpec with Matchers with EitherValues {
 
-  "TextContent" should "have correct type" in {
-    val textContent = ContentBlock.TextContent("Hello")
-    textContent.`type` shouldBe "text"
+  "Text" should "have correct type" in {
+    val textContent = ContentBlock.Text("Hello")
+    parse((textContent: ContentBlock).asJson.deepDropNullValues.noSpaces).value.hcursor.get[String]("type").value shouldBe "text"
     textContent.text shouldBe "Hello"
   }
 
   it should "serialize and deserialize correctly" in {
-    val textContent = ContentBlock.TextContent("Hello, Claude!")
-    val json = write(textContent)
-    val deserialized = read[ContentBlock](json)
+    val textContent: ContentBlock = ContentBlock.Text("Hello, Claude!")
+    val json = textContent.asJson.deepDropNullValues.noSpaces
+    val deserialized = decode[ContentBlock](json).value
 
     deserialized shouldBe textContent
   }
 
-  "ThinkingContent" should "have correct type" in {
-    val thinkingContent = ContentBlock.ThinkingContent("Let me think about this...")
-    thinkingContent.`type` shouldBe "thinking"
+  "Thinking" should "have correct type" in {
+    val thinkingContent = ContentBlock.Thinking("Let me think about this...")
+    parse((thinkingContent: ContentBlock).asJson.deepDropNullValues.noSpaces).value.hcursor.get[String]("type").value shouldBe "thinking"
     thinkingContent.thinking shouldBe "Let me think about this..."
   }
 
   it should "serialize and deserialize correctly" in {
-    val thinkingContent = ContentBlock.ThinkingContent("This is a thinking process")
-    val json = write(thinkingContent)
-    val deserialized = read[ContentBlock](json)
+    val thinkingContent: ContentBlock = ContentBlock.Thinking("This is a thinking process")
+    val json = thinkingContent.asJson.deepDropNullValues.noSpaces
+    val deserialized = decode[ContentBlock](json).value
 
     deserialized shouldBe thinkingContent
   }
 
-  "ImageContent" should "have correct type" in {
+  "Image" should "have correct type" in {
     val imageSource = ContentBlock.ImageSource.base64("image/png", "base64data")
-    val imageContent = ContentBlock.ImageContent(imageSource)
+    val imageContent = ContentBlock.Image(imageSource)
 
-    imageContent.`type` shouldBe "image"
-    imageContent.source.`type` shouldBe "base64"
-    inside(imageContent.source) { case ContentBlock.ImageSource.Base64ImageSource(mediaType, data) =>
+    parse((imageContent: ContentBlock).asJson.deepDropNullValues.noSpaces).value.hcursor.get[String]("type").value shouldBe "image"
+    inside(imageContent.source) { case ContentBlock.ImageSource.Base64(mediaType, data) =>
       mediaType shouldBe "image/png"
       data shouldBe "base64data"
     }
@@ -50,31 +53,30 @@ class ContentBlockSpec extends AnyFlatSpec with Matchers {
 
   it should "have correct type for URL source" in {
     val imageSource = ContentBlock.ImageSource.url("http://example.com/image.png")
-    val imageContent = ContentBlock.ImageContent(imageSource)
+    val imageContent = ContentBlock.Image(imageSource)
 
-    imageContent.`type` shouldBe "image"
-    imageContent.source.`type` shouldBe "url"
-    inside(imageContent.source) { case ContentBlock.ImageSource.URLImageSource(url) =>
+    parse((imageContent: ContentBlock).asJson.deepDropNullValues.noSpaces).value.hcursor.get[String]("type").value shouldBe "image"
+    inside(imageContent.source) { case ContentBlock.ImageSource.Url(url) =>
       url shouldBe "http://example.com/image.png"
     }
   }
 
   it should "serialize and deserialize correctly" in {
-    val imageContent = ContentBlock.ImageContent(
+    val imageContent: ContentBlock = ContentBlock.Image(
       ContentBlock.ImageSource.base64("image/jpeg", "testdata")
     )
-    val json = write(imageContent)
-    val deserialized = read[ContentBlock](json)
+    val json = imageContent.asJson.deepDropNullValues.noSpaces
+    val deserialized = decode[ContentBlock](json).value
 
     deserialized shouldBe imageContent
   }
 
   it should "serialize and deserialize URL source correctly" in {
-    val imageContent = ContentBlock.ImageContent(
+    val imageContent: ContentBlock = ContentBlock.Image(
       ContentBlock.ImageSource.url("http://example.com/image.png")
     )
-    val json = write(imageContent)
-    val deserialized = read[ContentBlock](json)
+    val json = imageContent.asJson.deepDropNullValues.noSpaces
+    val deserialized = decode[ContentBlock](json).value
 
     deserialized shouldBe imageContent
   }
@@ -82,8 +84,7 @@ class ContentBlockSpec extends AnyFlatSpec with Matchers {
   "ImageSource" should "create base64 source correctly" in {
     val source = ContentBlock.ImageSource.base64("image/png", "testdata")
 
-    source.`type` shouldBe "base64"
-    inside(source) { case ContentBlock.ImageSource.Base64ImageSource(mediaType, data) =>
+    inside(source) { case ContentBlock.ImageSource.Base64(mediaType, data) =>
       mediaType shouldBe "image/png"
       data shouldBe "testdata"
     }
@@ -92,8 +93,7 @@ class ContentBlockSpec extends AnyFlatSpec with Matchers {
   it should "create URL source correctly" in {
     val source = ContentBlock.ImageSource.url("http://example.com/image.png")
 
-    source.`type` shouldBe "url"
-    inside(source) { case ContentBlock.ImageSource.URLImageSource(url) =>
+    inside(source) { case ContentBlock.ImageSource.Url(url) =>
       url shouldBe "http://example.com/image.png"
     }
   }

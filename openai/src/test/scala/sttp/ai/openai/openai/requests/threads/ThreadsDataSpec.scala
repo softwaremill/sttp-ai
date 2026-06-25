@@ -3,13 +3,14 @@ package sttp.ai.openai.requests.threads
 import org.scalatest.EitherValues
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
-import sttp.client4.IsOption._
 import sttp.ai.openai.fixtures
-import sttp.ai.core.json.SnakePickle
-import sttp.ai.openai.requests.assistants.Tool.{CodeInterpreterTool, FileSearchTool}
+import sttp.ai.openai.requests.assistants.Tool.{CodeInterpreter, FileSearch}
 import sttp.ai.openai.requests.completions.chat.message.Attachment
 import sttp.ai.openai.requests.threads.messages.ThreadMessagesRequestBody.CreateMessage
-import sttp.ai.openai.utils.JsonUtils
+import io.circe.parser.{decode, parse}
+import io.circe.syntax._
+import sttp.ai.openai.json.OpenAIDerivedCodecs._
+import sttp.ai.openai.json.OpenAIManualCodecs._
 class ThreadsDataSpec extends AnyFlatSpec with Matchers with EitherValues {
 
   "Given empty create thread request as case class" should "be properly serialized to Json" in {
@@ -17,10 +18,10 @@ class ThreadsDataSpec extends AnyFlatSpec with Matchers with EitherValues {
     // given
     val givenRequest = ThreadsRequestBody.CreateThreadBody()
 
-    val jsonRequest: ujson.Value = ujson.read(fixtures.ThreadsFixture.jsonCreateEmptyThreadRequest)
+    val jsonRequest: io.circe.Json = parse(fixtures.ThreadsFixture.jsonCreateEmptyThreadRequest).value
 
     // when
-    val serializedJson: ujson.Value = SnakePickle.writeJs(givenRequest)
+    val serializedJson: io.circe.Json = givenRequest.asJson.deepDropNullValues
 
     // then
     serializedJson shouldBe jsonRequest
@@ -44,10 +45,10 @@ class ThreadsDataSpec extends AnyFlatSpec with Matchers with EitherValues {
       )
     )
 
-    val jsonRequest: ujson.Value = ujson.read(fixtures.ThreadsFixture.jsonCreateThreadWithMessagesRequestNoAttachments)
+    val jsonRequest: io.circe.Json = parse(fixtures.ThreadsFixture.jsonCreateThreadWithMessagesRequestNoAttachments).value
 
     // when
-    val serializedJson: ujson.Value = SnakePickle.writeJs(givenRequest)
+    val serializedJson: io.circe.Json = givenRequest.asJson.deepDropNullValues
 
     // then
     serializedJson shouldBe jsonRequest
@@ -62,7 +63,7 @@ class ThreadsDataSpec extends AnyFlatSpec with Matchers with EitherValues {
           CreateMessage(
             role = "user",
             content = "Hello, what is AI?",
-            attachments = Some(Seq(Attachment(Some("file-abc123"), Some(Seq(CodeInterpreterTool, FileSearchTool)))))
+            attachments = Some(Seq(Attachment(Some("file-abc123"), Some(Seq(CodeInterpreter, FileSearch)))))
           ),
           CreateMessage(
             role = "user",
@@ -72,10 +73,10 @@ class ThreadsDataSpec extends AnyFlatSpec with Matchers with EitherValues {
       )
     )
 
-    val jsonRequest: ujson.Value = ujson.read(fixtures.ThreadsFixture.jsonCreateThreadWithMessagesRequest)
+    val jsonRequest: io.circe.Json = parse(fixtures.ThreadsFixture.jsonCreateThreadWithMessagesRequest).value
 
     // when
-    val serializedJson: ujson.Value = SnakePickle.writeJs(givenRequest)
+    val serializedJson: io.circe.Json = givenRequest.asJson.deepDropNullValues
 
     // then
     serializedJson shouldBe jsonRequest
@@ -90,7 +91,7 @@ class ThreadsDataSpec extends AnyFlatSpec with Matchers with EitherValues {
           CreateMessage(
             role = "user",
             content = "Hello, what is AI?",
-            attachments = Some(Seq(Attachment(Some("file-abc456"), Some(Seq(CodeInterpreterTool)))))
+            attachments = Some(Seq(Attachment(Some("file-abc456"), Some(Seq(CodeInterpreter)))))
           ),
           CreateMessage(
             role = "user",
@@ -101,10 +102,10 @@ class ThreadsDataSpec extends AnyFlatSpec with Matchers with EitherValues {
       metadata = Some(Map("modified" -> "true", "user" -> "abc123"))
     )
 
-    val jsonRequest: ujson.Value = ujson.read(fixtures.ThreadsFixture.jsonCreateThreadWithMessagesAndMetadataRequest)
+    val jsonRequest: io.circe.Json = parse(fixtures.ThreadsFixture.jsonCreateThreadWithMessagesAndMetadataRequest).value
 
     // when
-    val serializedJson: ujson.Value = SnakePickle.writeJs(givenRequest)
+    val serializedJson: io.circe.Json = givenRequest.asJson.deepDropNullValues
 
     // then
     serializedJson shouldBe jsonRequest
@@ -123,7 +124,7 @@ class ThreadsDataSpec extends AnyFlatSpec with Matchers with EitherValues {
     )
 
     // when
-    val givenResponse: Either[Exception, ThreadData] = JsonUtils.deserializeJsonSnake.apply(jsonResponse)
+    val givenResponse: Either[Exception, ThreadData] = decode[ThreadData](jsonResponse)
 
     // then
     givenResponse.value shouldBe expectedResponse
@@ -143,7 +144,7 @@ class ThreadsDataSpec extends AnyFlatSpec with Matchers with EitherValues {
     )
 
     // when
-    val givenResponse: Either[Exception, ThreadData] = JsonUtils.deserializeJsonSnake.apply(jsonResponse)
+    val givenResponse: Either[Exception, ThreadData] = decode[ThreadData](jsonResponse)
 
     // then
     givenResponse.value shouldBe expectedResponse
@@ -162,7 +163,7 @@ class ThreadsDataSpec extends AnyFlatSpec with Matchers with EitherValues {
     )
 
     // when
-    val givenResponse: Either[Exception, DeleteThreadResponse] = JsonUtils.deserializeJsonSnake.apply(jsonResponse)
+    val givenResponse: Either[Exception, DeleteThreadResponse] = decode[DeleteThreadResponse](jsonResponse)
 
     // then
     givenResponse.value shouldBe expectedResponse

@@ -41,11 +41,13 @@ lazy val core = (projectMatrix in file("core"))
   .settings(commonSettings: _*)
   .settings(
     libraryDependencies ++=
-      Libraries.sttpClient.value ++ Libraries.sttpApispec.value ++ Seq(
-        Libraries.uPickle.value,
+      Libraries.sttpClient.value ++ Libraries.sttpApispec.value ++ Libraries.circe.value ++ Seq(
         Libraries.tapirApispecDocs.value,
         Libraries.scalaTest.value
-      )
+      ),
+    // circe configured derivation lives in different artifacts per Scala version: circe-generic-extras on 2.13,
+    // io.circe.derivation (bundled in circe-generic) on 3.
+    libraryDependencies ++= (if (scalaVersion.value.startsWith("2.")) Seq(Libraries.circeGenericExtras.value) else Seq.empty)
   )
 
 lazy val openai = (projectMatrix in file("openai"))
@@ -57,9 +59,10 @@ lazy val openai = (projectMatrix in file("openai"))
   )
   .settings(
     libraryDependencies ++=
-      Libraries.sttpClient.value ++
-        Seq(Libraries.uPickle.value, Libraries.tapirApispecDocs.value, Libraries.uJsonCirce.value) ++
-        Libraries.sttpApispec.value ++ Seq(Libraries.scalaTest.value)
+      Libraries.sttpClient.value ++ Libraries.circe.value ++
+        Seq(Libraries.tapirApispecDocs.value) ++
+        Libraries.sttpApispec.value ++ Seq(Libraries.scalaTest.value),
+    libraryDependencies ++= (if (scalaVersion.value.startsWith("2.")) Seq(Libraries.circeGenericExtras.value) else Seq.empty)
   )
   .settings(commonSettings: _*)
   .dependsOn(core % "compile->compile;test->test")
@@ -74,9 +77,10 @@ lazy val claude = (projectMatrix in file("claude"))
   .settings(commonSettings: _*)
   .settings(
     libraryDependencies ++=
-      Seq(Libraries.tapirApispecDocs.value, Libraries.uJsonCirce.value, Libraries.uPickle.value) ++
-        Libraries.sttpApispec.value ++
-        Libraries.sttpClient.value ++ Seq(Libraries.scalaTest.value)
+      Seq(Libraries.tapirApispecDocs.value) ++
+        Libraries.sttpApispec.value ++ Libraries.circe.value ++
+        Libraries.sttpClient.value ++ Seq(Libraries.scalaTest.value),
+    libraryDependencies ++= (if (scalaVersion.value.startsWith("2.")) Seq(Libraries.circeGenericExtras.value) else Seq.empty)
   )
   .dependsOn(core % "compile->compile;test->test")
 

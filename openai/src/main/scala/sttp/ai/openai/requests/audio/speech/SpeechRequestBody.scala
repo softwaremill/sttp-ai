@@ -1,7 +1,5 @@
 package sttp.ai.openai.requests.audio.speech
 
-import sttp.ai.core.json.SnakePickle
-
 /** Represents the request body for generating speech from text.
   *
   * @param model
@@ -25,54 +23,40 @@ case class SpeechRequestBody(
     speed: Option[Float] = None
 )
 
-object SpeechRequestBody {
-  implicit val speechRequestBodyW: SnakePickle.Writer[SpeechRequestBody] = SnakePickle.macroW[SpeechRequestBody]
-}
-
 abstract sealed class SpeechModel(val value: String)
 
 object SpeechModel {
-  implicit val speechModelW: SnakePickle.Writer[SpeechModel] = SnakePickle
-    .writer[ujson.Value]
-    .comap[SpeechModel](_.value)
-
   case object GPT4oMiniTTS extends SpeechModel("gpt-4o-mini-tts")
   case object TTS1 extends SpeechModel("tts-1")
   case object TTS1HD extends SpeechModel("tts-1-hd")
   case class CustomSpeechModel(customValue: String) extends SpeechModel(customValue)
 }
 
-sealed abstract class Voice(val value: String)
+sealed trait Voice
 
 object Voice {
-  case object Alloy extends Voice("alloy")
-  case object Ash extends Voice("ash")
-  case object Coral extends Voice("coral")
-  case object Echo extends Voice("echo")
-  case object Fable extends Voice("fable")
-  case object Onyx extends Voice("onyx")
-  case object Nova extends Voice("nova")
-  case object Sage extends Voice("sage")
-  case object Shimmer extends Voice("shimmer")
-  case class CustomVoice(customVoice: String) extends Voice(customVoice)
-
-  implicit val voiceW: SnakePickle.Writer[Voice] = SnakePickle
-    .writer[ujson.Value]
-    .comap[Voice](_.value)
+  sealed trait Standard extends Voice
+  case object Alloy extends Standard
+  case object Ash extends Standard
+  case object Coral extends Standard
+  case object Echo extends Standard
+  case object Fable extends Standard
+  case object Onyx extends Standard
+  case object Nova extends Standard
+  case object Sage extends Standard
+  case object Shimmer extends Standard
+  case class CustomVoice(customVoice: String) extends Voice
 }
 
-sealed abstract class ResponseFormat(val value: String)
+sealed trait ResponseFormat
 
 object ResponseFormat {
-  case object Mp3 extends ResponseFormat("mp3")
-  case object Opus extends ResponseFormat("opus")
-  case object Aac extends ResponseFormat("aac")
-  case object Flac extends ResponseFormat("flac")
-  case object Wav extends ResponseFormat("wav")
-  case object Pcm extends ResponseFormat("pcm")
-  case class CustomFormat(customFormat: String) extends ResponseFormat(customFormat)
-
-  implicit val formatW: SnakePickle.Writer[ResponseFormat] = SnakePickle
-    .writer[ujson.Value]
-    .comap[ResponseFormat](_.value)
+  sealed trait Standard extends ResponseFormat
+  case object Mp3 extends Standard
+  case object Opus extends Standard
+  case object Aac extends Standard
+  case object Flac extends Standard
+  case object Wav extends Standard
+  case object Pcm extends Standard
+  case class CustomFormat(customFormat: String) extends ResponseFormat
 }

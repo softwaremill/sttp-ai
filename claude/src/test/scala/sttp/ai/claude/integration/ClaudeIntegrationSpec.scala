@@ -12,14 +12,15 @@ import sttp.ai.claude.models._
 import sttp.ai.claude.requests.MessageRequest
 import sttp.model.Uri
 import sttp.tapir.{Schema => TSchema}
-import upickle.legacy.{macroRW, read, ReadWriter}
+import io.circe.parser.{decode => circeDecode}
+import io.circe.generic.semiauto.deriveCodec
 
 import scala.util.{Failure, Try}
 
 case class Person(name: String, age: Int)
 
 object Person {
-  implicit val rw: ReadWriter[Person] = macroRW
+  implicit val codec: io.circe.Codec[Person] = deriveCodec
   implicit val schema: TSchema[Person] = TSchema.derived[Person]
 }
 
@@ -135,7 +136,7 @@ class ClaudeIntegrationSpec extends AnyFlatSpec with Matchers with BeforeAndAfte
       response.role shouldBe "assistant"
       response.content should not be empty
       // The response should contain the answer to 2+2
-      val textContent = response.content.collectFirst { case ContentBlock.TextContent(text, _) =>
+      val textContent = response.content.collectFirst { case ContentBlock.Text(text, _) =>
         text
       }
       textContent should be(defined)
@@ -151,8 +152,8 @@ class ClaudeIntegrationSpec extends AnyFlatSpec with Matchers with BeforeAndAfte
 
       val imageMessage = Message.user(
         List(
-          ContentBlock.TextContent("What do you see?"),
-          ContentBlock.ImageContent(
+          ContentBlock.Text("What do you see?"),
+          ContentBlock.Image(
             ContentBlock.ImageSource.base64("image/png", minimalPngBase64)
           )
         )
@@ -172,7 +173,7 @@ class ClaudeIntegrationSpec extends AnyFlatSpec with Matchers with BeforeAndAfte
       response.role shouldBe "assistant"
       response.content should not be empty
       // Claude should acknowledge the image in some way
-      val textContent = response.content.collectFirst { case ContentBlock.TextContent(text, _) =>
+      val textContent = response.content.collectFirst { case ContentBlock.Text(text, _) =>
         text
       }
       textContent should be(defined)
@@ -183,12 +184,12 @@ class ClaudeIntegrationSpec extends AnyFlatSpec with Matchers with BeforeAndAfte
   it should "handle image content (via URL) successfully" in
     withClient { client =>
       // given
-      val imageUrl = "https://github.com/softwaremill/sttp-ai/raw/master/banner.png"
+      val imageUrl = "https://raw.githubusercontent.com/softwaremill/sttp-ai/master/banner.png"
 
       val imageMessage = Message.user(
         List(
-          ContentBlock.TextContent("What do you see?"),
-          ContentBlock.ImageContent(
+          ContentBlock.Text("What do you see?"),
+          ContentBlock.Image(
             ContentBlock.ImageSource.url(imageUrl)
           )
         )
@@ -208,7 +209,7 @@ class ClaudeIntegrationSpec extends AnyFlatSpec with Matchers with BeforeAndAfte
       response.role shouldBe "assistant"
       response.content should not be empty
       // Claude should acknowledge the image in some way
-      val textContent = response.content.collectFirst { case ContentBlock.TextContent(text, _) =>
+      val textContent = response.content.collectFirst { case ContentBlock.Text(text, _) =>
         text
       }
       textContent should be(defined)
@@ -246,10 +247,10 @@ class ClaudeIntegrationSpec extends AnyFlatSpec with Matchers with BeforeAndAfte
       response.content should not be empty
 
       // Claude should either use the tool or explain why it can't
-      val hasToolUse = response.content.exists(_.isInstanceOf[ContentBlock.ToolUseContent])
+      val hasToolUse = response.content.exists(_.isInstanceOf[ContentBlock.ToolUse])
       val hasTextResponse = response.content.exists {
-        case ContentBlock.TextContent(text, _) => text.toLowerCase.contains("weather") || text.toLowerCase.contains("tool")
-        case _                                 => false
+        case ContentBlock.Text(text, _) => text.toLowerCase.contains("weather") || text.toLowerCase.contains("tool")
+        case _                          => false
       }
 
       (hasToolUse || hasTextResponse) shouldBe true
@@ -274,14 +275,14 @@ class ClaudeIntegrationSpec extends AnyFlatSpec with Matchers with BeforeAndAfte
       response.role shouldBe "assistant"
       response.content should not be empty
 
-      val serverToolUse = response.content.collectFirst { case s: ContentBlock.ServerToolUseContent => s }
+      val serverToolUse = response.content.collectFirst { case s: ContentBlock.ServerToolUse => s }
       serverToolUse should be(defined)
       serverToolUse.get.name shouldBe "web_search"
 
-      val toolResult = response.content.collectFirst { case r: ContentBlock.WebSearchToolResultContent => r }
+      val toolResult = response.content.collectFirst { case r: ContentBlock.WebSearchToolResult => r }
       toolResult should be(defined)
       toolResult.get.toolUseId shouldBe serverToolUse.get.id
-      toolResult.get.content shouldBe a[ContentBlock.WebSearchToolResult.Results]
+      toolResult.get.content shouldBe a[ContentBlock.WebSearchToolResultBlock.Results]
       ()
     }
 
@@ -364,7 +365,7 @@ class ClaudeIntegrationSpec extends AnyFlatSpec with Matchers with BeforeAndAfte
       response.role shouldBe "assistant"
       response.content should not be empty
       // Claude should respond with some text content
-      val textContent = response.content.collectFirst { case ContentBlock.TextContent(text, _) =>
+      val textContent = response.content.collectFirst { case ContentBlock.Text(text, _) =>
         text
       }
       textContent should be(defined)
@@ -390,13 +391,13 @@ class ClaudeIntegrationSpec extends AnyFlatSpec with Matchers with BeforeAndAfte
       response.content should not be empty
 
       // Extract the text content which should be valid JSON
-      val textContent = response.content.collectFirst { case ContentBlock.TextContent(text, _) =>
+      val textContent = response.content.collectFirst { case ContentBlock.Text(text, _) =>
         text
       }
       textContent should be(defined)
 
       // Parse and validate the JSON response using the case class and uPickle
-      val person = read[Person](textContent.get)
+      val person = circeDecode[Person](textContent.get).fold(throw _, identity)
       person.name shouldBe "Alice"
       person.age shouldBe 30
       ()
@@ -457,7 +458,7 @@ class ClaudeIntegrationSpec extends AnyFlatSpec with Matchers with BeforeAndAfte
       response.role shouldBe "assistant"
       response.content should not be empty
 
-      val textBlock = response.content.collectFirst { case t: ContentBlock.TextContent => t }
+      val textBlock = response.content.collectFirst { case t: ContentBlock.Text => t }
       textBlock should be(defined)
       textBlock.get.text should not be empty
       textBlock.get.citations should be(defined)

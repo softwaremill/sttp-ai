@@ -1,33 +1,18 @@
 package sttp.ai.openai.requests.completions.chat
 
-import sttp.ai.core.json.SnakePickle
-import ujson.Str
-
-sealed abstract class Role(val value: String)
+sealed trait Role
 
 object Role {
-  case object System extends Role("system")
 
-  case object User extends Role("user")
+  sealed trait Standard extends Role
 
-  case object Assistant extends Role("assistant")
+  case object System extends Standard
 
-  case object Tool extends Role("tool")
+  case object User extends Standard
 
-  case class Custom(customRole: String) extends Role(customRole)
+  case object Assistant extends Standard
 
-  val values: Set[Role] = Set(System, User, Assistant, Tool)
+  case object Tool extends Standard
 
-  private val byRoleValue = values.map(role => role.value -> role).toMap
-
-  implicit val roleRW: SnakePickle.ReadWriter[Role] = SnakePickle
-    .readwriter[ujson.Value]
-    .bimap[Role](
-      role => SnakePickle.writeJs(role.value),
-      jsonValue =>
-        SnakePickle.read[ujson.Value](jsonValue) match {
-          case Str(value) => byRoleValue.getOrElse(value, Custom(value))
-          case e          => throw new Exception(s"Could not deserialize: $e")
-        }
-    )
+  case class Custom(customRole: String) extends Role
 }

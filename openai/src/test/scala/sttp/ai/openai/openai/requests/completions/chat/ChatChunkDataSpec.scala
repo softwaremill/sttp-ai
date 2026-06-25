@@ -6,7 +6,9 @@ import org.scalatest.matchers.should.Matchers
 import sttp.ai.openai.fixtures
 import sttp.ai.openai.requests.completions.Stop.SingleStop
 import sttp.ai.openai.utils.ChatCompletionFixtures._
-import sttp.ai.openai.utils.JsonUtils
+import io.circe.parser.{decode, parse}
+import sttp.ai.openai.json.OpenAIDerivedCodecs._
+import sttp.ai.openai.json.OpenAIManualCodecs._
 
 class ChatChunkDataSpec extends AnyFlatSpec with Matchers with EitherValues {
 
@@ -46,7 +48,7 @@ class ChatChunkDataSpec extends AnyFlatSpec with Matchers with EitherValues {
     )
 
     // when
-    val givenResponse: Either[Exception, ChatChunkResponse] = JsonUtils.deserializeJsonSnake.apply(jsonResponse)
+    val givenResponse: Either[Exception, ChatChunkResponse] = decode[ChatChunkResponse](jsonResponse)
 
     // then
     givenResponse.value shouldBe expectedResponse
@@ -68,18 +70,18 @@ class ChatChunkDataSpec extends AnyFlatSpec with Matchers with EitherValues {
       topP = Some(1),
       tools = Some(tools),
       responseFormat = Some(ResponseFormat.Text),
-      toolChoice = Some(ToolChoice.ToolAuto),
+      toolChoice = Some(ToolChoice.Auto),
       stop = Some(SingleStop("\n")),
       user = Some("testUser")
     )
 
-    val jsonRequest = ujson.read(fixtures.ChatChunkFixture.jsonRequest)
+    val jsonRequest = parse(fixtures.ChatChunkFixture.jsonRequest).value
 
     // when
     val serializedJson = ChatBody.withStreaming(givenRequest)
 
     // then
-    serializedJson shouldBe jsonRequest
+    serializedJson shouldBe jsonRequest.deepDropNullValues
   }
 
   "Given chat chunk with usage data" should "properly deserialize usage field" in {
@@ -118,7 +120,7 @@ class ChatChunkDataSpec extends AnyFlatSpec with Matchers with EitherValues {
     )
 
     // when
-    val givenResponse: Either[Exception, ChatChunkResponse] = JsonUtils.deserializeJsonSnake[ChatChunkResponse].apply(jsonWithUsage)
+    val givenResponse: Either[Exception, ChatChunkResponse] = decode[ChatChunkResponse](jsonWithUsage)
 
     // then
     givenResponse.value shouldBe expectedResponse

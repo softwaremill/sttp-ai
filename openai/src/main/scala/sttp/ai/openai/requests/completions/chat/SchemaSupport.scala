@@ -1,27 +1,19 @@
 package sttp.ai.openai.requests.completions.chat
 
 import io.circe.syntax._
-import io.circe.{DecodingFailure, Json, JsonNumber, JsonObject}
+import io.circe.{Codec, Encoder, Json, JsonNumber, JsonObject}
 import sttp.apispec.Schema
-import sttp.apispec.circe._
-import sttp.ai.core.json.SnakePickle
-import ujson._
-import ujson.circe.CirceJson
 
 object SchemaSupport {
 
-  private case class ParseException(circeException: DecodingFailure) extends Exception("Failed to parse JSON schema", circeException)
-
-  val schemaRW: SnakePickle.ReadWriter[Schema] = SnakePickle
-    .readwriter[Value]
-    .bimap(
-      s => CirceJson.transform(s.asJson.deepDropNullValues.foldWith(schemaFolder), upickle.default.reader[Value]),
-      v =>
-        upickle.default.transform(v).to(CirceJson).as[Schema] match {
-          case Left(e)  => throw ParseException(e)
-          case Right(s) => s
-        }
-    )
+  /** circe codec for apispec `Schema` that, on encode, rewrites the JSON to satisfy OpenAI's structured-output rules (all fields required,
+    * `additionalProperties: false` on objects). Both directions delegate to the apispec circe codecs explicitly (rather than `asJson`/
+    * `Decoder[Schema]`) to avoid recursing into this codec.
+    */
+  implicit val schemaCodec: Codec[Schema] = Codec.from(
+    sttp.apispec.circe.schemaDecoder,
+    Encoder.instance(s => sttp.apispec.circe.encoderSchema(s).deepDropNullValues.foldWith(schemaFolder))
+  )
 
   private case class FolderState(
       fields: List[(String, Json)],
@@ -68,13 +60,13 @@ object SchemaSupport {
         if (state.addAdditionalProperties && !isDiscriminatedUnion)
           (Set("additionalProperties"), List("additionalProperties" := false))
         else
-          (Set(), Nil)
+          (Set.empty[String], Nil)
 
       val (requiredRemove, requiredAdd) =
         if (state.requiredProperties.nonEmpty)
           (Set("required"), List("required" := state.requiredProperties))
         else
-          (Set(), Nil)
+          (Set.empty[String], Nil)
 
       val remove = addlPropsRemove ++ requiredRemove
       val fields = addlPropsAdd ++ requiredAdd ++ state.fields.filterNot { case (k, _) => remove.contains(k) }
@@ -82,5 +74,4 @@ object SchemaSupport {
       Json.fromFields(fields)
     }
   }
-
 }

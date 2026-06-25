@@ -1,11 +1,15 @@
 package sttp.ai.openai.requests.responses
 
+import io.circe.parser.parse
+import io.circe.syntax._
+import sttp.ai.openai.json.OpenAIDerivedCodecs._
+import sttp.ai.openai.json.OpenAIManualCodecs._
+
 import org.scalatest.EitherValues
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
 import sttp.apispec.{Schema, SchemaType}
 import sttp.ai.openai.fixtures.ResponsesFixture
-import sttp.ai.core.json.SnakePickle
 import sttp.ai.openai.requests.responses.ResponsesModel.GPT4o20240806
 import sttp.ai.openai.requests.responses.ResponsesRequestBody.Format.JsonSchema
 import sttp.ai.openai.requests.responses.ResponsesRequestBody.{
@@ -17,7 +21,6 @@ import sttp.ai.openai.requests.responses.ResponsesRequestBody.{
 }
 import sttp.ai.openai.requests.responses.ResponsesResponseBody._
 import sttp.ai.openai.requests.responses.ToolChoice.ToolChoiceObject
-import ujson.{Obj, Str}
 
 class ResponsesDataSpec extends AnyFlatSpec with Matchers with EitherValues {
 
@@ -90,20 +93,20 @@ class ResponsesDataSpec extends AnyFlatSpec with Matchers with EitherValues {
         )
       ),
       toolChoice = Some(ToolChoice.ToolChoiceMode.Auto),
-      tools = Some(List(Tool.McpTool("label", "url"))),
+      tools = Some(List(Tool.Mcp("label", "url"))),
       topLogprobs = Some(5),
       topP = Some(0.9),
       truncation = Some("disabled"),
       user = Some("user123")
     )
 
-    val jsonRequest = ujson.read(ResponsesFixture.jsonRequest)
+    val jsonRequest = parse(ResponsesFixture.jsonRequest).value
 
     // when
-    val serializedJson: ujson.Value = SnakePickle.writeJs(givenRequest)
+    val serializedJson: io.circe.Json = givenRequest.asJson.deepDropNullValues
 
     // then
-    serializedJson shouldBe jsonRequest
+    serializedJson shouldBe jsonRequest.deepDropNullValues
   }
 
   "Given responses request with text format" should "be properly serialized to Json" in {
@@ -119,20 +122,20 @@ class ResponsesDataSpec extends AnyFlatSpec with Matchers with EitherValues {
       )
     )
 
-    val expectedJson = Obj(
-      "model" -> Str("gpt-4o"),
-      "text" -> Obj(
-        "format" -> Obj(
-          "type" -> Str("text")
+    val expectedJson = io.circe.Json.obj(
+      "model" := "gpt-4o",
+      "text" -> io.circe.Json.obj(
+        "format" -> io.circe.Json.obj(
+          "type" := "text"
         )
       )
     )
 
     // when
-    val serializedJson: ujson.Value = SnakePickle.writeJs(givenRequest)
+    val serializedJson: io.circe.Json = givenRequest.asJson.deepDropNullValues
 
     // then
-    serializedJson shouldBe expectedJson
+    serializedJson shouldBe expectedJson.deepDropNullValues
   }
 
   "Given responses request with input message containing text and image" should "be properly serialized to Json" in {
@@ -163,13 +166,13 @@ class ResponsesDataSpec extends AnyFlatSpec with Matchers with EitherValues {
       )
     )
 
-    val expectedJson = ujson.read(ResponsesFixture.jsonRequestWithInputMessage)
+    val expectedJson = parse(ResponsesFixture.jsonRequestWithInputMessage).value
 
     // when
-    val serializedJson: ujson.Value = SnakePickle.writeJs(givenRequest)
+    val serializedJson: io.circe.Json = givenRequest.asJson.deepDropNullValues
 
     // then
-    serializedJson shouldBe expectedJson
+    serializedJson shouldBe expectedJson.deepDropNullValues
   }
 
   "Given responses request with input message containing text and file" should "be properly serialized to Json" in {
@@ -199,26 +202,26 @@ class ResponsesDataSpec extends AnyFlatSpec with Matchers with EitherValues {
       )
     )
 
-    val expectedJson = ujson.read(ResponsesFixture.jsonRequestWithInputFile)
+    val expectedJson = parse(ResponsesFixture.jsonRequestWithInputFile).value
 
     // when
-    val serializedJson: ujson.Value = SnakePickle.writeJs(givenRequest)
+    val serializedJson: io.circe.Json = givenRequest.asJson.deepDropNullValues
 
     // then
-    serializedJson shouldBe expectedJson
+    serializedJson shouldBe expectedJson.deepDropNullValues
   }
 
   "Given responses request with file search tool call" should "be properly serialized to Json" in {
     import ResponsesRequestBody._
     import Input._
-    import FileSearchToolCall._
+    import FileSearchCall._
 
     // given
     val givenRequest = ResponsesRequestBody(
       model = Some(ResponsesModel.GPT41),
       input = Some(
         Right(
-          FileSearchToolCall(
+          FileSearchCall(
             id = "call_abc123",
             queries = List("machine learning algorithms", "neural networks"),
             status = "completed",
@@ -236,13 +239,13 @@ class ResponsesDataSpec extends AnyFlatSpec with Matchers with EitherValues {
       )
     )
 
-    val expectedJson = ujson.read(ResponsesFixture.jsonRequestWithFileSearchToolCall)
+    val expectedJson = parse(ResponsesFixture.jsonRequestWithFileSearchCall).value
 
     // when
-    val serializedJson: ujson.Value = SnakePickle.writeJs(givenRequest)
+    val serializedJson: io.circe.Json = givenRequest.asJson.deepDropNullValues
 
     // then
-    serializedJson shouldBe expectedJson
+    serializedJson shouldBe expectedJson.deepDropNullValues
   }
 
   "Given responses request with file search tool call in progress" should "be properly serialized to Json" in {
@@ -254,7 +257,7 @@ class ResponsesDataSpec extends AnyFlatSpec with Matchers with EitherValues {
       model = Some(ResponsesModel.GPT41),
       input = Some(
         Right(
-          FileSearchToolCall(
+          FileSearchCall(
             id = "call_def456",
             queries = List("python programming", "data analysis"),
             status = "in_progress",
@@ -264,22 +267,22 @@ class ResponsesDataSpec extends AnyFlatSpec with Matchers with EitherValues {
       )
     )
 
-    val expectedJson = ujson.read(ResponsesFixture.jsonRequestWithFileSearchToolCallInProgress)
+    val expectedJson = parse(ResponsesFixture.jsonRequestWithFileSearchCallInProgress).value
 
     // when
-    val serializedJson: ujson.Value = SnakePickle.writeJs(givenRequest)
+    val serializedJson: io.circe.Json = givenRequest.asJson.deepDropNullValues
 
     // then
-    serializedJson shouldBe expectedJson
+    serializedJson shouldBe expectedJson.deepDropNullValues
   }
 
   "Given responses response with basic output message" should "be properly deserialized from Json" in {
 
     // given
-    val jsonResponse = ujson.read(ResponsesFixture.jsonResponseBasic)
+    val jsonResponse = parse(ResponsesFixture.jsonResponseBasic).value
 
     // when
-    val deserializedResponse: ResponsesResponseBody = SnakePickle.read[ResponsesResponseBody](jsonResponse)
+    val deserializedResponse: ResponsesResponseBody = jsonResponse.as[ResponsesResponseBody].value
 
     // then
     deserializedResponse.id shouldBe "resp_67ccd3a9da748190baa7f1570fe91ac604becb25c45c1d41"
@@ -291,7 +294,7 @@ class ResponsesDataSpec extends AnyFlatSpec with Matchers with EitherValues {
     deserializedResponse.temperature shouldBe Some(1.0)
     deserializedResponse.topP shouldBe Some(1.0)
     deserializedResponse.truncation shouldBe Some("disabled")
-    deserializedResponse.metadata shouldBe Some(Map.empty)
+    deserializedResponse.metadata shouldBe None
 
     // Check usage structure
     deserializedResponse.usage shouldBe defined
@@ -304,7 +307,7 @@ class ResponsesDataSpec extends AnyFlatSpec with Matchers with EitherValues {
 
     // Check the output structure
     deserializedResponse.output should have size 1
-    val outputMessage = deserializedResponse.output.head.asInstanceOf[OutputItem.OutputMessage]
+    val outputMessage = deserializedResponse.output.head.asInstanceOf[OutputItem.Message]
     outputMessage.id shouldBe "msg_67ccd3acc8d48190a77525dc6de64b4104becb25c45c1d41"
     outputMessage.role shouldBe "assistant"
     outputMessage.status shouldBe "completed"
@@ -318,10 +321,10 @@ class ResponsesDataSpec extends AnyFlatSpec with Matchers with EitherValues {
   "Given responses response with complex output items" should "be properly deserialized from Json" in {
 
     // given
-    val jsonResponse = ujson.read(ResponsesFixture.jsonResponseWithComplexOutput)
+    val jsonResponse = parse(ResponsesFixture.jsonResponseWithComplexOutput).value
 
     // when
-    val deserializedResponse: ResponsesResponseBody = SnakePickle.read[ResponsesResponseBody](jsonResponse)
+    val deserializedResponse: ResponsesResponseBody = jsonResponse.as[ResponsesResponseBody].value
 
     // then
     deserializedResponse.id shouldBe "resp_complex123"
@@ -362,7 +365,7 @@ class ResponsesDataSpec extends AnyFlatSpec with Matchers with EitherValues {
     deserializedResponse.output should have size 3
 
     // Check first output item (message)
-    val outputMessage = deserializedResponse.output(0).asInstanceOf[OutputItem.OutputMessage]
+    val outputMessage = deserializedResponse.output(0).asInstanceOf[OutputItem.Message]
     outputMessage.id shouldBe "msg_complex123"
     outputMessage.role shouldBe "assistant"
     outputMessage.status shouldBe "completed"
@@ -378,14 +381,14 @@ class ResponsesDataSpec extends AnyFlatSpec with Matchers with EitherValues {
     citation.index shouldBe 0
 
     // Check second output item (file search tool call)
-    val fileSearchCall = deserializedResponse.output(1).asInstanceOf[OutputItem.FileSearchToolCall]
+    val fileSearchCall = deserializedResponse.output(1).asInstanceOf[OutputItem.FileSearchCall]
     fileSearchCall.id shouldBe "call_search123"
     fileSearchCall.queries shouldBe List("machine learning", "neural networks")
     fileSearchCall.status shouldBe "completed"
     fileSearchCall.results shouldBe defined
 
     // Check third output item (code interpreter tool call)
-    val codeCall = deserializedResponse.output(2).asInstanceOf[OutputItem.CodeInterpreterToolCall]
+    val codeCall = deserializedResponse.output(2).asInstanceOf[OutputItem.CodeInterpreterCall]
     codeCall.id shouldBe "code_call123"
     codeCall.containerId shouldBe "container_123"
     codeCall.code shouldBe Some("import numpy as np\nprint('Hello ML')")
@@ -396,11 +399,11 @@ class ResponsesDataSpec extends AnyFlatSpec with Matchers with EitherValues {
   "Given responses request with computer tool call wait action" should "be properly serialized to Json" in {
     import ResponsesRequestBody._
     import Input._
-    import ComputerToolCall._
+    import ComputerCall._
 
     // given
     val waitAction = Action.Wait()
-    val computerToolCall = ComputerToolCall(
+    val computerToolCall = ComputerCall(
       action = waitAction,
       callId = "call_wait_123",
       id = "computer_call_wait_456",
@@ -412,34 +415,34 @@ class ResponsesDataSpec extends AnyFlatSpec with Matchers with EitherValues {
       input = Some(Right(List(computerToolCall)))
     )
 
-    val expectedJson = ujson.Obj(
-      "model" -> ujson.Str("gpt-4o"),
-      "input" -> ujson.Arr(
-        ujson.Obj(
-          "type" -> ujson.Str("computer_call"),
-          "action" -> ujson.Obj(
-            "type" -> ujson.Str("wait")
+    val expectedJson = io.circe.Json.obj(
+      "model" := "gpt-4o",
+      "input" -> io.circe.Json.arr(
+        io.circe.Json.obj(
+          "type" := "computer_call",
+          "action" -> io.circe.Json.obj(
+            "type" := "wait"
           ),
-          "call_id" -> ujson.Str("call_wait_123"),
-          "id" -> ujson.Str("computer_call_wait_456"),
-          "pending_safety_checks" -> ujson.Arr()
+          "call_id" := "call_wait_123",
+          "id" := "computer_call_wait_456",
+          "pending_safety_checks" -> io.circe.Json.arr()
         )
       )
     )
 
     // when
-    val serializedJson: ujson.Value = SnakePickle.writeJs(givenRequest)
+    val serializedJson: io.circe.Json = givenRequest.asJson.deepDropNullValues
 
     // then
-    serializedJson shouldBe expectedJson
+    serializedJson shouldBe expectedJson.deepDropNullValues
   }
 
   "Given responses response with tool_choice set to allowed_tools" should "be properly deserialized from Json" in {
     // given
-    val jsonResponse = ujson.read(ResponsesFixture.jsonResponseWithAllowedToolsChoice)
+    val jsonResponse = parse(ResponsesFixture.jsonResponseWithAllowedToolsChoice).value
 
     // when
-    val deserializedResponse: ResponsesResponseBody = SnakePickle.read[ResponsesResponseBody](jsonResponse)
+    val deserializedResponse: ResponsesResponseBody = jsonResponse.as[ResponsesResponseBody].value
 
     // then
     deserializedResponse.id shouldBe "resp_tool_choice_123"

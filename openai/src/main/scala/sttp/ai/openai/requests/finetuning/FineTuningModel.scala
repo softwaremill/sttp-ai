@@ -1,22 +1,8 @@
 package sttp.ai.openai.requests.finetuning
-import sttp.ai.core.json.SnakePickle
-import ujson.Str
 
 sealed abstract class FineTuningModel(val value: String)
 
 object FineTuningModel {
-
-  implicit val fineTuningModelRW: SnakePickle.ReadWriter[FineTuningModel] = SnakePickle
-    .readwriter[ujson.Value]
-    .bimap[FineTuningModel](
-      model => SnakePickle.writeJs(model.value),
-      jsonValue =>
-        SnakePickle.read[ujson.Value](jsonValue) match {
-          case Str(value) =>
-            byFineTuningModelValue.getOrElse(value, CustomFineTuningModel(value))
-          case e => throw new Exception(s"Could not deserialize: $e")
-        }
-    )
 
   case object GPT35Turbo extends FineTuningModel("gpt-3.5-turbo")
   case object GPT35Turbo0125 extends FineTuningModel("gpt-3.5-turbo-0125")
@@ -67,7 +53,4 @@ object FineTuningModel {
       O4Mini,
       O4Mini20250416
     )
-
-  private val byFineTuningModelValue = values.map(model => model.value -> model).toMap
-
 }

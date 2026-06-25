@@ -11,7 +11,9 @@ import sttp.client4.StreamRequest
 import sttp.client4.impl.zio.ZioServerSentEvents
 import sttp.model.ResponseMetadata
 import sttp.model.sse.ServerSentEvent
-import sttp.ai.core.json.SnakePickle._
+import io.circe.parser.decode
+import sttp.ai.claude.json.ClaudeManualCodecs._
+import sttp.ai.claude.json.ClaudeDerivedCodecs._
 
 object ClaudeZioStreaming {
   import MessageStreamResponse.EventData.DoneEvent
@@ -48,7 +50,7 @@ object ClaudeZioStreaming {
       .collectZIO { case ServerSentEvent(Some(data), _, _, _) =>
         ZIO.fromEither(
           try
-            Right(read[MessageStreamResponse](data))
+            Right(decode[MessageStreamResponse](data).fold(throw _, identity))
           catch {
             case e: Exception =>
               Left(ClaudeException.DeserializationClaudeException(e, metadata))

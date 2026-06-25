@@ -1,10 +1,9 @@
 package sttp.ai.openai.requests.assistants
 
-import sttp.ai.core.json.{SerializationHelpers, SnakePickle}
+import io.circe.Json
 import sttp.ai.openai.requests.completions.chat.SchemaSupport
 import sttp.tapir.docs.apispec.schema.TapirSchemaToJsonSchema
 import sttp.tapir.{Schema => TSchema}
-import ujson._
 
 sealed trait Tool
 
@@ -22,18 +21,16 @@ object Tool {
     *   When set to `true`, [Structured Outputs](https://platform.openai.com/docs/guides/structured-outputs) validation will be enforced by
     *   the OpenAI API. Defaults to `None`, meaning the field is omitted in the outgoing JSON.
     */
-  @upickle.implicits.key("function")
-  case class FunctionTool(
+  case class Function(
       description: String,
       name: String,
-      parameters: Map[String, Value],
+      parameters: Map[String, Json],
       strict: Option[Boolean] = None
   ) extends Tool
 
-  object FunctionTool {
+  object Function {
 
-    /** Create a FunctionTool with schema automatically generated from type T. This provides the same convenience as SchematizedFunctionTool
-      * but keeps the Tool trait clean.
+    /** Create a FunctionTool with schema automatically generated from type T.
       *
       * @param description
       *   A description of what the function does.
@@ -44,11 +41,8 @@ object Tool {
       * @return
       *   A FunctionTool with auto-generated schema.
       */
-    def withTapirSchema[T: TSchema](description: String, name: String): FunctionTool = {
-      val schema = TapirSchemaToJsonSchema(implicitly[TSchema[T]], markOptionsAsNullable = true)
-      val schemaJson = SnakePickle.writeJs(schema)(SchemaSupport.schemaRW)
-      FunctionTool(description, name, schemaJson.obj.toMap, None)
-    }
+    def withTapirSchema[T: TSchema](description: String, name: String): Function =
+      withTapirSchema(description, name, None)
 
     /** Create a FunctionTool with schema automatically generated from type T and strict flag.
       *
@@ -63,46 +57,16 @@ object Tool {
       * @return
       *   A FunctionTool with auto-generated schema and strict flag.
       */
-    def withTapirSchema[T: TSchema](description: String, name: String, strict: Option[Boolean]): FunctionTool = {
+    def withTapirSchema[T: TSchema](description: String, name: String, strict: Option[Boolean]): Function = {
       val schema = TapirSchemaToJsonSchema(implicitly[TSchema[T]], markOptionsAsNullable = true)
-      val schemaJson = SnakePickle.writeJs(schema)(SchemaSupport.schemaRW)
-      FunctionTool(description, name, schemaJson.obj.toMap, strict)
+      val schemaJson = SchemaSupport.schemaCodec(schema)
+      Function(description, name, schemaJson.asObject.map(_.toMap).getOrElse(Map.empty), strict)
     }
   }
 
-  implicit val functionToolW: SnakePickle.Writer[FunctionTool] =
-    SerializationHelpers.withNestedDiscriminatorWriter("function", "function")(SnakePickle.macroW)
-  implicit val functionToolR: SnakePickle.Reader[FunctionTool] =
-    SerializationHelpers.withNestedDiscriminatorReader("function", "function")(SnakePickle.macroR)
+  /** Code interpreter tool. The type of tool being defined: code_interpreter */
+  case object CodeInterpreter extends Tool
 
-  /** Code interpreter tool
-    *
-    * The type of tool being defined: code_interpreter
-    */
-  case object CodeInterpreterTool extends Tool
-
-  /** file_search tool
-    *
-    * The type of tool being defined: file_search
-    */
-  case object FileSearchTool extends Tool
-
-  implicit val toolRW: SnakePickle.ReadWriter[Tool] = SnakePickle
-    .readwriter[Value]
-    .bimap[Tool](
-      {
-        case functionTool: FunctionTool =>
-          SnakePickle.writeJs(functionTool)
-        case CodeInterpreterTool =>
-          Obj("type" -> "code_interpreter")
-        case FileSearchTool =>
-          Obj("type" -> "file_search")
-      },
-      json =>
-        json("type").str match {
-          case "function"         => SnakePickle.read[FunctionTool](json)
-          case "code_interpreter" => CodeInterpreterTool
-          case "file_search"      => FileSearchTool
-        }
-    )
+  /** file_search tool. The type of tool being defined: file_search */
+  case object FileSearch extends Tool
 }

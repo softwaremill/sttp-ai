@@ -4,10 +4,12 @@ import org.scalatest.EitherValues
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
 import sttp.ai.openai.fixtures.FineTuningJobFixture
-import sttp.ai.core.json.SnakePickle
 import sttp.ai.openai.requests.finetuning.FineTuningModel.GPT35Turbo0125
-import sttp.ai.openai.utils.JsonUtils
-import ujson.Str
+import io.circe.parser.{decode, parse}
+import io.circe.syntax._
+import sttp.ai.openai.json.OpenAIDerivedCodecs._
+import sttp.ai.openai.json.OpenAIManualCodecs._
+import io.circe.Json
 
 class FineTuningDataSpec extends AnyFlatSpec with Matchers with EitherValues {
 
@@ -61,9 +63,9 @@ class FineTuningDataSpec extends AnyFlatSpec with Matchers with EitherValues {
         )
       )
     )
-    val jsonRequest: ujson.Value = ujson.read(FineTuningJobFixture.jsonCreateFineTuneJobRequest)
+    val jsonRequest: io.circe.Json = parse(FineTuningJobFixture.jsonCreateFineTuneJobRequest).value
     // when
-    val serializedJson: ujson.Value = SnakePickle.writeJs(givenRequest)
+    val serializedJson: io.circe.Json = givenRequest.asJson.deepDropNullValues
     // then
     serializedJson shouldBe jsonRequest
   }
@@ -74,7 +76,7 @@ class FineTuningDataSpec extends AnyFlatSpec with Matchers with EitherValues {
     val expectedResponse: FineTuningJobResponse = FineTuningJobFixture.fineTuningJobResponse
     // when
     val deserializedJsonResponse: Either[Exception, FineTuningJobResponse] =
-      JsonUtils.deserializeJsonSnake[FineTuningJobResponse].apply(jsonResponse)
+      decode[FineTuningJobResponse](jsonResponse)
     // then
     deserializedJsonResponse.value shouldBe expectedResponse
   }
@@ -88,7 +90,7 @@ class FineTuningDataSpec extends AnyFlatSpec with Matchers with EitherValues {
     )
     // when
     val deserializedJsonResponse: Either[Exception, ListFineTuningJobResponse] =
-      JsonUtils.deserializeJsonSnake[ListFineTuningJobResponse].apply(jsonResponse)
+      decode[ListFineTuningJobResponse](jsonResponse)
 
     // then
     deserializedJsonResponse.value shouldBe expectedResponse
@@ -105,7 +107,7 @@ class FineTuningDataSpec extends AnyFlatSpec with Matchers with EitherValues {
           createdAt = 1721764800,
           level = "info",
           message = "Fine tuning job successfully completed",
-          data = null,
+          data = None,
           `type` = "message"
         ),
         FineTuningJobEventResponse(
@@ -114,7 +116,7 @@ class FineTuningDataSpec extends AnyFlatSpec with Matchers with EitherValues {
           createdAt = 1721764800,
           level = "info",
           message = "New fine-tuned model created: ft:gpt-4o-mini:openai::7p4lURel",
-          data = Map(),
+          data = Some(Map()),
           `type` = "message"
         ),
         FineTuningJobEventResponse(
@@ -123,7 +125,7 @@ class FineTuningDataSpec extends AnyFlatSpec with Matchers with EitherValues {
           createdAt = 1721764800,
           level = "error",
           message = "Fine-tuning job failed.",
-          data = Map("job_id" -> Str("ft-AF1WoRqd3aJAHsqc9NY7iL8F"), "error" -> Str("Insufficient training data.")),
+          data = Some(Map("job_id" := "ft-AF1WoRqd3aJAHsqc9NY7iL8F", "error" := "Insufficient training data.")),
           `type` = "message"
         )
       ),
@@ -131,7 +133,7 @@ class FineTuningDataSpec extends AnyFlatSpec with Matchers with EitherValues {
     )
     // when
     val deserializedJsonResponse: Either[Exception, ListFineTuningJobEventResponse] =
-      JsonUtils.deserializeJsonSnake[ListFineTuningJobEventResponse].apply(jsonResponse)
+      decode[ListFineTuningJobEventResponse](jsonResponse)
     // then
     deserializedJsonResponse.value shouldBe expectedResponse
   }
@@ -164,7 +166,7 @@ class FineTuningDataSpec extends AnyFlatSpec with Matchers with EitherValues {
     )
     // when
     val deserializedJsonResponse: Either[Exception, ListFineTuningJobCheckpointResponse] =
-      JsonUtils.deserializeJsonSnake[ListFineTuningJobCheckpointResponse].apply(jsonResponse)
+      decode[ListFineTuningJobCheckpointResponse](jsonResponse)
     // then
     deserializedJsonResponse.value shouldBe expectedResponse
   }

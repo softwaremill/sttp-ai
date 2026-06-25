@@ -1,7 +1,5 @@
 package sttp.ai.openai.requests.files
 
-import sttp.ai.core.json.SnakePickle
-
 object FilesResponseData {
   case class FileData(
       `object`: String,
@@ -14,26 +12,14 @@ object FilesResponseData {
       @deprecated("Mark as deprecated in OpenAI spec") statusDetails: Option[String]
   )
 
-  object FileData {
-    implicit val fileInfoReadWriter: SnakePickle.ReadWriter[FileData] = SnakePickle.macroRW[FileData]
-  }
-
   case class FilesResponse(
       `object`: String,
       data: Seq[FileData]
   )
-
-  object FilesResponse {
-    implicit val filesResponseReadWriter: SnakePickle.ReadWriter[FilesResponse] = SnakePickle.macroRW[FilesResponse]
-  }
 
   case class DeletedFileData(
       `object`: String,
       id: String,
       deleted: Boolean
   )
-
-  object DeletedFileData {
-    implicit val deleteFileResponseReadWriter: SnakePickle.ReadWriter[DeletedFileData] = SnakePickle.macroRW[DeletedFileData]
-  }
 }

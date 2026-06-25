@@ -36,8 +36,8 @@ object ClaudeImageAnalysisExample extends App {
   val messages = List(
     Message.user(
       List(
-        ContentBlock.TextContent("What do you see in this image? Please describe it in detail."),
-        ContentBlock.ImageContent(
+        ContentBlock.Text("What do you see in this image? Please describe it in detail."),
+        ContentBlock.Image(
           source = ContentBlock.ImageSource.base64("image/png", testImageBase64)
         )
       )
@@ -56,8 +56,8 @@ object ClaudeImageAnalysisExample extends App {
     case Right(messageResponse) =>
       println("Claude's image analysis:")
       messageResponse.content.foreach {
-        case ContentBlock.TextContent(text, _) => println(text)
-        case _                                 => // Handle other content types if needed
+        case ContentBlock.Text(text, _) => println(text)
+        case _                          => // Handle other content types if needed
       }
       println(s"\nUsage: ${messageResponse.usage}")
     case Left(error) =>
@@ -72,13 +72,13 @@ object ClaudeImageAnalysisExample extends App {
   val multiImageMessages = List(
     Message.user(
       List(
-        ContentBlock.TextContent("Compare these two images and tell me the differences:"),
-        ContentBlock.TextContent("First image:"),
-        ContentBlock.ImageContent(
+        ContentBlock.Text("Compare these two images and tell me the differences:"),
+        ContentBlock.Text("First image:"),
+        ContentBlock.Image(
           source = ContentBlock.ImageSource.base64("image/png", testImageBase64)
         ),
-        ContentBlock.TextContent("Second image:"),
-        ContentBlock.ImageContent(
+        ContentBlock.Text("Second image:"),
+        ContentBlock.Image(
           source = ContentBlock.ImageSource.base64("image/png", testImage2Base64)
         )
       )
@@ -97,8 +97,8 @@ object ClaudeImageAnalysisExample extends App {
     case Right(messageResponse) =>
       println("Claude's comparison:")
       messageResponse.content.foreach {
-        case ContentBlock.TextContent(text, _) => println(text)
-        case _                                 => // Handle other content types if needed
+        case ContentBlock.Text(text, _) => println(text)
+        case _                          => // Handle other content types if needed
       }
     case Left(error) =>
       println(s"Error: ${error.getMessage}")
@@ -110,8 +110,8 @@ object ClaudeImageAnalysisExample extends App {
   val specificMessages = List(
     Message.user(
       List(
-        ContentBlock.TextContent("Analyze this image for any geometric shapes and their properties (color, size, position):"),
-        ContentBlock.ImageContent(
+        ContentBlock.Text("Analyze this image for any geometric shapes and their properties (color, size, position):"),
+        ContentBlock.Image(
           source = ContentBlock.ImageSource.base64("image/png", testImageBase64)
         )
       )
@@ -131,8 +131,8 @@ object ClaudeImageAnalysisExample extends App {
     case Right(messageResponse) =>
       println("Claude's technical analysis:")
       messageResponse.content.foreach {
-        case ContentBlock.TextContent(text, _) => println(text)
-        case _                                 => // Handle other content types if needed
+        case ContentBlock.Text(text, _) => println(text)
+        case _                          => // Handle other content types if needed
       }
     case Left(error) =>
       println(s"Error: ${error.getMessage}")

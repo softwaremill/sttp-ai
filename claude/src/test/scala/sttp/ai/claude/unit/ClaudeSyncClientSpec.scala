@@ -7,7 +7,8 @@ import sttp.ai.claude.ClaudeSyncClient
 import sttp.ai.claude.config.ClaudeConfig
 import sttp.ai.claude.models.{Message, OutputFormat}
 import sttp.ai.claude.requests.MessageRequest
-import sttp.ai.core.json.SnakePickle
+import sttp.ai.claude.json.ClaudeDerivedCodecs._
+import sttp.ai.claude.json.ClaudeManualCodecs._
 import sttp.client4.DefaultSyncBackend
 import sttp.model.StatusCode
 
@@ -15,7 +16,8 @@ class ClaudeSyncClientSpec extends AnyFlatSpec with Matchers {
 
   case class Weather(city: String, tempC: Double, conditions: String)
   object Weather {
-    implicit val rw: SnakePickle.ReadWriter[Weather] = SnakePickle.macroRW
+    implicit val codec: io.circe.Codec[Weather] =
+      io.circe.Codec.forProduct3("city", "temp_c", "conditions")(Weather.apply)(w => (w.city, w.tempC, w.conditions))
   }
 
   private val structuredResponse =
@@ -57,7 +59,7 @@ class ClaudeSyncClientSpec extends AnyFlatSpec with Matchers {
     ClaudeSyncClient(config, backend)
   }
 
-  "createMessageAs" should "parse the response into the typed value via uPickle" in {
+  "createMessageAs" should "parse the response into the typed value via circe" in {
     val client = stubClient(structuredResponse)
 
     import sttp.tapir.generic.auto._

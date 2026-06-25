@@ -1,7 +1,5 @@
 package sttp.ai.openai.requests.completions.chat
 
-import sttp.ai.core.json.SnakePickle
-
 /** @param id
   *   Unique identifier for this audio response.
   * @param expiresAt
@@ -18,7 +16,3 @@ case class Audio(
     data: String,
     transcript: String
 )
-
-object Audio {
-  implicit val audioR: SnakePickle.Reader[Audio] = SnakePickle.macroR[Audio]
-}

@@ -1,7 +1,5 @@
 package sttp.ai.openai.requests.audio.transcriptions
 
-import sttp.ai.core.json.SnakePickle
-
 sealed abstract class TranscriptionModel(val value: String)
 
 object TranscriptionModel {
@@ -14,8 +12,4 @@ object TranscriptionModel {
     * formats
     */
   case class Custom(customModel: String) extends TranscriptionModel(customModel)
-
-  implicit val ModelW: SnakePickle.Writer[TranscriptionModel] = SnakePickle
-    .writer[ujson.Value]
-    .comap(_.value)
 }

@@ -1,8 +1,5 @@
 package sttp.ai.openai.requests.vectorstore
 
-import sttp.ai.core.json.SnakePickle
-import ujson.{Obj, Value}
-
 /** Represents the expiration policy for a vector store.
   *
   * @param anchor
@@ -11,12 +8,3 @@ import ujson.{Obj, Value}
   *   Required. The number of days after the anchor time that the vector store will expire.
   */
 case class ExpiresAfter(anchor: String, days: Int)
-object ExpiresAfter {
-
-  implicit val expiresAfterRW: SnakePickle.ReadWriter[ExpiresAfter] = SnakePickle
-    .readwriter[Value]
-    .bimap[ExpiresAfter](
-      ea => Obj("anchor" -> ea.anchor, "days" -> ea.days),
-      json => ExpiresAfter(json("anchor").str, json("days").num.toInt)
-    )
-}

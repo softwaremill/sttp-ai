@@ -7,8 +7,9 @@ import sttp.ai.claude.requests.MessageRequest
 import sttp.ai.core.agent._
 import sttp.apispec.circe._
 import sttp.client4.Backend
+import io.circe.Json
 import io.circe.syntax._
-import ujson.circe.CirceJson
+import io.circe.parser.{parse => parseJson}
 import sttp.shared.Identity
 import sttp.monad.IdentityMonad
 
@@ -27,27 +28,29 @@ private[claude] class ClaudeAgentBackend[F[_]](
     responseSchema.map(rs => OutputConfig(format = Some(OutputFormat.JsonSchema(rs.schema))))
 
   private def convertTool(tool: AgentTool[_]): Tool = {
-    val schema = tool.jsonSchema
-    val schemaJson = CirceJson.transform(schema.asJson, upickle.default.reader[ujson.Value])
+    val schemaCursor = tool.jsonSchema.asJson.hcursor
 
-    val properties = schemaJson.obj
-      .get("properties")
+    val properties = schemaCursor
+      .downField("properties")
+      .focus
+      .flatMap(_.asObject)
       .map { propsObj =>
-        propsObj.obj.map { case (name, propSchema) =>
-          val propType = propSchema.obj.get("type").map(_.str).getOrElse("string")
-          val propDescription = propSchema.obj.get("description").map(_.str)
-          val propEnum = propSchema.obj.get("enum").map(_.arr.map(_.str).toList)
+        propsObj.toMap.map { case (name, propSchema) =>
+          val c = propSchema.hcursor
+          val propType = c.get[String]("type").toOption.getOrElse("string")
+          val propDescription = c.get[String]("description").toOption
+          val propEnum = c.downField("enum").as[List[String]].toOption
 
           name -> PropertySchema(
             `type` = propType,
             description = propDescription,
             `enum` = propEnum
           )
-        }.toMap
+        }
       }
       .getOrElse(Map.empty)
 
-    val required = schemaJson.obj.get("required").map(_.arr.map(_.str).toList)
+    val required = schemaCursor.downField("required").as[List[String]].toOption
 
     Tool(
       name = tool.name,
@@ -67,12 +70,12 @@ private[claude] class ClaudeAgentBackend[F[_]](
 
       case ConversationEntry.AssistantResponse(content, toolCalls) =>
         val contentBlocks = if (content.nonEmpty) {
-          List(ContentBlock.TextContent(content))
+          List(ContentBlock.Text(content))
         } else List.empty
 
         val toolUseBlocks = toolCalls.map { tc =>
-          val inputValue = ujson.read(tc.input)
-          ContentBlock.ToolUseContent(tc.id, tc.toolName, inputValue.obj.toMap)
+          val input = parseJson(tc.input).flatMap(_.as[Map[String, Json]]).fold(throw _, identity)
+          ContentBlock.ToolUse(tc.id, tc.toolName, input)
         }
 
         Some(Message.assistant(contentBlocks ++ toolUseBlocks))
@@ -82,7 +85,7 @@ private[claude] class ClaudeAgentBackend[F[_]](
           Message(
             role = "user",
             content = List(
-              ContentBlock.ToolResultContent(
+              ContentBlock.ToolResult(
                 toolUseId = toolCallId,
                 content = result,
                 isError = None
@@ -112,11 +115,11 @@ private[claude] class ClaudeAgentBackend[F[_]](
     monad.flatMap(monad.map(client.createMessage(request).send(backend))(_.body)) {
       case Right(response) =>
         val textContent = response.content
-          .collectFirst { case ContentBlock.TextContent(text, _) => text }
+          .collectFirst { case ContentBlock.Text(text, _) => text }
           .getOrElse("")
 
-        val toolCalls = response.content.collect { case ContentBlock.ToolUseContent(id, name, input) =>
-          val inputJson = ujson.write(ujson.Obj.from(input))
+        val toolCalls = response.content.collect { case ContentBlock.ToolUse(id, name, input) =>
+          val inputJson = Json.fromFields(input).noSpaces
           ToolCall(id, name, inputJson)
         }
 

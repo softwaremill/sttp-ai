@@ -1,6 +1,5 @@
 package sttp.ai.openai.requests.threads
 
-import sttp.ai.core.json.SnakePickle
 import sttp.ai.openai.requests.completions.chat.message.ToolResources
 import sttp.ai.openai.requests.threads.messages.ThreadMessagesRequestBody.CreateMessage
 
@@ -19,9 +18,5 @@ object ThreadsRequestBody {
       toolResources: Option[ToolResources] = None,
       metadata: Option[Map[String, String]] = None
   )
-
-  object CreateThreadBody {
-    implicit val completionBodyW: SnakePickle.Writer[CreateThreadBody] = SnakePickle.macroW[CreateThreadBody]
-  }
 
 }

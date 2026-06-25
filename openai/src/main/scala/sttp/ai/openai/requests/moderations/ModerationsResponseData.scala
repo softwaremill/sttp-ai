@@ -1,6 +1,5 @@
 package sttp.ai.openai.requests.moderations
 
-import sttp.ai.core.json.SnakePickle
 import sttp.ai.openai.requests.moderations.ModerationsRequestBody.ModerationModel
 
 object ModerationsResponseData {
@@ -14,10 +13,6 @@ object ModerationsResponseData {
       `violence/graphic`: Double
   )
 
-  object CategoryScores {
-    implicit val categoryScoresInfoReader: SnakePickle.Reader[CategoryScores] = SnakePickle.macroR[CategoryScores]
-  }
-
   case class Categories(
       sexual: Boolean,
       hate: Boolean,
@@ -27,24 +22,16 @@ object ModerationsResponseData {
       `hate/threatening`: Boolean,
       `violence/graphic`: Boolean
   )
-  object Categories {
-    implicit val categoriesInfoReader: SnakePickle.Reader[Categories] = SnakePickle.macroR[Categories]
-  }
+
   case class Result(
       flagged: Boolean,
       categories: Categories,
       categoryScores: CategoryScores
   )
 
-  object Result {
-    implicit val resultsInfoReader: SnakePickle.Reader[Result] = SnakePickle.macroR[Result]
-  }
   case class ModerationData(
       id: String,
       model: ModerationModel,
       results: Seq[Result]
   )
-  object ModerationData {
-    implicit val morderationInfoReader: SnakePickle.Reader[ModerationData] = SnakePickle.macroR[ModerationData]
-  }
 }

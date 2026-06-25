@@ -1,11 +1,7 @@
 package sttp.ai.openai.requests.threads.runs
 
-import sttp.ai.core.json.SnakePickle
 import sttp.ai.openai.requests.assistants.Tool
 import sttp.ai.openai.requests.completions.chat.message.ToolResources
-import sttp.ai.openai.requests.threads.runs.ThreadRunsResponseData.FileSearchToolCall.FileSearch
-import sttp.ai.openai.requests.threads.runs.ThreadRunsResponseData.FileSearchToolCall.FileSearch.FileSearchResult.Content
-import sttp.ai.openai.requests.threads.runs.ThreadRunsResponseData.FileSearchToolCall.FileSearch.{FileSearchResult, RankingOptions}
 
 object ThreadRunsResponseData {
 
@@ -95,39 +91,17 @@ object ThreadRunsResponseData {
       usage: Option[Usage] = None
   )
 
-  object RunData {
-    implicit val RunDataR: SnakePickle.Reader[RunData] = SnakePickle.macroR[RunData]
-  }
+  /** Details on the action required to continue the run. Will be null if no action is required */
+  sealed trait RequiredAction
 
-  /** Details on the action required to continue the run. Will be null if no action is required
-    *
-    * [[https://platform.openai.com/docs/api-reference/runs/object]]
-    */
-  trait RequiredAction
+  object RequiredAction {
 
-  implicit val requiredActionR: SnakePickle.Reader[RequiredAction] = SnakePickle
-    .reader[ujson.Value]
-    .map(json =>
-      json("type").str match {
-        case "submit_tool_outputs" =>
-          SnakePickle.read[SubmitToolOutputsRequiredAction](json)
-      }
-    )
-
-  /** @param type
-    *   For now, this is always submit_tool_outputs.
-    *
-    * @param submitToolOutputs
-    *   Details on the tool outputs needed for this run to continue.
-    */
-  case class SubmitToolOutputsRequiredAction(
-      `type`: String,
-      submitToolOutputs: SubmitToolOutputs
-  ) extends RequiredAction
-
-  object SubmitToolOutputsRequiredAction {
-    implicit val submitToolOutputsRequiredActionR: SnakePickle.Reader[SubmitToolOutputsRequiredAction] =
-      SnakePickle.macroR[SubmitToolOutputsRequiredAction]
+    /** @param submitToolOutputs
+      *   Details on the tool outputs needed for this run to continue.
+      */
+    case class SubmitToolOutputs(
+        submitToolOutputs: SubmitToolOutputs
+    ) extends RequiredAction
   }
 
   /** @param toolCalls
@@ -135,13 +109,8 @@ object ThreadRunsResponseData {
     */
   case class SubmitToolOutputs(toolCalls: Seq[ToolCall])
 
-  object SubmitToolOutputs {
-    implicit val submitToolOutputsR: SnakePickle.Reader[SubmitToolOutputs] = SnakePickle.macroR[SubmitToolOutputs]
-  }
-
-  /** The last error associated with this run
-    */
-  trait Error {
+  /** The last error associated with this run */
+  sealed trait Error {
 
     /** One of server_error, rate_limit_exceeded, or invalid_prompt.
       */
@@ -153,18 +122,6 @@ object ThreadRunsResponseData {
   }
 
   object Error {
-    implicit val errorR: SnakePickle.Reader[Error] = SnakePickle
-      .reader[ujson.Value]
-      .map(json =>
-        json("code").str match {
-          case "server_error" =>
-            SnakePickle.read[ServerError](json)
-          case "rate_limit_exceeded" =>
-            SnakePickle.read[RateLimitExceeded](json)
-          case "invalid_prompt" =>
-            SnakePickle.read[InvalidPrompt](json)
-        }
-      )
 
     /** @param code
       *   server_error
@@ -173,8 +130,6 @@ object ThreadRunsResponseData {
       */
     case class ServerError(code: String, message: String) extends Error
 
-    implicit val serverErrorR: SnakePickle.Reader[ServerError] = SnakePickle.macroR[ServerError]
-
     /** @param code
       *   rate_limit_exceeded
       * @param message
@@ -182,16 +137,12 @@ object ThreadRunsResponseData {
       */
     case class RateLimitExceeded(code: String, message: String) extends Error
 
-    implicit val rateLimitExceededR: SnakePickle.Reader[RateLimitExceeded] = SnakePickle.macroR[RateLimitExceeded]
-
     /** @param code
       *   invalid_prompt
       * @param message
       *   A human-readable description of the error.
       */
     case class InvalidPrompt(code: String, message: String) extends Error
-
-    implicit val invalidPromptR: SnakePickle.Reader[InvalidPrompt] = SnakePickle.macroR[InvalidPrompt]
   }
 
   /** @param object
@@ -210,10 +161,6 @@ object ThreadRunsResponseData {
       lastId: String,
       hasMore: Boolean
   )
-
-  object ListRunsResponse {
-    implicit val listRunsResponseR: SnakePickle.Reader[ListRunsResponse] = SnakePickle.macroR[ListRunsResponse]
-  }
 
   /** Represents a step in execution of a run
     *
@@ -266,7 +213,6 @@ object ThreadRunsResponseData {
     * @param usage
     *   Usage statistics related to the run step. This value will be null while the run step's status is in_progress.
     */
-
   case class RunStepData(
       id: String,
       `object`: String,
@@ -286,26 +232,8 @@ object ThreadRunsResponseData {
       usage: Option[Usage] = None
   )
 
-  object RunStepData {
-    implicit val runStepDataR: SnakePickle.Reader[RunStepData] = SnakePickle.macroR[RunStepData]
-  }
-
-  /** The details of the run step.
-    */
+  /** The details of the run step. */
   trait StepDetails
-
-  object StepDetails {
-    implicit val stepDetailsR: SnakePickle.Reader[StepDetails] = SnakePickle
-      .reader[ujson.Value]
-      .map(json =>
-        json("type").str match {
-          case "message_creation" =>
-            SnakePickle.read[MessageCreation](json("message_creation"))
-          case "tool_calls" =>
-            SnakePickle.read[ToolCalls](json)
-        }
-      )
-  }
 
   /** Details of the message creation by the run step
     *
@@ -314,10 +242,6 @@ object ThreadRunsResponseData {
     */
   case class MessageCreation(messageId: String) extends StepDetails
 
-  object MessageCreation {
-    implicit val messageCreationR: SnakePickle.Reader[MessageCreation] = SnakePickle.macroR[MessageCreation]
-  }
-
   /** Details of the tool call
     * @param `type`
     *   Always tool_calls.
@@ -325,178 +249,130 @@ object ThreadRunsResponseData {
     *   An array of tool calls the run step was involved in. These can be associated with one of three types of tools: code_interpreter,
     *   file_search, or function.
     */
-  case class ToolCalls(`type`: String, toolCalls: Seq[ToolCall]) extends StepDetails
+  case class ToolCalls(toolCalls: Seq[ToolCall]) extends StepDetails
 
-  object ToolCalls {
-    implicit val toolCallsR: SnakePickle.Reader[ToolCalls] = SnakePickle.macroR[ToolCalls]
-  }
-
-  /** Details of the tool call
-    */
-
-  trait ToolCall
+  /** Details of the tool call */
+  sealed trait ToolCall
 
   object ToolCall {
-    implicit val toolCallsR: SnakePickle.Reader[ToolCall] = SnakePickle
-      .reader[ujson.Value]
-      .map(json =>
-        json("type").str match {
-          case "code_interpreter" =>
-            SnakePickle.read[CodeInterpreterToolCall](json)
-          case "file_search" =>
-            SnakePickle.read[FileSearchToolCall](json)
-          case "function" =>
-            SnakePickle.read[FunctionToolCall](json)
-        }
-      )
-  }
 
-  /** Details of the Code Interpreter tool call the run step was involved in.
-    * @param id
-    *   The ID of the tool call.
-    *
-    * @param type
-    *   The type of tool call. This is always going to be code_interpreter for this type of tool call.
-    *
-    * @param codeInterpreter
-    *   The Code Interpreter tool call definition.
-    */
-  case class CodeInterpreterToolCall(
-      id: String,
-      `type`: String
-      // TODO codeInterpreter
-  ) extends ToolCall
+    /** Details of the Code Interpreter tool call the run step was involved in.
+      *
+      * @param id
+      *   The ID of the tool call.
+      * @param type
+      *   The type of tool call. This is always going to be code_interpreter for this type of tool call.
+      * @param codeInterpreter
+      *   The Code Interpreter tool call definition.
+      */
+    case class CodeInterpreter(
+        id: String
+    ) extends ToolCall
 
-  object CodeInterpreterToolCall {
-    implicit val codeInterpreterToolCallR: SnakePickle.Reader[CodeInterpreterToolCall] = SnakePickle.macroR[CodeInterpreterToolCall]
-  }
-
-  /** FileSearch tool call
-    * @param id
-    *   The ID of the tool call object.
-    *
-    * @param type
-    *   The type of tool call. This is always going to be file_search for this type of tool call.
-    *
-    * @param fileSearch
-    *   According to https://platform.openai.com/docs/api-reference/run-steps/step-object It should be map: "For now, this is always going
-    *   to be an empty object."
-    *
-    * Actually, it has two fields: "ranking_options" and "results"
-    */
-  case class FileSearchToolCall(
-      id: String,
-      `type`: String,
-      fileSearch: Option[FileSearch] = None
-  ) extends ToolCall
-
-  object FileSearchToolCall {
-    implicit val fileSearchToolCallR: SnakePickle.Reader[FileSearchToolCall] = SnakePickle.macroR[FileSearchToolCall]
-
-    /** @param rankingOptions
-      *   The ranking options for the file search
-      * @param results
-      *   The results of the file search
+    /** FileSearch tool call
+      *
+      * @param id
+      *   The ID of the tool call object.
+      * @param type
+      *   The type of tool call. This is always going to be file_search for this type of tool call.
+      * @param fileSearch
+      *   According to https://platform.openai.com/docs/api-reference/run-steps/step-object It should be map: "For now, this is always going
+      *   to be an empty object."
+      *
+      * Actually, it has two fields: "ranking_options" and "results"
       */
     case class FileSearch(
-        rankingOptions: Option[RankingOptions] = None,
-        results: Seq[FileSearchResult] = Seq.empty
-    )
+        id: String,
+        fileSearch: Option[FileSearch.FileSearchDetails] = None
+    ) extends ToolCall
 
     object FileSearch {
-      implicit val fileSearchR: SnakePickle.Reader[FileSearch] = SnakePickle.macroR[FileSearch]
 
-      /** The ranking options for the file search
-        *
-        * @param ranker
-        *   The ranker to use for the file search. If not specified will use the auto ranker.
-        * @param scoreThreshold
-        *   The score threshold for the file search. All values must be a floating point number between 0 and 1
+      /** @param rankingOptions
+        *   The ranking options for the file search
+        * @param results
+        *   The results of the file search
         */
-      case class RankingOptions(
-          ranker: String,
-          scoreThreshold: Double
+      case class FileSearchDetails(
+          rankingOptions: Option[FileSearchDetails.RankingOptions] = None,
+          results: Seq[FileSearchDetails.FileSearchResult] = Seq.empty
       )
 
-      object RankingOptions {
-        implicit val rankingOptionsR: SnakePickle.Reader[RankingOptions] = SnakePickle.macroR[RankingOptions]
-      }
+      object FileSearchDetails {
 
-      /** The results of the file search
-        *
-        * @param fileId
-        *   The ID of the file that result was found in
-        * @param fileName
-        *   The name of the file that result was found in
-        * @param score
-        *   The score of the result. All values must be a floating point number between 0 and 1.
-        * @param content
-        *   The content of the result that was found. The content is only included if requested via the include query parameter.
-        */
-      case class FileSearchResult(
-          fileId: String,
-          fileName: String,
-          score: Double,
-          content: Seq[Content] = Seq.empty
-      )
-
-      object FileSearchResult {
-        implicit val fileSearchResultR: SnakePickle.Reader[FileSearchResult] = SnakePickle.macroR[FileSearchResult]
-
-        /** The content of the result that was found.
+        /** The ranking options for the file search
           *
-          * @param text
-          *   The text content of the file.
-          * @param type
-          *   The type of the content.
+          * @param ranker
+          *   The ranker to use for the file search. If not specified will use the auto ranker.
+          * @param scoreThreshold
+          *   The score threshold for the file search. All values must be a floating point number between 0 and 1
           */
-        case class Content(
-            text: String,
-            `type`: String
+        case class RankingOptions(
+            ranker: String,
+            scoreThreshold: Double
         )
 
-        object Content {
-          implicit val contentR: SnakePickle.Reader[Content] = SnakePickle.macroR[Content]
+        /** The results of the file search
+          *
+          * @param fileId
+          *   The ID of the file that result was found in
+          * @param fileName
+          *   The name of the file that result was found in
+          * @param score
+          *   The score of the result. All values must be a floating point number between 0 and 1.
+          * @param content
+          *   The content of the result that was found. The content is only included if requested via the include query parameter.
+          */
+        case class FileSearchResult(
+            fileId: String,
+            fileName: String,
+            score: Double,
+            content: Seq[FileSearchResult.Content] = Seq.empty
+        )
+
+        object FileSearchResult {
+
+          /** The content of the result that was found.
+            *
+            * @param text
+            *   The text content of the file.
+            * @param type
+            *   The type of the content.
+            */
+          case class Content(
+              text: String,
+              `type`: String
+          )
         }
 
       }
-
     }
-  }
 
-  /** Function tool call
-    *
-    * @param id
-    *   The ID of the tool call object.
-    * @param type
-    *   The type of tool call. This is always going to be function for this type of tool call.
-    * @param function
-    *   The definition of the function that was called.
-    */
-  case class FunctionToolCall(
-      id: String,
-      `type`: String,
-      function: FunctionCallResult
-  ) extends ToolCall
+    /** Function tool call
+      *
+      * @param id
+      *   The ID of the tool call object.
+      * @param type
+      *   The type of tool call. This is always going to be function for this type of tool call.
+      * @param function
+      *   The definition of the function that was called.
+      */
+    case class Function(
+        id: String,
+        `type`: String,
+        function: FunctionCallResult
+    ) extends ToolCall
 
-  object FunctionToolCall {
-    implicit val functionToolCallR: SnakePickle.Reader[FunctionToolCall] = SnakePickle.macroR[FunctionToolCall]
-  }
-
-  /** The definition of the function that was called
-    *
-    * @param name
-    *   The name of the function.
-    *
-    * @param arguments
-    *   The arguments passed to the function.
-    *
-    * @param output
-    *   The output of the function. This will be null if the outputs have not been submitted yet.
-    */
-  case class FunctionCallResult(name: String, arguments: String, output: Option[String])
-  object FunctionCallResult {
-    implicit val functionCallResultR: SnakePickle.Reader[FunctionCallResult] = SnakePickle.macroR[FunctionCallResult]
+    /** The definition of the function that was called
+      *
+      * @param name
+      *   The name of the function.
+      * @param arguments
+      *   The arguments passed to the function.
+      * @param output
+      *   The output of the function. This will be null if the outputs have not been submitted yet.
+      */
+    case class FunctionCallResult(name: String, arguments: String, output: Option[String])
   }
 
   /** @param object
@@ -515,9 +391,6 @@ object ThreadRunsResponseData {
       lastId: String,
       hasMore: Boolean
   )
-  object ListRunStepsResponse {
-    implicit val listRunStepsResponseR: SnakePickle.Reader[ListRunStepsResponse] = SnakePickle.macroR[ListRunStepsResponse]
-  }
 
   /** @param promptTokens
     *   Number of tokens in the prompt.
@@ -527,8 +400,4 @@ object ThreadRunsResponseData {
     *   Total number of tokens used in the request (prompt + completion).
     */
   case class Usage(promptTokens: Int, completionTokens: Int, totalTokens: Int)
-
-  object Usage {
-    implicit val choicesR: SnakePickle.Reader[Usage] = SnakePickle.macroR[Usage]
-  }
 }

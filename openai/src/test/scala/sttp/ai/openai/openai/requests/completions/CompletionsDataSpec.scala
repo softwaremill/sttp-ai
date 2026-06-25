@@ -4,9 +4,11 @@ import org.scalatest.EitherValues
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
 import sttp.ai.openai.fixtures
-import sttp.ai.core.json.SnakePickle
 import sttp.ai.openai.requests.completions.Stop.SingleStop
-import sttp.ai.openai.utils.JsonUtils
+import io.circe.parser.{decode, parse}
+import io.circe.syntax._
+import sttp.ai.openai.json.OpenAIDerivedCodecs._
+import sttp.ai.openai.json.OpenAIManualCodecs._
 
 class CompletionsDataSpec extends AnyFlatSpec with Matchers with EitherValues {
   "Given completions response as Json" should "be properly deserialized to case class" in {
@@ -46,7 +48,7 @@ class CompletionsDataSpec extends AnyFlatSpec with Matchers with EitherValues {
     )
 
     // when
-    val givenResponse: Either[Exception, CompletionsResponse] = JsonUtils.deserializeJsonSnake.apply(jsonResponse)
+    val givenResponse: Either[Exception, CompletionsResponse] = decode[CompletionsResponse](jsonResponse)
 
     // then
     givenResponse.value shouldBe expectedResponse
@@ -80,7 +82,7 @@ class CompletionsDataSpec extends AnyFlatSpec with Matchers with EitherValues {
     )
 
     // when
-    val givenResponse: Either[Exception, CompletionsResponse] = JsonUtils.deserializeJsonSnake.apply(jsonResponse)
+    val givenResponse: Either[Exception, CompletionsResponse] = decode[CompletionsResponse](jsonResponse)
 
     // then
     givenResponse.value shouldBe expectedResponse
@@ -123,7 +125,7 @@ class CompletionsDataSpec extends AnyFlatSpec with Matchers with EitherValues {
     )
 
     // when
-    val givenResponse: Either[Exception, CompletionsResponse] = JsonUtils.deserializeJsonSnake.apply(jsonResponse)
+    val givenResponse: Either[Exception, CompletionsResponse] = decode[CompletionsResponse](jsonResponse)
 
     // then
     givenResponse.value shouldBe expectedResponse
@@ -146,10 +148,10 @@ class CompletionsDataSpec extends AnyFlatSpec with Matchers with EitherValues {
       stop = Some(SingleStop("\n"))
     )
 
-    val jsonRequest: ujson.Value = ujson.read(fixtures.CompletionsFixture.jsonSinglePromptRequest)
+    val jsonRequest: io.circe.Json = parse(fixtures.CompletionsFixture.jsonSinglePromptRequest).value
 
     // when
-    val serializedJson: ujson.Value = SnakePickle.writeJs(givenRequest)
+    val serializedJson: io.circe.Json = givenRequest.asJson.deepDropNullValues
 
     // then
     serializedJson shouldBe jsonRequest
@@ -198,7 +200,7 @@ class CompletionsDataSpec extends AnyFlatSpec with Matchers with EitherValues {
     )
 
     // when
-    val givenResponse: Either[Exception, CompletionsResponse] = JsonUtils.deserializeJsonSnake.apply(jsonResponse)
+    val givenResponse: Either[Exception, CompletionsResponse] = decode[CompletionsResponse](jsonResponse)
 
     // then
     givenResponse.value shouldBe expectedResponse
@@ -221,10 +223,10 @@ class CompletionsDataSpec extends AnyFlatSpec with Matchers with EitherValues {
       stop = Some(SingleStop("\n"))
     )
 
-    val jsonRequest: ujson.Value = ujson.read(fixtures.CompletionsFixture.jsonMultiplePromptRequest)
+    val jsonRequest: io.circe.Json = parse(fixtures.CompletionsFixture.jsonMultiplePromptRequest).value
 
     // when
-    val serializedJson: ujson.Value = SnakePickle.writeJs(givenRequest)
+    val serializedJson: io.circe.Json = givenRequest.asJson.deepDropNullValues
 
     // then
     serializedJson shouldBe jsonRequest

@@ -1,7 +1,5 @@
 package sttp.ai.openai.requests.upload
 
-import sttp.ai.core.json.SnakePickle
-
 /** Represents the request body for uploading a file.
   *
   * @param filename
@@ -22,10 +20,6 @@ case class UploadRequestBody(
     mimeType: String
 )
 
-object UploadRequestBody {
-  implicit val uploadRequestBodyW: SnakePickle.Writer[UploadRequestBody] = SnakePickle.macroW[UploadRequestBody]
-}
-
 /** @param partIds
   *   The ordered list of Part IDs.
   * @param md5
@@ -35,7 +29,3 @@ case class CompleteUploadRequestBody(
     partIds: Seq[String],
     md5: Option[String]
 )
-
-object CompleteUploadRequestBody {
-  implicit val completeUploadRequestBodyW: SnakePickle.Writer[CompleteUploadRequestBody] = SnakePickle.macroW[CompleteUploadRequestBody]
-}

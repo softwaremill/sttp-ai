@@ -1,6 +1,5 @@
 package sttp.ai.openai.requests.threads.messages
 
-import sttp.ai.core.json.SnakePickle
 import sttp.ai.openai.requests.completions.chat.message.Attachment
 
 object ThreadMessagesRequestBody {
@@ -25,7 +24,4 @@ object ThreadMessagesRequestBody {
       metadata: Option[Map[String, String]] = None
   )
 
-  object CreateMessage {
-    implicit val completionBodyW: SnakePickle.Writer[CreateMessage] = SnakePickle.macroW[CreateMessage]
-  }
 }

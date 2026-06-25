@@ -1,7 +1,5 @@
 package sttp.ai.openai.requests.completions
 
-import sttp.ai.core.json.SnakePickle
-
 /** @param promptTokens
   *   Number of tokens in the prompt.
   * @param completionTokens
@@ -21,10 +19,6 @@ case class Usage(
     promptTokensDetails: Option[PromptTokensDetails] = None
 )
 
-object Usage {
-  implicit val choicesR: SnakePickle.Reader[Usage] = SnakePickle.macroR[Usage]
-}
-
 /** @param acceptedPredictionTokens
   *   When using Predicted Outputs, the number of tokens in the prediction that appeared in the completion.
   * @param audioTokens
@@ -42,10 +36,6 @@ case class CompletionTokensDetails(
     rejectedPredictionTokens: Option[Int] = None
 )
 
-object CompletionTokensDetails {
-  implicit val completionTokensDetailsR: SnakePickle.Reader[CompletionTokensDetails] = SnakePickle.macroR[CompletionTokensDetails]
-}
-
 /** @param audioTokens
   *   Audio input tokens present in the prompt.
   * @param cachedTokens
@@ -55,7 +45,3 @@ case class PromptTokensDetails(
     audioTokens: Option[Int] = None,
     cachedTokens: Option[Int] = None
 )
-
-object PromptTokensDetails {
-  implicit val promptTokensDetailsR: SnakePickle.Reader[PromptTokensDetails] = SnakePickle.macroR[PromptTokensDetails]
-}

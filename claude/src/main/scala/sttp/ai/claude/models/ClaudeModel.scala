@@ -1,7 +1,5 @@
 package sttp.ai.claude.models
 
-import sttp.ai.core.json.SnakePickle.{macroRW, ReadWriter}
-
 sealed trait ClaudeModel {
   val value: String
   override def toString: String = value
@@ -59,22 +57,4 @@ object ClaudeModel {
       case None                          => true // Defaults to supported for unknown/future models
     }
 
-  implicit val rw: ReadWriter[ClaudeModel] = ReadWriter.merge(
-    macroRW[Claude3_5Sonnet.type],
-    macroRW[Claude3_5SonnetLatest.type],
-    macroRW[Claude3_5Haiku.type],
-    macroRW[Claude3_5HaikuLatest.type],
-    macroRW[Claude3Opus.type],
-    macroRW[Claude3Sonnet.type],
-    macroRW[Claude3Haiku.type],
-    macroRW[ClaudeSonnet4_0.type],
-    macroRW[ClaudeOpus4_0.type],
-    macroRW[ClaudeHaiku4_5.type],
-    macroRW[ClaudeHaiku4_5Latest.type],
-    macroRW[ClaudeOpus4_1.type],
-    macroRW[ClaudeSonnet4_5.type],
-    macroRW[ClaudeSonnet4_5Latest.type],
-    macroRW[ClaudeOpus4_5.type],
-    macroRW[ClaudeOpus4_5Latest.type]
-  )
 }

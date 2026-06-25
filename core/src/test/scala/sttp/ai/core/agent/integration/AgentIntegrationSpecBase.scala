@@ -3,8 +3,9 @@ package sttp.ai.core.agent.integration
 import org.scalactic.{source, Prettifier}
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
+import io.circe.Codec
+import io.circe.generic.semiauto.deriveCodec
 import sttp.ai.core.agent._
-import sttp.ai.core.json.SnakePickle
 import sttp.client4.{Backend, DefaultSyncBackend}
 import sttp.shared.Identity
 import sttp.tapir.Schema
@@ -25,7 +26,7 @@ abstract class AgentIntegrationSpecBase extends AnyFlatSpec with Matchers {
   protected val maybeApiKey: Option[String] = sys.env.get(apiKeyEnvVar)
 
   case class CalculatorInput(operation: String, a: Double, b: Double)
-  implicit val calculatorInputRW: SnakePickle.ReadWriter[CalculatorInput] = SnakePickle.macroRW
+  implicit val calculatorInputCodec: Codec[CalculatorInput] = deriveCodec
   implicit val calculatorInputSchema: Schema[CalculatorInput] = Schema.derived
 
   protected val calculatorTool: AgentTool[CalculatorInput] = AgentTool.fromFunction(
@@ -43,7 +44,7 @@ abstract class AgentIntegrationSpecBase extends AnyFlatSpec with Matchers {
   }
 
   case class WeatherInput(city: String)
-  implicit val weatherInputRW: SnakePickle.ReadWriter[WeatherInput] = SnakePickle.macroRW
+  implicit val weatherInputCodec: Codec[WeatherInput] = deriveCodec
   implicit val weatherInputSchema: Schema[WeatherInput] = Schema.derived
 
   protected val weatherTool: AgentTool[WeatherInput] = AgentTool.fromFunction(
@@ -164,7 +165,7 @@ abstract class AgentIntegrationSpecBase extends AnyFlatSpec with Matchers {
   }
 
   case class TripSummary(weather: String, calculation: String, conclusion: String)
-  implicit val tripSummaryRW: SnakePickle.ReadWriter[TripSummary] = SnakePickle.macroRW
+  implicit val tripSummaryCodec: Codec[TripSummary] = deriveCodec
   implicit val tripSummarySchema: Schema[TripSummary] = Schema.derived
 
   it should "return a typed structured answer via runAs[T]" in {

@@ -4,10 +4,12 @@ import org.scalatest.EitherValues
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
 import sttp.ai.openai.fixtures.VectorStoreFixture
-import sttp.ai.core.json.SnakePickle
 import sttp.ai.openai.requests.vectorstore.VectorStoreRequestBody.{CreateVectorStoreBody, ModifyVectorStoreBody}
 import sttp.ai.openai.requests.vectorstore.VectorStoreResponseData._
-import sttp.ai.openai.utils.JsonUtils
+import io.circe.parser.{decode, parse}
+import io.circe.syntax._
+import sttp.ai.openai.json.OpenAIDerivedCodecs._
+import sttp.ai.openai.json.OpenAIManualCodecs._
 
 class VectorStoreDataSpec extends AnyFlatSpec with Matchers with EitherValues {
 
@@ -18,10 +20,10 @@ class VectorStoreDataSpec extends AnyFlatSpec with Matchers with EitherValues {
       name = Some("vs_1")
     )
 
-    val jsonRequest: ujson.Value = ujson.read(VectorStoreFixture.jsonCreateRequest)
+    val jsonRequest: io.circe.Json = parse(VectorStoreFixture.jsonCreateRequest).value
 
     // when
-    val serializedJson: ujson.Value = SnakePickle.writeJs(givenRequest)
+    val serializedJson: io.circe.Json = givenRequest.asJson.deepDropNullValues
 
     // then
     serializedJson shouldBe jsonRequest
@@ -35,10 +37,10 @@ class VectorStoreDataSpec extends AnyFlatSpec with Matchers with EitherValues {
       expiresAfter = Some(ExpiresAfter("11111", 2))
     )
 
-    val jsonRequest: ujson.Value = ujson.read(VectorStoreFixture.jsonCreateWithExpiresRequest)
+    val jsonRequest: io.circe.Json = parse(VectorStoreFixture.jsonCreateWithExpiresRequest).value
 
     // when
-    val serializedJson: ujson.Value = SnakePickle.writeJs(givenRequest)
+    val serializedJson: io.circe.Json = givenRequest.asJson.deepDropNullValues
 
     // then
     serializedJson shouldBe jsonRequest
@@ -51,10 +53,10 @@ class VectorStoreDataSpec extends AnyFlatSpec with Matchers with EitherValues {
       expiresAfter = Some(ExpiresAfter("2322", 5))
     )
 
-    val jsonRequest: ujson.Value = ujson.read(VectorStoreFixture.jsonModify)
+    val jsonRequest: io.circe.Json = parse(VectorStoreFixture.jsonModify).value
 
     // when
-    val serializedJson: ujson.Value = SnakePickle.writeJs(givenRequest)
+    val serializedJson: io.circe.Json = givenRequest.asJson.deepDropNullValues
 
     // then
     serializedJson shouldBe jsonRequest
@@ -79,7 +81,7 @@ class VectorStoreDataSpec extends AnyFlatSpec with Matchers with EitherValues {
     val jsonResponse = VectorStoreFixture.jsonObject
 
     // when
-    val serializedJson: Either[Exception, VectorStore] = JsonUtils.deserializeJsonSnake.apply(jsonResponse)
+    val serializedJson: Either[Exception, VectorStore] = decode[VectorStore](jsonResponse)
 
     // then
     serializedJson.value shouldBe givenResponse
@@ -119,7 +121,8 @@ class VectorStoreDataSpec extends AnyFlatSpec with Matchers with EitherValues {
     val jsonResponse = VectorStoreFixture.jsonList
 
     // when
-    val serializedJson: Either[Exception, ListVectorStoresResponse] = JsonUtils.deserializeJsonSnake.apply(jsonResponse)
+    val serializedJson: Either[Exception, ListVectorStoresResponse] =
+      decode[ListVectorStoresResponse](jsonResponse)
 
     // then
     serializedJson.value shouldBe givenResponse
@@ -138,7 +141,8 @@ class VectorStoreDataSpec extends AnyFlatSpec with Matchers with EitherValues {
     val jsonResponse = VectorStoreFixture.jsonDelete
 
     // when
-    val serializedJson: Either[Exception, DeleteVectorStoreResponse] = JsonUtils.deserializeJsonSnake.apply(jsonResponse)
+    val serializedJson: Either[Exception, DeleteVectorStoreResponse] =
+      decode[DeleteVectorStoreResponse](jsonResponse)
 
     // then
     serializedJson.value shouldBe givenResponse

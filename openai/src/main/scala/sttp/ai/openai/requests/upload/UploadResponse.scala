@@ -1,7 +1,5 @@
 package sttp.ai.openai.requests.upload
 
-import sttp.ai.core.json.SnakePickle
-
 /** Represents the response for an upload request.
   *
   * @param id
@@ -35,10 +33,6 @@ case class UploadResponse(
     file: Option[FileMetadata]
 )
 
-object UploadResponse {
-  implicit val uploadResponseR: SnakePickle.Reader[UploadResponse] = SnakePickle.macroR[UploadResponse]
-}
-
 case class FileMetadata(
     id: String,
     `object`: String,
@@ -47,10 +41,6 @@ case class FileMetadata(
     filename: String,
     purpose: String
 )
-
-object FileMetadata {
-  implicit val fileR: SnakePickle.Reader[FileMetadata] = SnakePickle.macroR[FileMetadata]
-}
 
 /** Represents the response for an upload part.
   *
@@ -69,7 +59,3 @@ case class UploadPartResponse(
     uploadId: String,
     `object`: String = "upload.part"
 )
-
-object UploadPartResponse {
-  implicit val uploadPartResponseR: SnakePickle.Reader[UploadPartResponse] = SnakePickle.macroR[UploadPartResponse]
-}

@@ -1,7 +1,7 @@
 package sttp.ai.core.agent
 
+import io.circe.Codec
 import sttp.ai.core.agent.AgentConfig.SystemPromptParameters
-import sttp.ai.core.json.SnakePickle
 import sttp.monad.MonadError
 import sttp.tapir.Schema
 
@@ -30,11 +30,11 @@ final class AgentBuilder[F[_]] private (
 
   def responseSchema(schema: ResponseSchema[_]): AgentBuilder[F] = withConfig(config.copy(responseSchema = Some(schema)))
 
-  def deriveResponseSchema[T](implicit schema: Schema[T], rw: SnakePickle.ReadWriter[T]): AgentBuilder[F] =
+  def deriveResponseSchema[T](implicit schema: Schema[T], codec: Codec[T]): AgentBuilder[F] =
     withConfig(config.copy(responseSchema = Some(ResponseSchema.derived[T](None))))
 
   // NOTE: the description field is only forwarded to OpenAI. Claude's structured-output `output_config` has no description field.
-  def deriveResponseSchema[T](description: String)(implicit schema: Schema[T], rw: SnakePickle.ReadWriter[T]): AgentBuilder[F] =
+  def deriveResponseSchema[T](description: String)(implicit schema: Schema[T], codec: Codec[T]): AgentBuilder[F] =
     withConfig(config.copy(responseSchema = Some(ResponseSchema.derived[T](Some(description)))))
 
   def hookBeforeToolCall(hook: ToolCall => F[Unit]): AgentBuilder[F] = withConfig(config.copy(beforeToolCall = Some(hook)))

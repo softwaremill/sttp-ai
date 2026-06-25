@@ -1,10 +1,9 @@
 package sttp.ai.openai.requests.responses
 
-import sttp.ai.core.json.SnakePickle
+import io.circe.Json
 import sttp.ai.openai.requests.completions.chat.SchemaSupport
 import sttp.tapir.docs.apispec.schema.TapirSchemaToJsonSchema
 import sttp.tapir.{Schema => TSchema}
-import ujson.Value
 
 sealed trait Tool
 
@@ -21,10 +20,9 @@ object Tool {
     * @param description
     *   A description of the function. Used by the model to determine whether or not to call the function.
     */
-  @upickle.implicits.key("function")
   case class Function(
       name: String,
-      parameters: Map[String, Value],
+      parameters: Map[String, Json],
       strict: Boolean = true,
       description: Option[String] = None
   ) extends Tool
@@ -42,11 +40,8 @@ object Tool {
       * @return
       *   A Function tool with auto-generated schema.
       */
-    def withTapirSchema[T: TSchema](name: String, description: Option[String] = None): Function = {
-      val schema = TapirSchemaToJsonSchema(implicitly[TSchema[T]], markOptionsAsNullable = true)
-      val schemaJson = SnakePickle.writeJs(schema)(SchemaSupport.schemaRW)
-      Function(name, schemaJson.obj.toMap, strict = true, description)
-    }
+    def withTapirSchema[T: TSchema](name: String, description: Option[String] = None): Function =
+      withTapirSchema(name, description, strict = true)
 
     /** Create a Function tool with schema automatically generated from type T and custom strict flag.
       *
@@ -63,8 +58,8 @@ object Tool {
       */
     def withTapirSchema[T: TSchema](name: String, description: Option[String], strict: Boolean): Function = {
       val schema = TapirSchemaToJsonSchema(implicitly[TSchema[T]], markOptionsAsNullable = true)
-      val schemaJson = SnakePickle.writeJs(schema)(SchemaSupport.schemaRW)
-      Function(name, schemaJson.obj.toMap, strict, description)
+      val schemaJson = SchemaSupport.schemaCodec(schema)
+      Function(name, schemaJson.asObject.map(_.toMap).getOrElse(Map.empty), strict, description)
     }
   }
 
@@ -73,15 +68,8 @@ object Tool {
     sealed trait Filter
 
     object Filter {
-      @upickle.implicits.key("metadata")
       case class Metadata(metadata: Map[String, String]) extends Filter
-
-      @upickle.implicits.key("file_ids")
       case class FileIds(fileIds: List[String]) extends Filter
-
-      implicit val metadataRW: SnakePickle.ReadWriter[Metadata] = SnakePickle.macroRW
-      implicit val fileIdsRW: SnakePickle.ReadWriter[FileIds] = SnakePickle.macroRW
-      implicit val filterRW: SnakePickle.ReadWriter[Filter] = SnakePickle.macroRW
     }
 
     /** Ranking options for file search
@@ -95,8 +83,6 @@ object Tool {
         ranker: Option[String] = None,
         scoreThreshold: Option[Double] = None
     )
-
-    implicit val rankingOptionsRW: SnakePickle.ReadWriter[RankingOptions] = SnakePickle.macroRW
   }
 
   /** File search tool
@@ -110,7 +96,6 @@ object Tool {
     * @param rankingOptions
     *   Ranking options for search.
     */
-  @upickle.implicits.key("file_search")
   case class FileSearch(
       vectorStoreIds: List[String],
       filters: Option[FileSearch.Filter] = None,
@@ -149,21 +134,15 @@ object Tool {
   }
 
   object WebSearchPreview {
-    @upickle.implicits.key("web_search_preview")
     case class DefaultWebSearchPreview(
         searchContextSize: Option[String] = None,
         userLocation: Option[UserLocation] = None
     ) extends WebSearchPreview
 
-    @upickle.implicits.key("web_search_preview_2025_03_11")
     case class WebSearchPreview20250311(
         searchContextSize: Option[String] = None,
         userLocation: Option[UserLocation] = None
     ) extends WebSearchPreview
-
-    implicit val defaultWebSearchPreviewRW: SnakePickle.ReadWriter[DefaultWebSearchPreview] = SnakePickle.macroRW
-    implicit val webSearchPreview20250311RW: SnakePickle.ReadWriter[WebSearchPreview20250311] = SnakePickle.macroRW
-    implicit val webSearchPreviewRW: SnakePickle.ReadWriter[WebSearchPreview] = SnakePickle.macroRW
   }
 
   /** Computer use preview tool
@@ -175,24 +154,19 @@ object Tool {
     * @param environment
     *   The type of computer environment to control.
     */
-  @upickle.implicits.key("computer_use_preview")
   case class ComputerUsePreview(
       displayHeight: Int,
       displayWidth: Int,
       environment: String
   ) extends Tool
 
-  object McpTool {
+  object Mcp {
 
     sealed trait ApprovalFilter
 
     object ApprovalFilter {
       case class Always(toolNames: Option[List[String]] = None) extends ApprovalFilter
       case class Never(toolNames: Option[List[String]] = None) extends ApprovalFilter
-
-      implicit val alwaysRW: SnakePickle.ReadWriter[Always] = SnakePickle.macroRW
-      implicit val neverRW: SnakePickle.ReadWriter[Never] = SnakePickle.macroRW
-      implicit val approvalFilterRW: SnakePickle.ReadWriter[ApprovalFilter] = SnakePickle.macroRW
     }
 
     sealed trait RequireApproval
@@ -201,31 +175,13 @@ object Tool {
       case object Always extends RequireApproval
       case object Never extends RequireApproval
       case class Filter(always: Option[ApprovalFilter.Always] = None, never: Option[ApprovalFilter.Never] = None) extends RequireApproval
-
-      implicit val filterRW: SnakePickle.ReadWriter[Filter] = SnakePickle.macroRW
-
-      implicit val requireApprovalRW: SnakePickle.ReadWriter[RequireApproval] = SnakePickle
-        .readwriter[Value]
-        .bimap[RequireApproval](
-          {
-            case Always         => ujson.Str("always")
-            case Never          => ujson.Str("never")
-            case filter: Filter => SnakePickle.writeJs(filter)
-          },
-          {
-            case ujson.Str("always") => Always
-            case ujson.Str("never")  => Never
-            case obj: ujson.Obj      => SnakePickle.read[Filter](obj)
-            case v                   => throw new Exception(s"Invalid require approval format: $v")
-          }
-        )
     }
 
     sealed trait AllowedTools
 
     object AllowedTools {
       case class ToolList(tools: List[String]) extends AllowedTools
-      case class FilterObject(filter: Map[String, Value]) extends AllowedTools
+      case class FilterObject(filter: Map[String, Json]) extends AllowedTools
 
       object FilterObject {
 
@@ -238,24 +194,10 @@ object Tool {
           */
         def withTapirSchema[T: TSchema](): FilterObject = {
           val schema = TapirSchemaToJsonSchema(implicitly[TSchema[T]], markOptionsAsNullable = true)
-          val schemaJson = SnakePickle.writeJs(schema)(SchemaSupport.schemaRW)
-          FilterObject(schemaJson.obj.toMap)
+          val schemaJson = SchemaSupport.schemaCodec(schema)
+          FilterObject(schemaJson.asObject.map(_.toMap).getOrElse(Map.empty))
         }
       }
-
-      implicit val allowedToolsRW: SnakePickle.ReadWriter[AllowedTools] = SnakePickle
-        .readwriter[Value]
-        .bimap[AllowedTools](
-          {
-            case ToolList(tools)      => SnakePickle.writeJs(tools)
-            case FilterObject(filter) => SnakePickle.writeJs(filter)
-          },
-          {
-            case arr: ujson.Arr => ToolList(SnakePickle.read[List[String]](arr))
-            case obj: ujson.Obj => FilterObject(SnakePickle.read[Map[String, Value]](obj))
-            case v              => throw new Exception(s"Invalid allowed tools format: $v")
-          }
-        )
     }
   }
 
@@ -274,13 +216,12 @@ object Tool {
     * @param serverDescription
     *   Optional description of the MCP server.
     */
-  @upickle.implicits.key("mcp")
-  case class McpTool(
+  case class Mcp(
       serverLabel: String,
       serverUrl: String,
-      allowedTools: Option[McpTool.AllowedTools] = None,
+      allowedTools: Option[Mcp.AllowedTools] = None,
       headers: Option[Map[String, String]] = None,
-      requireApproval: Option[McpTool.RequireApproval] = None,
+      requireApproval: Option[Mcp.RequireApproval] = None,
       serverDescription: Option[String] = None
   ) extends Tool
 
@@ -289,25 +230,8 @@ object Tool {
     sealed trait Container
 
     object Container {
-      @upickle.implicits.key("auto")
       case class ContainerAuto(fileIds: Option[List[String]] = None) extends Container
       case class ContainerId(id: String) extends Container
-
-      implicit val containerAutoRW: SnakePickle.ReadWriter[ContainerAuto] = SnakePickle.macroRW
-      implicit val containerIdRW: SnakePickle.ReadWriter[ContainerId] = SnakePickle.macroRW
-      implicit val containerRW: SnakePickle.ReadWriter[Container] = SnakePickle
-        .readwriter[Value]
-        .bimap[Container](
-          {
-            case auto: ContainerAuto => SnakePickle.writeJs(auto)
-            case ContainerId(id)     => ujson.Str(id)
-          },
-          {
-            case ujson.Str(id)  => ContainerId(id)
-            case obj: ujson.Obj => SnakePickle.read[ContainerAuto](obj)
-            case v              => throw new Exception(s"Invalid container format: $v")
-          }
-        )
     }
   }
 
@@ -316,7 +240,6 @@ object Tool {
     * @param container
     *   The code interpreter container.
     */
-  @upickle.implicits.key("code_interpreter")
   case class CodeInterpreter(
       container: CodeInterpreter.Container
   ) extends Tool
@@ -334,8 +257,6 @@ object Tool {
         fileId: Option[String] = None,
         imageUrl: Option[String] = None
     )
-
-    implicit val inputImageMaskRW: SnakePickle.ReadWriter[InputImageMask] = SnakePickle.macroRW
   }
 
   /** Image generation tool
@@ -361,7 +282,6 @@ object Tool {
     * @param size
     *   The size of the generated image.
     */
-  @upickle.implicits.key("image_generation")
   case class ImageGeneration(
       background: Option[String] = Some("auto"),
       inputFidelity: Option[String] = Some("low"),
@@ -375,15 +295,13 @@ object Tool {
       size: Option[String] = Some("auto")
   ) extends Tool
 
-  @upickle.implicits.key("local_shell")
   case class LocalShell() extends Tool
 
-  object CustomTool {
+  object Custom {
 
     sealed trait Format
 
     object Format {
-      @upickle.implicits.key("text")
       case class Text() extends Format
 
       /** Grammar format
@@ -393,15 +311,10 @@ object Tool {
         * @param syntax
         *   The syntax of the grammar definition.
         */
-      @upickle.implicits.key("grammar")
       case class Grammar(
           definition: String,
           syntax: String
       ) extends Format
-
-      implicit val textRW: SnakePickle.ReadWriter[Text] = SnakePickle.macroRW
-      implicit val grammarRW: SnakePickle.ReadWriter[Grammar] = SnakePickle.macroRW
-      implicit val formatRW: SnakePickle.ReadWriter[Format] = SnakePickle.macroRW
     }
   }
 
@@ -414,22 +327,9 @@ object Tool {
     * @param format
     *   The input format for the custom tool.
     */
-  @upickle.implicits.key("custom")
-  case class CustomTool(
+  case class Custom(
       name: String,
       description: Option[String] = None,
-      format: Option[CustomTool.Format] = None
+      format: Option[Custom.Format] = None
   ) extends Tool
-
-  implicit val userLocationRW: SnakePickle.ReadWriter[UserLocation] = SnakePickle.macroRW
-  implicit val functionRW: SnakePickle.ReadWriter[Function] = SnakePickle.macroRW
-  implicit val fileSearchRW: SnakePickle.ReadWriter[FileSearch] = SnakePickle.macroRW
-  implicit val computerUsePreviewRW: SnakePickle.ReadWriter[ComputerUsePreview] = SnakePickle.macroRW
-  implicit val localShellRW: SnakePickle.ReadWriter[LocalShell] = SnakePickle.macroRW
-  implicit val mcpToolRW: SnakePickle.ReadWriter[McpTool] = SnakePickle.macroRW
-  implicit val codeInterpreterRW: SnakePickle.ReadWriter[CodeInterpreter] = SnakePickle.macroRW
-  implicit val imageGenerationRW: SnakePickle.ReadWriter[ImageGeneration] = SnakePickle.macroRW
-  implicit val customToolRW: SnakePickle.ReadWriter[CustomTool] = SnakePickle.macroRW
-
-  implicit val localToolRW: SnakePickle.ReadWriter[Tool] = SnakePickle.macroRW
 }

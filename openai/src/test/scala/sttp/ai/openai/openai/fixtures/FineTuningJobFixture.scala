@@ -119,7 +119,7 @@ object FineTuningJobFixture {
                                            |  "data": [
                                            |  $jsonCreateFineTuneJobResponse
                                            |  ],
-                                           |  "hasMore": false
+                                           |  "has_more": false
                                            |}""".stripMargin
 
   val jsonListFineTuningJobEventsResponse: String = """{

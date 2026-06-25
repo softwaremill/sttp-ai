@@ -3,7 +3,9 @@ package sttp.ai.core.agent
 import org.scalatest.OptionValues
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
-import sttp.ai.core.json.SnakePickle
+import io.circe.Codec
+import io.circe.generic.semiauto.deriveCodec
+import io.circe.parser.decode
 import sttp.client4.testing.SyncBackendStub
 import sttp.monad.IdentityMonad
 import sttp.shared.Identity
@@ -36,7 +38,7 @@ class AgentSpec extends AnyFlatSpec with Matchers with OptionValues {
   private val backend = SyncBackendStub
 
   case class CalculatorInput(a: Double, b: Double)
-  implicit val calculatorInputRW: SnakePickle.ReadWriter[CalculatorInput] = SnakePickle.macroRW
+  implicit val calculatorInputCodec: Codec[CalculatorInput] = deriveCodec
   implicit val calculatorInputSchema: Schema[CalculatorInput] = Schema.derived
 
   private val calculatorTool = AgentTool.fromFunction(
@@ -53,11 +55,11 @@ class AgentSpec extends AnyFlatSpec with Matchers with OptionValues {
     builder.build.run("Test")(backend)
 
   case class DummyInput()
-  implicit val dummyInputRW: SnakePickle.ReadWriter[DummyInput] = SnakePickle.macroRW
+  implicit val dummyInputCodec: Codec[DummyInput] = deriveCodec
   implicit val dummyInputSchema: Schema[DummyInput] = Schema.derived
 
   case class NumberInput(value: Int)
-  implicit val numberInputRW: SnakePickle.ReadWriter[NumberInput] = SnakePickle.macroRW
+  implicit val numberInputCodec: Codec[NumberInput] = deriveCodec
   implicit val numberInputSchema: Schema[NumberInput] = Schema.derived
 
   "Agent" should "stop after max iterations" in {
@@ -377,7 +379,8 @@ class AgentSpec extends AnyFlatSpec with Matchers with OptionValues {
 
   case class WeatherSummary(city: String, tempC: Double, conditions: String)
   object WeatherSummary {
-    implicit val rw: SnakePickle.ReadWriter[WeatherSummary] = SnakePickle.macroRW
+    implicit val codec: Codec[WeatherSummary] =
+      Codec.forProduct3("city", "temp_c", "conditions")(WeatherSummary.apply)(w => (w.city, w.tempC, w.conditions))
     implicit val schema: Schema[WeatherSummary] = Schema.derived
   }
 
@@ -387,8 +390,7 @@ class AgentSpec extends AnyFlatSpec with Matchers with OptionValues {
     ).deriveResponseSchema[WeatherSummary].build.run("What's the weather?")(backend)
 
     result.finishReason shouldBe FinishReason.NaturalStop: Unit
-    val parsed = SnakePickle.read[WeatherSummary](result.finalAnswer)
-    parsed shouldBe WeatherSummary("Krakow", 12.0, "sunny")
+    decode[WeatherSummary](result.finalAnswer) shouldBe Right(WeatherSummary("Krakow", 12.0, "sunny"))
   }
 
   "Agent.runAs[T]" should "return Right(T) when the model emits a well-formed structured payload" in {
@@ -469,7 +471,13 @@ class AgentSpec extends AnyFlatSpec with Matchers with OptionValues {
       ToolCall("call_1", "calculator", """{"a":5,"b":10}"""),
       ToolCallRecord("call_1", "calculator", """{"a":5,"b":10}""", "Result: 15.0", 1),
       ToolCall("call_2", "calculator", """{"a":"bad","b":"input"}"""),
-      ToolCallRecord("call_2", "calculator", """{"a":"bad","b":"input"}""", "Failed to parse arguments for tool 'calculator': $['a']", 1),
+      ToolCallRecord(
+        "call_2",
+        "calculator",
+        """{"a":"bad","b":"input"}""",
+        "Failed to parse arguments for tool 'calculator': DecodingFailure at .a: Double",
+        1
+      ),
       ToolCall("call_3", "non_existing_tool", """{"a":3,"b":7}"""),
       ToolCallRecord("call_3", "non_existing_tool", """{"a":3,"b":7}""", "Tool not found: non_existing_tool", 1)
     )

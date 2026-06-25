@@ -1,7 +1,5 @@
 package sttp.ai.openai.requests.audio.translations
 
-import sttp.ai.core.json.SnakePickle
-
 sealed abstract class TranslationModel(val value: String)
 
 object TranslationModel {
@@ -12,8 +10,4 @@ object TranslationModel {
     * formats
     */
   case class Custom(customModel: String) extends TranslationModel(customModel)
-
-  implicit val ModelW: SnakePickle.Writer[TranslationModel] = SnakePickle
-    .writer[ujson.Value]
-    .comap(_.value)
 }

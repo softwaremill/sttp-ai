@@ -8,6 +8,7 @@ import org.scalatest.time.{Millis, Seconds, Span}
 import sttp.ai.openai.OpenAIExceptions.OpenAIException
 import sttp.ai.openai.OpenAISyncClient
 import sttp.ai.openai.requests.completions.chat.ChatRequestBody.{ChatBody, ChatCompletionModel}
+import sttp.ai.openai.requests.completions.chat.Role
 import sttp.ai.openai.requests.completions.chat.message.{Content, Message}
 import sttp.ai.openai.requests.embeddings.EmbeddingsRequestBody.{EmbeddingsBody, EmbeddingsInput, EmbeddingsModel}
 import sttp.ai.openai.requests.moderations.ModerationsRequestBody.ModerationsBody
@@ -164,7 +165,7 @@ class OpenAIIntegrationSpec extends AnyFlatSpec with Matchers with BeforeAndAfte
     withClient { client =>
       // given
       val messages = Seq(
-        Message.UserMessage(
+        Message.User(
           content = Content.TextContent("Hi") // Minimal message to reduce cost
         )
       )
@@ -183,7 +184,7 @@ class OpenAIIntegrationSpec extends AnyFlatSpec with Matchers with BeforeAndAfte
       response.`object` shouldBe "chat.completion"
       response.model should not be empty
       response.choices should not be empty
-      response.choices.head.message.role.value shouldBe "assistant"
+      response.choices.head.message.role shouldBe Role.Assistant
       response.choices.head.message.content should not be empty
       response.usage should not be null
       response.usage.totalTokens should be > 0
@@ -208,7 +209,7 @@ class OpenAIIntegrationSpec extends AnyFlatSpec with Matchers with BeforeAndAfte
       createdResponse.`object` shouldBe "response"
       createdResponse.status shouldBe "completed"
       createdResponse.output should not be empty
-      createdResponse.output.head should be(a[sttp.ai.openai.requests.responses.ResponsesResponseBody.OutputItem.OutputMessage])
+      createdResponse.output.head should be(a[sttp.ai.openai.requests.responses.ResponsesResponseBody.OutputItem.Message])
       createdResponse.createdAt should be > 0L
 
       // Verify that usage is reported (helpful for cost tracking)
@@ -292,7 +293,7 @@ class OpenAIIntegrationSpec extends AnyFlatSpec with Matchers with BeforeAndAfte
       // We'll make multiple rapid requests to potentially trigger rate limiting
       val chatBody = ChatBody(
         model = ChatCompletionModel.GPT4oMini,
-        messages = Seq(Message.UserMessage(Content.TextContent("Hi"))),
+        messages = Seq(Message.User(Content.TextContent("Hi"))),
         maxTokens = Some(1) // Minimal to reduce cost
       )
 

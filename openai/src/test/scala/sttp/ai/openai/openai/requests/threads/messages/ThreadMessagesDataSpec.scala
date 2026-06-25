@@ -4,11 +4,13 @@ import org.scalatest.EitherValues
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
 import sttp.ai.openai.fixtures
-import sttp.ai.core.json.SnakePickle
 import sttp.ai.openai.requests.completions.chat.message.Attachment
-import sttp.ai.openai.requests.threads.messages.ThreadMessagesResponseData.Content.{TextContent, TextContentValue}
+import sttp.ai.openai.requests.threads.messages.ThreadMessagesResponseData.Content.{Text, TextContentValue}
 import sttp.ai.openai.requests.threads.messages.ThreadMessagesResponseData.{DeleteMessageResponse, ListMessagesResponse, MessageData}
-import sttp.ai.openai.utils.JsonUtils
+import io.circe.parser.{decode, parse}
+import io.circe.syntax._
+import sttp.ai.openai.json.OpenAIDerivedCodecs._
+import sttp.ai.openai.json.OpenAIManualCodecs._
 
 class ThreadMessagesDataSpec extends AnyFlatSpec with Matchers with EitherValues {
 
@@ -20,10 +22,10 @@ class ThreadMessagesDataSpec extends AnyFlatSpec with Matchers with EitherValues
       content = "How does AI work? Explain it in simple terms."
     )
 
-    val jsonRequest: ujson.Value = ujson.read(fixtures.ThreadMessagesFixture.jsonCreateMessageRequest)
+    val jsonRequest: io.circe.Json = parse(fixtures.ThreadMessagesFixture.jsonCreateMessageRequest).value
 
     // when
-    val serializedJson: ujson.Value = SnakePickle.writeJs(givenRequest)
+    val serializedJson: io.circe.Json = givenRequest.asJson.deepDropNullValues
 
     // then
     serializedJson shouldBe jsonRequest
@@ -41,22 +43,21 @@ class ThreadMessagesDataSpec extends AnyFlatSpec with Matchers with EitherValues
       threadId = Some("thread_abc123"),
       role = "user",
       content = Seq(
-        TextContent(
-          `type` = "text",
+        Text(
           text = TextContentValue(
             value = "How does AI work? Explain it in simple terms.",
             annotations = Seq.empty
           )
         )
       ),
-      attachments = Some(Seq.empty),
+      attachments = None,
       assistantId = None,
       runId = None,
       metadata = Map.empty
     )
 
     // when
-    val givenResponse: Either[Exception, MessageData] = JsonUtils.deserializeJsonSnake.apply(jsonResponse)
+    val givenResponse: Either[Exception, MessageData] = decode[MessageData](jsonResponse)
 
     // then
     givenResponse.value shouldBe expectedResponse
@@ -76,15 +77,14 @@ class ThreadMessagesDataSpec extends AnyFlatSpec with Matchers with EitherValues
           threadId = Some("thread_abc123"),
           role = "user",
           content = Seq(
-            TextContent(
-              `type` = "text",
+            Text(
               text = TextContentValue(
                 value = "How does AI work? Explain it in simple terms.",
                 annotations = Seq.empty
               )
             )
           ),
-          attachments = Some(Seq.empty),
+          attachments = None,
           assistantId = None,
           runId = None,
           metadata = Map.empty
@@ -96,8 +96,7 @@ class ThreadMessagesDataSpec extends AnyFlatSpec with Matchers with EitherValues
           threadId = Some("thread_abc123"),
           role = "user",
           content = Seq(
-            TextContent(
-              `type` = "text",
+            Text(
               text = TextContentValue(
                 value = "Hello, what is AI?",
                 annotations = Seq.empty
@@ -116,7 +115,7 @@ class ThreadMessagesDataSpec extends AnyFlatSpec with Matchers with EitherValues
     )
 
     // when
-    val givenResponse: Either[Exception, ListMessagesResponse] = JsonUtils.deserializeJsonSnake.apply(jsonResponse)
+    val givenResponse: Either[Exception, ListMessagesResponse] = decode[ListMessagesResponse](jsonResponse)
 
     // then
     givenResponse.value shouldBe expectedResponse
@@ -133,8 +132,7 @@ class ThreadMessagesDataSpec extends AnyFlatSpec with Matchers with EitherValues
       threadId = Some("thread_abc123"),
       role = "user",
       content = Seq(
-        TextContent(
-          `type` = "text",
+        Text(
           text = TextContentValue(
             value = "How does AI work? Explain it in simple terms.",
             annotations = Seq.empty
@@ -148,7 +146,7 @@ class ThreadMessagesDataSpec extends AnyFlatSpec with Matchers with EitherValues
     )
 
     // when
-    val givenResponse: Either[Exception, MessageData] = JsonUtils.deserializeJsonSnake.apply(jsonResponse)
+    val givenResponse: Either[Exception, MessageData] = decode[MessageData](jsonResponse)
 
     // then
     givenResponse.value shouldBe expectedResponse
@@ -165,15 +163,14 @@ class ThreadMessagesDataSpec extends AnyFlatSpec with Matchers with EitherValues
       threadId = Some("thread_abc123"),
       role = "user",
       content = Seq(
-        TextContent(
-          `type` = "text",
+        Text(
           text = TextContentValue(
             value = "How does AI work? Explain it in simple terms.",
             annotations = Seq.empty
           )
         )
       ),
-      attachments = Some(Seq.empty),
+      attachments = None,
       assistantId = None,
       runId = None,
       metadata = Map(
@@ -183,7 +180,7 @@ class ThreadMessagesDataSpec extends AnyFlatSpec with Matchers with EitherValues
     )
 
     // when
-    val givenResponse: Either[Exception, MessageData] = JsonUtils.deserializeJsonSnake.apply(jsonResponse)
+    val givenResponse: Either[Exception, MessageData] = decode[MessageData](jsonResponse)
 
     // then
     givenResponse.value shouldBe expectedResponse
@@ -199,7 +196,7 @@ class ThreadMessagesDataSpec extends AnyFlatSpec with Matchers with EitherValues
     )
 
     // when
-    val givenResponse: Either[Exception, DeleteMessageResponse] = JsonUtils.deserializeJsonSnake.apply(jsonResponse)
+    val givenResponse: Either[Exception, DeleteMessageResponse] = decode[DeleteMessageResponse](jsonResponse)
 
     // then
     givenResponse.value shouldBe expectedResponse

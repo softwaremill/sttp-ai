@@ -1,8 +1,5 @@
 package sttp.ai.openai.requests.vectorstore.file
 
-import sttp.ai.core.json.SnakePickle
-import ujson.Value
-
 object VectorStoreFileResponseData {
 
   /** Represents a vector store file.
@@ -33,10 +30,6 @@ object VectorStoreFileResponseData {
       lastError: Option[LastError] = None
   )
 
-  object VectorStoreFile {
-    implicit val vectorStoreFileR: SnakePickle.Reader[VectorStoreFile] = SnakePickle.macroR[VectorStoreFile]
-  }
-
   /** Represents the last error associated with a vector store file.
     *
     * @param code
@@ -46,23 +39,11 @@ object VectorStoreFileResponseData {
     */
   case class LastError(code: ErrorCode, message: String)
 
-  object LastError {
-    implicit val lastErrorR: SnakePickle.Reader[LastError] = SnakePickle.macroR[LastError]
-  }
-
   sealed trait ErrorCode
-  case object ServerError extends ErrorCode
-  case object RateLimitExceeded extends ErrorCode
-
   object ErrorCode {
-    implicit val errorCodeR: SnakePickle.Reader[ErrorCode] = SnakePickle
-      .reader[Value]
-      .map(json =>
-        json.str match {
-          case "server_error"        => ServerError
-          case "rate_limit_exceeded" => RateLimitExceeded
-        }
-      )
+    case object ServerError extends ErrorCode
+
+    case object RateLimitExceeded extends ErrorCode
   }
 
   /** @param object
@@ -84,11 +65,6 @@ object VectorStoreFileResponseData {
       hasMore: Boolean
   )
 
-  object ListVectorStoreFilesResponse {
-    implicit val listVectorStoreFilesResponseR: SnakePickle.Reader[ListVectorStoreFilesResponse] =
-      SnakePickle.macroR[ListVectorStoreFilesResponse]
-  }
-
   /** @param id
     *   Id of deleted object
     * @param `object`
@@ -102,10 +78,5 @@ object VectorStoreFileResponseData {
       `object`: String,
       deleted: Boolean
   )
-
-  object DeleteVectorStoreFileResponse {
-    implicit val deleteVectorStoreFileResponseR: SnakePickle.Reader[DeleteVectorStoreFileResponse] =
-      SnakePickle.macroR[DeleteVectorStoreFileResponse]
-  }
 
 }

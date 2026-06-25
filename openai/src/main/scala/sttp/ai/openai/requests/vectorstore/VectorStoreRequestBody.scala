@@ -1,7 +1,5 @@
 package sttp.ai.openai.requests.vectorstore
 
-import sttp.ai.core.json.SnakePickle
-
 object VectorStoreRequestBody {
 
   /** Represents options for creating vector store.
@@ -23,10 +21,6 @@ object VectorStoreRequestBody {
       metadata: Option[Map[String, String]] = None
   )
 
-  object CreateVectorStoreBody {
-    implicit val createVectorStoreBodyW: SnakePickle.Writer[CreateVectorStoreBody] = SnakePickle.macroW[CreateVectorStoreBody]
-  }
-
   /** Represents options for modifying vector store.
     * @param name
     *   Optional. The name of the vector store.
@@ -41,9 +35,5 @@ object VectorStoreRequestBody {
       expiresAfter: Option[ExpiresAfter] = None,
       metadata: Option[Map[String, String]] = None
   )
-
-  object ModifyVectorStoreBody {
-    implicit val modifyVectorStoreBody: SnakePickle.Writer[ModifyVectorStoreBody] = SnakePickle.macroW[ModifyVectorStoreBody]
-  }
 
 }

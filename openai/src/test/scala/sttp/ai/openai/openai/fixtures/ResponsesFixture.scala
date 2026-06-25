@@ -103,7 +103,7 @@ object ResponsesFixture {
       |  "model": "gpt-4.1"
       |}""".stripMargin
 
-  val jsonRequestWithFileSearchToolCall: String =
+  val jsonRequestWithFileSearchCall: String =
     """{
       |  "model": "gpt-4.1",
       |  "input": [
@@ -123,7 +123,7 @@ object ResponsesFixture {
       |  ]
       |}""".stripMargin
 
-  val jsonRequestWithFileSearchToolCallInProgress: String =
+  val jsonRequestWithFileSearchCallInProgress: String =
     """{
       |  "model": "gpt-4.1",
       |  "input": [

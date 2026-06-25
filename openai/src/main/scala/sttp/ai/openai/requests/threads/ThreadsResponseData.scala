@@ -1,7 +1,5 @@
 package sttp.ai.openai.requests.threads
 
-import sttp.ai.core.json.SnakePickle
-
 object ThreadsResponseData {
 
   /** @param id
@@ -25,10 +23,6 @@ object ThreadsResponseData {
       metadata: Map[String, String] = Map.empty
   )
 
-  object ThreadData {
-    implicit val threadDataR: SnakePickle.Reader[ThreadData] = SnakePickle.macroR[ThreadData]
-  }
-
   /** @param id
     * @param `object`
     *   thread.deleted
@@ -40,7 +34,4 @@ object ThreadsResponseData {
       deleted: Boolean
   )
 
-  object DeleteThreadResponse {
-    implicit val deleteThreadResponseReadWriter: SnakePickle.ReadWriter[DeleteThreadResponse] = SnakePickle.macroRW[DeleteThreadResponse]
-  }
 }

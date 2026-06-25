@@ -2,21 +2,22 @@ package sttp.ai.openai.json
 
 import sttp.client4.ResponseException.UnexpectedStatusCode
 import sttp.client4._
-import sttp.client4.json._
-import sttp.client4.upicklejson.SttpUpickleApi
 import sttp.model.ResponseMetadata
 import sttp.model.StatusCode._
+import io.circe.{parser, Decoder, Encoder}
+import io.circe.syntax._
+import io.circe.generic.semiauto.deriveDecoder
+import sttp.model.MediaType
 import sttp.ai.openai.OpenAIExceptions.OpenAIException
 import sttp.ai.openai.OpenAIExceptions.OpenAIException._
 import sttp.ai.core.http.ResponseHandlers
 
-/** An sttp upickle api extension that deserializes JSON with snake_case keys into case classes with fields corresponding to keys in
-  * camelCase and maps errors to OpenAIException subclasses.
+/** circe-based response handling for the OpenAI API: deserializes snake_case JSON into case classes and maps errors to OpenAIException
+  * subclasses. Replaces the previous uPickle-based extension.
   */
-object SttpUpickleApiExtension extends SttpUpickleApi with ResponseHandlers[OpenAIException, sttp.ai.core.json.SnakePickle.Reader] {
-  override val upickleApi: sttp.ai.core.json.SnakePickle.type = sttp.ai.core.json.SnakePickle
+object OpenAIJson extends ResponseHandlers[OpenAIException, Decoder] {
 
-  override def read[T: sttp.ai.core.json.SnakePickle.Reader](s: String): T = upickleApi.read[T](s)
+  override def read[T: Decoder](s: String): T = parser.decode[T](s).fold(throw _, identity)
 
   override def deserializationException(cause: Exception, metadata: ResponseMetadata): OpenAIException =
     DeserializationOpenAIException(cause, metadata)
@@ -24,31 +25,26 @@ object SttpUpickleApiExtension extends SttpUpickleApi with ResponseHandlers[Open
   override def mapErrorToException(errorResponse: String, metadata: ResponseMetadata): OpenAIException =
     httpToOpenAIError(UnexpectedStatusCode(errorResponse, metadata))
 
-  def asJson_parseErrors[B: upickleApi.Reader: IsOption]: ResponseAs[Either[OpenAIException, B]] =
-    asString.mapWithMetadata(deserializeRightWithMappedExceptions(deserializeJsonSnake)).showAsJson
-
-  private def deserializeRightWithMappedExceptions[T](
-      doDeserialize: (String, ResponseMetadata) => Either[DeserializationOpenAIException, T]
-  ): (Either[String, String], ResponseMetadata) => Either[OpenAIException, T] = {
-    case (Left(body), meta) =>
-      Left(httpToOpenAIError(UnexpectedStatusCode(body, meta)))
-    case (Right(body), meta) => doDeserialize.apply(body, meta)
-  }
-
-  def deserializeJsonSnake[B: upickleApi.Reader: IsOption]: (String, ResponseMetadata) => Either[DeserializationOpenAIException, B] = {
-    (s: String, meta: ResponseMetadata) =>
-      try
-        Right(upickleApi.read[B](JsonInput.sanitize[B].apply(s)))
-      catch {
-        case e: Exception => Left(DeserializationOpenAIException(e, meta))
-        case t: Throwable =>
-          // in ScalaJS, ArrayIndexOutOfBoundsException exceptions are wrapped in org.scalajs.linker.runtime.UndefinedBehaviorError
-          t.getCause match {
-            case e: ArrayIndexOutOfBoundsException => Left(DeserializationOpenAIException(e, meta))
-            case _                                 => throw t
-          }
+  /** Parse a successful JSON response into `T`, mapping non-2xx responses to the corresponding [[OpenAIException]] (rate limit, invalid
+    * request, etc.) rather than a generic deserialization error.
+    */
+  override def asJson_parseErrors[T: Decoder]: ResponseAs[Either[OpenAIException, T]] =
+    asStringAlways
+      .mapWithMetadata { (body, metadata) =>
+        if (metadata.isSuccess)
+          parser.decode[T](body).left.map(e => DeserializationOpenAIException(e, metadata))
+        else
+          Left(httpToOpenAIError(UnexpectedStatusCode(body, metadata)))
       }
-  }
+      .showAs("either(as error, as json)")
+
+  /** Decodes a single SSE data payload into `B`, used by the streaming modules. */
+  def deserializeJsonSnake[B: Decoder]: (String, ResponseMetadata) => Either[DeserializationOpenAIException, B] =
+    (s: String, meta: ResponseMetadata) => parser.decode[B](s).left.map(e => DeserializationOpenAIException(e, meta))
+
+  /** Serializes a value to a JSON request body, omitting `None`/null fields */
+  def asJson[B: Encoder](b: B): StringBody =
+    StringBody(b.asJson.deepDropNullValues.noSpaces, "utf-8", MediaType.ApplicationJson)
 
   def asStringEither: ResponseAs[Either[OpenAIException, String]] =
     asStringAlways
@@ -62,22 +58,17 @@ object SttpUpickleApiExtension extends SttpUpickleApi with ResponseHandlers[Open
 
   private def httpToOpenAIError(he: UnexpectedStatusCode[String]): OpenAIException = {
     // Fallback for bodies that aren't the standard {"error": {...}} OpenAI shape (e.g. Azure's {"statusCode":...,"message":...},
-    // a non-object JSON root, or non-JSON): expose a truncated raw body and the status code rather than throwing.
+    // a non-object JSON root, or non-JSON): expose a truncated raw body and the status code rather than swallowing it.
     val fallback = (Some(he.body.take(MaxRawErrorBodyLength)), None, None, Some(he.response.code.toString))
 
     val (message, tpe, param, code) =
-      try
-        upickleApi
-          .read[ujson.Value](he.body)
-          .objOpt
-          .flatMap(_.get("error")) match {
-          case Some(errorNode) =>
-            val error = upickleApi.read[Error](errorNode)
-            (error.message, error.`type`, error.param, error.code)
-          case None => fallback
-        }
-      catch {
-        case _: Exception => fallback
+      parser.parse(he.body).toOption.flatMap(_.asObject).flatMap(_("error")) match {
+        case Some(errorNode) =>
+          errorNode.as[Error] match {
+            case Right(error) => (error.message, error.`type`, error.param, error.code)
+            case Left(_)      => fallback
+          }
+        case None => fallback
       }
 
     he.response.code match {
@@ -98,6 +89,6 @@ object SttpUpickleApiExtension extends SttpUpickleApi with ResponseHandlers[Open
       code: Option[String] = None
   )
   private object Error {
-    implicit val errorR: upickleApi.Reader[Error] = upickleApi.macroR
+    implicit val errorDecoder: Decoder[Error] = deriveDecoder
   }
 }

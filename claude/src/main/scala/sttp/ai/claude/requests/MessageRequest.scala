@@ -1,7 +1,6 @@
 package sttp.ai.claude.requests
 
 import sttp.ai.claude.models.{Effort, Message, OutputConfig, OutputFormat, Tool}
-import sttp.ai.core.json.SnakePickle.{macroRW, ReadWriter}
 
 case class MessageRequest(
     model: String,
@@ -67,6 +66,4 @@ object MessageRequest {
     maxTokens = maxTokens,
     tools = Some(tools)
   )
-
-  implicit val rw: ReadWriter[MessageRequest] = macroRW
 }
