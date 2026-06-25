@@ -17,7 +17,7 @@ jobs:
     runs-on: ubuntu-24.04
     steps:
     - name: Checkout
-      uses: actions/checkout@v6
+      uses: actions/checkout@v7
     - name: Set up JDK
       uses: actions/setup-java@v5
       with:
@@ -52,7 +52,7 @@ jobs:
       JAVA_OPTS: "-Xmx4G"
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
       - name: Set up JDK
         uses: actions/setup-java@v5
         with:
