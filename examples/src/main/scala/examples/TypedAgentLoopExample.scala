@@ -41,14 +41,20 @@ object TypedAgentLoopExample extends App {
       .build
     val prompt = "What's the weather in Paris? Also, what is 15 multiplied by 23? Provide a complete answer."
 
-    agent.runAs[TripSummary](prompt)(backend).finalAnswer match {
-      case Right(summary) =>
-        println(s"weather:     ${summary.weatherSummary}")
-        println(s"calculation: ${summary.calculation}")
-        println(s"conclusion:  ${summary.conclusion}")
-      case Left(err) =>
-        println(s"Failed to parse structured answer: ${err.cause.getMessage}")
-        println(s"Raw answer was: ${err.rawAnswer}")
+    try {
+      val result = agent.runAs[TripSummary](prompt)(backend)
+      result.finalAnswer match {
+        case Some(summary) =>
+          println(s"weather:     ${summary.weatherSummary}")
+          println(s"calculation: ${summary.calculation}")
+          println(s"conclusion:  ${summary.conclusion}")
+        case None =>
+          println(s"Agent did not produce a typed answer (finish reason: ${result.finishReason})")
+      }
+    } catch {
+      case error: AgentDecodeError =>
+        println(s"Failed to decode the agent's final answer: ${error.getMessage}")
+        println(s"Raw answer was: ${error.rawResult.finalAnswer}")
     }
   } finally backend.close()
 }

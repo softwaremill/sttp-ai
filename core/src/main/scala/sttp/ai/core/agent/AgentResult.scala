@@ -24,7 +24,7 @@ final case class AgentResult[T](
     finishReason: FinishReason
 )
 
-final case class AgentParseError(
-    rawAnswer: String,
+final case class AgentDecodeError(
+    rawResult: AgentResult[String],
     cause: Throwable
-)
+) extends Exception(s"Failed to decode the agent's final answer as the requested type: ${cause.getMessage}", cause)

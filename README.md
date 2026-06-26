@@ -874,7 +874,7 @@ case class AgentResult[T](
   finalAnswer: T,
   iterations: Int,
   toolCalls: Seq[ToolCallRecord],
-  finishReason: FinishReason  // MaxIterations | NaturalStop | TokenLimit | Errpr
+  finishReason: FinishReason  // MaxIterations | NaturalStop | TokenLimit | Error
 )
 ```
 
@@ -884,7 +884,9 @@ case class AgentResult[T](
 
 Set `responseSchema` on `AgentConfig` and use `runAs[T]` to receive a parsed Scala value as the agent's final answer. The response schema, derived from `T`, is sent to the model to define the structured output of the agent's final answer. The answer is then parsed back into `T` via circe.
 
-On parse failure the iteration trace is preserved: `finalAnswer` is `Left(AgentParseError)` rather than a thrown exception.
+`runAs[T]` returns `AgentResult[Option[T]]`. Parsing is only attempted when the agent terminates naturally (`FinishReason.NaturalStop`): on
+success `finalAnswer` is `Some(T)`. When the agent does not finish naturally (iteration/token cap), `finalAnswer` is `None` and `finishReason`
+explains why.
 
 ```scala mdoc:compile-only
 //> using dep com.softwaremill.sttp.ai::openai:0.5.0
@@ -911,9 +913,16 @@ object TypedAgentExample extends App {
       .tools(weatherTool)
       .deriveResponseSchema[TripSummary]
       .build
-    agent.runAs[TripSummary]("What's the weather in Paris?")(backend).finalAnswer match {
-      case Right(summary) => println(s"Weather: ${summary.weather}")
-      case Left(err)      => println(s"Parse failed: ${err.cause.getMessage}; raw=${err.rawAnswer}")
+    try {
+      val result = agent.runAs[TripSummary]("What's the weather in Paris?")(backend)
+      result.finalAnswer match {
+        case Some(summary) => println(s"Weather: ${summary.weather}")
+        case None          => println(s"No typed answer (${result.finishReason})")
+      }
+    } catch {
+      case error: AgentDecodeError =>
+        println(s"Failed to decode the agent's answer: ${error.getMessage}")
+        println(s"Raw answer was: ${error.rawResult.finalAnswer}")
     }
   } finally backend.close()
 }

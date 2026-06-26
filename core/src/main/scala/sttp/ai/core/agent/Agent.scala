@@ -76,11 +76,17 @@ class Agent[F[_]](
 
   def runAs[T](
       initialPrompt: String
-  )(backend: Backend[F])(implicit r: Decoder[T]): F[AgentResult[Either[AgentParseError, T]]] =
-    monad.map(run(initialPrompt)(backend)) { res =>
-      val parsed: Either[AgentParseError, T] =
-        decode[T](res.finalAnswer).left.map(e => AgentParseError(res.finalAnswer, e))
-      AgentResult(parsed, res.iterations, res.toolCalls, res.finishReason)
+  )(backend: Backend[F])(implicit r: Decoder[T]): F[AgentResult[Option[T]]] =
+    run(initialPrompt)(backend).flatMap { res =>
+      res.finishReason match {
+        case FinishReason.NaturalStop =>
+          decode[T](res.finalAnswer) match {
+            case Right(value) => monad.unit(AgentResult(Some(value), res.iterations, res.toolCalls, res.finishReason))
+            case Left(error)  => monad.error(AgentDecodeError(res, error))
+          }
+        case _ =>
+          monad.unit(AgentResult(None, res.iterations, res.toolCalls, res.finishReason))
+      }
     }
 
   private def runToolCalls(

@@ -393,30 +393,31 @@ class AgentSpec extends AnyFlatSpec with Matchers with OptionValues {
     decode[WeatherSummary](result.finalAnswer) shouldBe Right(WeatherSummary("Krakow", 12.0, "sunny"))
   }
 
-  "Agent.runAs[T]" should "return Right(T) when the model emits a well-formed structured payload" in {
+  "Agent.runAs[T]" should "return Some(T) when the model emits a well-formed structured payload" in {
     val result = agentBuilder(
       AgentResponse("""{"city":"Krakow","temp_c":12.0,"conditions":"sunny"}""", Seq.empty, StopReason.EndTurn)
     ).deriveResponseSchema[WeatherSummary].build.runAs[WeatherSummary]("What's the weather?")(backend)
 
     result.finishReason shouldBe FinishReason.NaturalStop: Unit
     result.iterations shouldBe 1: Unit
-    result.finalAnswer shouldBe Right(WeatherSummary("Krakow", 12.0, "sunny"))
+    result.finalAnswer.value shouldBe WeatherSummary("Krakow", 12.0, "sunny")
   }
 
-  it should "return Left(AgentParseError) preserving the trace when the answer can't be parsed as T" in {
-    val result = agentBuilder(
+  it should "raise AgentDecodeError carrying the raw result when a natural-stop answer can't be parsed as T" in {
+    val agent = agentBuilder(
       AgentResponse("""{"wrong":"shape"}""", Seq.empty, StopReason.EndTurn)
-    ).deriveResponseSchema[WeatherSummary].build.runAs[WeatherSummary]("What's the weather?")(backend)
+    ).deriveResponseSchema[WeatherSummary].build
 
-    result.iterations shouldBe 1: Unit
-    result.finishReason shouldBe FinishReason.NaturalStop: Unit
-    result.finalAnswer.isLeft shouldBe true: Unit
-    val err = result.finalAnswer.left.toOption.get
-    err.rawAnswer should include("wrong"): Unit
-    err.cause should not be null
+    val error = intercept[AgentDecodeError](agent.runAs[WeatherSummary]("What's the weather?")(backend))
+
+    error.rawResult.finalAnswer shouldBe """{"wrong":"shape"}""": Unit
+    error.rawResult.iterations shouldBe 1: Unit
+    error.rawResult.finishReason shouldBe FinishReason.NaturalStop: Unit
+    error.getMessage should include("Failed to decode"): Unit
+    error.getCause should not be null
   }
 
-  it should "return Left(AgentParseError) on the maxIterations path where the capped answer is not schema-shaped" in {
+  it should "return None on the maxIterations path without attempting to parse the capped answer" in {
     val dummyTool = AgentTool.fromFunction(
       "dummy",
       "Dummy tool"
@@ -430,8 +431,18 @@ class AgentSpec extends AnyFlatSpec with Matchers with OptionValues {
       .runAs[WeatherSummary]("What's the weather?")(backend)
 
     result.finishReason shouldBe FinishReason.MaxIterations: Unit
-    result.finalAnswer.isLeft shouldBe true: Unit
-    result.finalAnswer.left.toOption.get.rawAnswer shouldBe "not json"
+    result.finalAnswer shouldBe None
+  }
+
+  it should "return None on the tokenLimit path without attempting to parse the partial answer" in {
+    val result = agentBuilder(
+      AgentResponse("partial", Seq.empty, StopReason.MaxTokens)
+    ).deriveResponseSchema[WeatherSummary]
+      .build
+      .runAs[WeatherSummary]("What's the weather?")(backend)
+
+    result.finishReason shouldBe FinishReason.TokenLimit: Unit
+    result.finalAnswer shouldBe None
   }
 
   "Agent finish reason" should "be TokenLimit when the final answer is cut off by the token limit" in {

@@ -5,12 +5,13 @@ import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
 import io.circe.Codec
 import io.circe.generic.semiauto.deriveCodec
+import org.scalatest.OptionValues
 import sttp.ai.core.agent._
 import sttp.client4.{Backend, DefaultSyncBackend}
 import sttp.shared.Identity
 import sttp.tapir.Schema
 
-abstract class AgentIntegrationSpecBase extends AnyFlatSpec with Matchers {
+abstract class AgentIntegrationSpecBase extends AnyFlatSpec with Matchers with OptionValues {
 
   def providerName: String
   def apiKeyEnvVar: String
@@ -180,8 +181,7 @@ abstract class AgentIntegrationSpecBase extends AnyFlatSpec with Matchers {
       )(backend)
 
       result.finishReason shouldBe FinishReason.NaturalStop: Unit
-      result.finalAnswer.isRight shouldBe true: Unit
-      val summary = result.finalAnswer.toOption.get
+      val summary = result.finalAnswer.value
       summary.weather should not be empty: Unit
       summary.calculation should not be empty: Unit
       summary.conclusion should not be empty
