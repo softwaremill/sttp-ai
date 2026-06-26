@@ -17,14 +17,33 @@ final case class ToolCallRecord(
     iteration: Int
 )
 
-final case class AgentResult[T](
-    finalAnswer: T,
-    iterations: Int,
-    toolCalls: Seq[ToolCallRecord],
-    finishReason: FinishReason
-)
+sealed trait AgentResult[+T] {
+  def rawAnswer: String
+  def iterations: Int
+  def toolCalls: Seq[ToolCallRecord]
+  def finishReason: FinishReason
+}
 
-final case class AgentParseError(
-    rawAnswer: String,
+object AgentResult {
+
+  final case class FinalAnswer[T](
+      answer: T,
+      rawAnswer: String,
+      iterations: Int,
+      toolCalls: Seq[ToolCallRecord]
+  ) extends AgentResult[T] {
+    override val finishReason: FinishReason = FinishReason.NaturalStop
+  }
+
+  final case class Incomplete(
+      rawAnswer: String,
+      iterations: Int,
+      toolCalls: Seq[ToolCallRecord],
+      finishReason: FinishReason,
+      cause: Option[Throwable] = None
+  ) extends AgentResult[Nothing]
+}
+
+final case class AgentDecodeError(
     cause: Throwable
-)
+) extends Exception(s"Failed to decode the agent's final answer as the requested type: ${cause.getMessage}", cause)

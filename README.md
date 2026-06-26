@@ -696,7 +696,7 @@ object BasicExample extends App {
 
     val result = agent.run("What's the weather in Paris?")(backend)
 
-    println(s"Answer: ${result.finalAnswer}")
+    println(s"Answer: ${result.rawAnswer}")
     println(s"Iterations: ${result.iterations}")
   } finally backend.close()
 }
@@ -870,21 +870,28 @@ The `derives io.circe.Codec.AsObject, Schema` clause automatically generates the
 #### Agent Result
 
 ```scala
-case class AgentResult[T](
-  finalAnswer: T,
-  iterations: Int,
-  toolCalls: Seq[ToolCallRecord],
-  finishReason: FinishReason  // MaxIterations | NaturalStop | TokenLimit | Errpr
-)
+// AgentResult is a sealed trait with two cases; rawAnswer, iterations, toolCalls and finishReason are common to both.
+sealed trait AgentResult[+T]:
+  def rawAnswer: String           // the raw textual answer, always available
+  def iterations: Int
+  def toolCalls: Seq[ToolCallRecord]
+  def finishReason: FinishReason  // MaxIterations | NaturalStop | TokenLimit | Error
+
+object AgentResult:
+  case class FinalAnswer[T](answer: T, rawAnswer: String, iterations: Int, toolCalls: Seq[ToolCallRecord]) extends AgentResult[T]
+  // The agent stopped without a usable answer: a cap was hit, or (for runAs[T]) the answer could not be decoded into T.
+  case class Incomplete(rawAnswer: String, iterations: Int, toolCalls: Seq[ToolCallRecord], finishReason: FinishReason, cause: Option[Throwable]) extends AgentResult[Nothing]
 ```
 
-`agent.run(prompt)(backend)` returns `AgentResult[String]`. For typed results, see `runAs[T]` below.
+`agent.run(prompt)(backend)` returns `AgentResult[String]` — a `FinalAnswer` on natural completion, or `Incomplete` (with the partial text in `rawAnswer`) when it hits a cap. For typed results, see `runAs[T]` below.
 
 #### Typed responses with `runAs[T]`
 
 Set `responseSchema` on `AgentConfig` and use `runAs[T]` to receive a parsed Scala value as the agent's final answer. The response schema, derived from `T`, is sent to the model to define the structured output of the agent's final answer. The answer is then parsed back into `T` via circe.
 
-On parse failure the iteration trace is preserved: `finalAnswer` is `Left(AgentParseError)` rather than a thrown exception.
+`runAs[T]` returns `AgentResult[T]` and never throws. Decoding is only attempted when the agent terminates naturally (`FinishReason.NaturalStop`):
+on success you get `FinalAnswer(value)`. Otherwise you get `Incomplete`, whose `rawAnswer` holds the raw text and `finishReason` explains why — and
+when the failure was a decode error (a natural stop whose answer didn't parse as `T`), `cause` carries an `AgentDecodeError` wrapping the circe decoding error.
 
 ```scala mdoc:compile-only
 //> using dep com.softwaremill.sttp.ai::openai:0.5.1
@@ -911,9 +918,12 @@ object TypedAgentExample extends App {
       .tools(weatherTool)
       .deriveResponseSchema[TripSummary]
       .build
-    agent.runAs[TripSummary]("What's the weather in Paris?")(backend).finalAnswer match {
-      case Right(summary) => println(s"Weather: ${summary.weather}")
-      case Left(err)      => println(s"Parse failed: ${err.cause.getMessage}; raw=${err.rawAnswer}")
+    agent.runAs[TripSummary]("What's the weather in Paris?")(backend) match {
+      case AgentResult.FinalAnswer(summary, _, _, _) =>
+        println(s"Weather: ${summary.weather}")
+      case AgentResult.Incomplete(rawAnswer, _, _, finishReason, cause) =>
+        println(s"No typed answer ($finishReason); raw=$rawAnswer")
+        cause.foreach(c => println(s"Decode error: ${c.getMessage}"))
     }
   } finally backend.close()
 }
@@ -961,7 +971,7 @@ object CatsEffectExample extends IOApp.Simple {
     val agent = OpenAIAgent.builder[IO](OpenAI.fromEnv, "gpt-4o-mini").maxIterations(5).tools(weatherTool).build
     HttpClientCatsBackend.resource[IO]().use { backend =>
       agent.run("What's the weather in London?")(backend)
-        .flatMap(r => IO.println(s"Answer: ${r.finalAnswer}"))
+        .flatMap(r => IO.println(s"Answer: ${r.rawAnswer}"))
     }
   }
 }
@@ -981,7 +991,7 @@ object ZIOExample extends ZIOAppDefault {
       for {
         backend <- HttpClientZioBackend.scoped()
         result <- agent.run("What's the weather in London?")(backend)
-        _ <- Console.printLine(s"Answer: ${result.finalAnswer}")
+        _ <- Console.printLine(s"Answer: ${result.rawAnswer}")
       } yield ()
     }
   }

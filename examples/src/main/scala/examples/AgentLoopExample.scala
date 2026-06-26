@@ -56,7 +56,7 @@ object AgentLoopExample extends App {
     val result = agent.run(prompt)(backend)
 
     println("\n=== Agent Result ===")
-    println(s"Final Answer: ${result.finalAnswer}")
+    println(s"Final Answer: ${result.rawAnswer}")
     println(s"Iterations: ${result.iterations}")
     println(s"Finish Reason: ${result.finishReason}")
     println(s"\nTool Calls (${result.toolCalls.length}):")

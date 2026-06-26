@@ -10,6 +10,7 @@ import sttp.client4.testing.SyncBackendStub
 import sttp.monad.IdentityMonad
 import sttp.shared.Identity
 import sttp.tapir.Schema
+import sttp.ai.core.agent.AgentResult.{FinalAnswer, Incomplete}
 
 class AgentSpec extends AnyFlatSpec with Matchers with OptionValues {
 
@@ -54,6 +55,16 @@ class AgentSpec extends AnyFlatSpec with Matchers with OptionValues {
   private def runLoop(builder: AgentBuilder[Identity]): AgentResult[String] =
     builder.build.run("Test")(backend)
 
+  private def asFinal[T](r: AgentResult[T]): FinalAnswer[T] = r match {
+    case f: FinalAnswer[T @unchecked] => f
+    case other                        => fail(s"Expected FinalAnswer but got: $other")
+  }
+
+  private def asIncomplete(r: AgentResult[_]): Incomplete = r match {
+    case i: Incomplete => i
+    case other         => fail(s"Expected Incomplete but got: $other")
+  }
+
   case class DummyInput()
   implicit val dummyInputCodec: Codec[DummyInput] = deriveCodec
   implicit val dummyInputSchema: Schema[DummyInput] = Schema.derived
@@ -87,7 +98,7 @@ class AgentSpec extends AnyFlatSpec with Matchers with OptionValues {
     val result = runLoop(agentBuilder(AgentResponse("", Seq.empty, StopReason.EndTurn)))
 
     result.finishReason shouldBe FinishReason.NaturalStop
-    result.finalAnswer shouldBe ""
+    result.rawAnswer shouldBe ""
     result.iterations shouldBe 1
     result.toolCalls shouldBe empty
   }
@@ -239,7 +250,7 @@ class AgentSpec extends AnyFlatSpec with Matchers with OptionValues {
     )
 
     result.finishReason shouldBe FinishReason.MaxIterations
-    result.finalAnswer shouldBe "final tool result"
+    result.rawAnswer shouldBe "final tool result"
     result.iterations shouldBe 3
   }
 
@@ -390,33 +401,35 @@ class AgentSpec extends AnyFlatSpec with Matchers with OptionValues {
     ).deriveResponseSchema[WeatherSummary].build.run("What's the weather?")(backend)
 
     result.finishReason shouldBe FinishReason.NaturalStop: Unit
-    decode[WeatherSummary](result.finalAnswer) shouldBe Right(WeatherSummary("Krakow", 12.0, "sunny"))
+    decode[WeatherSummary](result.rawAnswer) shouldBe Right(WeatherSummary("Krakow", 12.0, "sunny"))
   }
 
-  "Agent.runAs[T]" should "return Right(T) when the model emits a well-formed structured payload" in {
+  "Agent.runAs[T]" should "return FinalAnswer(T) when the model emits a well-formed structured payload" in {
     val result = agentBuilder(
       AgentResponse("""{"city":"Krakow","temp_c":12.0,"conditions":"sunny"}""", Seq.empty, StopReason.EndTurn)
     ).deriveResponseSchema[WeatherSummary].build.runAs[WeatherSummary]("What's the weather?")(backend)
 
     result.finishReason shouldBe FinishReason.NaturalStop: Unit
     result.iterations shouldBe 1: Unit
-    result.finalAnswer shouldBe Right(WeatherSummary("Krakow", 12.0, "sunny"))
+    asFinal(result).answer shouldBe WeatherSummary("Krakow", 12.0, "sunny")
   }
 
-  it should "return Left(AgentParseError) preserving the trace when the answer can't be parsed as T" in {
+  it should "return Incomplete carrying the decode cause when a natural-stop answer can't be parsed as T" in {
     val result = agentBuilder(
       AgentResponse("""{"wrong":"shape"}""", Seq.empty, StopReason.EndTurn)
     ).deriveResponseSchema[WeatherSummary].build.runAs[WeatherSummary]("What's the weather?")(backend)
 
-    result.iterations shouldBe 1: Unit
-    result.finishReason shouldBe FinishReason.NaturalStop: Unit
-    result.finalAnswer.isLeft shouldBe true: Unit
-    val err = result.finalAnswer.left.toOption.get
-    err.rawAnswer should include("wrong"): Unit
-    err.cause should not be null
+    val incomplete = asIncomplete(result)
+    incomplete.rawAnswer shouldBe """{"wrong":"shape"}""": Unit
+    incomplete.iterations shouldBe 1: Unit
+    incomplete.finishReason shouldBe FinishReason.NaturalStop: Unit
+    incomplete.cause.value shouldBe a[AgentDecodeError]: Unit
+    val decodeError = incomplete.cause.value.asInstanceOf[AgentDecodeError]
+    decodeError.getMessage should include("Failed to decode"): Unit
+    decodeError.getCause should not be null
   }
 
-  it should "return Left(AgentParseError) on the maxIterations path where the capped answer is not schema-shaped" in {
+  it should "return Incomplete with no cause on the maxIterations path without attempting to parse the capped answer" in {
     val dummyTool = AgentTool.fromFunction(
       "dummy",
       "Dummy tool"
@@ -430,15 +443,27 @@ class AgentSpec extends AnyFlatSpec with Matchers with OptionValues {
       .runAs[WeatherSummary]("What's the weather?")(backend)
 
     result.finishReason shouldBe FinishReason.MaxIterations: Unit
-    result.finalAnswer.isLeft shouldBe true: Unit
-    result.finalAnswer.left.toOption.get.rawAnswer shouldBe "not json"
+    asIncomplete(result).cause shouldBe None
+  }
+
+  it should "return Incomplete with no cause on the tokenLimit path without attempting to parse the partial answer" in {
+    val result = agentBuilder(
+      AgentResponse("partial", Seq.empty, StopReason.MaxTokens)
+    ).deriveResponseSchema[WeatherSummary]
+      .build
+      .runAs[WeatherSummary]("What's the weather?")(backend)
+
+    result.finishReason shouldBe FinishReason.TokenLimit: Unit
+    val incomplete = asIncomplete(result)
+    incomplete.rawAnswer shouldBe "partial": Unit
+    incomplete.cause shouldBe None
   }
 
   "Agent finish reason" should "be TokenLimit when the final answer is cut off by the token limit" in {
     val result = runLoop(agentBuilder(AgentResponse("partial answer", Seq.empty, StopReason.MaxTokens)))
 
     result.finishReason shouldBe FinishReason.TokenLimit
-    result.finalAnswer shouldBe "partial answer"
+    result.rawAnswer shouldBe "partial answer"
     result.iterations shouldBe 1
   }
 

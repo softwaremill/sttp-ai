@@ -6,6 +6,7 @@ import org.scalatest.matchers.should.Matchers
 import io.circe.Codec
 import io.circe.generic.semiauto.deriveCodec
 import sttp.ai.core.agent._
+import sttp.ai.core.agent.AgentResult.FinalAnswer
 import sttp.client4.{Backend, DefaultSyncBackend}
 import sttp.shared.Identity
 import sttp.tapir.Schema
@@ -108,7 +109,7 @@ abstract class AgentIntegrationSpecBase extends AnyFlatSpec with Matchers {
 
     assertMinIterations(result, 3)
     assertToolCalled(result, "calculator", minTimes = 3)
-    assertContainsAny(result.finalAnswer, "130", "one hundred thirty", "hundred and thirty")
+    assertContainsAny(result.rawAnswer, "130", "one hundred thirty", "hundred and thirty")
     result.finishReason shouldBe FinishReason.NaturalStop
     ()
   }
@@ -120,8 +121,8 @@ abstract class AgentIntegrationSpecBase extends AnyFlatSpec with Matchers {
 
     assertToolCalled(result, "get_weather", minTimes = 3)
     assertToolCalled(result, "calculator")
-    assertContainsAll(result.finalAnswer, "london", "paris", "berlin")
-    assertContainsAny(result.finalAnswer, "100", "one hundred")
+    assertContainsAll(result.rawAnswer, "london", "paris", "berlin")
+    assertContainsAny(result.rawAnswer, "100", "one hundred")
     ()
   }
 
@@ -136,8 +137,8 @@ abstract class AgentIntegrationSpecBase extends AnyFlatSpec with Matchers {
     assertMinIterations(result, 2)
     assertToolCalled(result, "calculator", minTimes = 2)
     assertToolCalled(result, "get_weather")
-    assertContainsAny(result.finalAnswer, "50", "fifty")
-    assertContainsAny(result.finalAnswer, "tokyo")
+    assertContainsAny(result.rawAnswer, "50", "fifty")
+    assertContainsAny(result.rawAnswer, "tokyo")
     ()
   }
 
@@ -150,7 +151,7 @@ abstract class AgentIntegrationSpecBase extends AnyFlatSpec with Matchers {
 
     assertMinIterations(result, 3)
     assertToolCalled(result, "calculator", minTimes = 3)
-    assertContainsAny(result.finalAnswer, "75", "seventy")
+    assertContainsAny(result.rawAnswer, "75", "seventy")
     ()
   }
 
@@ -180,8 +181,10 @@ abstract class AgentIntegrationSpecBase extends AnyFlatSpec with Matchers {
       )(backend)
 
       result.finishReason shouldBe FinishReason.NaturalStop: Unit
-      result.finalAnswer.isRight shouldBe true: Unit
-      val summary = result.finalAnswer.toOption.get
+      val summary = result match {
+        case FinalAnswer(answer, _, _, _) => answer
+        case other                        => fail(s"Expected FinalAnswer but got: $other")
+      }
       summary.weather should not be empty: Unit
       summary.calculation should not be empty: Unit
       summary.conclusion should not be empty

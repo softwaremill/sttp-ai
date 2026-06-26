@@ -23,12 +23,13 @@ class Agent[F[_]](
 
     def loop(history: ConversationHistory, iteration: Int, toolCallRecords: Seq[ToolCallRecord]): F[AgentResult[String]] =
       if (iteration >= config.maxIterations) {
-        monad.unit(
-          AgentResult(
-            finalAnswer = extractFinalAnswer(history),
+        monad.unit[AgentResult[String]](
+          AgentResult.Incomplete(
+            rawAnswer = extractFinalAnswer(history),
             iterations = iteration,
             toolCalls = toolCallRecords,
-            finishReason = FinishReason.MaxIterations
+            finishReason = FinishReason.MaxIterations,
+            cause = None
           )
         )
       } else {
@@ -42,22 +43,23 @@ class Agent[F[_]](
 
         response.flatMap { response =>
           if (response.stopReason == StopReason.MaxTokens) {
-            monad.unit(
-              AgentResult(
-                finalAnswer = response.textContent,
+            monad.unit[AgentResult[String]](
+              AgentResult.Incomplete(
+                rawAnswer = response.textContent,
                 iterations = iteration + 1,
                 toolCalls = toolCallRecords,
-                finishReason = FinishReason.TokenLimit
+                finishReason = FinishReason.TokenLimit,
+                cause = None
               )
             )
           } else if (response.toolCalls.isEmpty) {
             // No tool calls - the agent has produced its final answer, so complete the loop.
-            monad.unit(
-              AgentResult(
-                finalAnswer = response.textContent,
+            monad.unit[AgentResult[String]](
+              AgentResult.FinalAnswer(
+                answer = response.textContent,
+                rawAnswer = response.textContent,
                 iterations = iteration + 1,
-                toolCalls = toolCallRecords,
-                finishReason = FinishReason.NaturalStop
+                toolCalls = toolCallRecords
               )
             )
           } else {
@@ -76,11 +78,15 @@ class Agent[F[_]](
 
   def runAs[T](
       initialPrompt: String
-  )(backend: Backend[F])(implicit r: Decoder[T]): F[AgentResult[Either[AgentParseError, T]]] =
-    monad.map(run(initialPrompt)(backend)) { res =>
-      val parsed: Either[AgentParseError, T] =
-        decode[T](res.finalAnswer).left.map(e => AgentParseError(res.finalAnswer, e))
-      AgentResult(parsed, res.iterations, res.toolCalls, res.finishReason)
+  )(backend: Backend[F])(implicit r: Decoder[T]): F[AgentResult[T]] =
+    run(initialPrompt)(backend).map {
+      case AgentResult.FinalAnswer(_, rawAnswer, iterations, toolCalls) =>
+        decode[T](rawAnswer) match {
+          case Right(value) => AgentResult.FinalAnswer(value, rawAnswer, iterations, toolCalls)
+          case Left(error) =>
+            AgentResult.Incomplete(rawAnswer, iterations, toolCalls, FinishReason.NaturalStop, Some(AgentDecodeError(error)))
+        }
+      case incomplete: AgentResult.Incomplete => incomplete
     }
 
   private def runToolCalls(
