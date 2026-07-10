@@ -129,6 +129,18 @@ object Main:
     */
 ```
 
+> **Token limits on GPT-5 / reasoning models:** newer OpenAI reasoning models (GPT-5, o1, o3, ...) reject the `max_tokens`
+> parameter with `Unsupported parameter: 'max_tokens' is not supported with this model. Use 'max_completion_tokens' instead.`
+> For these models leave `maxTokens = None` and set `maxCompletionTokens`:
+>
+> ```scala
+> val chatRequestBody = ChatBody(
+>   model = ChatCompletionModel.GPT5,
+>   messages = bodyMessages,
+>   maxCompletionTokens = Some(1000)
+> )
+> ```
+
 ## Claude API
 
 This module provides **native support for Anthropic's Claude API** within the sttp-openai library. Unlike OpenAI compatibility layers, this provides direct access to Claude's unique features and API structure.
