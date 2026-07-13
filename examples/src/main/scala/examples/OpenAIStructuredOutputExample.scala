@@ -1,4 +1,4 @@
-//> using dep com.softwaremill.sttp.ai::openai:0.4.0
+//> using dep com.softwaremill.sttp.ai::openai:0.4.14
 //> using dep ch.qos.logback:logback-classic:1.5.19
 
 // remember to set the OPENAI_API_KEY env variable!
