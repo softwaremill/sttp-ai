@@ -1,5 +1,5 @@
 //> using scala 3.7.2
-//> using dep org.typelevel::cats-effect::3.6.3
+//> using dep org.typelevel::cats-effect::3.7.0
 //> using dep org.typelevel::log4cats-slf4j::2.7.1
 //> using dep ch.qos.logback:logback-classic:1.5.19
 //> using dep com.github.scopt::scopt::4.1.0
