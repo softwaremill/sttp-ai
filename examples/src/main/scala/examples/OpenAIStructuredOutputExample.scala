@@ -1,4 +1,3 @@
-//> using repository ivy2Local
 //> using dep com.softwaremill.sttp.ai::openai:0.4.0
 //> using dep ch.qos.logback:logback-classic:1.5.19
 
