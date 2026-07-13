@@ -1,10 +1,10 @@
 //> using scala 3.7.2
-//> using dep org.typelevel::cats-effect::3.7.0
-//> using dep org.typelevel::log4cats-slf4j::2.7.1
+//> using dep org.typelevel::cats-effect::3.6.3
+//> using dep org.typelevel::log4cats-slf4j::2.8.0
 //> using dep ch.qos.logback:logback-classic:1.5.19
 //> using dep com.github.scopt::scopt::4.1.0
-//> using dep com.github.plokhotnyuk.jsoniter-scala::jsoniter-scala-core::2.39.1
-//> using dep com.github.plokhotnyuk.jsoniter-scala::jsoniter-scala-macros::2.39.1
+//> using dep com.github.plokhotnyuk.jsoniter-scala::jsoniter-scala-core::2.37.11
+//> using dep com.github.plokhotnyuk.jsoniter-scala::jsoniter-scala-macros::2.37.11
 //> using dep org.virtuslab::scala-yaml::0.3.0
 
 import cats.effect.{ExitCode, IO, IOApp}
@@ -104,7 +104,7 @@ object ModelUpdater extends IOApp {
 
     OParser.parse(parser, args, UpdaterConfig()) match {
       case Some(config) => Right(config)
-      case None         =>
+      case None =>
         Left("error")
     }
   }
@@ -354,7 +354,7 @@ object ModelUpdater extends IOApp {
   ): String =
     nameConversion.specialCases.get(modelName) match {
       case Some(specialCase) => specialCase
-      case None              =>
+      case None =>
         val words = modelName.split("[\\-\\._\\s]+").filter(_.nonEmpty)
         val processedWords = words.map { word =>
           nameConversion.preserveCase.find(_.equalsIgnoreCase(word)) match {
