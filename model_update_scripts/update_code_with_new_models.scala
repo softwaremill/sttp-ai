@@ -104,7 +104,7 @@ object ModelUpdater extends IOApp {
 
     OParser.parse(parser, args, UpdaterConfig()) match {
       case Some(config) => Right(config)
-      case None =>
+      case None         =>
         Left("error")
     }
   }
@@ -354,7 +354,7 @@ object ModelUpdater extends IOApp {
   ): String =
     nameConversion.specialCases.get(modelName) match {
       case Some(specialCase) => specialCase
-      case None =>
+      case None              =>
         val words = modelName.split("[\\-\\._\\s]+").filter(_.nonEmpty)
         val processedWords = words.map { word =>
           nameConversion.preserveCase.find(_.equalsIgnoreCase(word)) match {
