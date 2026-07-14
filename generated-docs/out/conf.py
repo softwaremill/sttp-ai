@@ -48,7 +48,7 @@ release = u'0.5'
 
 language = 'en'
 
-# List of patterns, relative to source directory, that match files you
+# List of patterns, relative to source directory, that match files and
 # directories to ignore when looking for source files.
 exclude_patterns = [
     '_build', 'Thumbs.db', '.DS_Store',

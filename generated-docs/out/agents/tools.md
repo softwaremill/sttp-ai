@@ -48,7 +48,7 @@ Set `responseSchema` on `AgentConfig` and use `runAs[T]` to receive a parsed Sca
 On parse failure the iteration trace is preserved: `finalAnswer` is `Left(AgentParseError)` rather than a thrown exception.
 
 ```scala
-//> using dep com.softwaremill.sttp.ai::openai:0.5.1+19-83e9d91a+20260714-1032-SNAPSHOT
+//> using dep com.softwaremill.sttp.ai::openai:0.5.1
 
 import sttp.ai.core.agent.*
 import sttp.ai.openai.OpenAI
