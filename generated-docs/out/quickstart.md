@@ -5,7 +5,7 @@
 Add the following dependency:
 
 ```sbt
-"com.softwaremill.sttp.ai" %% "openai" % "0.5.1+15-1ba1413f+20260714-0947-SNAPSHOT"
+"com.softwaremill.sttp.ai" %% "openai" % "0.5.1+16-587f982e+20260714-0952-SNAPSHOT"
 ```
 
 ## For Claude (Anthropic) API
@@ -13,14 +13,14 @@ Add the following dependency:
 Add the following dependency:
 
 ```sbt
-"com.softwaremill.sttp.ai" %% "claude" % "0.5.1+15-1ba1413f+20260714-0947-SNAPSHOT"
+"com.softwaremill.sttp.ai" %% "claude" % "0.5.1+16-587f982e+20260714-0952-SNAPSHOT"
 
 // For streaming support, add one or more:
-"com.softwaremill.sttp.ai" %% "claude-streaming-fs2" % "0.5.1+15-1ba1413f+20260714-0947-SNAPSHOT"    // cats-effect/fs2
-"com.softwaremill.sttp.ai" %% "claude-streaming-zio" % "0.5.1+15-1ba1413f+20260714-0947-SNAPSHOT"    // ZIO
-"com.softwaremill.sttp.ai" %% "claude-streaming-akka" % "0.5.1+15-1ba1413f+20260714-0947-SNAPSHOT"   // Akka Streams (Scala 2.13 only)
-"com.softwaremill.sttp.ai" %% "claude-streaming-pekko" % "0.5.1+15-1ba1413f+20260714-0947-SNAPSHOT"  // Pekko Streams
-"com.softwaremill.sttp.ai" %% "claude-streaming-ox" % "0.5.1+15-1ba1413f+20260714-0947-SNAPSHOT"    // Ox direct-style (Scala 3 only)
+"com.softwaremill.sttp.ai" %% "claude-streaming-fs2" % "0.5.1+16-587f982e+20260714-0952-SNAPSHOT"    // cats-effect/fs2
+"com.softwaremill.sttp.ai" %% "claude-streaming-zio" % "0.5.1+16-587f982e+20260714-0952-SNAPSHOT"    // ZIO
+"com.softwaremill.sttp.ai" %% "claude-streaming-akka" % "0.5.1+16-587f982e+20260714-0952-SNAPSHOT"   // Akka Streams (Scala 2.13 only)
+"com.softwaremill.sttp.ai" %% "claude-streaming-pekko" % "0.5.1+16-587f982e+20260714-0952-SNAPSHOT"  // Pekko Streams
+"com.softwaremill.sttp.ai" %% "claude-streaming-ox" % "0.5.1+16-587f982e+20260714-0952-SNAPSHOT"    // Ox direct-style (Scala 3 only)
 ```
 
 sttp-openai is available for Scala 2.13 and Scala 3

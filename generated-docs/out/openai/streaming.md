@@ -9,7 +9,7 @@ For example, to use `fs2` add the following dependency & import:
 
 ```scala
 // sbt dependency
-"com.softwaremill.sttp.ai" %% "fs2" % "0.5.1+15-1ba1413f+20260714-0947-SNAPSHOT"
+"com.softwaremill.sttp.ai" %% "fs2" % "0.5.1+16-587f982e+20260714-0952-SNAPSHOT"
 
 // import 
 import sttp.ai.openai.streaming.fs2.*
@@ -18,7 +18,7 @@ import sttp.ai.openai.streaming.fs2.*
 Example below uses `HttpClientFs2Backend` as a backend:
 
 ```scala
-//> using dep com.softwaremill.sttp.ai::fs2:0.5.1+15-1ba1413f+20260714-0947-SNAPSHOT
+//> using dep com.softwaremill.sttp.ai::fs2:0.5.1+16-587f982e+20260714-0952-SNAPSHOT
 
 import cats.effect.IO
 import cats.effect.unsafe.implicits.global
@@ -99,7 +99,7 @@ To use direct-style streaming (requires Scala 3) add the following dependency & 
 
 ```scala
 // sbt dependency
-"com.softwaremill.sttp.ai" %% "ox" % "0.5.1+15-1ba1413f+20260714-0947-SNAPSHOT"
+"com.softwaremill.sttp.ai" %% "ox" % "0.5.1+16-587f982e+20260714-0952-SNAPSHOT"
 
 // import 
 import sttp.ai.openai.streaming.ox.*
@@ -108,7 +108,7 @@ import sttp.ai.openai.streaming.ox.*
 Example code:
 
 ```scala
-//> using dep com.softwaremill.sttp.ai::ox:0.5.1+15-1ba1413f+20260714-0947-SNAPSHOT
+//> using dep com.softwaremill.sttp.ai::ox:0.5.1+16-587f982e+20260714-0952-SNAPSHOT
 
 import ox.*
 import ox.either.orThrow

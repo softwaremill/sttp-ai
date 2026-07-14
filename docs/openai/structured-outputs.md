@@ -143,7 +143,7 @@ val jsonSchema: ASchema = TapirSchemaToJsonSchema(
 )
 ```
 
-# Generating JSON Schema from case class
+## Generating JSON Schema from case class
 
 We can also generate JSON Schema directly from case class, without defining the schema manually.
 
