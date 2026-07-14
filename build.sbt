@@ -152,6 +152,16 @@ val compileDocumentation: TaskKey[Unit] = taskKey[Unit]("Compiles docs module th
 compileDocumentation :=
   (docs.jvm(scala3.head) / mdoc).toTask(" --out target/sttp-ai-docs").value
 
+// verify the scala-cli `//> using dep` directives, which are not covered by the sbt build
+val verifyExamplesCompileUsingScalaCli: TaskKey[Unit] = taskKey[Unit]("Verify that each example compiles using Scala CLI")
+verifyExamplesCompileUsingScalaCli :=
+  VerifyExamplesCompileUsingScalaCli(sLog.value, (examples.jvm(scala3.head) / sourceDirectory).value)
+
+val verifyModelUpdateScriptsCompileUsingScalaCli: TaskKey[Unit] =
+  taskKey[Unit]("Verify that each model update script compiles using Scala CLI")
+verifyModelUpdateScriptsCompileUsingScalaCli :=
+  VerifyExamplesCompileUsingScalaCli(sLog.value, file("model_update_scripts"))
+
 lazy val docs = (projectMatrix in file("generated-docs")) // important: it must not be docs/
   .enablePlugins(MdocPlugin)
   .settings(commonSettings)
@@ -165,11 +175,16 @@ lazy val docs = (projectMatrix in file("generated-docs")) // important: it must 
     mdocExtraArguments := Seq(
       "--clean-target",
       "--disable-using-directives",
-      "--exclude", ".venv",
-      "--exclude", "_build",
-      "--exclude", "adr",
-      "--exclude", "plans",
-      "--exclude", "superpowers"
+      "--exclude",
+      ".venv",
+      "--exclude",
+      "_build",
+      "--exclude",
+      "adr",
+      "--exclude",
+      "plans",
+      "--exclude",
+      "superpowers"
     ),
     publishArtifact := false,
     name := "docs",

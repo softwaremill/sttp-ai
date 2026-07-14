@@ -1,5 +1,5 @@
-//> using dep com.softwaremill.sttp.ai::openai:0.4.0
-//> using dep ch.qos.logback:logback-classic:1.5.19
+//> using dep com.softwaremill.sttp.ai::openai:0.5.2
+//> using dep ch.qos.logback:logback-classic:1.5.38
 
 // remember to set the OPENAI_API_KEY env variable!
 // run with: OPENAI_API_KEY=... scala-cli run OpenAIStructuredOutputExample.scala
