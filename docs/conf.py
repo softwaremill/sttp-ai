@@ -66,6 +66,14 @@ exclude_patterns = [
 
 pygments_style = 'default'
 
+# sbt build files are Scala; Pygments has no dedicated "sbt" lexer, so code
+# fences tagged ```sbt (as in quickstart.md) would otherwise emit
+# "Pygments lexer name 'sbt' is not known" warnings. Alias it to the Scala
+# lexer instead of changing the ported fence language.
+from pygments.lexers.jvm import ScalaLexer
+from sphinx.highlighting import lexers
+lexers['sbt'] = ScalaLexer()
+
 # -- Options for HTML output ----------------------------------------------
 
 html_theme = 'sphinx_rtd_theme'
