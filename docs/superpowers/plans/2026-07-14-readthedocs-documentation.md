@@ -26,7 +26,7 @@
 
 1. **Copy content verbatim** from the given README line range; light edits only where the split requires (e.g. a sentence referencing "see section above" that now lives on another page).
 2. **Promote headings** so each page's top heading is `#` (h1). Preserve relative depth below it.
-3. **Version strings:** replace every literal `0.5.1` in ported content with `@VERSION@` (mdoc substitutes it; the `VERSION` mdoc variable is added in Task 2).
+3. **Version strings:** replace every literal `0.5.2` in ported content with `@VERSION@` (mdoc substitutes it; the `VERSION` mdoc variable is added in Task 2).
 4. **Keep mdoc modifiers as-is**: fences tagged ```` ```scala mdoc:compile-only ```` stay tagged; plain ```` ```scala ```` fences stay plain.
 5. **Internal links:** README anchor links (`[...](#some-heading)`) pointing to content that now lives on another page become relative MyST file links, e.g. `[streaming](../claude/streaming.md)`. Links within the same page stay as anchors. External links unchanged.
 6. **Drop the README Table of Contents** (lines 16–46) entirely — site navigation replaces it.
@@ -395,7 +395,7 @@ git commit -m "build: repoint mdoc to docs/ sources, add Read the Docs config"
 - Consumes: pipeline from Task 2; README lines 51–77.
 - Produces: `quickstart.md` page; the `{eval-rst}` toctree block in `index.md` that Tasks 4–7 extend.
 
-- [ ] **Step 1: Create `docs/quickstart.md`** from README lines 51–77, applying the porting rules. Top heading becomes `# Quickstart`; `### For OpenAI/OpenAI-compatible APIs` → `## For OpenAI/OpenAI-compatible APIs`; `### For Claude (Anthropic) API` → `## For Claude (Anthropic) API`; every `0.5.1` → `@VERSION@`.
+- [ ] **Step 1: Create `docs/quickstart.md`** from README lines 51–77, applying the porting rules. Top heading becomes `# Quickstart`; `### For OpenAI/OpenAI-compatible APIs` → `## For OpenAI/OpenAI-compatible APIs`; `### For Claude (Anthropic) API` → `## For Claude (Anthropic) API`; every `0.5.2` → `@VERSION@`.
 
 - [ ] **Step 2: Append the toctree to `docs/index.md`**
 
@@ -633,7 +633,7 @@ git commit -m "docs: add backends and examples pages"
 - Consumes: all pages from Tasks 3–7 (README now defers to the site).
 - Produces: the final slimmed README.
 
-- [ ] **Step 1: Replace `README.md` with** (README is no longer mdoc-processed, so version strings stay literal — update `0.5.1` to the latest released version if it has moved):
+- [ ] **Step 1: Replace `README.md` with** (README is no longer mdoc-processed, so version strings stay literal — update `0.5.2` to the latest released version if it has moved):
 
 ````markdown
 ![sttp-ai](https://github.com/softwaremill/sttp-ai/raw/master/banner.png)
@@ -664,7 +664,7 @@ sttp-ai uses sttp client to describe requests and responses used in OpenAI, Clau
 Add the following dependency:
 
 ```sbt
-"com.softwaremill.sttp.ai" %% "openai" % "0.5.1"
+"com.softwaremill.sttp.ai" %% "openai" % "0.5.2"
 ```
 
 ### For Claude (Anthropic) API
@@ -672,14 +672,14 @@ Add the following dependency:
 Add the following dependency:
 
 ```sbt
-"com.softwaremill.sttp.ai" %% "claude" % "0.5.1"
+"com.softwaremill.sttp.ai" %% "claude" % "0.5.2"
 
 // For streaming support, add one or more:
-"com.softwaremill.sttp.ai" %% "claude-streaming-fs2" % "0.5.1"    // cats-effect/fs2
-"com.softwaremill.sttp.ai" %% "claude-streaming-zio" % "0.5.1"    // ZIO
-"com.softwaremill.sttp.ai" %% "claude-streaming-akka" % "0.5.1"   // Akka Streams (Scala 2.13 only)
-"com.softwaremill.sttp.ai" %% "claude-streaming-pekko" % "0.5.1"  // Pekko Streams
-"com.softwaremill.sttp.ai" %% "claude-streaming-ox" % "0.5.1"    // Ox direct-style (Scala 3 only)
+"com.softwaremill.sttp.ai" %% "claude-streaming-fs2" % "0.5.2"    // cats-effect/fs2
+"com.softwaremill.sttp.ai" %% "claude-streaming-zio" % "0.5.2"    // ZIO
+"com.softwaremill.sttp.ai" %% "claude-streaming-akka" % "0.5.2"   // Akka Streams (Scala 2.13 only)
+"com.softwaremill.sttp.ai" %% "claude-streaming-pekko" % "0.5.2"  // Pekko Streams
+"com.softwaremill.sttp.ai" %% "claude-streaming-ox" % "0.5.2"    // Ox direct-style (Scala 3 only)
 ```
 
 sttp-openai is available for Scala 2.13 and Scala 3
