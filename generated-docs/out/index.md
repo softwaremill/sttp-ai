@@ -42,4 +42,11 @@ sttp-ai uses sttp client to describe requests and responses used in OpenAI, Clau
    agents/quickstart
    agents/configuration
    agents/tools
+
+.. toctree::
+   :maxdepth: 2
+   :caption: Other
+
+   other/backends
+   other/examples
 ```
