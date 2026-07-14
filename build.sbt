@@ -156,10 +156,21 @@ lazy val docs = (projectMatrix in file("generated-docs")) // important: it must 
   .enablePlugins(MdocPlugin)
   .settings(commonSettings)
   .settings(
-    mdocIn := file("README.md"),
+    mdocIn := file("docs"),
     moduleName := "sttp-ai-docs",
-    mdocOut := file("generated-docs/README.md"),
-    mdocExtraArguments := Seq("--clean-target", "--disable-using-directives"),
+    mdocVariables := Map(
+      "VERSION" -> version.value
+    ),
+    mdocOut := file("generated-docs/out"),
+    mdocExtraArguments := Seq(
+      "--clean-target",
+      "--disable-using-directives",
+      "--exclude", ".venv",
+      "--exclude", "_build",
+      "--exclude", "adr",
+      "--exclude", "plans",
+      "--exclude", "superpowers"
+    ),
     publishArtifact := false,
     name := "docs",
     evictionErrorLevel := Level.Info
