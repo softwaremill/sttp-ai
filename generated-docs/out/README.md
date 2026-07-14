@@ -34,6 +34,6 @@ Commit both `docs/` (the source) and `generated-docs/out/` (the mdoc output) —
 
 ## Notes
 
-- `0.5.1+14-45313544+20260714-0930-SNAPSHOT` and other mdoc variables are **not** substituted in the local watch mode. For a fully-rendered preview, run `sbt "docs/mdoc"` from the repo root and serve `generated-docs/out/` instead.
+- `0.5.1+15-1ba1413f+20260714-0947-SNAPSHOT` and other mdoc variables are **not** substituted in the local watch mode. For a fully-rendered preview, run `sbt "docs/mdoc"` from the repo root and serve `generated-docs/out/` instead.
 - Scala code snippets are verified by `sbt compileDocumentation` (also runs in CI).
 - `adr/`, `plans/`, and `superpowers/` in this directory are internal project docs — they are excluded from the published site.
