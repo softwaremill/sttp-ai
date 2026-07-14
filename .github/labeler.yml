@@ -9,6 +9,8 @@ labels:
       - "project/Dependencies.scala"
       # sbt-built sources only: CI compiles these, so green build = safe to merge
       - "examples/src/main/scala/.*\\.scala"
+      # scalafmt-core updates: CI's scalafmtCheckAll blocks merge on formatting drift
+      - "\\.scalafmt\\.conf"
   - label: "dependency"
     authors: ["softwaremill-ci"]
     files:
@@ -17,5 +19,6 @@ labels:
       - "project/build.properties"
       - "project/Dependencies.scala"
       - "examples/src/main/scala/.*\\.scala"
+      - "\\.scalafmt\\.conf"
       # scala-cli scripts are not compiled by CI, so no automerge for these
       - "model_update_scripts/.*\\.scala"
