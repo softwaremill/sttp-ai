@@ -34,4 +34,12 @@ sttp-ai uses sttp client to describe requests and responses used in OpenAI, Clau
    claude/tool-calling
    claude/streaming
    claude/models-and-errors
+
+.. toctree::
+   :maxdepth: 2
+   :caption: Agent loop
+
+   agents/quickstart
+   agents/configuration
+   agents/tools
 ```
