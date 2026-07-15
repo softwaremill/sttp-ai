@@ -5,7 +5,7 @@
 //> using dep com.github.scopt::scopt::4.1.0
 //> using dep com.github.plokhotnyuk.jsoniter-scala::jsoniter-scala-core::2.39.1
 //> using dep com.github.plokhotnyuk.jsoniter-scala::jsoniter-scala-macros::2.39.1
-//> using dep org.virtuslab::scala-yaml::0.3.0
+//> using dep org.virtuslab::scala-yaml::0.3.2
 
 import cats.effect.{ExitCode, IO, IOApp}
 import cats.syntax.all.*
