@@ -1,6 +1,7 @@
 import Dependencies.*
-import com.softwaremill.Publish.ossPublishSettings
+import com.softwaremill.Publish.{ossPublishSettings, updateDocs}
 import com.softwaremill.SbtSoftwareMillCommon.commonSmlBuildSettings
+import com.softwaremill.UpdateVersionInDocs
 
 val scala2 = List("2.13.18")
 val scala3 = List("3.3.8")
@@ -17,7 +18,20 @@ lazy val commonSettings = commonSmlBuildSettings ++ ossPublishSettings ++ Seq(
 
 lazy val root = (project in file("."))
   .settings(commonSettings: _*)
-  .settings(publish / skip := true, name := "sttp-ai", scalaVersion := scala2.head)
+  .settings(
+    publish / skip := true,
+    name := "sttp-ai",
+    scalaVersion := scala2.head,
+    // during a release, also regenerate the mdoc output (tracked in generated-docs/out),
+    // so that the versions in the published docs match the released one
+    updateDocs := Def.taskDyn {
+      val files = UpdateVersionInDocs(sLog.value, organization.value, version.value)
+      Def.task {
+        (docs.jvm(scala3.head) / mdoc).toTask("").value
+        files ++ Seq(file("generated-docs/out"))
+      }
+    }.value
+  )
   .aggregate(allAgregates: _*)
 
 lazy val allAgregates = core.projectRefs ++

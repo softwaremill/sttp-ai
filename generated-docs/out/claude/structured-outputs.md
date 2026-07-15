@@ -12,7 +12,7 @@ Claude's structured output feature (currently in beta) allows you to enforce tha
 For the shortest path, use `ClaudeSyncClient.createMessageAs[T]` — the response schema is derived from `T` via Tapir, set on the request automatically, and the model's response is parsed back into `T` via circe.
 
 ```scala
-//> using dep com.softwaremill.sttp.ai::claude:0.5.1
+//> using dep com.softwaremill.sttp.ai::claude:0.5.2
 
 import sttp.ai.claude.ClaudeSyncClient
 import sttp.ai.claude.models.Message
@@ -43,7 +43,7 @@ object Main:
 ## Basic Structured Output Example
 
 ```scala
-//> using dep com.softwaremill.sttp.ai::claude:0.5.1
+//> using dep com.softwaremill.sttp.ai::claude:0.5.2
 //> using dep com.softwaremill.sttp.tapir::tapir-core:1.11.7
 
 import sttp.ai.claude.*
