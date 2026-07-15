@@ -114,11 +114,11 @@ than an agent silently missing a tool).
 ### Result rendering (`CallToolResult` → `String`)
 
 1. All `ToolContent.Text` blocks joined with `"\n"`.
-2. If there are no text blocks but `structuredContent` is present, render
-   `structuredContent.noSpaces`.
-3. Non-text blocks (image / audio / resource / resource_link) are rendered as their
+2. Non-text blocks (image / audio / resource / resource_link) are rendered as their
    compact JSON encoding (chimp's encoders), so URIs and metadata reach the LLM
    instead of being dropped.
+3. Only when the content list is empty entirely: fall back to
+   `structuredContent.noSpaces` (or the empty string if that is absent too).
 4. `isError = true`: return the rendered content prefixed with
    `"Tool execution failed: "`. MCP carries the human-readable error in `content`;
    returning it to the model (instead of throwing) matches how the agent loop treats
@@ -159,10 +159,12 @@ the agent run and be closed by the caller afterwards. Stated in scaladoc and doc
 
 ## Documentation & examples
 
-- Runnable scala-cli example in `examples/` (Scala 3 syntax): stdio MCP server tools
-  plugged into an agent.
-- README section under the agent docs: `McpTools.fromClient`, the lifecycle rule,
-  the `namePrefix` option, and the Scala-3-only caveat.
+- Compile-checked mdoc page `docs/agents/mcp.md` (added to the docs toc): stdio MCP
+  server tools plugged into an agent, the lifecycle rule, the `namePrefix` option,
+  and the Scala-3-only caveat. (Originally a runnable scala-cli example in
+  `examples/` was planned, but CI's `verifyExamplesCompileUsingScalaCli` compiles
+  examples against published artifacts only — impossible before the `mcp` artifact's
+  first release. A runnable example can be added post-release.)
 
 ## Development workflow
 
