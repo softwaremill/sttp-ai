@@ -71,14 +71,16 @@ object Tool {
   case class Custom(
       name: String,
       description: String,
-      inputSchema: ToolInputSchema
+      inputSchema: ToolInputSchema,
+      cacheControl: Option[CacheControl] = None
   ) extends Tool
 
   case class WebSearch(
       maxUses: Option[Int] = None,
       allowedDomains: Option[List[String]] = None,
       blockedDomains: Option[List[String]] = None,
-      userLocation: Option[UserLocation] = None
+      userLocation: Option[UserLocation] = None,
+      cacheControl: Option[CacheControl] = None
   ) extends Tool
 
   object WebSearch {

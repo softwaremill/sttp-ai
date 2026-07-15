@@ -31,3 +31,7 @@ metals.sbt
 
 .orca
 .devcontainer
+
+# Local Sphinx build artifacts
+generated-docs/out/.venv/
+generated-docs/out/_build/

@@ -1,6 +1,7 @@
 package sttp.ai.claude.integration
 
 import org.scalatest.BeforeAndAfterAll
+import org.scalatest.Inside.inside
 import org.scalatest.concurrent.Eventually
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
@@ -136,7 +137,7 @@ class ClaudeIntegrationSpec extends AnyFlatSpec with Matchers with BeforeAndAfte
       response.role shouldBe "assistant"
       response.content should not be empty
       // The response should contain the answer to 2+2
-      val textContent = response.content.collectFirst { case ContentBlock.Text(text, _) =>
+      val textContent = response.content.collectFirst { case ContentBlock.Text(text, _, _) =>
         text
       }
       textContent should be(defined)
@@ -173,7 +174,7 @@ class ClaudeIntegrationSpec extends AnyFlatSpec with Matchers with BeforeAndAfte
       response.role shouldBe "assistant"
       response.content should not be empty
       // Claude should acknowledge the image in some way
-      val textContent = response.content.collectFirst { case ContentBlock.Text(text, _) =>
+      val textContent = response.content.collectFirst { case ContentBlock.Text(text, _, _) =>
         text
       }
       textContent should be(defined)
@@ -209,7 +210,7 @@ class ClaudeIntegrationSpec extends AnyFlatSpec with Matchers with BeforeAndAfte
       response.role shouldBe "assistant"
       response.content should not be empty
       // Claude should acknowledge the image in some way
-      val textContent = response.content.collectFirst { case ContentBlock.Text(text, _) =>
+      val textContent = response.content.collectFirst { case ContentBlock.Text(text, _, _) =>
         text
       }
       textContent should be(defined)
@@ -249,8 +250,8 @@ class ClaudeIntegrationSpec extends AnyFlatSpec with Matchers with BeforeAndAfte
       // Claude should either use the tool or explain why it can't
       val hasToolUse = response.content.exists(_.isInstanceOf[ContentBlock.ToolUse])
       val hasTextResponse = response.content.exists {
-        case ContentBlock.Text(text, _) => text.toLowerCase.contains("weather") || text.toLowerCase.contains("tool")
-        case _                          => false
+        case ContentBlock.Text(text, _, _) => text.toLowerCase.contains("weather") || text.toLowerCase.contains("tool")
+        case _                             => false
       }
 
       (hasToolUse || hasTextResponse) shouldBe true
@@ -365,7 +366,7 @@ class ClaudeIntegrationSpec extends AnyFlatSpec with Matchers with BeforeAndAfte
       response.role shouldBe "assistant"
       response.content should not be empty
       // Claude should respond with some text content
-      val textContent = response.content.collectFirst { case ContentBlock.Text(text, _) =>
+      val textContent = response.content.collectFirst { case ContentBlock.Text(text, _, _) =>
         text
       }
       textContent should be(defined)
@@ -391,7 +392,7 @@ class ClaudeIntegrationSpec extends AnyFlatSpec with Matchers with BeforeAndAfte
       response.content should not be empty
 
       // Extract the text content which should be valid JSON
-      val textContent = response.content.collectFirst { case ContentBlock.Text(text, _) =>
+      val textContent = response.content.collectFirst { case ContentBlock.Text(text, _, _) =>
         text
       }
       textContent should be(defined)
@@ -465,4 +466,63 @@ class ClaudeIntegrationSpec extends AnyFlatSpec with Matchers with BeforeAndAfte
       textBlock.get.citations.get should not be empty
       ()
     }
+
+  "Claude Cache Control" should "respect cache control settings on request body" in withClient { client =>
+
+    val source = scala.io.Source.fromResource("./Readme-prefix.md")
+    val docText =
+      try
+        source.mkString
+      finally
+        source.close()
+
+    val firstMessage = Message.user(
+      List(
+        ContentBlock.document(docText, title = Some("sttp-ai Readme")),
+        ContentBlock.text("Summarise this document in one sentence, citing specific claims.")
+      )
+    )
+    val firstRequest = MessageRequest
+      .simple(
+        model = testModel,
+        messages = List(
+          firstMessage
+        ),
+        maxTokens = 150
+      )
+      .withCacheControl(CacheControl.Ephemeral())
+
+    def secondRequest(response: List[ContentBlock]) = MessageRequest
+      .simple(
+        model = testModel,
+        messages = List(
+          firstMessage,
+          Message.assistant(response),
+          Message.user(
+            List(
+              ContentBlock.text("Are you sure you are correct?")
+            )
+          )
+        ),
+        maxTokens = 150
+      )
+      .copy(cacheControl = Some(CacheControl.Ephemeral()))
+
+    val responseOne = client.createMessage(firstRequest)
+    responseOne.content should not be empty
+
+    inside((responseOne.usage.cacheCreationInputTokens, responseOne.usage.cacheReadInputTokens)) {
+      case (Some(creationTokens), Some(readTokens)) =>
+        assert(
+          creationTokens > 0 || readTokens > 0
+        ) // if test is run in a caching window multiple times, it might not write to cache, but read from it instead.
+    }
+
+    val content = responseOne.content
+    val responseTwo = client.createMessage(secondRequest(content))
+    responseTwo.content should not be empty
+    inside(responseTwo.usage.cacheReadInputTokens) { case Some(tokens) =>
+      assert(tokens > 0)
+    }
+  }
 }

@@ -1,5 +1,5 @@
-//> using dep com.softwaremill.sttp.ai::claude:0.4.0
-//> using dep ch.qos.logback:logback-classic:1.5.19
+//> using dep com.softwaremill.sttp.ai::claude:0.5.2
+//> using dep ch.qos.logback:logback-classic:1.5.38
 
 // remember to set the ANTHROPIC_API_KEY env variable!
 // run with: ANTHROPIC_API_KEY=... scala-cli run ClaudeBasicExample.scala
@@ -40,8 +40,8 @@ object ClaudeBasicExample extends App {
     case Right(messageResponse) =>
       println("Claude's response:")
       messageResponse.content.foreach {
-        case ContentBlock.Text(text, _) => println(text)
-        case _                          => // Handle other content types if needed
+        case ContentBlock.Text(text, _, _) => println(text)
+        case _                             => // Handle other content types if needed
       }
       println(s"\nUsage: ${messageResponse.usage}")
     case Left(error) =>
@@ -71,8 +71,8 @@ object ClaudeBasicExample extends App {
     case Right(messageResponse) =>
       println("Claude's follow-up response:")
       messageResponse.content.foreach {
-        case ContentBlock.Text(text, _) => println(text)
-        case _                          => // Handle other content types if needed
+        case ContentBlock.Text(text, _, _) => println(text)
+        case _                             => // Handle other content types if needed
       }
     case Left(error) =>
       println(s"Error: ${error.getMessage}")
@@ -94,8 +94,8 @@ object ClaudeBasicExample extends App {
     case Right(messageResponse) =>
       println("Claude's system-guided response:")
       messageResponse.content.foreach {
-        case ContentBlock.Text(text, _) => println(text)
-        case _                          => // Handle other content types if needed
+        case ContentBlock.Text(text, _, _) => println(text)
+        case _                             => // Handle other content types if needed
       }
     case Left(error) =>
       println(s"Error: ${error.getMessage}")
@@ -119,8 +119,8 @@ object ClaudeBasicExample extends App {
     case Right(messageResponse) =>
       println("Claude's creative response:")
       messageResponse.content.foreach {
-        case ContentBlock.Text(text, _) => println(text)
-        case _                          => // Handle other content types if needed
+        case ContentBlock.Text(text, _, _) => println(text)
+        case _                             => // Handle other content types if needed
       }
     case Left(error) =>
       println(s"Error: ${error.getMessage}")

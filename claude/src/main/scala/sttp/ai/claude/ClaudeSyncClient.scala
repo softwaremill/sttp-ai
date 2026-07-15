@@ -26,7 +26,7 @@ class ClaudeSyncClient(config: ClaudeConfig, backend: SyncBackend = DefaultSyncB
 
     val response = createMessage(withSchema)
 
-    val text = response.content.collect { case ContentBlock.Text(t, _) => t }.mkString
+    val text = response.content.collect { case ContentBlock.Text(t, _, _) => t }.mkString
 
     decode[T](text) match {
       case Right(value) => value

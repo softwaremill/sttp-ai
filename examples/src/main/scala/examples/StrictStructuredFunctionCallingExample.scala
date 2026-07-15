@@ -1,3 +1,6 @@
+//> using dep com.softwaremill.sttp.ai::openai:0.5.2
+//> using dep ch.qos.logback:logback-classic:1.5.38
+
 package examples
 
 /** Manual playground for the strict structured outputs for function calling feature (`strict = true`).
