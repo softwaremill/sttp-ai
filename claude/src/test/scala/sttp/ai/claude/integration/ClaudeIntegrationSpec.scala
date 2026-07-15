@@ -468,7 +468,6 @@ class ClaudeIntegrationSpec extends AnyFlatSpec with Matchers with BeforeAndAfte
     }
 
   "Claude Cache Control" should "respect cache control settings on request body" in withClient { client =>
-
     val source = scala.io.Source.fromResource("./Readme-prefix.md")
     val docText =
       try
