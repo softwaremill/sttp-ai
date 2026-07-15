@@ -73,7 +73,10 @@ object McpTools:
   )(using MonadError[F]): F[Seq[AgentTool[F, Map[String, Json]]]]
 ```
 
-Usage:
+Usage (stdio transport is synchronous, so here `F = Identity` and the effects
+disappear; with an effectful `F` — e.g. `ClientHttpTransport` over a cats-effect
+backend — the `McpClient(...)` and `fromClient(...)` steps are sequenced with
+`flatMap`/for-comprehension):
 
 ```scala
 val transport = ClientStdioTransport(List("npx", "-y", "my-mcp-server"))
