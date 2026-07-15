@@ -3,7 +3,7 @@ import com.softwaremill.Publish.ossPublishSettings
 import com.softwaremill.SbtSoftwareMillCommon.commonSmlBuildSettings
 
 val scala2 = List("2.13.18")
-val scala3 = List("3.3.6")
+val scala3 = List("3.3.8")
 
 def dependenciesFor(version: String)(deps: (Option[(Long, Long)] => ModuleID)*): Seq[ModuleID] =
   deps.map(_.apply(CrossVersion.partialVersion(version)))
@@ -142,7 +142,7 @@ lazy val examples = (projectMatrix in file("examples"))
   .settings(
     libraryDependencies ++= Seq(
       "com.softwaremill.sttp.tapir" %% "tapir-netty-server-sync" % V.tapir,
-      "ch.qos.logback" % "logback-classic" % "1.5.35"
+      "ch.qos.logback" % "logback-classic" % "1.5.38"
     ) ++ Libraries.sttpClientOx,
     publish / skip := true
   )
@@ -152,14 +152,40 @@ val compileDocumentation: TaskKey[Unit] = taskKey[Unit]("Compiles docs module th
 compileDocumentation :=
   (docs.jvm(scala3.head) / mdoc).toTask(" --out target/sttp-ai-docs").value
 
+// verify the scala-cli `//> using dep` directives, which are not covered by the sbt build
+val verifyExamplesCompileUsingScalaCli: TaskKey[Unit] = taskKey[Unit]("Verify that each example compiles using Scala CLI")
+verifyExamplesCompileUsingScalaCli :=
+  VerifyExamplesCompileUsingScalaCli(sLog.value, (examples.jvm(scala3.head) / sourceDirectory).value)
+
+val verifyModelUpdateScriptsCompileUsingScalaCli: TaskKey[Unit] =
+  taskKey[Unit]("Verify that each model update script compiles using Scala CLI")
+verifyModelUpdateScriptsCompileUsingScalaCli :=
+  VerifyExamplesCompileUsingScalaCli(sLog.value, file("model_update_scripts"))
+
 lazy val docs = (projectMatrix in file("generated-docs")) // important: it must not be docs/
   .enablePlugins(MdocPlugin)
   .settings(commonSettings)
   .settings(
-    mdocIn := file("README.md"),
+    mdocIn := file("docs"),
     moduleName := "sttp-ai-docs",
-    mdocOut := file("generated-docs/README.md"),
-    mdocExtraArguments := Seq("--clean-target", "--disable-using-directives"),
+    mdocVariables := Map(
+      "VERSION" -> version.value
+    ),
+    mdocOut := file("generated-docs/out"),
+    mdocExtraArguments := Seq(
+      "--clean-target",
+      "--disable-using-directives",
+      "--exclude",
+      ".venv",
+      "--exclude",
+      "_build",
+      "--exclude",
+      "adr",
+      "--exclude",
+      "plans",
+      "--exclude",
+      "superpowers"
+    ),
     publishArtifact := false,
     name := "docs",
     evictionErrorLevel := Level.Info

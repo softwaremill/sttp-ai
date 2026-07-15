@@ -1,7 +1,7 @@
-//> using dep com.softwaremill.sttp.ai::ox:0.4.0
-//> using dep com.softwaremill.sttp.tapir::tapir-netty-server-sync:1.11.48
-//> using dep com.softwaremill.sttp.client4::ox:4.0.12
-//> using dep ch.qos.logback:logback-classic:1.5.19
+//> using dep com.softwaremill.sttp.ai::ox:0.5.2
+//> using dep com.softwaremill.sttp.tapir::tapir-netty-server-sync:1.13.28
+//> using dep com.softwaremill.sttp.client4::ox:4.0.26
+//> using dep ch.qos.logback:logback-classic:1.5.38
 
 // remember to set the OPENAI_API_KEY env variable!
 // run with: OPENAI_API_KEY=... scala-cli run ChatProxy.scala

@@ -25,6 +25,7 @@ import sttp.ai.openai.requests.responses.{InputItemsListResponseBody, ResponsesM
 import sttp.ai.openai.requests.responses.ResponsesModel.CustomResponsesModel
 import sttp.ai.openai.requests.responses.{Tool => RespTool, ToolChoice => RespToolChoice}
 import OpenAIDerivedCodecs._
+import sttp.ai.openai.requests.caching.CacheRetentionPolicy
 
 /** Hand-written circe-core codecs for OpenAI: sealed-trait dispatch (custom `"type"` discriminators), string enums, and a few special-case
   * codecs (e.g. `Option` collapsing, JSON keys that don't match a field's snake_case). Uses only circe-core so it is shared across Scala
@@ -314,5 +315,17 @@ object OpenAIManualCodecs {
   implicit def typeCodec(implicit byTypeValue: Map[String, FtType]): Codec[FtType] = Codec.from(
     Decoder[String].emap(value => byTypeValue.get(value).toRight(s"Could not deserialize: $value")),
     Encoder[String].contramap(_.value)
+  )
+
+  implicit val cacheRetentionPolicyCodec: Codec[CacheRetentionPolicy] = Codec.from(
+    Decoder[String].emap {
+      case "in_memory" => Right(CacheRetentionPolicy.InMemory)
+      case "24h"       => Right(CacheRetentionPolicy.`24H`)
+      case s           => Left(s"Unknown cache retention policy: $s")
+    },
+    Encoder[String].contramap {
+      case CacheRetentionPolicy.InMemory => "in_memory"
+      case CacheRetentionPolicy.`24H`    => "24h"
+    }
   )
 }

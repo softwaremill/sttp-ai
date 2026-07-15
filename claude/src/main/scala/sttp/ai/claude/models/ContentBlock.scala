@@ -5,11 +5,11 @@ import io.circe.Json
 sealed trait ContentBlock
 
 object ContentBlock {
-  case class Text(text: String, citations: Option[List[Citation]] = None) extends ContentBlock
+  case class Text(text: String, citations: Option[List[Citation]] = None, cacheControl: Option[CacheControl] = None) extends ContentBlock
 
   case class Thinking(thinking: String) extends ContentBlock
 
-  case class Image(source: ImageSource) extends ContentBlock
+  case class Image(source: ImageSource, cacheControl: Option[CacheControl] = None) extends ContentBlock
 
   case class ToolUse(
       id: String,
@@ -20,14 +20,16 @@ object ContentBlock {
   case class ToolResult(
       toolUseId: String,
       content: String,
-      isError: Option[Boolean] = None
+      isError: Option[Boolean] = None,
+      cacheControl: Option[CacheControl] = None
   ) extends ContentBlock
 
   case class Document(
       source: DocumentSource,
       title: Option[String] = None,
       context: Option[String] = None,
-      citations: Option[CitationsConfig] = None
+      citations: Option[CitationsConfig] = None,
+      cacheControl: Option[CacheControl] = None
   ) extends ContentBlock
 
   case class ServerToolUse(

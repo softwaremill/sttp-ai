@@ -27,6 +27,7 @@ object ClaudeDerivedCodecs {
   implicit val citationsConfigCodec: Codec[CitationsConfig] = deriveConfiguredCodec
   implicit val webSearchResultCodec: Codec[WebSearchResult] = deriveConfiguredCodec
   implicit val citationCodec: Codec[Citation] = deriveConfiguredCodec
+  implicit val cacheControlCodec: Codec[CacheControl] = deriveConfiguredCodec
 
   implicit val imageSourceCodec: Codec[ImageSource] = deriveConfiguredCodec
   implicit val documentSourceCodec: Codec[DocumentSource] = deriveConfiguredCodec

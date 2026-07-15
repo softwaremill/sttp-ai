@@ -1,5 +1,5 @@
-//> using dep com.softwaremill.sttp.ai::claude:0.4.0
-//> using dep ch.qos.logback:logback-classic:1.5.19
+//> using dep com.softwaremill.sttp.ai::claude:0.5.2
+//> using dep ch.qos.logback:logback-classic:1.5.38
 
 // remember to set the ANTHROPIC_API_KEY env variable!
 // run with: ANTHROPIC_API_KEY=... scala-cli run ClaudeToolCallingExample.scala
@@ -67,7 +67,7 @@ object ClaudeToolCallingExample extends App {
     case Right(messageResponse) =>
       println("Claude's response:")
       messageResponse.content.foreach {
-        case ContentBlock.Text(text, _) =>
+        case ContentBlock.Text(text, _, _) =>
           println(s"Text: $text")
         case ContentBlock.ToolUse(id, name, input) =>
           println(s"Tool called: $name")
@@ -106,7 +106,7 @@ object ClaudeToolCallingExample extends App {
     case Right(messageResponse) =>
       println("Claude's tool-assisted calculation:")
       messageResponse.content.foreach {
-        case ContentBlock.Text(text, _) =>
+        case ContentBlock.Text(text, _, _) =>
           println(text)
         case ContentBlock.ToolUse(id, name, input) =>
           val result = simulateToolExecution(name, input)
