@@ -73,6 +73,9 @@ object McpTools {
     val body =
       if (blocks.nonEmpty) blocks.mkString("\n")
       else result.structuredContent.map(_.noSpaces).getOrElse("")
-    if (result.isError) s"Tool execution failed: $body" else body
+    if (result.isError) {
+      val details = if (body.isEmpty) "(no details provided by the MCP server)" else body
+      s"Tool execution failed: $details"
+    } else body
   }
 }

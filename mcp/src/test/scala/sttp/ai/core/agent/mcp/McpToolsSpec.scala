@@ -37,6 +37,10 @@ class McpToolsSpec extends AnyFlatSpec with Matchers {
     McpTools.renderResult(result) shouldBe "Tool execution failed: boom"
   }
 
+  it should "render an error with no content with a placeholder" in {
+    McpTools.renderResult(CallToolResult(Nil, isError = true)) shouldBe "Tool execution failed: (no details provided by the MCP server)"
+  }
+
   private given MonadError[Identity] = IdentityMonad
 
   private val addSchema = Json.obj(

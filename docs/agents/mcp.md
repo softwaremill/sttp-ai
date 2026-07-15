@@ -32,6 +32,8 @@ given MonadError[Identity] = IdentityMonad
 val transport = ClientStdioTransport(List("npx", "-y", "@modelcontextprotocol/server-everything"))
 val client = McpClient[Identity](transport, Implementation("sttp-ai-agent", "1.0.0"))
 
+val backend = DefaultSyncBackend()
+
 try
   val mcpTools = McpTools.fromClient(client, namePrefix = Some("mcp"))
 
@@ -41,9 +43,11 @@ try
     .tools(mcpTools)
     .build
 
-  val result = agent.run("Add 2 and 3 using the available tools")(DefaultSyncBackend())
+  val result = agent.run("Add 2 and 3 using the available tools")(backend)
   println(result.finalAnswer)
-finally client.close()
+finally
+  backend.close()
+  client.close()
 ```
 
 Notes:
@@ -57,3 +61,16 @@ Notes:
   block types are rendered as compact JSON, and results the server marks as errors are returned to the
   LLM prefixed with `Tool execution failed:`. Transport failures surface as exceptions and go through the
   agent's configured `ExceptionHandler`.
+
+## Backend caveats
+
+The LLM backends impose their own constraints on tool schemas, which arbitrary MCP servers may not satisfy:
+
+* The OpenAI agent backend registers tools with `strict: true` function calling, which requires every object in the
+  schema to set `additionalProperties: false` and list all properties as `required`. MCP tools whose schemas don't
+  conform are rejected by the OpenAI API at request time.
+* The Claude agent backend converts tool schemas to a flat property list, so nested object structure in an MCP tool's
+  input schema is not conveyed to the model.
+
+If you hit either limitation with a particular MCP server, consider wrapping the problematic tool manually with
+`AgentTool.fromFunction` for now.

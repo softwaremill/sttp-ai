@@ -157,7 +157,8 @@ lazy val mcp = (projectMatrix in file("mcp"))
       Libraries.chimpClient,
       Libraries.chimpServer,
       Libraries.tapirNettyServerSync,
-      Libraries.scalaTest.value
+      Libraries.scalaTest.value,
+      Libraries.logbackTest
     )
   )
   .dependsOn(core % "compile->compile;test->test")

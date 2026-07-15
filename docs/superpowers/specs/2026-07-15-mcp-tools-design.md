@@ -120,9 +120,10 @@ than an agent silently missing a tool).
 3. Only when the content list is empty entirely: fall back to
    `structuredContent.noSpaces` (or the empty string if that is absent too).
 4. `isError = true`: return the rendered content prefixed with
-   `"Tool execution failed: "`. MCP carries the human-readable error in `content`;
-   returning it to the model (instead of throwing) matches how the agent loop treats
-   tool errors as conversation input.
+   `"Tool execution failed: "` (with a `(no details provided by the MCP server)`
+   placeholder when the rendered body is empty). MCP carries the human-readable error
+   in `content`; returning it to the model (instead of throwing) matches how the agent
+   loop treats tool errors as conversation input.
 
 ### Error handling
 
