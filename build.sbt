@@ -22,8 +22,6 @@ lazy val root = (project in file("."))
     publish / skip := true,
     name := "sttp-ai",
     scalaVersion := scala2.head,
-    // during a release, also regenerate the mdoc output (tracked in generated-docs/out),
-    // so that the versions in the published docs match the released one
     updateDocs := Def.taskDyn {
       val files = UpdateVersionInDocs(sLog.value, organization.value, version.value)
       Def.task {
