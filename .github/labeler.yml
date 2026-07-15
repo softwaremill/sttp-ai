@@ -7,6 +7,9 @@ labels:
       - "project/plugins.sbt"
       - "project/build.properties"
       - "project/Dependencies.scala"
+      - "examples/src/main/scala/.*\\.scala"
+      - "model_update_scripts/.*\\.scala"
+      - "\\.scalafmt\\.conf"
   - label: "dependency"
     authors: ["softwaremill-ci"]
     files:
@@ -14,3 +17,6 @@ labels:
       - "project/plugins.sbt"
       - "project/build.properties"
       - "project/Dependencies.scala"
+      - "examples/src/main/scala/.*\\.scala"
+      - "model_update_scripts/.*\\.scala"
+      - "\\.scalafmt\\.conf"

@@ -25,6 +25,10 @@ jobs:
         java-version: '21'
         cache: 'sbt'
     - uses: sbt/setup-sbt@66fb4376e81982c7d92a4074170846fff88e2e30 # v1, specifically v1.5.0
+    - name: Install scala-cli
+      uses: VirtusLab/scala-cli-setup@d320e01a605bf27128a5657575382668f83ef34e # main, specifically v1.14.0
+      with:
+        jvm: '' # needed because scala-cli-setup otherwise forces the installation of their default JVM (17)
     - name: Install native dependencies
       run: |
         sudo apt-get update
@@ -35,6 +39,10 @@ jobs:
       run: sbt -v compile
     - name: Compile documentation
       run: sbt -v compileDocumentation
+    - name: Verify that examples compile using Scala CLI
+      run: sbt -v verifyExamplesCompileUsingScalaCli
+    - name: Verify that model update scripts compile using Scala CLI
+      run: sbt -v verifyModelUpdateScriptsCompileUsingScalaCli
     - name: Test
       run: sbt -v test
     - uses: actions/upload-artifact@v7  # upload test results
