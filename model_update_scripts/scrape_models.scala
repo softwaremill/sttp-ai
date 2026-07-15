@@ -99,7 +99,7 @@ object ModelEndpointScraper extends IOApp {
 
     OParser.parse(parser, args, Config()) match {
       case Some(config) => Right(config)
-      case None =>
+      case None         =>
         if (args.contains("--help") || args.contains("-h")) {
           Left("help")
         } else {

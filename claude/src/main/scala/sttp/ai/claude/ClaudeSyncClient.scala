@@ -30,7 +30,7 @@ class ClaudeSyncClient(config: ClaudeConfig, backend: SyncBackend = DefaultSyncB
 
     decode[T](text) match {
       case Right(value) => value
-      case Left(e) =>
+      case Left(e)      =>
         throw new DeserializationClaudeException(s"Failed to parse structured output: ${e.getMessage}", null)
     }
   }

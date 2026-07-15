@@ -90,7 +90,7 @@ class Agent[F[_]](
       results: Seq[ToolCallRecord]
   ): F[(ConversationHistory, Seq[ToolCallRecord])] =
     toolCalls match {
-      case Nil => monad.unit((history, results))
+      case Nil              => monad.unit((history, results))
       case toolCall :: rest =>
         for {
           _ <- beforeToolCall(toolCall)
@@ -133,7 +133,7 @@ class Agent[F[_]](
       }
       .flatMap {
         case Left(errorMessage) => monad.unit(errorMessage)
-        case Right(typedInput) =>
+        case Right(typedInput)  =>
           tool.execute(typedInput).handleError { case e: Exception =>
             config.exceptionHandler.handleToolException(toolCall.toolName, e) match {
               case Left(errorMessage) => monad.unit(errorMessage)

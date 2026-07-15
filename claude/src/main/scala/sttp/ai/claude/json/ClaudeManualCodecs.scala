@@ -37,8 +37,8 @@ object ClaudeManualCodecs {
       }
     ),
     Encoder.instance {
-      case OutputFormat.Text       => Json.obj("type" := "text")
-      case OutputFormat.JsonObject => Json.obj("type" := "json_object")
+      case OutputFormat.Text               => Json.obj("type" := "text")
+      case OutputFormat.JsonObject         => Json.obj("type" := "json_object")
       case OutputFormat.JsonSchema(schema) =>
         Json.obj(
           "type" := "json_schema",
@@ -51,7 +51,7 @@ object ClaudeManualCodecs {
     Decoder.instance { c =>
       c.value.asArray match {
         case Some(_) => c.as[List[WebSearchResult]].map(WebSearchToolResultBlock.Results.apply)
-        case None =>
+        case None    =>
           c.get[String]("type").flatMap {
             case WebSearchToolResultBlock.ErrorTypeValue => c.get[String]("error_code").map(WebSearchToolResultBlock.Error.apply)
             case other => Left(DecodingFailure(s"Unexpected web_search_tool_result content type: $other", c.history))
@@ -60,7 +60,7 @@ object ClaudeManualCodecs {
     },
     Encoder.instance {
       case WebSearchToolResultBlock.Results(items) => items.asJson
-      case WebSearchToolResultBlock.Error(code) =>
+      case WebSearchToolResultBlock.Error(code)    =>
         Json.obj("type" := WebSearchToolResultBlock.ErrorTypeValue, "error_code" := code)
     }
   )
