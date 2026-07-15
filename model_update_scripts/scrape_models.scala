@@ -1,11 +1,11 @@
 //> using scala 3.7.2
-//> using dep com.microsoft.playwright:playwright:1.55.0
-//> using dep org.typelevel::cats-effect::3.6.3
+//> using dep com.microsoft.playwright:playwright:1.61.0
+//> using dep org.typelevel::cats-effect::3.7.0
 //> using dep org.typelevel::log4cats-slf4j::2.8.0
 //> using dep ch.qos.logback:logback-classic:1.5.19
 //> using dep com.github.scopt::scopt::4.1.0
-//> using dep com.github.plokhotnyuk.jsoniter-scala::jsoniter-scala-core::2.37.11
-//> using dep com.github.plokhotnyuk.jsoniter-scala::jsoniter-scala-macros::2.37.11
+//> using dep com.github.plokhotnyuk.jsoniter-scala::jsoniter-scala-core::2.39.1
+//> using dep com.github.plokhotnyuk.jsoniter-scala::jsoniter-scala-macros::2.39.1
 
 import cats.effect.{IO, IOApp, Resource}
 import cats.syntax.all.*
@@ -99,7 +99,7 @@ object ModelEndpointScraper extends IOApp {
 
     OParser.parse(parser, args, Config()) match {
       case Some(config) => Right(config)
-      case None =>
+      case None         =>
         if (args.contains("--help") || args.contains("-h")) {
           Left("help")
         } else {
