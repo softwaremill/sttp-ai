@@ -283,3 +283,8 @@ object Main:
       )
       */
 ```
+
+> **Note:** when a schema is normalized for strict mode, properties that are optional in the source schema (absent
+> from its `required` list) are encoded as nullable — the model returns `null` for them instead of inventing a value.
+> If you decode structured outputs into classes with non-`Option` fields, mark optional fields as `Option` or list
+> them as required in your schema.

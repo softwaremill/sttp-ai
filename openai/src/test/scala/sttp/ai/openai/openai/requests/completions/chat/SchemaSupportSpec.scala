@@ -104,6 +104,17 @@ class SchemaSupportSpec extends AnyFlatSpec with Matchers with EitherValues {
     result shouldBe expected
   }
 
+  it should "add null to the enum of an optional enum property" in {
+    val result = normalize("""{"type":"object","properties":{"a":{"type":"string","enum":["x","y"]}},"required":[]}""")
+    val expected = parse(
+      """{"type":"object",
+        |"properties":{"a":{"type":["string","null"],"enum":["x","y",null]}},
+        |"required":["a"],
+        |"additionalProperties":false}""".stripMargin
+    ).value
+    result shouldBe expected
+  }
+
   it should "still skip additionalProperties on discriminated unions" in {
     val result = normalize(
       """{"type":"object",

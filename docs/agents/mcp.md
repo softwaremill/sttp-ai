@@ -74,4 +74,6 @@ Notes:
   OpenAIAgent.synchronous(OpenAI.fromEnv, "gpt-4o-mini", strictTools = false)
   ```
 
-* The Claude agent backend passes tool schemas to the API verbatim, including nested structure — no caveats.
+* The Claude agent backend passes the full tool schema structure to the API — nested objects, arrays, enums, and
+  required lists are preserved (JSON Schema keywords outside the OpenAPI-style schema model are dropped during
+  conversion).

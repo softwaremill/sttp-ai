@@ -98,14 +98,23 @@ object SchemaSupport {
         obj("type") match {
           case Some(t) if t.isString =>
             if (t.asString.contains("null")) propSchema
-            else Json.fromJsonObject(obj.add("type", Json.arr(t, Json.fromString("null"))))
+            else Json.fromJsonObject(addNullToEnum(obj.add("type", Json.arr(t, Json.fromString("null")))))
           case Some(t) if t.isArray =>
             val types = t.asArray.getOrElse(Vector.empty)
             if (types.contains(Json.fromString("null"))) propSchema
-            else Json.fromJsonObject(obj.add("type", Json.fromValues(types :+ Json.fromString("null"))))
+            else Json.fromJsonObject(addNullToEnum(obj.add("type", Json.fromValues(types :+ Json.fromString("null")))))
           case _ =>
             Json.obj("anyOf" -> Json.arr(propSchema, Json.obj("type" -> Json.fromString("null"))))
         }
       case None => propSchema
+    }
+
+  /** OpenAI requires optional enum properties to permit `null` in both `type` and `enum`
+    * (https://platform.openai.com/docs/guides/structured-outputs#all-fields-must-be-required).
+    */
+  private def addNullToEnum(obj: JsonObject): JsonObject =
+    obj("enum").flatMap(_.asArray) match {
+      case Some(values) if !values.contains(Json.Null) => obj.add("enum", Json.fromValues(values :+ Json.Null))
+      case _                                           => obj
     }
 }

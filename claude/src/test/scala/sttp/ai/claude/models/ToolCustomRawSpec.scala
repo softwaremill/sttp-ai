@@ -28,6 +28,9 @@ class ToolCustomRawSpec extends AnyFlatSpec with Matchers with EitherValues {
 
   it should "include cache_control when set" in {
     val tool: Tool = Tool.CustomRaw("t", "d", nestedSchema, cacheControl = Some(CacheControl.Ephemeral()))
-    tool.asJson.hcursor.downField("cache_control").succeeded shouldBe true
+    val expected = parse(
+      s"""{"name":"t","description":"d","input_schema":${nestedSchema.noSpaces},"cache_control":{"ttl":null,"type":"ephemeral"}}"""
+    ).value
+    (tool.asJson: io.circe.Json) shouldBe expected
   }
 }
