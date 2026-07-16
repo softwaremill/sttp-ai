@@ -75,6 +75,16 @@ object Tool {
       cacheControl: Option[CacheControl] = None
   ) extends Tool
 
+  /** A tool whose input schema is supplied as raw JSON Schema, passed to the API verbatim. Use this when the schema has structure that
+    * [[ToolInputSchema]] cannot express (nested objects, array item types, etc.) — e.g. schemas loaded from MCP servers.
+    */
+  case class CustomRaw(
+      name: String,
+      description: String,
+      inputSchema: io.circe.Json,
+      cacheControl: Option[CacheControl] = None
+  ) extends Tool
+
   case class WebSearch(
       maxUses: Option[Int] = None,
       allowedDomains: Option[List[String]] = None,
@@ -89,6 +99,9 @@ object Tool {
 
     val default: WebSearch = WebSearch()
   }
+
+  def custom(name: String, description: String, inputSchema: io.circe.Json): CustomRaw =
+    CustomRaw(name, description, inputSchema)
 
   def apply(name: String, description: String, inputSchema: ToolInputSchema): Custom =
     Custom(name, description, inputSchema)
