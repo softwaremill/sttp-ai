@@ -64,13 +64,14 @@ Notes:
 
 ## Backend caveats
 
-The LLM backends impose their own constraints on tool schemas, which arbitrary MCP servers may not satisfy:
+* The OpenAI agent backend registers tools with `strict: true` function calling by default. Schemas are automatically
+  normalized to strict-mode rules: `additionalProperties: false` is set on objects, all properties are listed as
+  `required`, and originally-optional properties are made nullable (the model passes `null` instead of omitting them —
+  your MCP server should treat `null` as "not provided"). If a schema uses JSON Schema features strict mode cannot
+  accept, the API rejects it at request time — pass `strictTools = false` to the builder as an escape hatch:
 
-* The OpenAI agent backend registers tools with `strict: true` function calling, which requires every object in the
-  schema to set `additionalProperties: false` and list all properties as `required`. MCP tools whose schemas don't
-  conform are rejected by the OpenAI API at request time.
-* The Claude agent backend converts tool schemas to a flat property list, so nested object structure in an MCP tool's
-  input schema is not conveyed to the model.
+  ```scala
+  OpenAIAgent.synchronous(OpenAI.fromEnv, "gpt-4o-mini", strictTools = false)
+  ```
 
-If you hit either limitation with a particular MCP server, consider wrapping the problematic tool manually with
-`AgentTool.fromFunction` for now.
+* The Claude agent backend passes tool schemas to the API verbatim, including nested structure — no caveats.
