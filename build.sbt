@@ -40,6 +40,7 @@ lazy val allAgregates = core.projectRefs ++
   pekko.projectRefs ++
   akka.projectRefs ++
   ox.projectRefs ++
+  mcp.projectRefs ++
   examples.projectRefs ++
   docs.projectRefs
 
@@ -146,6 +147,22 @@ lazy val ox = (projectMatrix in file("streaming/ox"))
   )
   .dependsOn(openai % "compile->compile;test->test", claude % "compile->compile;test->test")
 
+lazy val mcp = (projectMatrix in file("mcp"))
+  .jvmPlatform(
+    scalaVersions = scala3
+  )
+  .settings(commonSettings)
+  .settings(
+    libraryDependencies ++= Seq(
+      Libraries.chimpClient,
+      Libraries.chimpServer,
+      Libraries.tapirNettyServerSync,
+      Libraries.scalaTest.value,
+      Libraries.logbackTest
+    )
+  )
+  .dependsOn(core % "compile->compile;test->test")
+
 lazy val examples = (projectMatrix in file("examples"))
   .jvmPlatform(
     scalaVersions = scala3
@@ -202,5 +219,5 @@ lazy val docs = (projectMatrix in file("generated-docs")) // important: it must 
     name := "docs",
     evictionErrorLevel := Level.Info
   )
-  .dependsOn(openai, fs2, zio, ox, pekko)
+  .dependsOn(openai, fs2, zio, ox, pekko, mcp)
   .jvmPlatform(scalaVersions = scala3)

@@ -14,6 +14,7 @@ object Dependencies {
     val tapir = "1.13.28"
     val circe = "0.14.16"
     val circeGenericExtras = "0.14.4" // 0.14.5 is only available as RC
+    val chimp = "0.4.0"
   }
 
   object Libraries {
@@ -67,6 +68,13 @@ object Dependencies {
     )
 
     val tapirApispecDocs = Def.setting("com.softwaremill.sttp.tapir" %%% "tapir-apispec-docs" % V.tapir)
+
+    val chimpClient = "com.softwaremill.chimp" %% "chimp-client" % V.chimp
+
+    // Test-only: an in-process MCP server for wire-level integration tests of the mcp module
+    val chimpServer = "com.softwaremill.chimp" %% "chimp-server" % V.chimp % Test
+    val tapirNettyServerSync = "com.softwaremill.sttp.tapir" %% "tapir-netty-server-sync" % V.tapir % Test
+    val logbackTest = "ch.qos.logback" % "logback-classic" % "1.5.38" % Test
 
   }
 

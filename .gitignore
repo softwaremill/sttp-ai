@@ -35,3 +35,7 @@ metals.sbt
 # Local Sphinx build artifacts
 generated-docs/out/.venv/
 generated-docs/out/_build/
+
+# Superpowers specs/plans and SDD working files (local only)
+docs/superpowers/
+.superpowers/
