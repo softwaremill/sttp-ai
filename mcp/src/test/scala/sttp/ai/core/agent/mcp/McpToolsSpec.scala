@@ -21,6 +21,12 @@ class McpToolsSpec extends AnyFlatSpec with Matchers {
     McpTools.renderResult(result) shouldBe """{"answer":42}"""
   }
 
+  it should "prefer content blocks over structuredContent when both are present" in {
+    val result =
+      CallToolResult(List(ToolContent.Text(text = "from content")), structuredContent = Some(Json.obj("answer" -> Json.fromInt(42))))
+    McpTools.renderResult(result) shouldBe "from content"
+  }
+
   it should "render an empty result as an empty string" in {
     McpTools.renderResult(CallToolResult(Nil)) shouldBe ""
   }

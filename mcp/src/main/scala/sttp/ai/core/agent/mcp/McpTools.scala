@@ -35,9 +35,7 @@ object McpTools {
       client: McpClient[F],
       namePrefix: Option[String] = None
   )(using monad: MonadError[F]): F[Seq[AgentTool[F, Map[String, Json]]]] =
-    listAllTools(client, cursor = None, acc = Vector.empty).flatMap { definitions =>
-      monad.eval(definitions.map(toAgentTool(client, _, namePrefix)))
-    }
+    listAllTools(client, cursor = None, acc = Vector.empty).map(_.map(toAgentTool(client, _, namePrefix)))
 
   private def listAllTools[F[_]](client: McpClient[F], cursor: Option[Cursor], acc: Vector[ToolDefinition])(using
       monad: MonadError[F]
@@ -67,8 +65,8 @@ object McpTools {
 
   private[mcp] def renderResult(result: CallToolResult): String = {
     val blocks = result.content.map {
-      case ToolContent.Text(_, text) => text
-      case other                     => other.asJson.noSpaces
+      case text: ToolContent.Text => text.text
+      case other                  => other.asJson.noSpaces
     }
     val body =
       if (blocks.nonEmpty) blocks.mkString("\n")
