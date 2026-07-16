@@ -161,7 +161,7 @@ lazy val mcp = (projectMatrix in file("mcp"))
       Libraries.logbackTest
     )
   )
-  .dependsOn(core % "compile->compile;test->test")
+  .dependsOn(core % "compile->compile;test->test", openai % "test->compile", claude % "test->compile")
 
 lazy val examples = (projectMatrix in file("examples"))
   .jvmPlatform(
