@@ -26,7 +26,7 @@ jobs:
         cache: 'sbt'
     - uses: sbt/setup-sbt@66fb4376e81982c7d92a4074170846fff88e2e30 # v1, specifically v1.5.0
     - name: Install scala-cli
-      uses: VirtusLab/scala-cli-setup@d320e01a605bf27128a5657575382668f83ef34e # main, specifically v1.14.0
+      uses: VirtusLab/scala-cli-setup@42e5f90b7aed2c0478e8074e5c25a030e1db3af6 # main, specifically v1.15.0
       with:
         jvm: '' # needed because scala-cli-setup otherwise forces the installation of their default JVM (17)
     - name: Install native dependencies
