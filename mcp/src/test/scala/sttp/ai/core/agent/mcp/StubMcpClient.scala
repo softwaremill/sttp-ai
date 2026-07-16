@@ -8,7 +8,7 @@ import sttp.shared.Identity
 /** In-memory MCP client stub: serves canned `tools/list` pages and `tools/call` results, and records invocations. A `nextCursor` in a page
   * must be the (string) index of the next page in `pages`.
   */
-class FakeMcpClient(
+class StubMcpClient(
     pages: Seq[ListToolsResponse],
     callResults: Map[String, CallToolResult] = Map.empty
 ) extends McpClient[Identity] {

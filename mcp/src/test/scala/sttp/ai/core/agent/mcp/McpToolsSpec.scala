@@ -58,7 +58,7 @@ class McpToolsSpec extends AnyFlatSpec with Matchers {
   behavior of "McpTools.fromClient"
 
   it should "discover tools across all pages" in {
-    val client = new FakeMcpClient(
+    val client = new StubMcpClient(
       pages = Seq(
         ListToolsResponse(tools = List(toolDef("add")), nextCursor = Some("1")),
         ListToolsResponse(tools = List(toolDef("sub")))
@@ -70,7 +70,7 @@ class McpToolsSpec extends AnyFlatSpec with Matchers {
   }
 
   it should "use description, falling back to title, then name" in {
-    val client = new FakeMcpClient(
+    val client = new StubMcpClient(
       pages = Seq(
         ListToolsResponse(tools =
           List(
@@ -85,19 +85,19 @@ class McpToolsSpec extends AnyFlatSpec with Matchers {
   }
 
   it should "convert the input schema to an apispec schema" in {
-    val client = new FakeMcpClient(pages = Seq(ListToolsResponse(tools = List(toolDef("add")))))
+    val client = new StubMcpClient(pages = Seq(ListToolsResponse(tools = List(toolDef("add")))))
     val tool = McpTools.fromClient(client).head
     tool.jsonSchema.properties.keySet shouldBe Set("a", "b")
   }
 
   it should "fail with a descriptive error when a tool's input schema cannot be decoded" in {
-    val client = new FakeMcpClient(pages = Seq(ListToolsResponse(tools = List(toolDef("bad", schema = Json.fromString("nope"))))))
+    val client = new StubMcpClient(pages = Seq(ListToolsResponse(tools = List(toolDef("bad", schema = Json.fromString("nope"))))))
     val ex = the[McpToolConversionException] thrownBy McpTools.fromClient(client)
     ex.getMessage should include("bad")
   }
 
   it should "expose the prefixed name to the LLM but call the server with the original name" in {
-    val client = new FakeMcpClient(
+    val client = new StubMcpClient(
       pages = Seq(ListToolsResponse(tools = List(toolDef("add")))),
       callResults = Map("add" -> CallToolResult(List(ToolContent.Text(text = "3"))))
     )
@@ -108,7 +108,7 @@ class McpToolsSpec extends AnyFlatSpec with Matchers {
   }
 
   it should "keep original names when no prefix is given" in {
-    val client = new FakeMcpClient(pages = Seq(ListToolsResponse(tools = List(toolDef("add")))))
+    val client = new StubMcpClient(pages = Seq(ListToolsResponse(tools = List(toolDef("add")))))
     McpTools.fromClient(client).head.name shouldBe "add"
   }
 }
