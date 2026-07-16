@@ -37,14 +37,27 @@ object SchemaSupport {
     def onString(value: String): Json = Json.fromString(value)
     def onArray(value: Vector[Json]): Json = Json.fromValues(value.map(_.foldWith(this)))
     def onObject(value: JsonObject): Json = {
+      val originalRequired: Set[String] = value("required")
+        .flatMap(_.asArray)
+        .map(_.flatMap(_.asString).toSet)
+        .getOrElse(Set.empty)
+
       val state = value.toList.foldRight(FolderState(Nil, addAdditionalProperties = false, Nil)) { case ((k, v), acc) =>
-        if (k == "properties")
+        if (k == "properties") {
+          val foldedProps = v.foldWith(this)
+          val nullableProps = foldedProps.asObject match {
+            case Some(propsObj) =>
+              Json.fromJsonObject(JsonObject.fromIterable(propsObj.toList.map { case (name, propSchema) =>
+                if (originalRequired.contains(name)) name -> propSchema else name -> makeNullable(propSchema)
+              }))
+            case None => foldedProps
+          }
           acc.copy(
-            fields = (k, v.foldWith(this)) :: acc.fields,
+            fields = (k, nullableProps) :: acc.fields,
             addAdditionalProperties = true,
             requiredProperties = v.asObject.fold(List.empty[String])(_.keys.toList)
           )
-        else if (k == "type")
+        } else if (k == "type")
           acc.copy(
             fields = (k, v.foldWith(this)) :: acc.fields,
             addAdditionalProperties = acc.addAdditionalProperties || v.asString.contains("object")
@@ -74,4 +87,25 @@ object SchemaSupport {
       Json.fromFields(fields)
     }
   }
+
+  /** OpenAI strict mode requires every property to be listed in `required`; optionality is expressed by making the property's type nullable
+    * (https://platform.openai.com/docs/guides/structured-outputs#all-fields-must-be-required). Properties that were optional in the source
+    * schema (absent from its original `required`) are made nullable here before the full `required` list is emitted.
+    */
+  private def makeNullable(propSchema: Json): Json =
+    propSchema.asObject match {
+      case Some(obj) =>
+        obj("type") match {
+          case Some(t) if t.isString =>
+            if (t.asString.contains("null")) propSchema
+            else Json.fromJsonObject(obj.add("type", Json.arr(t, Json.fromString("null"))))
+          case Some(t) if t.isArray =>
+            val types = t.asArray.getOrElse(Vector.empty)
+            if (types.contains(Json.fromString("null"))) propSchema
+            else Json.fromJsonObject(obj.add("type", Json.fromValues(types :+ Json.fromString("null"))))
+          case _ =>
+            Json.obj("anyOf" -> Json.arr(propSchema, Json.obj("type" -> Json.fromString("null"))))
+        }
+      case None => propSchema
+    }
 }

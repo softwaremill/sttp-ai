@@ -53,10 +53,10 @@ object JsonSchemaFixture {
       |      "type": "object",
       |      "properties": {
       |        "foo": {
-      |          "type": "string"
+      |          "type": ["string", "null"]
       |        },
       |        "bar": {
-      |          "type": "number"
+      |          "type": ["number", "null"]
       |        }
       |      }
       |    }
