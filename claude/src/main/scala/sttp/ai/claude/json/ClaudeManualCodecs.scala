@@ -65,40 +65,41 @@ object ClaudeManualCodecs {
     }
   )
 
+  private def encodeCustomTool(name: String, description: String, inputSchema: Json, cacheControl: Option[CacheControl]): Json =
+    Json
+      .obj(
+        "name" := name,
+        "description" := description,
+        "input_schema" := inputSchema
+      )
+      .mapObject { obj =>
+        cacheControl match {
+          case Some(cc) => obj.add("cache_control", cc.asJson)
+          case None     => obj
+        }
+      }
+
+  // `name`/`description` missing is a genuine decode failure either way, so surface Custom's error rather than CustomRaw's.
+  private def decodeCustomRaw(c: io.circe.HCursor): Decoder.Result[Tool.CustomRaw] =
+    for {
+      name <- c.get[String]("name")
+      description <- c.get[String]("description")
+      inputSchema <- c.getOrElse[Json]("input_schema")(Json.obj())
+      cacheControl <- c.get[Option[CacheControl]]("cache_control")
+    } yield Tool.CustomRaw(name, description, inputSchema, cacheControl)
+
   implicit val toolCodec: Codec[Tool] = Codec.from(
     Decoder.instance(c =>
       c.get[String]("type").toOption match {
         case Some(Tool.WebSearch.ToolType) => c.as[Tool.WebSearch]
-        case _                             => c.as[Tool.Custom]
+        // Flat schemas decode as Custom (historical behavior); schemas Custom cannot represent
+        // (e.g. `{"type":"object"}` without `properties`, or union types) fall back to CustomRaw.
+        case _ => c.as[Tool.Custom].orElse(decodeCustomRaw(c))
       }
     ),
     Encoder.instance {
-      case x: Tool.Custom =>
-        Json
-          .obj(
-            "name" := x.name,
-            "description" := x.description,
-            "input_schema" := x.inputSchema
-          )
-          .mapObject { obj =>
-            x.cacheControl match {
-              case Some(cc) => obj.add("cache_control", cc.asJson)
-              case None     => obj
-            }
-          }
-      case x: Tool.CustomRaw =>
-        Json
-          .obj(
-            "name" := x.name,
-            "description" := x.description,
-            "input_schema" := x.inputSchema
-          )
-          .mapObject { obj =>
-            x.cacheControl match {
-              case Some(cc) => obj.add("cache_control", cc.asJson)
-              case None     => obj
-            }
-          }
+      case x: Tool.Custom    => encodeCustomTool(x.name, x.description, x.inputSchema.asJson, x.cacheControl)
+      case x: Tool.CustomRaw => encodeCustomTool(x.name, x.description, x.inputSchema, x.cacheControl)
       case x: Tool.WebSearch =>
         x.asJson
           .mapObject(_.add("type", Json.fromString(Tool.WebSearch.ToolType)).add("name", Json.fromString(Tool.WebSearch.ToolName)))

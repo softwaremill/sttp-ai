@@ -5,10 +5,8 @@ import sttp.ai.claude.config.ClaudeConfig
 import sttp.ai.claude.models.{ContentBlock, Message, OutputConfig, OutputFormat, Tool}
 import sttp.ai.claude.requests.MessageRequest
 import sttp.ai.core.agent._
-import sttp.apispec.circe._
 import sttp.client4.Backend
 import io.circe.Json
-import io.circe.syntax._
 import io.circe.parser.{parse => parseJson}
 import sttp.shared.Identity
 import sttp.monad.IdentityMonad
@@ -31,8 +29,15 @@ private[claude] class ClaudeAgentBackend[F[_]](
     Tool.CustomRaw(
       name = tool.name,
       description = tool.description,
-      inputSchema = tool.jsonSchema.asJson.deepDropNullValues
+      inputSchema = ensureObjectType(tool.rawJsonSchema)
     )
+
+  /** Anthropic requires `input_schema.type == "object"`; MCP allows schemas that omit it (e.g. `{}` for no-argument tools). */
+  private def ensureObjectType(schema: Json): Json =
+    schema.asObject match {
+      case Some(obj) if !obj.contains("type") => Json.fromJsonObject(obj.add("type", Json.fromString("object")))
+      case _                                  => schema
+    }
 
   private def buildMessages(history: ConversationHistory): Seq[Message] =
     history.entries.flatMap {

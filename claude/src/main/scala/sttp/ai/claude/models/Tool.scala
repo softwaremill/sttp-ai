@@ -100,7 +100,7 @@ object Tool {
     val default: WebSearch = WebSearch()
   }
 
-  def custom(name: String, description: String, inputSchema: io.circe.Json): CustomRaw =
+  def customRaw(name: String, description: String, inputSchema: io.circe.Json): CustomRaw =
     CustomRaw(name, description, inputSchema)
 
   def apply(name: String, description: String, inputSchema: ToolInputSchema): Custom =
