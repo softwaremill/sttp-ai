@@ -11,6 +11,7 @@ import sttp.ai.openai.requests.completions.Stop
 import sttp.ai.openai.requests.completions.Stop.{MultipleStop, SingleStop}
 import sttp.ai.openai.requests.completions.chat.ChatRequestBody
 import sttp.ai.openai.requests.completions.chat.FunctionCall
+import sttp.ai.openai.requests.completions.chat.SchemaSupport
 import sttp.ai.openai.requests.completions.chat.ToolCall
 import sttp.ai.openai.requests.completions.chat.message.ToolResources
 import sttp.ai.openai.requests.embeddings.EmbeddingsRequestBody.{EmbeddingsInput, EmbeddingsModel}
@@ -101,6 +102,47 @@ object OpenAIManualCodecs {
     ),
     Encoder[String].contramap(_.value)
   )
+
+  // Hand-written (not `deriveAdtEncoder`) so the `json_schema` case can gate schema normalization on the actual `strict` flag: `strict:
+  // true` gets OpenAI strict-mode shape via `SchemaSupport.normalizeForStrict`, everything else (`None`/`Some(false)`) gets a faithful
+  // encoding via `SchemaSupport.schemaCodec`. Wire format otherwise matches the old `deriveAdtEncoder` output: `text` / `json_object` ->
+  // flat `{"type":"..."}`; `json_schema` -> `{"type":"json_schema","json_schema":{name, strict, schema, description}}`.
+  implicit val chatResponseFormatEncoder: Encoder[ChatRequestBody.ResponseFormat] = Encoder.instance {
+    case ChatRequestBody.ResponseFormat.Text                                          => Json.obj("type" -> "text".asJson)
+    case ChatRequestBody.ResponseFormat.JsonObject                                    => Json.obj("type" -> "json_object".asJson)
+    case ChatRequestBody.ResponseFormat.JsonSchema(name, strict, schema, description) =>
+      val schemaJson = schema.map { s =>
+        if (strict.contains(true)) SchemaSupport.normalizeForStrict(s) else SchemaSupport.schemaCodec(s)
+      }
+      Json.obj(
+        "type" -> "json_schema".asJson,
+        "json_schema" -> Json.obj(
+          "name" -> name.asJson,
+          "strict" -> strict.asJson,
+          "schema" -> schemaJson.asJson,
+          "description" -> description.asJson
+        )
+      )
+  }
+
+  // responses/ResponsesRequestBody `text.format` (encode-only): the Responses API analog of chat's `ResponseFormat`, same strict-mode
+  // shape rules, but the OpenAI wire form flattens the fields alongside "type" (no nested wrapper object). Hand-written for the same
+  // reason as `chatResponseFormatEncoder`: gate schema normalization on the actual `strict` flag instead of applying it unconditionally.
+  implicit val responsesRequestFormatEncoder: Encoder[ResponsesRequestBody.Format] = Encoder.instance {
+    case _: ResponsesRequestBody.Format.Text                                       => Json.obj("type" -> "text".asJson)
+    case _: ResponsesRequestBody.Format.JsonObject                                 => Json.obj("type" -> "json_object".asJson)
+    case ResponsesRequestBody.Format.JsonSchema(name, strict, schema, description) =>
+      val schemaJson = schema.map { s =>
+        if (strict.contains(true)) SchemaSupport.normalizeForStrict(s) else SchemaSupport.schemaCodec(s)
+      }
+      Json.obj(
+        "type" -> "json_schema".asJson,
+        "name" -> name.asJson,
+        "strict" -> strict.asJson,
+        "schema" -> schemaJson.asJson,
+        "description" -> description.asJson
+      )
+  }
 
   // --- completions/chat/ToolCall ---
   implicit val functionToolCallCodec: Codec[ToolCall.FunctionToolCall] = Codec.from(

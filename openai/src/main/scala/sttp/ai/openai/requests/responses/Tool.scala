@@ -58,7 +58,7 @@ object Tool {
       */
     def withTapirSchema[T: TSchema](name: String, description: Option[String], strict: Boolean): Function = {
       val schema = TapirSchemaToJsonSchema(implicitly[TSchema[T]], markOptionsAsNullable = true)
-      val schemaJson = SchemaSupport.schemaCodec(schema)
+      val schemaJson = if (strict) SchemaSupport.normalizeForStrict(schema) else SchemaSupport.schemaCodec(schema)
       Function(name, schemaJson.asObject.map(_.toMap).getOrElse(Map.empty), strict, description)
     }
   }

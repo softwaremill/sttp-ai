@@ -137,7 +137,8 @@ object OpenAIDerivedCodecs {
   implicit val chatStreamOptionsEncoder: Encoder[ChatRequestBody.StreamOptions] = ConfiguredEncoder.derived
   implicit val updateChatCompletionRequestBodyEncoder: Encoder[ChatRequestBody.UpdateChatCompletionRequestBody] = ConfiguredEncoder.derived
 
-  implicit val chatResponseFormatEncoder: Encoder[ChatRequestBody.ResponseFormat] = deriveAdtEncoder[ChatRequestBody.ResponseFormat]
+  // chatResponseFormatEncoder: Encoder[ChatRequestBody.ResponseFormat] -- hand-written in OpenAIManualCodecs so the `json_schema` case can
+  // gate strict-mode schema normalization on the actual `strict` flag; see that file for rationale.
   implicit val msgCustomFormatCodec: Codec[MsgTool.Custom.Format] = ConfiguredCodec.derived
   implicit val msgToolEncoder: Encoder[MsgTool] = {
     import sttp.ai.core.json.CirceHelpers.omitFalse
@@ -564,7 +565,8 @@ object OpenAIDerivedCodecs {
         case _                                              => o
       }
     })
-  implicit val rrFormatEncoder: Encoder[RRB.Format] = ConfiguredEncoder.derived
+  // rrFormatEncoder: Encoder[RRB.Format] -- hand-written in OpenAIManualCodecs (responsesRequestFormatEncoder) so the `json_schema` case
+  // can gate strict-mode normalization on the actual `strict` flag; see that file for rationale.
   implicit val rrPromptConfigEncoder: Encoder[RRB.PromptConfig] = ConfiguredEncoder.derived
   implicit val rrReasoningConfigEncoder: Encoder[RRB.ReasoningConfig] = ConfiguredEncoder.derived
   implicit val rrTextConfigEncoder: Encoder[RRB.TextConfig] = ConfiguredEncoder.derived

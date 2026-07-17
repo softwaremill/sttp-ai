@@ -3,17 +3,29 @@ package sttp.ai.openai.requests.completions.chat
 import io.circe.syntax._
 import io.circe.{Codec, Encoder, Json, JsonNumber, JsonObject}
 import sttp.apispec.Schema
+import sttp.apispec.circe.encoderSchema
 
 object SchemaSupport {
 
-  /** circe codec for apispec `Schema` that, on encode, rewrites the JSON to satisfy OpenAI's structured-output rules (all fields required,
-    * `additionalProperties: false` on objects). Both directions delegate to the apispec circe codecs explicitly (rather than `asJson`/
-    * `Decoder[Schema]`) to avoid recursing into this codec.
+  /** circe codec for apispec `Schema` that encodes FAITHFULLY, i.e. it does not rewrite the JSON in any way: it's a plain apispec codec
+    * that additionally drops unset-field nulls (via `deepDropNullValues`) on encode. Use this whenever the caller has not asked for OpenAI
+    * strict-mode shape (e.g. `strict = None`/`Some(false)`, or a schema factory with no strict concept at all). For strict mode, use
+    * [[normalizeForStrict]] instead.
     */
   implicit val schemaCodec: Codec[Schema] = Codec.from(
     sttp.apispec.circe.schemaDecoder,
-    Encoder.instance(s => sttp.apispec.circe.encoderSchema(s).deepDropNullValues.foldWith(schemaFolder))
+    Encoder.instance(s => encoderSchema(s).deepDropNullValues)
   )
+
+  /** Normalizes a JSON Schema (already encoded as `Json`) to OpenAI's strict-mode rules: `additionalProperties: false` on every object,
+    * every property listed in `required`, and properties that were originally optional made nullable (including adding `null` to `enum`).
+    * Only apply this when the caller actually requested strict mode (`strict: true`); everything else should get a faithful encoding (see
+    * [[schemaCodec]]).
+    */
+  def normalizeForStrict(schemaJson: Json): Json = schemaJson.foldWith(schemaFolder)
+
+  /** Normalizes an apispec `Schema` to OpenAI's strict-mode rules. See [[normalizeForStrict(Json)]]. */
+  def normalizeForStrict(schema: Schema): Json = normalizeForStrict(encoderSchema(schema).deepDropNullValues)
 
   private case class FolderState(
       fields: List[(String, Json)],
@@ -44,7 +56,13 @@ object SchemaSupport {
 
       val state = value.toList.foldRight(FolderState(Nil, addAdditionalProperties = false, Nil)) { case ((k, v), acc) =>
         if (k == "properties") {
-          val foldedProps = v.foldWith(this)
+          // The container map's own entries are parameter NAMES (which may themselves be "properties", "type", "required", ...), not
+          // schema keywords: fold each entry's schema VALUE, but never fold the container object itself through `onObject` (F6 - doing so
+          // would treat a parameter literally named "properties"/"type"/"required" as if it were a schema keyword of the container).
+          val foldedProps = v.asObject match {
+            case Some(props) => Json.fromJsonObject(JsonObject.fromIterable(props.toList.map { case (n, s) => n -> s.foldWith(this) }))
+            case None        => v.foldWith(this)
+          }
           val nullableProps = foldedProps.asObject match {
             case Some(propsObj) =>
               Json.fromJsonObject(JsonObject.fromIterable(propsObj.toList.map { case (name, propSchema) =>
@@ -104,10 +122,19 @@ object SchemaSupport {
             if (types.contains(Json.fromString("null"))) propSchema
             else Json.fromJsonObject(addNullToEnum(obj.add("type", Json.fromValues(types :+ Json.fromString("null")))))
           case _ =>
-            Json.obj("anyOf" -> Json.arr(propSchema, Json.obj("type" -> Json.fromString("null"))))
+            if (isAlreadyNullableAnyOf(obj)) propSchema
+            else Json.obj("anyOf" -> Json.arr(propSchema, Json.obj("type" -> Json.fromString("null"))))
         }
       case None => propSchema
     }
+
+  /** F3 guard: a property may already be nullable via `anyOf: [X, {"type":"null"}]` (what tapir emits for `Option[<case class>]`, and a
+    * common MCP idiom). Wrapping it again in `anyOf` would double-wrap it, so detect this shape and leave it unchanged.
+    */
+  private def isAlreadyNullableAnyOf(obj: JsonObject): Boolean =
+    obj("anyOf")
+      .flatMap(_.asArray)
+      .exists(_.contains(Json.obj("type" -> Json.fromString("null"))))
 
   /** OpenAI requires optional enum properties to permit `null` in both `type` and `enum`
     * (https://platform.openai.com/docs/guides/structured-outputs#all-fields-must-be-required).

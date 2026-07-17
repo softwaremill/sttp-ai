@@ -32,8 +32,8 @@ private[openai] class OpenAIAgentBackend[F[_]](
 
   private def convertTool(tool: AgentTool[F, _]): Tool.Function = {
     val schemaJson =
-      if (strictTools) SchemaSupport.schemaCodec(tool.jsonSchema)
-      else sttp.apispec.circe.encoderSchema(tool.jsonSchema).deepDropNullValues
+      if (strictTools) SchemaSupport.normalizeForStrict(tool.rawJsonSchema)
+      else tool.rawJsonSchema
 
     Tool.Function(
       name = tool.name,
@@ -143,23 +143,23 @@ object OpenAIAgent {
       openAI: OpenAI,
       modelName: String
   )(implicit monad: sttp.monad.MonadError[F]): AgentBuilder[F] =
-    AgentBuilder[F](config => new OpenAIAgentBackend[F](openAI, modelName, config.userTools, config.systemPrompt, config.responseSchema))
+    builder(openAI, modelName, strictTools = true)
 
   def builder[F[_]](
       apiKey: String,
       modelName: String
   )(implicit monad: sttp.monad.MonadError[F]): AgentBuilder[F] =
-    builder(new OpenAI(apiKey), modelName)
+    builder(apiKey, modelName, strictTools = true)
 
   def synchronous(
       openAI: OpenAI,
       modelName: String
-  ): AgentBuilder[Identity] = builder[Identity](openAI, modelName)(IdentityMonad)
+  ): AgentBuilder[Identity] = synchronous(openAI, modelName, strictTools = true)
 
   def synchronous(
       apiKey: String,
       modelName: String
-  ): AgentBuilder[Identity] = builder[Identity](apiKey, modelName)(IdentityMonad)
+  ): AgentBuilder[Identity] = synchronous(apiKey, modelName, strictTools = true)
 
   def builder[F[_]](
       openAI: OpenAI,
