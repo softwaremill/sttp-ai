@@ -51,16 +51,25 @@ object OpenAIJson extends ResponseHandlers[OpenAIException, Decoder] {
     * legitimately contain JSON `null` (e.g. `"enum": ["low", "high", null]`, produced by strict-mode nullability normalization via
     * `SchemaSupport.normalizeForStrict`/`addNullToEnum`).
     *
-    * To keep those schemas byte-faithful while still dropping unset-field nulls everywhere else: capture `tools[*].function.parameters` and
-    * `response_format.json_schema.schema` from the pre-drop encoding, run `deepDropNullValues` as before, then splice the untouched values
-    * back into the cleaned JSON. This is a safe no-op for the (large majority of) request bodies that have neither field.
+    * To keep those schemas byte-faithful while still dropping unset-field nulls everywhere else: capture the schema-bearing fields from the
+    * pre-drop encoding, run `deepDropNullValues` as before, then splice the untouched values back into the cleaned JSON. This covers both
+    * chat completions (`tools[*].function.parameters`, `response_format.json_schema.schema`) and the Responses API, which encodes the same
+    * kind of data at different paths: function tools are flat (`tools[*].parameters`, no nested `function` wrapper) and the structured
+    * output schema lives at `text.format.schema`. Capture sites use `.filter(!_.isNull)` because a field that's present with a JSON `null`
+    * value (e.g. `Tool.Function(parameters = None)`) is itself an unset-`Option` artifact that must stay dropped, not spliced back in. This
+    * is a safe no-op for the (large majority of) request bodies that have none of these fields.
     */
   private def dropNullsPreservingSchemas(bodyJson: Json): Json = {
-    val originalToolParameters: Option[Vector[Option[Json]]] =
+    val originalToolParameters: Option[Vector[(Option[Json], Option[Json])]] =
       bodyJson.asObject
         .flatMap(_("tools"))
         .flatMap(_.asArray)
-        .map(_.map(_.asObject.flatMap(_("function")).flatMap(_.asObject).flatMap(_("parameters"))))
+        .map(_.map { toolJson =>
+          val toolObj = toolJson.asObject
+          val nestedFunctionParameters = toolObj.flatMap(_("function")).flatMap(_.asObject).flatMap(_("parameters")).filter(!_.isNull)
+          val flatParameters = toolObj.flatMap(_("parameters")).filter(!_.isNull)
+          (nestedFunctionParameters, flatParameters)
+        })
 
     val originalResponseFormatSchema: Option[Json] =
       bodyJson.asObject
@@ -69,6 +78,16 @@ object OpenAIJson extends ResponseHandlers[OpenAIException, Decoder] {
         .flatMap(_("json_schema"))
         .flatMap(_.asObject)
         .flatMap(_("schema"))
+        .filter(!_.isNull)
+
+    val originalTextFormatSchema: Option[Json] =
+      bodyJson.asObject
+        .flatMap(_("text"))
+        .flatMap(_.asObject)
+        .flatMap(_("format"))
+        .flatMap(_.asObject)
+        .flatMap(_("schema"))
+        .filter(!_.isNull)
 
     val cleaned = bodyJson.deepDropNullValues
 
@@ -77,15 +96,18 @@ object OpenAIJson extends ResponseHandlers[OpenAIException, Decoder] {
         cleaned.mapObject { obj =>
           obj("tools").flatMap(_.asArray) match {
             case Some(cleanedTools) =>
-              val restoredTools = cleanedTools.zip(originalParameters).map {
-                case (toolJson, Some(parameters)) =>
-                  toolJson.mapObject { toolObj =>
-                    toolObj("function").flatMap(_.asObject) match {
-                      case Some(functionObj) => toolObj.add("function", Json.fromJsonObject(functionObj.add("parameters", parameters)))
-                      case None              => toolObj
-                    }
+              val restoredTools = cleanedTools.zip(originalParameters).map { case (toolJson, (nestedFunctionParameters, flatParameters)) =>
+                toolJson.mapObject { toolObj =>
+                  val withNested = (nestedFunctionParameters, toolObj("function").flatMap(_.asObject)) match {
+                    case (Some(parameters), Some(functionObj)) =>
+                      toolObj.add("function", Json.fromJsonObject(functionObj.add("parameters", parameters)))
+                    case _ => toolObj
                   }
-                case (toolJson, None) => toolJson
+                  flatParameters match {
+                    case Some(parameters) => withNested.add("parameters", parameters)
+                    case None             => withNested
+                  }
+                }
               }
               obj.add("tools", Json.fromValues(restoredTools))
             case None => obj
@@ -94,7 +116,7 @@ object OpenAIJson extends ResponseHandlers[OpenAIException, Decoder] {
       case None => cleaned
     }
 
-    originalResponseFormatSchema match {
+    val withResponseFormatRestored = originalResponseFormatSchema match {
       case Some(schema) =>
         withToolsRestored.mapObject { obj =>
           obj("response_format").flatMap(_.asObject) match {
@@ -111,6 +133,22 @@ object OpenAIJson extends ResponseHandlers[OpenAIException, Decoder] {
           }
         }
       case None => withToolsRestored
+    }
+
+    originalTextFormatSchema match {
+      case Some(schema) =>
+        withResponseFormatRestored.mapObject { obj =>
+          obj("text").flatMap(_.asObject) match {
+            case Some(textObj) =>
+              textObj("format").flatMap(_.asObject) match {
+                case Some(formatObj) =>
+                  obj.add("text", Json.fromJsonObject(textObj.add("format", Json.fromJsonObject(formatObj.add("schema", schema)))))
+                case None => obj
+              }
+            case None => obj
+          }
+        }
+      case None => withResponseFormatRestored
     }
   }
 

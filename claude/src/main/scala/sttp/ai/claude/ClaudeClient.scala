@@ -168,7 +168,7 @@ class ClaudeClientImpl(config: ClaudeConfig) extends ClaudeClient with ResponseH
       requestJson.asObject
         .flatMap(_("tools"))
         .flatMap(_.asArray)
-        .map(_.map(_.asObject.flatMap(_("input_schema"))))
+        .map(_.map(_.asObject.flatMap(_("input_schema")).filter(!_.isNull)))
 
     val cleaned = requestJson.deepDropNullValues
 

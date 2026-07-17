@@ -32,12 +32,17 @@ private[claude] class ClaudeAgentBackend[F[_]](
       inputSchema = ensureObjectType(tool.rawJsonSchema)
     )
 
-  /** Anthropic requires `input_schema.type == "object"`; MCP allows schemas that omit it (e.g. `{}` for no-argument tools). */
+  /** Anthropic requires `input_schema.type == "object"`; MCP allows schemas that omit it (e.g. `{}` for no-argument tools), and also allows
+    * the JSON Schema/MCP boolean form `true` (meaning "any input is valid") which Anthropic would reject outright. Both are normalized to a
+    * minimal object schema; any other schema is passed through unchanged.
+    */
   private def ensureObjectType(schema: Json): Json =
-    schema.asObject match {
-      case Some(obj) if !obj.contains("type") => Json.fromJsonObject(obj.add("type", Json.fromString("object")))
-      case _                                  => schema
-    }
+    if (schema.isBoolean) Json.obj("type" -> Json.fromString("object"))
+    else
+      schema.asObject match {
+        case Some(obj) if !obj.contains("type") => Json.fromJsonObject(obj.add("type", Json.fromString("object")))
+        case _                                  => schema
+      }
 
   private def buildMessages(history: ConversationHistory): Seq[Message] =
     history.entries.flatMap {

@@ -7,7 +7,7 @@ import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
 import sttp.ai.claude.ClaudeClient
 import sttp.ai.claude.config.ClaudeConfig
-import sttp.ai.claude.models.{Message, Tool}
+import sttp.ai.claude.models.{Message, PropertySchema, Tool, ToolInputSchema}
 import sttp.ai.claude.requests.MessageRequest
 import sttp.client4.StringBody
 
@@ -46,5 +46,35 @@ class ClaudeClientSerializationSpec extends AnyFlatSpec with Matchers with Eithe
     json.hcursor.downField("top_p").succeeded shouldBe false
     json.hcursor.downField("system").succeeded shouldBe false
     json.hcursor.downField("output_config").succeeded shouldBe false
+  }
+
+  it should "drop the derived-codec's null-valued fields (required/description/enum) from a Custom tool's input_schema" in {
+    val client = ClaudeClient(ClaudeConfig(apiKey = "test-key"))
+    val tool: Tool = Tool.Custom(
+      name = "get_weather",
+      description = "Gets the weather",
+      // `required = None` and `PropertySchema(description = None, enum = None)` are unset `Option`s: the derived codec renders them as
+      // `"required":null`/`"description":null`/`"enum":null`, which would be invalid JSON Schema if sent verbatim.
+      inputSchema = ToolInputSchema(
+        `type` = "object",
+        properties = Map("location" -> PropertySchema(`type` = "string", description = None, `enum` = None)),
+        required = None
+      )
+    )
+    val request = MessageRequest
+      .simple("claude-haiku-4-5-20251001", List(Message.user("hi")), 100)
+      .copy(tools = Some(List(tool)))
+
+    val body = requestBodyOf(client, request)
+    body should not include "\"required\":null"
+    body should not include "\"description\":null"
+    body should not include "\"enum\":null"
+
+    val json = parse(body).value
+    val inputSchema = json.hcursor.downField("tools").downArray.get[Json]("input_schema").value
+    inputSchema.asObject.exists(_.contains("required")) shouldBe false
+    val locationProperty = inputSchema.hcursor.downField("properties").downField("location")
+    locationProperty.downField("description").succeeded shouldBe false
+    locationProperty.downField("enum").succeeded shouldBe false
   }
 }

@@ -35,11 +35,17 @@ class ToolCustomRawSpec extends AnyFlatSpec with Matchers with EitherValues {
     (tool.asJson: io.circe.Json) shouldBe expected
   }
 
-  it should "encode Custom and CustomRaw with equivalent content identically (encoder dedup regression guard)" in {
+  it should "drop Custom's derived-codec null artifacts (required/enum) while CustomRaw with the identical JSON keeps them (encoder dedup regression guard)" in {
     val inputSchema = ToolInputSchema.forObject(Map("q" -> PropertySchema.string("query")))
     val custom: Tool = Tool.Custom("t", "d", inputSchema, cacheControl = Some(CacheControl.Ephemeral()))
-    val customRaw: Tool = Tool.CustomRaw("t", "d", inputSchema.asJson, cacheControl = Some(CacheControl.Ephemeral()))
-    (custom.asJson: io.circe.Json) shouldBe (customRaw.asJson: io.circe.Json)
+    // `inputSchema.asJson` contains `"required":null`/`"enum":null` for the unset `Option`s: `Custom`'s encoder drops them (a typed
+    // `ToolInputSchema` can't legitimately contain those nulls), while `CustomRaw`'s encoder passes the identical JSON through verbatim.
+    val customRawWithNulls: Tool = Tool.CustomRaw("t", "d", inputSchema.asJson, cacheControl = Some(CacheControl.Ephemeral()))
+    val customRawWithoutNulls: Tool =
+      Tool.CustomRaw("t", "d", inputSchema.asJson.deepDropNullValues, cacheControl = Some(CacheControl.Ephemeral()))
+
+    (custom.asJson: io.circe.Json) should not be (customRawWithNulls.asJson: io.circe.Json)
+    (custom.asJson: io.circe.Json) shouldBe (customRawWithoutNulls.asJson: io.circe.Json)
   }
 
   "Tool decoder" should "decode a flat schema as Tool.Custom (historical behavior preserved)" in {

@@ -93,13 +93,21 @@ object ClaudeManualCodecs {
     Decoder.instance(c =>
       c.get[String]("type").toOption match {
         case Some(Tool.WebSearch.ToolType) => c.as[Tool.WebSearch]
-        // Flat schemas decode as Custom (historical behavior); schemas Custom cannot represent
-        // (e.g. `{"type":"object"}` without `properties`, or union types) fall back to CustomRaw.
+        // Flat schemas decode as Custom (historical behavior). But because derived decoders ignore unknown JSON fields, JSON with
+        // structure `Custom` can't represent (nested objects, array item types, extra keys, ...) still decodes "successfully" as
+        // `Custom` -- that extra structure is silently dropped, not preserved. Only JSON that makes `Custom`'s decode outright FAIL
+        // (e.g. a property-less object, since `properties` is a required field; or union types) falls back to `CustomRaw`. Caveat:
+        // a decode -> re-encode round trip through this codec is therefore lossy whenever the original schema had structure `Custom`
+        // can't express, even though the decode step itself reports no error.
         case _ => c.as[Tool.Custom].orElse(decodeCustomRaw(c))
       }
     ),
     Encoder.instance {
-      case x: Tool.Custom    => encodeCustomTool(x.name, x.description, x.inputSchema.asJson, x.cacheControl)
+      // `.deepDropNullValues` here: `ToolInputSchema`/`PropertySchema` are derived codecs that emit `null` for every unset `Option`
+      // field (`required`, `description`, `enum`, ...). A typed `ToolInputSchema` cannot contain a JSON `null` that's anything other
+      // than such an artifact, so it's always safe to drop them -- unlike `CustomRaw`, whose raw JSON may contain legitimate nulls
+      // (e.g. `"enum": ["low", "high", null]`) that must be preserved verbatim.
+      case x: Tool.Custom    => encodeCustomTool(x.name, x.description, x.inputSchema.asJson.deepDropNullValues, x.cacheControl)
       case x: Tool.CustomRaw => encodeCustomTool(x.name, x.description, x.inputSchema, x.cacheControl)
       case x: Tool.WebSearch =>
         x.asJson

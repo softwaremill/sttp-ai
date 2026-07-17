@@ -78,4 +78,23 @@ class ClaudeAgentBackendSpec extends AnyFlatSpec with Matchers with EitherValues
       case other               => fail(s"expected Tool.CustomRaw, got $other")
     }
   }
+
+  it should "replace a JSON Schema boolean schema (MCP's `true` = \"any input\") with a minimal object schema" in {
+    val tool = new AgentTool[Identity, Map[String, Json]] {
+      override def name: String = "any-input-tool"
+      override def description: String = "Accepts any input"
+      override def jsonSchema: Schema = parse("""{"type":"object"}""").value.as[Schema](sttp.apispec.circe.schemaDecoder).value
+      override def codec: io.circe.Codec[Map[String, Json]] = io.circe.Codec.implied
+      override def execute(input: Map[String, Json]): Identity[String] = "ok"
+      override def rawJsonSchema: Json = Json.True
+    }
+
+    val client = ClaudeClient(ClaudeConfig(apiKey = "test-key"))
+    val backend = new ClaudeAgentBackend[Identity](client, "claude-haiku-4-5-20251001", Seq(tool), None, None)(IdentityMonad)
+
+    backend.convertedTools.head match {
+      case raw: Tool.CustomRaw => raw.inputSchema shouldBe parse("""{"type":"object"}""").value
+      case other               => fail(s"expected Tool.CustomRaw, got $other")
+    }
+  }
 }
