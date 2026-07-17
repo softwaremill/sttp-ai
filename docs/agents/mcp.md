@@ -64,13 +64,24 @@ Notes:
 
 ## Backend caveats
 
-The LLM backends impose their own constraints on tool schemas, which arbitrary MCP servers may not satisfy:
+* The OpenAI agent backend registers tools with `strict: true` function calling by default. Schemas are automatically
+  normalized to strict-mode rules: `additionalProperties: false` is set on objects, all properties are listed as
+  `required`, and originally-optional properties are made nullable (the model passes `null` instead of omitting them;
+  those nulls are stripped client-side before the tool call reaches the MCP server — see below). If a schema uses JSON
+  Schema features strict mode cannot accept, the API rejects it at request time — pass `strictTools = false` to the
+  builder as an escape hatch:
 
-* The OpenAI agent backend registers tools with `strict: true` function calling, which requires every object in the
-  schema to set `additionalProperties: false` and list all properties as `required`. MCP tools whose schemas don't
-  conform are rejected by the OpenAI API at request time.
-* The Claude agent backend converts tool schemas to a flat property list, so nested object structure in an MCP tool's
-  input schema is not conveyed to the model.
+  ```scala
+  OpenAIAgent.synchronous(OpenAI.fromEnv, "gpt-4o-mini", strictTools = false)
+  ```
 
-If you hit either limitation with a particular MCP server, consider wrapping the problematic tool manually with
-`AgentTool.fromFunction` for now.
+* Before an argument map reaches the MCP server's `tools/call`, top-level arguments that are JSON `null` are dropped
+  if the server's original schema does not list that parameter as `required` — i.e. "optional-by-absence" — so the
+  server sees the parameter as simply missing rather than explicitly `null`. Nulls for parameters the server *does*
+  list as `required` (e.g. a required-but-nullable property, as strict-mode normalization produces) are left in place
+  and forwarded as-is.
+
+* The Claude agent backend passes the server's original tool schema JSON through untouched — nested objects, arrays,
+  enums, `required` lists, and any other JSON Schema keywords are all forwarded as received. The only modification is
+  adding a top-level `"type": "object"` when the schema omits it (Anthropic requires `input_schema.type == "object"`,
+  but MCP allows tools to omit `type`, e.g. `{}` for a no-argument tool).

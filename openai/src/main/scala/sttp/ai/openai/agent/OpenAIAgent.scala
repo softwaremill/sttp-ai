@@ -14,11 +14,12 @@ private[openai] class OpenAIAgentBackend[F[_]](
     modelName: String,
     val tools: Seq[AgentTool[F, _]],
     val systemPrompt: Option[String],
-    responseSchema: Option[ResponseSchema[_]]
+    responseSchema: Option[ResponseSchema[_]],
+    strictTools: Boolean
 )(implicit monad: sttp.monad.MonadError[F])
     extends AgentBackend[F] {
 
-  private val convertedTools: Seq[Tool.Function] = tools.map(convertTool)
+  private[openai] val convertedTools: Seq[Tool.Function] = tools.map(convertTool)
 
   private val responseFormat: Option[ResponseFormat] = responseSchema.map { rs =>
     ResponseFormat.JsonSchema(
@@ -30,14 +31,15 @@ private[openai] class OpenAIAgentBackend[F[_]](
   }
 
   private def convertTool(tool: AgentTool[F, _]): Tool.Function = {
-    val schema = tool.jsonSchema
-    val schemaJson = SchemaSupport.schemaCodec(schema)
+    val schemaJson =
+      if (strictTools) SchemaSupport.normalizeForStrict(tool.rawJsonSchema)
+      else tool.rawJsonSchema
 
     Tool.Function(
       name = tool.name,
       description = Some(tool.description),
       parameters = Some(schemaJson.asObject.map(_.toMap).getOrElse(Map.empty)),
-      strict = Some(true)
+      strict = Some(strictTools)
     )
   }
 
@@ -141,21 +143,49 @@ object OpenAIAgent {
       openAI: OpenAI,
       modelName: String
   )(implicit monad: sttp.monad.MonadError[F]): AgentBuilder[F] =
-    AgentBuilder[F](config => new OpenAIAgentBackend[F](openAI, modelName, config.userTools, config.systemPrompt, config.responseSchema))
+    builder(openAI, modelName, strictTools = true)
 
   def builder[F[_]](
       apiKey: String,
       modelName: String
   )(implicit monad: sttp.monad.MonadError[F]): AgentBuilder[F] =
-    builder(new OpenAI(apiKey), modelName)
+    builder(apiKey, modelName, strictTools = true)
 
   def synchronous(
       openAI: OpenAI,
       modelName: String
-  ): AgentBuilder[Identity] = builder[Identity](openAI, modelName)(IdentityMonad)
+  ): AgentBuilder[Identity] = synchronous(openAI, modelName, strictTools = true)
 
   def synchronous(
       apiKey: String,
       modelName: String
-  ): AgentBuilder[Identity] = builder[Identity](apiKey, modelName)(IdentityMonad)
+  ): AgentBuilder[Identity] = synchronous(apiKey, modelName, strictTools = true)
+
+  def builder[F[_]](
+      openAI: OpenAI,
+      modelName: String,
+      strictTools: Boolean
+  )(implicit monad: sttp.monad.MonadError[F]): AgentBuilder[F] =
+    AgentBuilder[F](config =>
+      new OpenAIAgentBackend[F](openAI, modelName, config.userTools, config.systemPrompt, config.responseSchema, strictTools)
+    )
+
+  def builder[F[_]](
+      apiKey: String,
+      modelName: String,
+      strictTools: Boolean
+  )(implicit monad: sttp.monad.MonadError[F]): AgentBuilder[F] =
+    builder(new OpenAI(apiKey), modelName, strictTools)
+
+  def synchronous(
+      openAI: OpenAI,
+      modelName: String,
+      strictTools: Boolean
+  ): AgentBuilder[Identity] = builder[Identity](openAI, modelName, strictTools)(IdentityMonad)
+
+  def synchronous(
+      apiKey: String,
+      modelName: String,
+      strictTools: Boolean
+  ): AgentBuilder[Identity] = builder[Identity](apiKey, modelName, strictTools)(IdentityMonad)
 }

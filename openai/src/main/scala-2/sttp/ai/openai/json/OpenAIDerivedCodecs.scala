@@ -136,9 +136,8 @@ object OpenAIDerivedCodecs {
   implicit val chatStreamOptionsEncoder: Encoder[ChatRequestBody.StreamOptions] = deriveConfiguredEncoder
   implicit val updateChatCompletionRequestBodyEncoder: Encoder[ChatRequestBody.UpdateChatCompletionRequestBody] = deriveConfiguredEncoder
 
-  // chat ResponseFormat (encode-only): OpenAI tagged form via deriveAdtEncoder. Text / JsonObject -> {"type":"..."}, JsonSchema ->
-  // {"type":"json_schema","json_schema":{name, strict, schema, description}}.
-  implicit val chatResponseFormatEncoder: Encoder[ChatRequestBody.ResponseFormat] = deriveAdtEncoder
+  // chatResponseFormatEncoder: Encoder[ChatRequestBody.ResponseFormat] -- hand-written in OpenAIManualCodecs so the `json_schema` case can
+  // gate strict-mode schema normalization on the actual `strict` flag; see that file for rationale.
 
   // message Tool: OpenAI tagged form via deriveAdt*. function -> {"type":"function","function":{...}}, custom -> {"type":"custom","custom":{...}}.
   // The default `strict: false` on a function tool is omitted (matches the previous uPickle default-omission); an explicit `true` is kept.
@@ -601,7 +600,8 @@ object OpenAIDerivedCodecs {
       case _                                              => o
     }
   })
-  implicit val rrFormatEncoder: Encoder[RRB.Format] = deriveConfiguredEncoder
+  // rrFormatEncoder: Encoder[RRB.Format] -- hand-written in OpenAIManualCodecs (responsesRequestFormatEncoder) so the `json_schema` case
+  // can gate strict-mode normalization on the actual `strict` flag; see that file for rationale.
   implicit val rrPromptConfigEncoder: Encoder[RRB.PromptConfig] = deriveConfiguredEncoder
   implicit val rrReasoningConfigEncoder: Encoder[RRB.ReasoningConfig] = deriveConfiguredEncoder
   implicit val rrTextConfigEncoder: Encoder[RRB.TextConfig] = deriveConfiguredEncoder

@@ -12,6 +12,12 @@ trait AgentTool[F[_], T] {
   def jsonSchema: Schema
   def codec: Codec[T]
   def execute(input: T): F[String]
+
+  /** The tool's input schema as raw JSON. Defaults to the encoding of [[jsonSchema]]; implementations that obtained the schema as JSON in
+    * the first place (e.g. tools loaded from MCP servers) should override this with the original document, so backends can pass it through
+    * without a lossy round-trip.
+    */
+  def rawJsonSchema: Json = sttp.apispec.circe.encoderSchema(jsonSchema).deepDropNullValues
 }
 
 object AgentTool {

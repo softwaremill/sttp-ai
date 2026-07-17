@@ -65,27 +65,50 @@ object ClaudeManualCodecs {
     }
   )
 
+  private def encodeCustomTool(name: String, description: String, inputSchema: Json, cacheControl: Option[CacheControl]): Json =
+    Json
+      .obj(
+        "name" := name,
+        "description" := description,
+        "input_schema" := inputSchema
+      )
+      .mapObject { obj =>
+        cacheControl match {
+          case Some(cc) => obj.add("cache_control", cc.asJson)
+          case None     => obj
+        }
+      }
+
+  // `name`/`description` missing is a genuine decode failure either way; `orElse` surfaces the second decoder's (this one's) error, not
+  // Custom's, so it's `decodeCustomRaw`'s own field-level failure that's reported to the caller.
+  private def decodeCustomRaw(c: io.circe.HCursor): Decoder.Result[Tool.CustomRaw] =
+    for {
+      name <- c.get[String]("name")
+      description <- c.get[String]("description")
+      inputSchema <- c.getOrElse[Json]("input_schema")(Json.obj())
+      cacheControl <- c.get[Option[CacheControl]]("cache_control")
+    } yield Tool.CustomRaw(name, description, inputSchema, cacheControl)
+
   implicit val toolCodec: Codec[Tool] = Codec.from(
     Decoder.instance(c =>
       c.get[String]("type").toOption match {
         case Some(Tool.WebSearch.ToolType) => c.as[Tool.WebSearch]
-        case _                             => c.as[Tool.Custom]
+        // Flat schemas decode as Custom (historical behavior). But because derived decoders ignore unknown JSON fields, JSON with
+        // structure `Custom` can't represent (nested objects, array item types, extra keys, ...) still decodes "successfully" as
+        // `Custom` -- that extra structure is silently dropped, not preserved. Only JSON that makes `Custom`'s decode outright FAIL
+        // (e.g. a property-less object, since `properties` is a required field; or union types) falls back to `CustomRaw`. Caveat:
+        // a decode -> re-encode round trip through this codec is therefore lossy whenever the original schema had structure `Custom`
+        // can't express, even though the decode step itself reports no error.
+        case _ => c.as[Tool.Custom].orElse(decodeCustomRaw(c))
       }
     ),
     Encoder.instance {
-      case x: Tool.Custom =>
-        Json
-          .obj(
-            "name" := x.name,
-            "description" := x.description,
-            "input_schema" := x.inputSchema
-          )
-          .mapObject { obj =>
-            x.cacheControl match {
-              case Some(cc) => obj.add("cache_control", cc.asJson)
-              case None     => obj
-            }
-          }
+      // `.deepDropNullValues` here: `ToolInputSchema`/`PropertySchema` are derived codecs that emit `null` for every unset `Option`
+      // field (`required`, `description`, `enum`, ...). A typed `ToolInputSchema` cannot contain a JSON `null` that's anything other
+      // than such an artifact, so it's always safe to drop them -- unlike `CustomRaw`, whose raw JSON may contain legitimate nulls
+      // (e.g. `"enum": ["low", "high", null]`) that must be preserved verbatim.
+      case x: Tool.Custom    => encodeCustomTool(x.name, x.description, x.inputSchema.asJson.deepDropNullValues, x.cacheControl)
+      case x: Tool.CustomRaw => encodeCustomTool(x.name, x.description, x.inputSchema, x.cacheControl)
       case x: Tool.WebSearch =>
         x.asJson
           .mapObject(_.add("type", Json.fromString(Tool.WebSearch.ToolType)).add("name", Json.fromString(Tool.WebSearch.ToolName)))

@@ -22,10 +22,17 @@ object McpTools {
     *
     * The caller owns the client: it must stay open while the agent runs, and must be closed by the caller afterwards.
     *
-    * Tool calls are executed remotely via `tools/call`. Results are rendered as text: text content blocks are joined with newlines, other
-    * content blocks are rendered as compact JSON, and an empty content list falls back to the tool's structured content. Results marked as
-    * errors by the server are prefixed with `"Tool execution failed: "` and returned to the LLM as regular tool output. Transport-level
-    * failures surface as exceptions and are subject to the agent's configured `ExceptionHandler`.
+    * The server's original input schema `Json` is preserved verbatim and exposed via `rawJsonSchema`, so backends that consume it can pass
+    * it through to the model without the lossy round-trip of re-encoding the decoded [[sttp.apispec.Schema]] (which stringifies `null` enum
+    * members and drops null array elements/defaults).
+    *
+    * Tool calls are executed remotely via `tools/call`. Before calling, arguments whose value is JSON `null` are stripped unless the
+    * corresponding parameter is listed in the tool's original top-level `required` array: this accommodates backends (e.g. OpenAI strict
+    * mode) that normalize optional parameters into explicit `null`s, which schema-validating MCP servers may otherwise reject. Nulls for
+    * genuinely required-but-nullable parameters are preserved. Results are rendered as text: text content blocks are joined with newlines,
+    * other content blocks are rendered as compact JSON, and an empty content list falls back to the tool's structured content. Results
+    * marked as errors by the server are prefixed with `"Tool execution failed: "` and returned to the LLM as regular tool output.
+    * Transport-level failures surface as exceptions and are subject to the agent's configured `ExceptionHandler`.
     *
     * @param namePrefix
     *   When defined, tools are exposed to the LLM as `s"${prefix}_${name}"`, to avoid collisions with manually defined tools or tools
@@ -58,8 +65,19 @@ object McpTools {
     }
     val exposedName = namePrefix.fold(definition.name)(prefix => s"${prefix}_${definition.name}")
     val description = definition.description.orElse(definition.title).getOrElse(definition.name)
-    AgentTool.dynamicF(exposedName, description, schema) { input =>
-      client.callTool(definition.name, Json.fromFields(input)).map(renderResult)
+    val requiredParams =
+      definition.inputSchema.hcursor.downField("required").as[List[String]].toOption.getOrElse(Nil).toSet
+    val delegate = AgentTool.dynamicF(exposedName, description, schema) { input =>
+      val filtered = input.filterNot { case (k, v) => v.isNull && !requiredParams(k) }
+      client.callTool(definition.name, Json.fromFields(filtered)).map(renderResult)
+    }
+    new AgentTool[F, Map[String, Json]] {
+      override def name: String = delegate.name
+      override def description: String = delegate.description
+      override def jsonSchema: Schema = delegate.jsonSchema
+      override def codec: io.circe.Codec[Map[String, Json]] = delegate.codec
+      override def execute(input: Map[String, Json]): F[String] = delegate.execute(input)
+      override def rawJsonSchema: Json = definition.inputSchema
     }
   }
 

@@ -4,7 +4,7 @@ import sttp.client4.ResponseException.UnexpectedStatusCode
 import sttp.client4._
 import sttp.model.ResponseMetadata
 import sttp.model.StatusCode._
-import io.circe.{parser, Decoder, Encoder}
+import io.circe.{parser, Decoder, Encoder, Json}
 import io.circe.syntax._
 import io.circe.generic.semiauto.deriveDecoder
 import sttp.model.MediaType
@@ -44,7 +44,113 @@ object OpenAIJson extends ResponseHandlers[OpenAIException, Decoder] {
 
   /** Serializes a value to a JSON request body, omitting `None`/null fields */
   def asJson[B: Encoder](b: B): StringBody =
-    StringBody(b.asJson.deepDropNullValues.noSpaces, "utf-8", MediaType.ApplicationJson)
+    StringBody(dropNullsPreservingSchemas(b.asJson).noSpaces, "utf-8", MediaType.ApplicationJson)
+
+  /** `deepDropNullValues` is applied to the whole request body to strip unset-`Option` fields (e.g. `user: null`), but it also strips null
+    * VALUES nested inside array elements, not just absent object fields. That corrupts tool schemas and response-format schemas that
+    * legitimately contain JSON `null` (e.g. `"enum": ["low", "high", null]`, produced by strict-mode nullability normalization via
+    * `SchemaSupport.normalizeForStrict`/`addNullToEnum`).
+    *
+    * To keep those schemas byte-faithful while still dropping unset-field nulls everywhere else: capture the schema-bearing fields from the
+    * pre-drop encoding, run `deepDropNullValues` as before, then splice the untouched values back into the cleaned JSON. This covers both
+    * chat completions (`tools[*].function.parameters`, `response_format.json_schema.schema`) and the Responses API, which encodes the same
+    * kind of data at different paths: function tools are flat (`tools[*].parameters`, no nested `function` wrapper) and the structured
+    * output schema lives at `text.format.schema`. Capture sites use `.filter(!_.isNull)` because a field that's present with a JSON `null`
+    * value (e.g. `Tool.Function(parameters = None)`) is itself an unset-`Option` artifact that must stay dropped, not spliced back in. This
+    * is a safe no-op for the (large majority of) request bodies that have none of these fields.
+    */
+  private def dropNullsPreservingSchemas(bodyJson: Json): Json = {
+    val originalToolParameters: Option[Vector[(Option[Json], Option[Json])]] =
+      bodyJson.asObject
+        .flatMap(_("tools"))
+        .flatMap(_.asArray)
+        .map(_.map { toolJson =>
+          val toolObj = toolJson.asObject
+          val nestedFunctionParameters = toolObj.flatMap(_("function")).flatMap(_.asObject).flatMap(_("parameters")).filter(!_.isNull)
+          val flatParameters = toolObj.flatMap(_("parameters")).filter(!_.isNull)
+          (nestedFunctionParameters, flatParameters)
+        })
+
+    val originalResponseFormatSchema: Option[Json] =
+      bodyJson.asObject
+        .flatMap(_("response_format"))
+        .flatMap(_.asObject)
+        .flatMap(_("json_schema"))
+        .flatMap(_.asObject)
+        .flatMap(_("schema"))
+        .filter(!_.isNull)
+
+    val originalTextFormatSchema: Option[Json] =
+      bodyJson.asObject
+        .flatMap(_("text"))
+        .flatMap(_.asObject)
+        .flatMap(_("format"))
+        .flatMap(_.asObject)
+        .flatMap(_("schema"))
+        .filter(!_.isNull)
+
+    val cleaned = bodyJson.deepDropNullValues
+
+    val withToolsRestored = originalToolParameters match {
+      case Some(originalParameters) =>
+        cleaned.mapObject { obj =>
+          obj("tools").flatMap(_.asArray) match {
+            case Some(cleanedTools) =>
+              val restoredTools = cleanedTools.zip(originalParameters).map { case (toolJson, (nestedFunctionParameters, flatParameters)) =>
+                toolJson.mapObject { toolObj =>
+                  val withNested = (nestedFunctionParameters, toolObj("function").flatMap(_.asObject)) match {
+                    case (Some(parameters), Some(functionObj)) =>
+                      toolObj.add("function", Json.fromJsonObject(functionObj.add("parameters", parameters)))
+                    case _ => toolObj
+                  }
+                  flatParameters match {
+                    case Some(parameters) => withNested.add("parameters", parameters)
+                    case None             => withNested
+                  }
+                }
+              }
+              obj.add("tools", Json.fromValues(restoredTools))
+            case None => obj
+          }
+        }
+      case None => cleaned
+    }
+
+    val withResponseFormatRestored = originalResponseFormatSchema match {
+      case Some(schema) =>
+        withToolsRestored.mapObject { obj =>
+          obj("response_format").flatMap(_.asObject) match {
+            case Some(responseFormatObj) =>
+              responseFormatObj("json_schema").flatMap(_.asObject) match {
+                case Some(jsonSchemaObj) =>
+                  obj.add(
+                    "response_format",
+                    Json.fromJsonObject(responseFormatObj.add("json_schema", Json.fromJsonObject(jsonSchemaObj.add("schema", schema))))
+                  )
+                case None => obj
+              }
+            case None => obj
+          }
+        }
+      case None => withToolsRestored
+    }
+
+    originalTextFormatSchema match {
+      case Some(schema) =>
+        withResponseFormatRestored.mapObject { obj =>
+          obj("text").flatMap(_.asObject) match {
+            case Some(textObj) =>
+              textObj("format").flatMap(_.asObject) match {
+                case Some(formatObj) =>
+                  obj.add("text", Json.fromJsonObject(textObj.add("format", Json.fromJsonObject(formatObj.add("schema", schema)))))
+                case None => obj
+              }
+            case None => obj
+          }
+        }
+      case None => withResponseFormatRestored
+    }
+  }
 
   def asStringEither: ResponseAs[Either[OpenAIException, String]] =
     asStringAlways

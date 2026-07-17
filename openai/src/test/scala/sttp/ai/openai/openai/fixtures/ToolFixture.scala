@@ -2,6 +2,8 @@ package sttp.ai.openai.fixtures
 
 object ToolFixture {
 
+  // Non-strict (the 2-arg `withSchema` defaults to `strict = Some(false)`): the schema is encoded FAITHFULLY -- no injected
+  // `additionalProperties: false`, `required` kept as produced by tapir.
   val jsonToolCall: String =
     """{
       |  "type": "function",
@@ -9,7 +11,6 @@ object ToolFixture {
       |    "description": "Books a flight for a passenger with full details",
       |    "name": "book_flight",
       |    "parameters": {
-      |      "additionalProperties": false,
       |      "required": [
       |        "passenger",
       |        "departureCity",
@@ -18,7 +19,6 @@ object ToolFixture {
       |      "$schema": "https://json-schema.org/draft/2020-12/schema",
       |      "$defs": {
       |        "Passenger": {
-      |          "additionalProperties": false,
       |          "required": [
       |            "name",
       |            "age"

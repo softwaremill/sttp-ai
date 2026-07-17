@@ -117,4 +117,39 @@ class McpToolsSpec extends AnyFlatSpec with Matchers {
     val client = new StubMcpClient(pages = Seq(ListToolsResponse(tools = List(toolDef("add")))))
     McpTools.fromClient(client).head.name shouldBe "add"
   }
+
+  it should "expose the server's original schema verbatim via rawJsonSchema, byte-equal, while jsonSchema still decodes" in {
+    val lossySchema = Json.obj(
+      "type" -> Json.fromString("object"),
+      "properties" -> Json.obj(
+        "level" -> Json.obj(
+          "type" -> Json.fromString("string"),
+          "enum" -> Json.arr(Json.fromString("low"), Json.fromString("high"), Json.Null),
+          "default" -> Json.Null
+        )
+      )
+    )
+    val client = new StubMcpClient(pages = Seq(ListToolsResponse(tools = List(toolDef("levelled", schema = lossySchema)))))
+    val tool = McpTools.fromClient(client).head
+    tool.rawJsonSchema shouldBe lossySchema
+    noException should be thrownBy tool.jsonSchema
+  }
+
+  it should "strip null-valued arguments for optional parameters but keep them for required ones" in {
+    val schema = Json.obj(
+      "type" -> Json.fromString("object"),
+      "properties" -> Json.obj(
+        "a" -> Json.obj("type" -> Json.fromString("string")),
+        "b" -> Json.obj("type" -> Json.fromString("string"))
+      ),
+      "required" -> Json.arr(Json.fromString("a"))
+    )
+    val client = new StubMcpClient(
+      pages = Seq(ListToolsResponse(tools = List(toolDef("f", schema = schema)))),
+      callResults = Map("f" -> CallToolResult(List(ToolContent.Text(text = "ok"))))
+    )
+    val tool = McpTools.fromClient(client).head
+    tool.execute(Map("a" -> Json.Null, "b" -> Json.Null, "c" -> Json.fromString("x"))) shouldBe "ok"
+    client.recordedCalls shouldBe Vector("f" -> Json.obj("a" -> Json.Null, "c" -> Json.fromString("x")))
+  }
 }
