@@ -74,6 +74,13 @@ Notes:
   OpenAIAgent.synchronous(OpenAI.fromEnv, "gpt-4o-mini", strictTools = false)
   ```
 
-* The Claude agent backend passes the full tool schema structure to the API — nested objects, arrays, enums, and
-  required lists are preserved (JSON Schema keywords outside the OpenAPI-style schema model are dropped during
-  conversion).
+* Before an argument map reaches the MCP server's `tools/call`, top-level arguments that are JSON `null` are dropped
+  if the server's original schema does not list that parameter as `required` — i.e. "optional-by-absence" — so the
+  server sees the parameter as simply missing rather than explicitly `null`. Nulls for parameters the server *does*
+  list as `required` (e.g. a required-but-nullable property, as strict-mode normalization produces) are left in place
+  and forwarded as-is.
+
+* The Claude agent backend passes the server's original tool schema JSON through untouched — nested objects, arrays,
+  enums, `required` lists, and any other JSON Schema keywords are all forwarded as received. The only modification is
+  adding a top-level `"type": "object"` when the schema omits it (Anthropic requires `input_schema.type == "object"`,
+  but MCP allows tools to omit `type`, e.g. `{}` for a no-argument tool).

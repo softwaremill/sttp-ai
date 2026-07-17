@@ -22,15 +22,16 @@ import sttp.shared.Identity
 import sttp.tapir.Schema
 import sttp.tapir.server.netty.sync.NettySyncServer
 
-/** Agent-level integration tests: an LLM drives tools loaded from a real (in-process) MCP server whose tool input has a nested object and
-  * an optional parameter — the two schema shapes that previously degraded per backend. Each test self-cancels without its API key.
+/** Agent-level integration tests: an LLM drives tools loaded from a real (in-process) MCP server whose tool input has an optional nested
+  * object and an optional scalar parameter — including the `type:["object","null"]` shape produced for optional objects under OpenAI
+  * strict-mode normalization — the schema shapes that previously degraded per backend. Each test self-cancels without its API key.
   */
 class McpAgentIntegrationSpec extends AnyFlatSpec with Matchers {
 
   private given MonadError[Identity] = IdentityMonad
 
   case class Location(lat: Double, lng: Double) derives Codec, Schema
-  case class CreateEventInput(title: String, location: Location, priority: Option[String]) derives Codec, Schema
+  case class CreateEventInput(title: String, location: Option[Location], priority: Option[String]) derives Codec, Schema
 
   private def withMcpAgentRun(builderFor: Seq[AgentTool[Identity, ?]] => AgentBuilder[Identity])(
       check: AgentResult[String] => Assertion
@@ -40,7 +41,10 @@ class McpAgentIntegrationSpec extends AnyFlatSpec with Matchers {
         .description("Creates an event with a title at the given location; priority is optional")
         .input[CreateEventInput]
         .handle(in =>
-          ToolResult.text(s"Created '${in.title}' at (${in.location.lat}, ${in.location.lng}), priority=${in.priority.getOrElse("normal")}")
+          ToolResult.text(
+            s"Created '${in.title}' at ${in.location.map(l => s"(${l.lat}, ${l.lng})").getOrElse("nowhere")}, priority=${in.priority
+                .getOrElse("normal")}"
+          )
         )
       val binding = NettySyncServer().port(0).addEndpoint(McpServer(tools = List(createEvent)).endpoint(List("mcp"))).start()
       try {
@@ -68,12 +72,12 @@ class McpAgentIntegrationSpec extends AnyFlatSpec with Matchers {
     output should include("2.5")
   }
 
-  "an OpenAI agent" should "call an MCP tool with a nested and optional-parameter schema (strict mode)" in {
+  "an OpenAI agent" should "call an MCP tool with an optional nested-object and optional-scalar schema (strict mode)" in {
     if (sys.env.get("OPENAI_API_KEY").forall(_.isEmpty)) cancel("OPENAI_API_KEY not defined - skipping integration test")
     withMcpAgentRun(tools => OpenAIAgent.synchronous(OpenAI.fromEnv, "gpt-4o-mini").tools(tools))(assertToolExecuted)
   }
 
-  "a Claude agent" should "call an MCP tool with a nested and optional-parameter schema" in {
+  "a Claude agent" should "call an MCP tool with an optional nested-object and optional-scalar schema" in {
     if (sys.env.get("ANTHROPIC_API_KEY").forall(_.isEmpty)) cancel("ANTHROPIC_API_KEY not defined - skipping integration test")
     withMcpAgentRun(tools => ClaudeAgent.synchronous(ClaudeConfig.fromEnv, "claude-haiku-4-5-20251001").tools(tools))(assertToolExecuted)
   }
