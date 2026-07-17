@@ -20,7 +20,8 @@ class OpenAIAgentIntegrationSpec extends AgentIntegrationSpecBase {
       "gpt-4o-mini",
       agentConfig.userTools,
       agentConfig.systemPrompt,
-      agentConfig.responseSchema
+      agentConfig.responseSchema,
+      strictTools = true
     )(IdentityMonad)
     Agent(agentBackend, agentConfig)(IdentityMonad)
   }

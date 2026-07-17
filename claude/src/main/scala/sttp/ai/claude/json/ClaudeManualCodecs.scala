@@ -79,7 +79,8 @@ object ClaudeManualCodecs {
         }
       }
 
-  // `name`/`description` missing is a genuine decode failure either way, so surface Custom's error rather than CustomRaw's.
+  // `name`/`description` missing is a genuine decode failure either way; `orElse` surfaces the second decoder's (this one's) error, not
+  // Custom's, so it's `decodeCustomRaw`'s own field-level failure that's reported to the caller.
   private def decodeCustomRaw(c: io.circe.HCursor): Decoder.Result[Tool.CustomRaw] =
     for {
       name <- c.get[String]("name")

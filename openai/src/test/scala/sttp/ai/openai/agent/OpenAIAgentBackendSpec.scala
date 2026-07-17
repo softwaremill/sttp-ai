@@ -24,10 +24,8 @@ class OpenAIAgentBackendSpec extends AnyFlatSpec with Matchers with EitherValues
   private def backend(strictTools: Boolean): OpenAIAgentBackend[Identity] =
     new OpenAIAgentBackend[Identity](new OpenAI("test-key"), "gpt-4o-mini", Seq(testTool), None, None, strictTools)(IdentityMonad)
 
-  "OpenAIAgentBackend" should "register tools as strict with normalized schemas by default" in {
-    val fn = new OpenAIAgentBackend[Identity](new OpenAI("test-key"), "gpt-4o-mini", Seq(testTool), None, None)(
-      IdentityMonad
-    ).convertedTools.head
+  "OpenAIAgentBackend" should "register tools as strict with normalized schemas when strictTools is true" in {
+    val fn = backend(strictTools = true).convertedTools.head
     fn.strict shouldBe Some(true)
     val params = Json.fromFields(fn.parameters.get)
     params.hcursor.downField("additionalProperties").as[Boolean] shouldBe Right(false)

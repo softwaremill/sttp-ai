@@ -15,7 +15,7 @@ private[openai] class OpenAIAgentBackend[F[_]](
     val tools: Seq[AgentTool[F, _]],
     val systemPrompt: Option[String],
     responseSchema: Option[ResponseSchema[_]],
-    strictTools: Boolean = true
+    strictTools: Boolean
 )(implicit monad: sttp.monad.MonadError[F])
     extends AgentBackend[F] {
 

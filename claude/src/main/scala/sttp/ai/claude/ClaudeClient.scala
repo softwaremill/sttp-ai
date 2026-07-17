@@ -9,7 +9,7 @@ import sttp.ai.core.http.ResponseHandlers
 import sttp.capabilities.Streams
 import sttp.client4._
 import sttp.model.{ResponseMetadata, Uri}
-import io.circe.Decoder
+import io.circe.{Decoder, Json}
 import io.circe.parser.decode
 import io.circe.syntax._
 import sttp.ai.claude.json.ClaudeDerivedCodecs._
@@ -117,7 +117,7 @@ class ClaudeClientImpl(config: ClaudeConfig) extends ClaudeClient with ResponseH
   override def createMessage(request: MessageRequest): Request[Either[ClaudeException, MessageResponse]] =
     claudeAuthRequestForMessage(request)
       .post(claudeUris.Messages)
-      .body(request.asJson.deepDropNullValues.noSpaces)
+      .body(serializeMessageRequest(request))
       .response(asJson_parseErrors[MessageResponse])
 
   override def listModels(): Request[Either[ClaudeException, ModelsResponse]] =
@@ -133,7 +133,7 @@ class ClaudeClientImpl(config: ClaudeConfig) extends ClaudeClient with ResponseH
 
     claudeAuthRequestForMessage(streamingRequest)
       .post(claudeUris.Messages)
-      .body(streamingRequest.asJson.deepDropNullValues.noSpaces)
+      .body(serializeMessageRequest(streamingRequest))
       .response(asStreamUnsafe_parseErrors(streams))
   }
 
@@ -142,8 +142,51 @@ class ClaudeClientImpl(config: ClaudeConfig) extends ClaudeClient with ResponseH
 
     claudeAuthRequestForMessage(streamingRequest)
       .post(claudeUris.Messages)
-      .body(streamingRequest.asJson.deepDropNullValues.noSpaces)
+      .body(serializeMessageRequest(streamingRequest))
       .response(asInputStreamUnsafe_parseErrors)
+  }
+
+  /** Serializes a `MessageRequest` to the JSON body sent on the wire.
+    *
+    * `deepDropNullValues` is applied to strip unset-`Option` fields (e.g. `temperature: null`), but it also strips null VALUES nested
+    * inside array elements, not just absent object fields. That corrupts tool schemas that legitimately contain JSON `null` (e.g.
+    * `"enum": ["low", "high", null]`, `"default": null`) as passed through faithfully by [[sttp.ai.claude.models.Tool.CustomRaw]].
+    *
+    * To keep those schemas byte-faithful while still dropping unset-field nulls everywhere else: capture each tool's `input_schema` from
+    * the pre-drop encoding, run `deepDropNullValues` as before, then splice the untouched `input_schema` values back into the cleaned JSON
+    * (tools are index-aligned, since `deepDropNullValues` never removes object elements from an array, only null values). Tools without an
+    * `input_schema` (i.e. `web_search`) are left alone.
+    */
+  private def serializeMessageRequest(request: MessageRequest): String =
+    dropNullsPreservingInputSchemas(request.asJson).noSpaces
+
+  /** See [[serializeMessageRequest]] for why this exists: applies `deepDropNullValues` to the whole request, then restores each tool's
+    * pre-drop `input_schema` verbatim (only `tools[*]` that had an `input_schema` to begin with are touched).
+    */
+  private def dropNullsPreservingInputSchemas(requestJson: Json): Json = {
+    val originalInputSchemas: Option[Vector[Option[Json]]] =
+      requestJson.asObject
+        .flatMap(_("tools"))
+        .flatMap(_.asArray)
+        .map(_.map(_.asObject.flatMap(_("input_schema"))))
+
+    val cleaned = requestJson.deepDropNullValues
+
+    originalInputSchemas match {
+      case Some(schemas) =>
+        cleaned.mapObject { obj =>
+          obj("tools").flatMap(_.asArray) match {
+            case Some(cleanedTools) =>
+              val restoredTools = cleanedTools.zip(schemas).map {
+                case (toolJson, Some(inputSchema)) => toolJson.mapObject(_.add("input_schema", inputSchema))
+                case (toolJson, None)              => toolJson
+              }
+              obj.add("tools", Json.fromValues(restoredTools))
+            case None => obj
+          }
+        }
+      case None => cleaned
+    }
   }
 }
 

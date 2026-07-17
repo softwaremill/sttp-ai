@@ -66,9 +66,10 @@ Notes:
 
 * The OpenAI agent backend registers tools with `strict: true` function calling by default. Schemas are automatically
   normalized to strict-mode rules: `additionalProperties: false` is set on objects, all properties are listed as
-  `required`, and originally-optional properties are made nullable (the model passes `null` instead of omitting them —
-  your MCP server should treat `null` as "not provided"). If a schema uses JSON Schema features strict mode cannot
-  accept, the API rejects it at request time — pass `strictTools = false` to the builder as an escape hatch:
+  `required`, and originally-optional properties are made nullable (the model passes `null` instead of omitting them;
+  those nulls are stripped client-side before the tool call reaches the MCP server — see below). If a schema uses JSON
+  Schema features strict mode cannot accept, the API rejects it at request time — pass `strictTools = false` to the
+  builder as an escape hatch:
 
   ```scala
   OpenAIAgent.synchronous(OpenAI.fromEnv, "gpt-4o-mini", strictTools = false)
