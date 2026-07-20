@@ -204,10 +204,10 @@ class McpToolsSpec extends AnyFlatSpec with Matchers {
   }
 
   it should "fail fast rather than silently merge distinct non-ASCII names that sanitize identically" in {
-    val client = new StubMcpClient(pages = Seq(ListToolsResponse(tools = List(toolDef("検索ツール"), toolDef("翻訳機能名")))))
+    val client = new StubMcpClient(pages = Seq(ListToolsResponse(tools = List(toolDef("搜索工具"), toolDef("翻译功能")))))
     val ex = the[McpToolConversionException] thrownBy McpTools.fromClient(client)
-    ex.getMessage should include("検索ツール")
-    ex.getMessage should include("翻訳機能名")
+    ex.getMessage should include("搜索工具")
+    ex.getMessage should include("翻译功能")
   }
 
   it should "fail fast when sanitization makes two names collide, naming both originals" in {
