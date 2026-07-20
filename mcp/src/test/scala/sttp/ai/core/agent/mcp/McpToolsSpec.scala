@@ -1,6 +1,7 @@
 package sttp.ai.core.agent.mcp
 
-import chimp.protocol.{CallToolResult, ListToolsResponse, ToolContent, ToolDefinition}
+import chimp.client.McpClient
+import chimp.protocol.*
 import io.circe.Json
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
@@ -160,6 +161,19 @@ class McpToolsSpec extends AnyFlatSpec with Matchers {
     McpTools.fromClient(client).map(_.name) shouldBe Seq("add")
   }
 
+  it should "silently deduplicate a repeated tool even if its _meta differs across pages" in {
+    val client = new StubMcpClient(
+      pages = Seq(
+        ListToolsResponse(
+          tools = List(toolDef("add").copy(_meta = Some(Map("requestId" -> Json.fromString("r1"))))),
+          nextCursor = Some("1")
+        ),
+        ListToolsResponse(tools = List(toolDef("add").copy(_meta = Some(Map("requestId" -> Json.fromString("r2"))))))
+      )
+    )
+    McpTools.fromClient(client).map(_.name) shouldBe Seq("add")
+  }
+
   it should "report every colliding exposed name, not just the first" in {
     val client = new StubMcpClient(
       pages = Seq(
@@ -251,5 +265,71 @@ class McpToolsSpec extends AnyFlatSpec with Matchers {
     val tool = McpTools.fromClient(client).head
     tool.execute(Map("a" -> Json.Null, "b" -> Json.Null, "c" -> Json.fromString("x"))) shouldBe "ok"
     client.recordedCalls shouldBe Vector("f" -> Json.obj("a" -> Json.Null, "c" -> Json.fromString("x")))
+  }
+
+  behavior of "McpTools.fromClient (effect safety)"
+
+  /** Mirrors ZIO's own `.map`/`.flatMap`, which propagate an exception thrown by the mapping function uncaught rather than encoding it as a
+    * typed failure — unlike `Identity`/`Try`/`Future`, whose host type either can't distinguish or already catches. Used to prove that
+    * `fromClient` reports failures through `monad.error` (guaranteed safe on every `MonadError` instance) rather than depending on a
+    * particular backend's `.map`/`.eval` to catch for it — a dependency the built-in `sttp.monad.EitherMonad` notably does not satisfy.
+    */
+  private case class NonCatching[A](result: Either[Throwable, A])
+
+  private given nonCatchingMonad: MonadError[NonCatching] with {
+    override def unit[T](t: T): NonCatching[T] = NonCatching(Right(t))
+    override def map[T, T2](fa: NonCatching[T])(f: T => T2): NonCatching[T2] = fa.result match {
+      case Right(a) => NonCatching(Right(f(a))) // if f throws, this propagates uncaught, like ZIO's/EitherMonad's own `.map`
+      case Left(e)  => NonCatching(Left(e))
+    }
+    override def flatMap[T, T2](fa: NonCatching[T])(f: T => NonCatching[T2]): NonCatching[T2] = fa.result match {
+      case Right(a) => f(a)
+      case Left(e)  => NonCatching(Left(e))
+    }
+    override def error[T](t: Throwable): NonCatching[T] = NonCatching(Left(t))
+    override protected def handleWrappedError[T](rt: NonCatching[T])(h: PartialFunction[Throwable, NonCatching[T]]): NonCatching[T] =
+      rt.result match {
+        case Left(e) if h.isDefinedAt(e) => h(e)
+        case _                           => rt
+      }
+    override def ensure[T](f: NonCatching[T], e: => NonCatching[Unit]): NonCatching[T] = {
+      val _ = e
+      f
+    }
+  }
+
+  private class NonCatchingMcpClient(pages: Seq[ListToolsResponse]) extends McpClient[NonCatching] {
+    override def listTools(cursor: Option[Cursor]): NonCatching[ListToolsResponse] =
+      NonCatching(Right(pages(cursor.fold(0)(_.toInt))))
+    override def ping(): NonCatching[Unit] = NonCatching(Right(()))
+    override def close(): NonCatching[Unit] = NonCatching(Right(()))
+    override def serverCapabilities: ServerCapabilities = ServerCapabilities()
+    override def serverInfo: Implementation = Implementation("fake-server", "0.0.1")
+    override def callTool(name: String, arguments: Json): NonCatching[CallToolResult] = unsupported
+    override def listPrompts(cursor: Option[Cursor]): NonCatching[ListPromptsResult] = unsupported
+    override def getPrompt(name: String, arguments: Map[String, String]): NonCatching[GetPromptResult] = unsupported
+    override def listResources(cursor: Option[Cursor]): NonCatching[ListResourcesResult] = unsupported
+    override def listResourceTemplates(cursor: Option[Cursor]): NonCatching[ListResourceTemplatesResult] = unsupported
+    override def readResource(uri: String): NonCatching[ReadResourceResult] = unsupported
+    override def complete(ref: CompleteRef, argument: CompleteArgument): NonCatching[CompleteResult] = unsupported
+    override def setLoggingLevel(level: LoggingLevel): NonCatching[Unit] = unsupported
+    override def sendProgress(
+        token: ProgressToken,
+        progress: Double,
+        total: Option[Double],
+        message: Option[String]
+    ): NonCatching[Unit] = unsupported
+
+    private def unsupported: Nothing = throw new UnsupportedOperationException("not used by this test")
+  }
+
+  it should "report a collision through the effect's error channel, not as a raw thrown exception, even when map/flatMap cannot catch" in {
+    val client = new NonCatchingMcpClient(
+      pages = Seq(ListToolsResponse(tools = List(toolDef("add", description = Some("v1")), toolDef("add", description = Some("v2")))))
+    )
+    McpTools.fromClient(client)(using nonCatchingMonad).result match {
+      case Left(e)  => e.getMessage should include("add")
+      case Right(_) => fail("expected a Left carrying the collision failure, not a successful result")
+    }
   }
 }

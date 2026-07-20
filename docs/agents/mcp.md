@@ -63,9 +63,12 @@ Notes:
   `fromClient` call end up with the same exposed name (a sanitization/prefix collision, or a server-side
   name reused for genuinely different tools), `fromClient` fails with a `McpToolConversionException` naming
   the colliding tools, rather than silently routing calls to the wrong one — an MCP server re-listing the
-  exact same tool across pages is harmless and is deduplicated instead. This check does not extend across
-  multiple `fromClient` calls or to manually defined tools; combining tools from different sources safely
-  is the caller's responsibility (`namePrefix` is the recommended way to keep them distinct).
+  same tool across pages is harmless and is deduplicated instead, even if its metadata varies slightly
+  between listings. This check does not extend across multiple `fromClient` calls or to manually defined
+  tools: an agent looks tools up by name, so if you combine tools from several sources without keeping
+  their exposed names distinct yourself, the last one loaded silently shadows any earlier tool with the
+  same name — no error is raised, and calls intended for one tool can silently execute another.
+  `namePrefix` is the recommended way to keep multiple sources distinct.
 * Results are rendered as text for the agent loop: text content blocks are joined with newlines, other
   block types are rendered as compact JSON, and results the server marks as errors are returned to the
   LLM prefixed with `Tool execution failed:`. Transport failures surface as exceptions and go through the

@@ -13,9 +13,7 @@ import sttp.monad.syntax.*
 /** Thrown when a tool advertised by an MCP server cannot be converted into an [[sttp.ai.core.agent.AgentTool]] (e.g. its input schema is
   * not valid JSON Schema).
   */
-class McpToolConversionException(message: String, cause: Throwable) extends RuntimeException(message, cause) {
-  def this(message: String) = this(message, null)
-}
+class McpToolConversionException(message: String, cause: Throwable = null) extends RuntimeException(message, cause)
 
 object McpTools {
 
@@ -41,35 +39,43 @@ object McpTools {
     *   with manually defined tools or tools loaded from other MCP servers. The original name is still used when calling the server.
     *   `fromClient` fails with [[McpToolConversionException]] if, after sanitizing, two tools from THIS server end up with the same exposed
     *   name (e.g. one server tool named `my.tool` and another named `my/tool`) — this check does not extend across multiple `fromClient`
-    *   calls or to manually defined tools; combining those is the caller's responsibility (`namePrefix` is the recommended way to keep them
-    *   distinct).
+    *   calls or to manually defined tools: an agent's tool lookup is by name, so if you combine tools from several sources without keeping
+    *   their exposed names distinct, the last one loaded silently shadows any earlier tool with the same name — no error is raised, calls
+    *   intended for one tool can silently execute another. `namePrefix` is the recommended way to keep multiple sources distinct.
     */
   def fromClient[F[_]](
       client: McpClient[F],
       namePrefix: Option[String] = None
   )(using monad: MonadError[F]): F[Seq[AgentTool[F, Map[String, Json]]]] =
-    listAllTools(client, cursor = None, acc = Vector.empty).flatMap(definitions => monad.eval(buildTools(client, definitions, namePrefix)))
+    listAllTools(client, cursor = None, acc = Vector.empty).flatMap { definitions =>
+      // `buildTools` can throw (see its doc); a plain `.map`/`monad.eval` would only route that safely through F's error channel if
+      // this particular MonadError's `map`/`eval` happens to catch exceptions, which not all of them do (e.g. the built-in `EitherMonad`
+      // does not). Catching explicitly and going through `monad.unit`/`monad.error` is guaranteed safe for every MonadError instance.
+      scala.util.Try(buildTools(client, definitions, namePrefix)) match {
+        case scala.util.Success(tools) => monad.unit(tools)
+        case scala.util.Failure(e)     => monad.error(e)
+      }
+    }
 
   /** Builds the agent tools, failing before any schema is decoded when the listing cannot be exposed safely:
-    *   - a tool whose name sanitizes to nothing (e.g. a name made entirely of characters outside `[A-Za-z0-9_-]`, or an empty name) could
-    *     never be called by name
+    *   - a tool whose name sanitizes to nothing can never be called by name. This is only possible when the original name itself is empty —
+    *     replacing illegal characters never shortens a name, so a name built entirely of e.g. non-ASCII characters instead collapses to a
+    *     (legal, non-empty) run of underscores, which is handled by the next check
     *   - tools that end up with the same exposed name (a prefix/sanitization collision, or a server-side name reused for genuinely
     *     different tools) would route calls to the wrong tool
     *
-    * An MCP server re-listing the exact same tool across pages is harmless and is silently deduplicated rather than treated as a collision
-    * — only names that collide while their underlying definitions differ are a real ambiguity.
-    *
-    * Building tools (and so throwing, if needed) happens inside `monad.eval` rather than a plain `.map`: for effect types that distinguish
-    * recoverable failures from defects (e.g. ZIO), throwing directly inside `.map` would surface as an unrecoverable defect instead of a
-    * typed failure the caller's `ExceptionHandler`/error-handling can see.
+    * An MCP server re-listing the same tool across pages is harmless and is silently deduplicated rather than treated as a collision, even
+    * if its free-form `_meta` differs between listings (`_meta` is reserved by MCP for implementation-specific metadata, not structural
+    * tool identity) — only names that collide while the rest of their definition differs are a real ambiguity.
     */
   private def buildTools[F[_]](client: McpClient[F], definitions: Vector[ToolDefinition], namePrefix: Option[String])(using
       MonadError[F]
   ): Seq[AgentTool[F, Map[String, Json]]] = {
-    val distinctDefinitions = definitions.distinct
-    val withExposedNames = distinctDefinitions.map(d => exposedNameFor(d.name, namePrefix) -> d.name)
+    val distinctDefinitions =
+      definitions.distinctBy(d => (d.name, d.description, d.inputSchema, d.outputSchema, d.title, d.annotations))
+    val withExposedNames = distinctDefinitions.map(d => exposedNameFor(d.name, namePrefix) -> d)
 
-    val emptyNames = withExposedNames.collect { case ("", original) => original }
+    val emptyNames = withExposedNames.collect { case ("", d) => d.name }
     if (emptyNames.nonEmpty)
       throw new McpToolConversionException(
         s"MCP tool(s) sanitize to an empty exposed name: ${emptyNames.mkString("'", "', '", "'")}. Rename them on the server."
@@ -79,7 +85,7 @@ object McpTools {
     if (collisions.nonEmpty) {
       val described = collisions.toSeq
         .sortBy(_._1)
-        .map { case (exposed, colliding) => s"'$exposed' (original names: ${colliding.map(_._2).mkString("'", "', '", "'")})" }
+        .map { case (exposed, colliding) => s"'$exposed' (original names: ${colliding.map(_._2.name).mkString("'", "', '", "'")})" }
         .mkString("; ")
       throw new McpToolConversionException(
         s"Multiple MCP tools map to the same exposed name: $described. " +
@@ -87,7 +93,7 @@ object McpTools {
       )
     }
 
-    distinctDefinitions.map(d => toAgentTool(client, d, namePrefix))
+    withExposedNames.map { case (exposedName, d) => toAgentTool(client, d, exposedName) }
   }
 
   /** Backends constrain the tool names they accept (OpenAI function calling enforces `^[a-zA-Z0-9_-]{1,64}$`), while MCP permits dots,
@@ -97,11 +103,8 @@ object McpTools {
     * names collapse to the same result, `fromClient`'s duplicate check (in `buildTools`) rejects the listing rather than silently merging
     * them.
     */
-  private def sanitizeName(name: String): String = {
-    def legal(c: Char): Boolean =
-      (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9') || c == '_' || c == '-'
-    name.iterator.map(c => if (legal(c)) c else '_').mkString.take(64)
-  }
+  private def sanitizeName(name: String): String =
+    name.replaceAll("[^A-Za-z0-9_-]", "_").take(64)
 
   private def exposedNameFor(originalName: String, namePrefix: Option[String]): String =
     sanitizeName(namePrefix.fold(originalName)(prefix => s"${prefix}_$originalName"))
@@ -117,7 +120,7 @@ object McpTools {
       }
     }
 
-  private def toAgentTool[F[_]](client: McpClient[F], definition: ToolDefinition, namePrefix: Option[String])(using
+  private def toAgentTool[F[_]](client: McpClient[F], definition: ToolDefinition, exposedName: String)(using
       MonadError[F]
   ): AgentTool[F, Map[String, Json]] = {
     val schema = definition.inputSchema.as[Schema] match {
@@ -125,7 +128,6 @@ object McpTools {
       case Left(error) =>
         throw new McpToolConversionException(s"Cannot decode the input schema of MCP tool '${definition.name}': ${error.getMessage}", error)
     }
-    val exposedName = exposedNameFor(definition.name, namePrefix)
     val description = definition.description.orElse(definition.title).getOrElse(definition.name)
     val requiredParams =
       definition.inputSchema.hcursor.downField("required").as[List[String]].toOption.getOrElse(Nil).toSet
