@@ -146,9 +146,10 @@ object SchemaSupport {
     }
 
   /** `normalizeForStrict` is only ever called on a schema OpenAI itself requires to be an object (a tool's `parameters`, or a
-    * structured-output schema's root) — but the folder above only adds `additionalProperties: false` to an object when it sees a
-    * `"properties"` or `"type": "object"` key to trigger on. A schema with NEITHER (e.g. a genuinely argument-less tool advertising a bare
-    * `{}`) would otherwise reach OpenAI missing the one field strict mode always requires, and be rejected at request time.
+    * structured-output schema's root) — but the folder above only adds `additionalProperties: false`/`properties` to an object when it sees
+    * a `"properties"` or `"type": "object"` key to trigger on. A schema with NEITHER (e.g. a genuinely argument-less tool advertising a
+    * bare `{}`) would otherwise reach OpenAI missing fields strict mode always requires (`type`, `properties`, `additionalProperties`), and
+    * be rejected at request time.
     *
     * The guard mirrors the folder's own trigger condition exactly: a schema that already has `"properties"` or `"type"` is left alone even
     * if `additionalProperties` ended up absent, since that can be a deliberate choice (e.g. the folder's discriminated-union skip) rather
@@ -157,7 +158,12 @@ object SchemaSupport {
   private def ensureStrictObjectRoot(json: Json): Json =
     json.asObject match {
       case Some(obj) if !obj.contains("properties") && !obj.contains("type") =>
-        Json.fromJsonObject(obj.add("type", Json.fromString("object")).add("additionalProperties", Json.fromBoolean(false)))
+        Json.fromJsonObject(
+          obj
+            .add("type", Json.fromString("object"))
+            .add("properties", Json.obj())
+            .add("additionalProperties", Json.fromBoolean(false))
+        )
       case _ => json
     }
 }
