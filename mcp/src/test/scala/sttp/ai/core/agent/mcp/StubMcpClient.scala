@@ -14,6 +14,9 @@ class StubMcpClient(
   var recordedCalls: Vector[(String, Json)] = Vector.empty
   var recordedCursors: Vector[Option[Cursor]] = Vector.empty
 
+  override def ping(): Unit = ()
+  override def close(): Unit = ()
+
   override def listTools(cursor: Option[Cursor]): ListToolsResponse = {
     recordedCursors = recordedCursors :+ cursor
     pages(cursor.fold(0)(_.toInt))

@@ -3,16 +3,16 @@ package sttp.ai.core.agent.mcp
 import chimp.client.McpClient
 import chimp.protocol.*
 
-/** Base for MCP client test doubles that only need to implement a couple of [[chimp.client.McpClient]]'s members — every other member
-  * throws, since nothing under test exercises them. `serverCapabilities`/`serverInfo` return a generic placeholder, overridable if a test
-  * ever needs otherwise. `listTools` is left abstract: every consumer calls it at least once.
+/** Base for MCP client test doubles that only need to implement a couple of [[chimp.client.McpClient]]'s members. `serverCapabilities`/
+  * `serverInfo` return a generic placeholder, overridable if a test ever needs otherwise. `listTools` is left abstract: every consumer
+  * calls it at least once. `ping`/`close` are also left abstract, NOT included below: they are harmless lifecycle no-ops a test could
+  * legitimately call and expect to succeed, unlike the members below, which no test double built on this trait is expected to ever invoke
+  * and so throw if they are.
   */
 trait UnsupportedMcpClient[F[_]] extends McpClient[F] {
   override def serverCapabilities: ServerCapabilities = ServerCapabilities()
   override def serverInfo: Implementation = Implementation("fake-server", "0.0.1")
 
-  override def ping(): F[Unit] = unsupported
-  override def close(): F[Unit] = unsupported
   override def callTool(name: String, arguments: io.circe.Json): F[CallToolResult] = unsupported
   override def listPrompts(cursor: Option[Cursor]): F[ListPromptsResult] = unsupported
   override def getPrompt(name: String, arguments: Map[String, String]): F[GetPromptResult] = unsupported

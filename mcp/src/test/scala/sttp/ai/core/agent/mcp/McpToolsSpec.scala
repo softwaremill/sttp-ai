@@ -231,6 +231,23 @@ class McpToolsSpec extends AnyFlatSpec with Matchers {
     ex.getMessage should include("my_tool")
   }
 
+  it should "detect collisions correctly when a namePrefix is set" in {
+    val client = new StubMcpClient(
+      pages = Seq(ListToolsResponse(tools = List(toolDef("add", description = Some("v1")), toolDef("add", description = Some("v2")))))
+    )
+    val ex = the[McpToolConversionException] thrownBy McpTools.fromClient(client, namePrefix = Some("calc"))
+    ex.getMessage should include("calc_add")
+  }
+
+  it should "report all original names when three or more tools collide on the same exposed name" in {
+    val client = new StubMcpClient(pages = Seq(ListToolsResponse(tools = List(toolDef("my.tool"), toolDef("my/tool"), toolDef("my:tool")))))
+    val ex = the[McpToolConversionException] thrownBy McpTools.fromClient(client)
+    ex.getMessage should include("my.tool")
+    ex.getMessage should include("my/tool")
+    ex.getMessage should include("my:tool")
+    ex.getMessage should include("my_tool")
+  }
+
   it should "expose the server's original schema verbatim via rawJsonSchema, byte-equal, while jsonSchema still decodes" in {
     val lossySchema = Json.obj(
       "type" -> Json.fromString("object"),
@@ -268,17 +285,20 @@ class McpToolsSpec extends AnyFlatSpec with Matchers {
 
   behavior of "McpTools.fromClient (effect safety)"
 
-  /** Mirrors ZIO's own `.map`/`.flatMap`, which propagate an exception thrown by the mapping function uncaught rather than encoding it as a
-    * typed failure — unlike `Identity`/`Try`/`Future`, whose host type either can't distinguish or already catches. Used to prove that
-    * `fromClient` reports failures through `monad.error` (guaranteed safe on every `MonadError` instance) rather than depending on a
-    * particular backend's `.map`/`.eval` to catch for it — a dependency the built-in `sttp.monad.EitherMonad` notably does not satisfy.
+  /** Mirrors `sttp.monad.EitherMonad`'s `.map`/`.flatMap` (and plain Scala `Either`), which let an exception thrown by the mapping function
+    * escape fully uncaught rather than encoding it as a typed failure — unlike `Identity`/`Try`/`Future`, whose host type either can't
+    * distinguish or already catches. ZIO's own `.map` is close but not identical: it captures such an exception into its `Cause.Die`
+    * ("defect") channel instead of letting it fully escape the runtime, but that channel is equally invisible to `.either`/`.catchAll` —
+    * only `.catchAllDefect`/`.sandbox` can see it. Either way, this proves that `fromClient` reports failures through `monad.error`
+    * (guaranteed safe on every `MonadError` instance) rather than depending on a particular backend's `.map`/`.eval` catching for it — a
+    * dependency `EitherMonad` notably does not satisfy, and ZIO only satisfies via its non-typed defect channel.
     */
   private case class NonCatching[A](result: Either[Throwable, A])
 
   private given nonCatchingMonad: MonadError[NonCatching] with {
     override def unit[T](t: T): NonCatching[T] = NonCatching(Right(t))
     override def map[T, T2](fa: NonCatching[T])(f: T => T2): NonCatching[T2] = fa.result match {
-      case Right(a) => NonCatching(Right(f(a))) // if f throws, this propagates uncaught, like ZIO's/EitherMonad's own `.map`
+      case Right(a) => NonCatching(Right(f(a))) // if f throws, this propagates uncaught, like EitherMonad's own `.map`
       case Left(e)  => NonCatching(Left(e))
     }
     override def flatMap[T, T2](fa: NonCatching[T])(f: T => NonCatching[T2]): NonCatching[T2] = fa.result match {
@@ -291,13 +311,15 @@ class McpToolsSpec extends AnyFlatSpec with Matchers {
         case Left(e) if h.isDefinedAt(e) => h(e)
         case _                           => rt
       }
-    override def ensure[T](f: NonCatching[T], e: => NonCatching[Unit]): NonCatching[T] = {
-      val _ = e
-      f
-    }
+    // Not exercised by fromClient; the finalizer `e` is intentionally never evaluated rather than guessing at ordering/exception semantics
+    // this test double doesn't otherwise need to model.
+    override def ensure[T](f: NonCatching[T], e: => NonCatching[Unit]): NonCatching[T] = f
   }
 
   private class NonCatchingMcpClient(pages: Seq[ListToolsResponse]) extends UnsupportedMcpClient[NonCatching] {
+    override def ping(): NonCatching[Unit] = NonCatching(Right(()))
+    override def close(): NonCatching[Unit] = NonCatching(Right(()))
+
     override def listTools(cursor: Option[Cursor]): NonCatching[ListToolsResponse] =
       NonCatching(Right(pages(cursor.fold(0)(_.toInt))))
   }
