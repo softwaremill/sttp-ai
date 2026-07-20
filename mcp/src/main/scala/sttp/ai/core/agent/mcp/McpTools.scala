@@ -13,7 +13,9 @@ import sttp.monad.syntax.*
 /** Thrown when a tool advertised by an MCP server cannot be converted into an [[sttp.ai.core.agent.AgentTool]] (e.g. its input schema is
   * not valid JSON Schema).
   */
-class McpToolConversionException(message: String, cause: Throwable) extends RuntimeException(message, cause)
+class McpToolConversionException(message: String, cause: Throwable) extends RuntimeException(message, cause) {
+  def this(message: String) = this(message, null)
+}
 
 object McpTools {
 
@@ -42,18 +44,28 @@ object McpTools {
       client: McpClient[F],
       namePrefix: Option[String] = None
   )(using monad: MonadError[F]): F[Seq[AgentTool[F, Map[String, Json]]]] =
-    listAllTools(client, cursor = None, acc = Vector.empty).map { definitions =>
-      val tools = definitions.map(d => toAgentTool(client, d, namePrefix) -> d.name)
-      tools.groupBy(_._1.name).find(_._2.sizeIs > 1).foreach { case (exposed, colliding) =>
-        val originals = colliding.map(_._2).mkString("'", "', '", "'")
-        throw new McpToolConversionException(
-          s"Multiple MCP tools map to the same exposed name '$exposed' (original names: $originals). " +
-            "Rename the tools on the server or load the servers with distinct namePrefix values.",
-          null
-        )
-      }
-      tools.map(_._1)
+    listAllTools(client, cursor = None, acc = Vector.empty).map(definitions => buildTools(client, definitions, namePrefix))
+
+  /** Builds the agent tools and rejects the whole listing when tools end up with the same exposed name (a duplicate on the server, or a
+    * prefix/sanitization collision) — the agent looks tools up by name, so a silent collision would route calls to the wrong tool.
+    */
+  private def buildTools[F[_]](client: McpClient[F], definitions: Vector[ToolDefinition], namePrefix: Option[String])(using
+      MonadError[F]
+  ): Seq[AgentTool[F, Map[String, Json]]] = {
+    val tools = definitions.map(d => toAgentTool(client, d, namePrefix) -> d.name)
+    val collisions = tools.groupBy(_._1.name).filter(_._2.sizeIs > 1)
+    if (collisions.nonEmpty) {
+      val described = collisions.toSeq
+        .sortBy(_._1)
+        .map { case (exposed, colliding) => s"'$exposed' (original names: ${colliding.map(_._2).mkString("'", "', '", "'")})" }
+        .mkString("; ")
+      throw new McpToolConversionException(
+        s"Multiple MCP tools map to the same exposed name: $described. " +
+          "Rename the tools on the server or load the servers with distinct namePrefix values."
+      )
     }
+    tools.map(_._1)
+  }
 
   /** Backends constrain the tool names they accept (OpenAI function calling enforces `^[a-zA-Z0-9_-]{1,64}$`), while MCP permits dots,
     * slashes and longer names. The exposed (LLM-facing) name is sanitized to the cross-backend-safe form; the original name is still used

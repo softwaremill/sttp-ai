@@ -148,6 +148,17 @@ class McpToolsSpec extends AnyFlatSpec with Matchers {
     ex.getMessage should include("add")
   }
 
+  it should "report every colliding exposed name, not just the first" in {
+    val client = new StubMcpClient(
+      pages = Seq(ListToolsResponse(tools = List(toolDef("add"), toolDef("add"), toolDef("my.tool"), toolDef("my/tool"))))
+    )
+    val ex = the[McpToolConversionException] thrownBy McpTools.fromClient(client)
+    ex.getMessage should include("'add'")
+    ex.getMessage should include("'my_tool'")
+    ex.getMessage should include("'my.tool'")
+    ex.getMessage should include("'my/tool'")
+  }
+
   it should "fail fast when sanitization makes two names collide, naming both originals" in {
     val client = new StubMcpClient(pages = Seq(ListToolsResponse(tools = List(toolDef("my.tool"), toolDef("my/tool")))))
     val ex = the[McpToolConversionException] thrownBy McpTools.fromClient(client)
