@@ -13,7 +13,9 @@ import sttp.monad.syntax.*
 /** Thrown when a tool advertised by an MCP server cannot be converted into an [[sttp.ai.core.agent.AgentTool]] (e.g. its input schema is
   * not valid JSON Schema).
   */
-class McpToolConversionException(message: String, cause: Throwable = null) extends RuntimeException(message, cause)
+class McpToolConversionException(message: String, cause: Throwable) extends RuntimeException(message, cause) {
+  def this(message: String) = this(message, null)
+}
 
 object McpTools {
 
