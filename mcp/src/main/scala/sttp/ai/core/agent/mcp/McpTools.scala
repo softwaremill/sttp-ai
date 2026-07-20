@@ -42,7 +42,28 @@ object McpTools {
       client: McpClient[F],
       namePrefix: Option[String] = None
   )(using monad: MonadError[F]): F[Seq[AgentTool[F, Map[String, Json]]]] =
-    listAllTools(client, cursor = None, acc = Vector.empty).map(_.map(toAgentTool(client, _, namePrefix)))
+    listAllTools(client, cursor = None, acc = Vector.empty).map { definitions =>
+      val tools = definitions.map(d => toAgentTool(client, d, namePrefix) -> d.name)
+      tools.groupBy(_._1.name).find(_._2.sizeIs > 1).foreach { case (exposed, colliding) =>
+        val originals = colliding.map(_._2).mkString("'", "', '", "'")
+        throw new McpToolConversionException(
+          s"Multiple MCP tools map to the same exposed name '$exposed' (original names: $originals). " +
+            "Rename the tools on the server or load the servers with distinct namePrefix values.",
+          null
+        )
+      }
+      tools.map(_._1)
+    }
+
+  /** Backends constrain the tool names they accept (OpenAI function calling enforces `^[a-zA-Z0-9_-]{1,64}$`), while MCP permits dots,
+    * slashes and longer names. The exposed (LLM-facing) name is sanitized to the cross-backend-safe form; the original name is still used
+    * when calling the server.
+    */
+  private def sanitizeName(name: String): String = {
+    def legal(c: Char): Boolean =
+      (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9') || c == '_' || c == '-'
+    name.iterator.map(c => if (legal(c)) c else '_').mkString.take(64)
+  }
 
   private def listAllTools[F[_]](client: McpClient[F], cursor: Option[Cursor], acc: Vector[ToolDefinition])(using
       monad: MonadError[F]
@@ -63,7 +84,7 @@ object McpTools {
       case Left(error) =>
         throw new McpToolConversionException(s"Cannot decode the input schema of MCP tool '${definition.name}': ${error.getMessage}", error)
     }
-    val exposedName = namePrefix.fold(definition.name)(prefix => s"${prefix}_${definition.name}")
+    val exposedName = sanitizeName(namePrefix.fold(definition.name)(prefix => s"${prefix}_${definition.name}"))
     val description = definition.description.orElse(definition.title).getOrElse(definition.name)
     val requiredParams =
       definition.inputSchema.hcursor.downField("required").as[List[String]].toOption.getOrElse(Nil).toSet

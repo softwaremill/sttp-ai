@@ -118,6 +118,44 @@ class McpToolsSpec extends AnyFlatSpec with Matchers {
     McpTools.fromClient(client).head.name shouldBe "add"
   }
 
+  it should "sanitize exposed names to the cross-backend-safe form" in {
+    val client = new StubMcpClient(pages = Seq(ListToolsResponse(tools = List(toolDef("my.tool/name")))))
+    McpTools.fromClient(client).head.name shouldBe "my_tool_name"
+  }
+
+  it should "truncate exposed names to 64 characters after prefixing" in {
+    val longName = "a" * 70
+    val client = new StubMcpClient(pages = Seq(ListToolsResponse(tools = List(toolDef(longName)))))
+    val tool = McpTools.fromClient(client, namePrefix = Some("server")).head
+    tool.name shouldBe ("server_" + "a" * 57)
+    tool.name.length shouldBe 64
+  }
+
+  it should "call the server with the original name even when sanitized" in {
+    val client = new StubMcpClient(
+      pages = Seq(ListToolsResponse(tools = List(toolDef("my.tool")))),
+      callResults = Map("my.tool" -> CallToolResult(List(ToolContent.Text(text = "ok"))))
+    )
+    val tool = McpTools.fromClient(client).head
+    tool.name shouldBe "my_tool"
+    tool.execute(Map.empty) shouldBe "ok"
+    client.recordedCalls.map(_._1) shouldBe Vector("my.tool")
+  }
+
+  it should "fail fast when two tools expose the same name" in {
+    val client = new StubMcpClient(pages = Seq(ListToolsResponse(tools = List(toolDef("add"), toolDef("add")))))
+    val ex = the[McpToolConversionException] thrownBy McpTools.fromClient(client)
+    ex.getMessage should include("add")
+  }
+
+  it should "fail fast when sanitization makes two names collide, naming both originals" in {
+    val client = new StubMcpClient(pages = Seq(ListToolsResponse(tools = List(toolDef("my.tool"), toolDef("my/tool")))))
+    val ex = the[McpToolConversionException] thrownBy McpTools.fromClient(client)
+    ex.getMessage should include("my.tool")
+    ex.getMessage should include("my/tool")
+    ex.getMessage should include("my_tool")
+  }
+
   it should "expose the server's original schema verbatim via rawJsonSchema, byte-equal, while jsonSchema still decodes" in {
     val lossySchema = Json.obj(
       "type" -> Json.fromString("object"),
