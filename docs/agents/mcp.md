@@ -57,6 +57,11 @@ Notes:
 * `namePrefix` is optional — with `Some("mcp")`, a server tool `add` is exposed to the LLM as `mcp_add`
   (the original name is still used when calling the server). Use it to avoid name collisions with manual
   tools or tools from other MCP servers.
+* Exposed names are sanitized to the cross-backend-safe form `[A-Za-z0-9_-]`, truncated to 64 characters
+  (after prefixing) — MCP allows names with dots or slashes that OpenAI's function calling rejects. The
+  original name is still used when calling the server. If two tools end up with the same exposed name
+  (a duplicate on the server, or a sanitization/prefix collision), `fromClient` fails with a
+  `McpToolConversionException` naming the colliding tools rather than silently dropping one.
 * Results are rendered as text for the agent loop: text content blocks are joined with newlines, other
   block types are rendered as compact JSON, and results the server marks as errors are returned to the
   LLM prefixed with `Tool execution failed:`. Transport failures surface as exceptions and go through the
