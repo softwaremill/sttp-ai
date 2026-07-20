@@ -1,6 +1,5 @@
 package sttp.ai.core.agent.mcp
 
-import chimp.client.McpClient
 import chimp.protocol.*
 import io.circe.Json
 import org.scalatest.flatspec.AnyFlatSpec
@@ -298,29 +297,9 @@ class McpToolsSpec extends AnyFlatSpec with Matchers {
     }
   }
 
-  private class NonCatchingMcpClient(pages: Seq[ListToolsResponse]) extends McpClient[NonCatching] {
+  private class NonCatchingMcpClient(pages: Seq[ListToolsResponse]) extends UnsupportedMcpClient[NonCatching] {
     override def listTools(cursor: Option[Cursor]): NonCatching[ListToolsResponse] =
       NonCatching(Right(pages(cursor.fold(0)(_.toInt))))
-    override def ping(): NonCatching[Unit] = NonCatching(Right(()))
-    override def close(): NonCatching[Unit] = NonCatching(Right(()))
-    override def serverCapabilities: ServerCapabilities = ServerCapabilities()
-    override def serverInfo: Implementation = Implementation("fake-server", "0.0.1")
-    override def callTool(name: String, arguments: Json): NonCatching[CallToolResult] = unsupported
-    override def listPrompts(cursor: Option[Cursor]): NonCatching[ListPromptsResult] = unsupported
-    override def getPrompt(name: String, arguments: Map[String, String]): NonCatching[GetPromptResult] = unsupported
-    override def listResources(cursor: Option[Cursor]): NonCatching[ListResourcesResult] = unsupported
-    override def listResourceTemplates(cursor: Option[Cursor]): NonCatching[ListResourceTemplatesResult] = unsupported
-    override def readResource(uri: String): NonCatching[ReadResourceResult] = unsupported
-    override def complete(ref: CompleteRef, argument: CompleteArgument): NonCatching[CompleteResult] = unsupported
-    override def setLoggingLevel(level: LoggingLevel): NonCatching[Unit] = unsupported
-    override def sendProgress(
-        token: ProgressToken,
-        progress: Double,
-        total: Option[Double],
-        message: Option[String]
-    ): NonCatching[Unit] = unsupported
-
-    private def unsupported: Nothing = throw new UnsupportedOperationException("not used by this test")
   }
 
   it should "report a collision through the effect's error channel, not as a raw thrown exception, even when map/flatMap cannot catch" in {
