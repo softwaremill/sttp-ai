@@ -22,7 +22,7 @@ object SchemaSupport {
     * Only apply this when the caller actually requested strict mode (`strict: true`); everything else should get a faithful encoding (see
     * [[schemaCodec]]).
     */
-  def normalizeForStrict(schemaJson: Json): Json = schemaJson.foldWith(schemaFolder)
+  def normalizeForStrict(schemaJson: Json): Json = ensureStrictObjectRoot(schemaJson.foldWith(schemaFolder))
 
   /** Normalizes an apispec `Schema` to OpenAI's strict-mode rules. See [[normalizeForStrict(Json)]]. */
   def normalizeForStrict(schema: Schema): Json = normalizeForStrict(encoderSchema(schema).deepDropNullValues)
@@ -143,5 +143,21 @@ object SchemaSupport {
     obj("enum").flatMap(_.asArray) match {
       case Some(values) if !values.contains(Json.Null) => obj.add("enum", Json.fromValues(values :+ Json.Null))
       case _                                           => obj
+    }
+
+  /** `normalizeForStrict` is only ever called on a schema OpenAI itself requires to be an object (a tool's `parameters`, or a
+    * structured-output schema's root) — but the folder above only adds `additionalProperties: false` to an object when it sees a
+    * `"properties"` or `"type": "object"` key to trigger on. A schema with NEITHER (e.g. a genuinely argument-less tool advertising a bare
+    * `{}`) would otherwise reach OpenAI missing the one field strict mode always requires, and be rejected at request time.
+    *
+    * The guard mirrors the folder's own trigger condition exactly: a schema that already has `"properties"` or `"type"` is left alone even
+    * if `additionalProperties` ended up absent, since that can be a deliberate choice (e.g. the folder's discriminated-union skip) rather
+    * than the degenerate case this handles.
+    */
+  private def ensureStrictObjectRoot(json: Json): Json =
+    json.asObject match {
+      case Some(obj) if !obj.contains("properties") && !obj.contains("type") =>
+        Json.fromJsonObject(obj.add("type", Json.fromString("object")).add("additionalProperties", Json.fromBoolean(false)))
+      case _ => json
     }
 }

@@ -164,6 +164,25 @@ class SchemaSupportSpec extends AnyFlatSpec with Matchers with EitherValues {
     result shouldBe expected
   }
 
+  // Found via a live smoke test: a genuinely argument-less MCP tool can advertise a bare `{}` input schema (no "type", no "properties" --
+  // e.g. via chimp's `inputJson(Json.obj())`, bypassing tapir derivation entirely). The folder only triggers `additionalProperties: false`
+  // on a "properties" or "type": "object" key, so this schema reached OpenAI missing it and was rejected at request time.
+  it should "add type:object and additionalProperties:false to a schema with neither properties nor a type" in {
+    val result = normalize("{}")
+    result shouldBe parse("""{"type":"object","additionalProperties":false}""").value
+  }
+
+  it should "not duplicate or override an existing top-level type/additionalProperties" in {
+    val result = normalize("""{"type":"object","properties":{"a":{"type":"string"}},"required":["a"]}""")
+    val expected = parse(
+      """{"type":"object",
+        |"properties":{"a":{"type":"string"}},
+        |"required":["a"],
+        |"additionalProperties":false}""".stripMargin
+    ).value
+    result shouldBe expected
+  }
+
   "the faithful codec" should "no longer inject additionalProperties or rewrite required" in {
     val rawSchema = """{"type":"object","properties":{"a":{"type":"string"},"b":{"type":"integer"}},"required":["a"]}"""
     val schema = parse(rawSchema).value.as[Schema](sttp.apispec.circe.schemaDecoder).value
