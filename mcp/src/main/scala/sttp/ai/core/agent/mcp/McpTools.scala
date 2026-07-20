@@ -13,9 +13,7 @@ import sttp.monad.syntax.*
 /** Thrown when a tool advertised by an MCP server cannot be converted into an [[sttp.ai.core.agent.AgentTool]] (e.g. its input schema is
   * not valid JSON Schema).
   */
-class McpToolConversionException(message: String, cause: Throwable) extends RuntimeException(message, cause) {
-  def this(message: String) = this(message, null)
-}
+class McpToolConversionException(message: String, cause: Throwable) extends RuntimeException(message, cause)
 
 object McpTools {
 
@@ -80,7 +78,8 @@ object McpTools {
     val emptyNames = withExposedNames.collect { case ("", d) => d.name }
     if (emptyNames.nonEmpty)
       throw new McpToolConversionException(
-        s"MCP tool(s) sanitize to an empty exposed name: ${emptyNames.mkString("'", "', '", "'")}. Rename them on the server."
+        s"MCP tool(s) sanitize to an empty exposed name: ${emptyNames.mkString("'", "', '", "'")}. Rename them on the server.",
+        null
       )
 
     val collisions = withExposedNames.groupBy(_._1).filter(_._2.sizeIs > 1)
@@ -91,7 +90,8 @@ object McpTools {
         .mkString("; ")
       throw new McpToolConversionException(
         s"Multiple MCP tools map to the same exposed name: $described. " +
-          "Rename the tools on the server or load the servers with distinct namePrefix values."
+          "Rename the tools on the server or load the servers with distinct namePrefix values.",
+        null
       )
     }
 
