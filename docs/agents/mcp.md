@@ -58,10 +58,14 @@ Notes:
   (the original name is still used when calling the server). Use it to avoid name collisions with manual
   tools or tools from other MCP servers.
 * Exposed names are sanitized to the cross-backend-safe form `[A-Za-z0-9_-]`, truncated to 64 characters
-  (after prefixing) — MCP allows names with dots or slashes that OpenAI's function calling rejects. The
-  original name is still used when calling the server. If two tools end up with the same exposed name
-  (a duplicate on the server, or a sanitization/prefix collision), `fromClient` fails with a
-  `McpToolConversionException` naming the colliding tools rather than silently dropping one.
+  (after prefixing) — MCP allows names with dots, slashes, or non-ASCII characters that OpenAI's function
+  calling rejects. The original name is still used when calling the server. If two tools from **the same**
+  `fromClient` call end up with the same exposed name (a sanitization/prefix collision, or a server-side
+  name reused for genuinely different tools), `fromClient` fails with a `McpToolConversionException` naming
+  the colliding tools, rather than silently routing calls to the wrong one — an MCP server re-listing the
+  exact same tool across pages is harmless and is deduplicated instead. This check does not extend across
+  multiple `fromClient` calls or to manually defined tools; combining tools from different sources safely
+  is the caller's responsibility (`namePrefix` is the recommended way to keep them distinct).
 * Results are rendered as text for the agent loop: text content blocks are joined with newlines, other
   block types are rendered as compact JSON, and results the server marks as errors are returned to the
   LLM prefixed with `Tool execution failed:`. Transport failures surface as exceptions and go through the

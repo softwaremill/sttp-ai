@@ -142,21 +142,72 @@ class McpToolsSpec extends AnyFlatSpec with Matchers {
     client.recordedCalls.map(_._1) shouldBe Vector("my.tool")
   }
 
-  it should "fail fast when two tools expose the same name" in {
-    val client = new StubMcpClient(pages = Seq(ListToolsResponse(tools = List(toolDef("add"), toolDef("add")))))
+  it should "fail fast when the same name maps to conflicting definitions" in {
+    val client = new StubMcpClient(
+      pages = Seq(ListToolsResponse(tools = List(toolDef("add", description = Some("v1")), toolDef("add", description = Some("v2")))))
+    )
     val ex = the[McpToolConversionException] thrownBy McpTools.fromClient(client)
     ex.getMessage should include("add")
   }
 
+  it should "silently deduplicate an exact repeat of the same tool across pages" in {
+    val client = new StubMcpClient(
+      pages = Seq(
+        ListToolsResponse(tools = List(toolDef("add")), nextCursor = Some("1")),
+        ListToolsResponse(tools = List(toolDef("add")))
+      )
+    )
+    McpTools.fromClient(client).map(_.name) shouldBe Seq("add")
+  }
+
   it should "report every colliding exposed name, not just the first" in {
     val client = new StubMcpClient(
-      pages = Seq(ListToolsResponse(tools = List(toolDef("add"), toolDef("add"), toolDef("my.tool"), toolDef("my/tool"))))
+      pages = Seq(
+        ListToolsResponse(tools =
+          List(
+            toolDef("add", description = Some("v1")),
+            toolDef("add", description = Some("v2")),
+            toolDef("my.tool"),
+            toolDef("my/tool")
+          )
+        )
+      )
     )
     val ex = the[McpToolConversionException] thrownBy McpTools.fromClient(client)
     ex.getMessage should include("'add'")
     ex.getMessage should include("'my_tool'")
     ex.getMessage should include("'my.tool'")
     ex.getMessage should include("'my/tool'")
+  }
+
+  it should "report a name collision even when another tool has an undecodable schema" in {
+    val client = new StubMcpClient(
+      pages = Seq(
+        ListToolsResponse(tools =
+          List(
+            toolDef("add", description = Some("v1")),
+            toolDef("add", description = Some("v2")),
+            toolDef("bad", schema = Json.fromString("nope"))
+          )
+        )
+      )
+    )
+    val ex = the[McpToolConversionException] thrownBy McpTools.fromClient(client)
+    ex.getMessage should include("same exposed name")
+    ex.getMessage should not include "Cannot decode"
+  }
+
+  it should "fail fast when a tool sanitizes to an empty exposed name" in {
+    val client = new StubMcpClient(pages = Seq(ListToolsResponse(tools = List(toolDef("")))))
+    val ex = the[McpToolConversionException] thrownBy McpTools.fromClient(client)
+    ex.getMessage should include("empty exposed name")
+  }
+
+  it should "fail fast rather than silently merge distinct non-ASCII names that sanitize identically" in {
+    val client = new StubMcpClient(pages = Seq(ListToolsResponse(tools = List(toolDef("検索ツール"), toolDef("翻訳機能名")))))
+    val ex = the[McpToolConversionException] thrownBy McpTools.fromClient(client)
+    ex.getMessage should include("検索ツール")
+    ex.getMessage should include("翻訳機能名")
   }
 
   it should "fail fast when sanitization makes two names collide, naming both originals" in {
