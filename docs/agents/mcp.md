@@ -50,7 +50,7 @@ finally
   client.close()
 ```
 
-The same tools work with the Claude backend — only the agent construction differs:
+The same tools work with the Claude backend — here's the equivalent, complete example:
 
 ```scala mdoc:compile-only
 import chimp.client.McpClient
@@ -114,6 +114,9 @@ This check does not extend across multiple `fromClient` calls or to manually def
 up by name, so if you combine tools from several sources without keeping their exposed names distinct yourself
 (with `namePrefix`), the one loaded last silently shadows any earlier tool with the same name — no error is
 raised.
+
+`fromClient` also fails with `McpToolConversionException` if a tool's input schema is not valid JSON Schema and
+cannot be decoded, naming the offending tool.
 
 ## Results and errors
 
