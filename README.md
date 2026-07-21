@@ -11,7 +11,7 @@ sttp is a family of Scala HTTP-related projects, and currently includes:
 
 * [sttp client](https://github.com/softwaremill/sttp): The Scala HTTP client you always wanted!
 * [sttp tapir](https://github.com/softwaremill/tapir): Typed API descRiptions
-* sttp ai: this project. Non-official Scala client wrapper for OpenAI, Claude (Anthropic), and OpenAI-compatible APIs. Use the power of ChatGPT and Claude inside your code!
+* sttp ai: this project. Non-official Scala client wrapper for OpenAI, Claude (Anthropic), and OpenAI-compatible APIs. Use the power of ChatGPT and Claude inside your code! Agents can also load their tools directly from [Model Context Protocol](https://modelcontextprotocol.io) (MCP) servers.
 
 sttp-ai uses sttp client to describe requests and responses used in OpenAI, Claude (Anthropic), and OpenAI-compatible endpoints.
 
@@ -46,7 +46,13 @@ Add the following dependency:
 
 sttp-openai is available for Scala 2.13 and Scala 3
 
-Then head to the [documentation](https://sttp-ai.softwaremill.com) for usage examples: OpenAI and Claude clients, streaming, structured outputs, tool calling, and the agent loop.
+### For loading agent tools from MCP servers
+
+Agents (both OpenAI- and Claude-backed) can discover and call tools from any [MCP](https://modelcontextprotocol.io)
+server instead of defining them by hand — see the "MCP tools" page in the [documentation](https://sttp-ai.softwaremill.com)
+for the `mcp` module's dependency coordinates and a full example. The module is Scala 3 only.
+
+Then head to the [documentation](https://sttp-ai.softwaremill.com) for usage examples: OpenAI and Claude clients, streaming, structured outputs, tool calling, the agent loop, and loading tools from MCP servers.
 
 ## Contributing
 
