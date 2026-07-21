@@ -219,5 +219,5 @@ lazy val docs = (projectMatrix in file("generated-docs")) // important: it must 
     name := "docs",
     evictionErrorLevel := Level.Info
   )
-  .dependsOn(openai, fs2, zio, ox, pekko, mcp)
+  .dependsOn(openai, claude, fs2, zio, ox, pekko, mcp)
   .jvmPlatform(scalaVersions = scala3)

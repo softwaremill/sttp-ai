@@ -12,6 +12,7 @@ sttp-ai is a Scala library providing a non-official client wrapper for OpenAI, C
 - OpenAI-compatible API support (Ollama, Grok, etc.)
 - Streaming support for all major effect systems
 - Cross-platform: Scala 2.13.16 and Scala 3.3.6
+- Agent loop tools loadable from [MCP](https://modelcontextprotocol.io) servers (`mcp` module, Scala 3 only, via [chimp](https://github.com/softwaremill/chimp)), in addition to manually defined `AgentTool`s
 
 ## Development Commands
 
@@ -21,6 +22,7 @@ sttp-ai is a Scala library providing a non-official client wrapper for OpenAI, C
 sbt compile                              # All modules
 sbt openai/compile                       # OpenAI module
 sbt claude/compile                       # Claude module
+sbt mcp3/compile                         # MCP module (Scala 3 only; sbt-projectmatrix suffixes the Scala 3 row with "3")
 
 # Test
 sbt test                                 # Unit tests (excludes integration)
@@ -88,6 +90,7 @@ Each streaming module (`streaming/{effect-system}/`) provides extensions for **b
 - **OpenAI models**: Search for `ChatCompletionModel`, `EmbeddingModel` in `openai/` request bodies
 - **Claude models**: `claude/src/main/scala/sttp/ai/claude/models/ClaudeModel.scala`
 - **Streaming implementations**: `streaming/{effect-system}/src/main/scala/`
+- **MCP tool loading**: `mcp/src/main/scala/sttp/ai/core/agent/mcp/McpTools.scala` (Scala 3 only; depends on `core` and chimp's `chimp-client`, not on `openai`/`claude`)
 - **Examples**: `examples/src/main/scala/examples/` (runnable with scala-cli)
 - **Tests**: Each module has `{module}/src/test/` following same package structure
 
@@ -212,6 +215,8 @@ For every implementation phase:
 
 - **Examples**: See `examples/` directory for runnable scala-cli examples (OpenAI and Claude)
 - **Integration Testing**: See `INTEGRATION_TESTING.md` for detailed API setup
+- **MCP tools**: See `docs/agents/mcp.md` for loading agent tools from MCP servers
 - **API Documentation**:
   - OpenAI: https://platform.openai.com/docs/api-reference
   - Claude: https://docs.anthropic.com/claude/reference
+  - MCP: https://modelcontextprotocol.io
