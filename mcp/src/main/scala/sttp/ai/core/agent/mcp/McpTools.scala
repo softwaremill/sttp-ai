@@ -58,9 +58,10 @@ object McpTools {
     }
 
   /** Builds the agent tools, failing before any schema is decoded when the listing cannot be exposed safely:
-    *   - a tool whose name sanitizes to nothing can never be called by name. This is only possible when the original name itself is empty —
-    *     replacing illegal characters never shortens a name, so a name built entirely of e.g. non-ASCII characters instead collapses to a
-    *     (legal, non-empty) run of underscores, which is handled by the next check
+    *   - a tool with an empty original name can never be called correctly (`tools/call` would be sent an empty name), so this is rejected
+    *     directly on the original name, before any `namePrefix`/sanitization is applied — sanitizing first would miss it, since
+    *     `exposedNameFor` always inserts a literal `"_"` between a prefix and the name, so the exposed name itself can never come out empty
+    *     once a `namePrefix` is set
     *   - tools that end up with the same exposed name (a prefix/sanitization collision, or a server-side name reused for genuinely
     *     different tools) would route calls to the wrong tool
     *
@@ -71,26 +72,30 @@ object McpTools {
   private def buildTools[F[_]](client: McpClient[F], definitions: Vector[ToolDefinition], namePrefix: Option[String])(using
       MonadError[F]
   ): Seq[AgentTool[F, Map[String, Json]]] = {
-    val distinctDefinitions =
-      definitions.distinctBy(d => (d.name, d.description, d.inputSchema, d.outputSchema, d.title, d.annotations))
-    val withExposedNames = distinctDefinitions.map(d => exposedNameFor(d.name, namePrefix) -> d)
+    val distinctDefinitions = definitions.distinctBy(_.copy(_meta = None))
 
-    val emptyNames = withExposedNames.collect { case ("", d) => d.name }
-    if (emptyNames.nonEmpty)
-      throw new McpToolConversionException(
-        s"MCP tool(s) sanitize to an empty exposed name: ${emptyNames.mkString("'", "', '", "'")}. Rename them on the server.",
-        null
-      )
+    // Checked on the ORIGINAL name, before any prefix is applied: `exposedNameFor` always inserts a literal "_" between a namePrefix and
+    // the name, so the exposed name can never actually come out empty once a namePrefix is set (e.g. an empty name with namePrefix =
+    // Some("p") sanitizes to "p_", not ""), even though the server would still be called with the empty original name.
+    val emptyOriginalNames = distinctDefinitions.filter(_.name.isEmpty)
+    if (emptyOriginalNames.nonEmpty)
+      throw new McpToolConversionException("This MCP server advertised a tool with an empty name. Rename it on the server.", null)
+
+    val withExposedNames = distinctDefinitions.map(d => exposedNameFor(d.name, namePrefix) -> d)
 
     val collisions = withExposedNames.groupBy(_._1).filter(_._2.sizeIs > 1)
     if (collisions.nonEmpty) {
+      // namePrefix is NOT a usable remedy here: it is applied identically to every tool from this one fromClient call, and
+      // exposedNameFor's sanitization is a pure per-character transform, so two names that already collide keep colliding under any
+      // shared prefix (sanitize(p + "_" + a) == sanitize(p + "_" + b) whenever sanitize(a) == sanitize(b)). namePrefix only helps
+      // distinguish tools loaded from DIFFERENT fromClient calls (see the docs) -- for a collision reported here, the only fix is
+      // renaming one of the tools on the server.
       val described = collisions.toSeq
         .sortBy(_._1)
         .map { case (exposed, colliding) => s"'$exposed' (original names: ${colliding.map(_._2.name).mkString("'", "', '", "'")})" }
         .mkString("; ")
       throw new McpToolConversionException(
-        s"Multiple MCP tools map to the same exposed name: $described. " +
-          "Rename the tools on the server or load the servers with distinct namePrefix values.",
+        s"Multiple MCP tools map to the same exposed name: $described. Rename the tools on the server.",
         null
       )
     }

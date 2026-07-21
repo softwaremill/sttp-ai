@@ -210,10 +210,18 @@ class McpToolsSpec extends AnyFlatSpec with Matchers {
     ex.getMessage should not include "Cannot decode"
   }
 
-  it should "fail fast when a tool sanitizes to an empty exposed name" in {
+  it should "fail fast when a tool has an empty original name" in {
     val client = new StubMcpClient(pages = Seq(ListToolsResponse(tools = List(toolDef("")))))
     val ex = the[McpToolConversionException] thrownBy McpTools.fromClient(client)
-    ex.getMessage should include("empty exposed name")
+    ex.getMessage should include("empty name")
+  }
+
+  it should "fail fast on an empty original name even when a namePrefix is set" in {
+    // exposedNameFor always inserts a literal "_" between a prefix and the name, so with namePrefix = Some("p") an empty original name
+    // would otherwise sanitize to the non-empty "p_" and slip past a check that only looks at the exposed name.
+    val client = new StubMcpClient(pages = Seq(ListToolsResponse(tools = List(toolDef("")))))
+    val ex = the[McpToolConversionException] thrownBy McpTools.fromClient(client, namePrefix = Some("p"))
+    ex.getMessage should include("empty name")
   }
 
   it should "fail fast rather than silently merge distinct non-ASCII names that sanitize identically" in {
