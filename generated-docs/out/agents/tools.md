@@ -35,7 +35,7 @@ case class AgentResult[T](
   finalAnswer: T,
   iterations: Int,
   toolCalls: Seq[ToolCallRecord],
-  finishReason: FinishReason  // MaxIterations | NaturalStop | TokenLimit | Errpr
+  finishReason: FinishReason  // MaxIterations | NaturalStop | TokenLimit | Error(message)
 )
 ```
 
@@ -48,7 +48,7 @@ Set `responseSchema` on `AgentConfig` and use `runAs[T]` to receive a parsed Sca
 On parse failure the iteration trace is preserved: `finalAnswer` is `Left(AgentParseError)` rather than a thrown exception.
 
 ```scala
-//> using dep com.softwaremill.sttp.ai::openai:0.5.2
+//> using dep com.softwaremill.sttp.ai::openai:0.5.3
 
 import sttp.ai.core.agent.*
 import sttp.ai.openai.OpenAI

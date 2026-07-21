@@ -7,7 +7,7 @@ Examples are runnable using [scala-cli](https://scala-cli.virtuslab.org).
 ## Basic Usage (OpenAI)
 
 ```scala
-//> using dep com.softwaremill.sttp.ai::openai:0.5.2
+//> using dep com.softwaremill.sttp.ai::openai:0.5.3
 
 import sttp.ai.openai.OpenAISyncClient
 import sttp.ai.openai.requests.completions.chat.ChatRequestResponseData.ChatResponse

@@ -14,6 +14,10 @@ val agent = OpenAIAgent
   .build
 ```
 
+The OpenAI factories additionally accept a `strictTools` flag (default `true`): when `true`, tool schemas are
+normalized for OpenAI's strict function calling (`additionalProperties: false`, all properties required, optional
+properties nullable); when `false`, tools are registered as non-strict with their original schemas.
+
 ## Hooks
 
 The loop can invoke optional effectful hooks around each tool call. Both run inside the agent loop, so an error in either hook interrupts the run.

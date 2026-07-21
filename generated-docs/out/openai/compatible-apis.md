@@ -5,7 +5,7 @@
 Ollama with sync backend:
 
 ```scala
-//> using dep com.softwaremill.sttp.ai::openai:0.5.2
+//> using dep com.softwaremill.sttp.ai::openai:0.5.3
 
 import sttp.model.Uri.*
 import sttp.ai.openai.OpenAISyncClient
@@ -59,7 +59,7 @@ object Main:
 Grok with cats-effect based backend:
 
 ```scala
-//> using dep com.softwaremill.sttp.ai::openai:0.5.2
+//> using dep com.softwaremill.sttp.ai::openai:0.5.3
 //> using dep com.softwaremill.sttp.client4::cats:4.0.0-M17
 
 import cats.effect.IO
@@ -135,7 +135,7 @@ Example below uses `HttpClientCatsBackend` as a backend, make sure to [add it to
 or use backend of your choice.
 
 ```scala
-//> using dep com.softwaremill.sttp.ai::openai:0.5.2
+//> using dep com.softwaremill.sttp.ai::openai:0.5.3
 //> using dep com.softwaremill.sttp.client4::cats:4.0.0-M17
 
 import cats.effect.IO
