@@ -5,7 +5,7 @@
 Add the following dependency:
 
 ```sbt
-"com.softwaremill.sttp.ai" %% "openai" % "0.5.3"
+"com.softwaremill.sttp.ai" %% "openai" % "0.5.4"
 ```
 
 ## For Claude (Anthropic) API
@@ -13,14 +13,14 @@ Add the following dependency:
 Add the following dependency:
 
 ```sbt
-"com.softwaremill.sttp.ai" %% "claude" % "0.5.3"
+"com.softwaremill.sttp.ai" %% "claude" % "0.5.4"
 
 // For streaming support, add one or more:
-"com.softwaremill.sttp.ai" %% "claude-streaming-fs2" % "0.5.3"    // cats-effect/fs2
-"com.softwaremill.sttp.ai" %% "claude-streaming-zio" % "0.5.3"    // ZIO
-"com.softwaremill.sttp.ai" %% "claude-streaming-akka" % "0.5.3"   // Akka Streams (Scala 2.13 only)
-"com.softwaremill.sttp.ai" %% "claude-streaming-pekko" % "0.5.3"  // Pekko Streams
-"com.softwaremill.sttp.ai" %% "claude-streaming-ox" % "0.5.3"    // Ox direct-style (Scala 3 only)
+"com.softwaremill.sttp.ai" %% "claude-streaming-fs2" % "0.5.4"    // cats-effect/fs2
+"com.softwaremill.sttp.ai" %% "claude-streaming-zio" % "0.5.4"    // ZIO
+"com.softwaremill.sttp.ai" %% "claude-streaming-akka" % "0.5.4"   // Akka Streams (Scala 2.13 only)
+"com.softwaremill.sttp.ai" %% "claude-streaming-pekko" % "0.5.4"  // Pekko Streams
+"com.softwaremill.sttp.ai" %% "claude-streaming-ox" % "0.5.4"    // Ox direct-style (Scala 3 only)
 ```
 
 sttp-openai is available for Scala 2.13 and Scala 3

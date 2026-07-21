@@ -3,7 +3,7 @@
 [OpenAI's Structured Outputs](https://platform.openai.com/docs/guides/structured-outputs/introduction) constrain the model to produce JSON matching a given JSON Schema. The simplest way to use them is `OpenAISyncClient.createChatCompletionAs[T]` — the response schema is derived from a Scala case class via Tapir, set as `responseFormat` automatically, and the model's response is parsed back into `T` via circe:
 
 ```scala
-//> using dep com.softwaremill.sttp.ai::openai:0.5.3
+//> using dep com.softwaremill.sttp.ai::openai:0.5.4
 
 import sttp.ai.openai.OpenAISyncClient
 import sttp.ai.openai.requests.completions.chat.ChatRequestBody.{ChatBody, ChatCompletionModel}
@@ -35,7 +35,7 @@ object Main:
 If you need finer control — a hand-built schema, custom parsing, or a non-Tapir schema source — use `ResponseFormat.JsonSchema` directly. The example below produces a JSON object:
 
 ```scala
-//> using dep com.softwaremill.sttp.ai::openai:0.5.3
+//> using dep com.softwaremill.sttp.ai::openai:0.5.4
 
 import scala.collection.immutable.ListMap
 import sttp.apispec.{Schema, SchemaType}
@@ -161,7 +161,7 @@ Another helpful feature is adding possibility to create `Message.Tool` object pa
 With all this in mind please remember that it is still required to deserialized arguments, which are sent back by Assistant to call our function.
 
 ```scala
-//> using dep com.softwaremill.sttp.ai::openai:0.5.3
+//> using dep com.softwaremill.sttp.ai::openai:0.5.4
 
 import sttp.ai.openai.OpenAISyncClient
 import sttp.ai.openai.requests.completions.chat.ChatRequestBody.ChatBody
