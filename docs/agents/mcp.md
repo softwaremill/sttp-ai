@@ -50,6 +50,42 @@ finally
   client.close()
 ```
 
+The same tools work with the Claude backend — only the agent construction differs:
+
+```scala mdoc:compile-only
+import chimp.client.McpClient
+import chimp.client.transport.ClientStdioTransport
+import chimp.protocol.Implementation
+import sttp.ai.claude.agent.ClaudeAgent
+import sttp.ai.claude.config.ClaudeConfig
+import sttp.ai.core.agent.mcp.McpTools
+import sttp.client4.DefaultSyncBackend
+import sttp.monad.{IdentityMonad, MonadError}
+import sttp.shared.Identity
+
+given MonadError[Identity] = IdentityMonad
+
+val claudeTransport = ClientStdioTransport(List("npx", "-y", "@modelcontextprotocol/server-everything"))
+val claudeClient = McpClient[Identity](claudeTransport, Implementation("sttp-ai-agent", "1.0.0"))
+
+val claudeBackend = DefaultSyncBackend()
+
+try
+  val mcpTools = McpTools.fromClient(claudeClient, namePrefix = Some("mcp"))
+
+  val agent = ClaudeAgent
+    .synchronous(ClaudeConfig.fromEnv, "claude-haiku-4-5-20251001")
+    .maxIterations(10)
+    .tools(mcpTools)
+    .build
+
+  val result = agent.run("Add 2 and 3 using the available tools")(claudeBackend)
+  println(result.finalAnswer)
+finally
+  claudeBackend.close()
+  claudeClient.close()
+```
+
 ## Lifecycle
 
 * You own the client: keep it open while the agent runs, and close it afterwards.
