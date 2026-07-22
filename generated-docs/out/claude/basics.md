@@ -20,7 +20,7 @@ This module provides **native support for Anthropic's Claude API** within the st
 ## Basic Usage (Claude)
 
 ```scala
-//> using dep com.softwaremill.sttp.ai::claude:0.5.3
+//> using dep com.softwaremill.sttp.ai::claude:0.5.4
 
 import sttp.ai.claude.*
 import sttp.ai.claude.config.ClaudeConfig

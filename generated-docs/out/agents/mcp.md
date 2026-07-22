@@ -8,7 +8,7 @@ Instead of defining every tool by hand with `AgentTool.fromFunction`, agents can
 The module is available for Scala 3 only (chimp is Scala 3 only):
 
 ```scala
-"com.softwaremill.sttp.ai" %% "mcp" % "0.5.3"
+"com.softwaremill.sttp.ai" %% "mcp" % "0.5.4"
 ```
 
 First create and initialize a chimp `McpClient` using any of its transports — the stdio transport launches
