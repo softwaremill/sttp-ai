@@ -101,6 +101,36 @@ class OpenAIJsonSpec extends AnyFlatSpec with Matchers with EitherValues {
     json.hcursor.downField("response_format").downField("json_schema").downField("schema").succeeded shouldBe false
   }
 
+  it should "merge extraBody entries into the top level of the serialized request" in {
+    val chatBody = ChatBody(
+      messages = Seq(Message.User(content = Content.TextContent("hi"))),
+      model = ChatCompletionModel.GPT4oMini,
+      extraBody = Map(
+        "guided_json" -> Json.obj("type" -> Json.fromString("object")),
+        "top_k" -> Json.fromInt(40)
+      )
+    )
+
+    val json = parse(requestBodyOf(chatBody)).value
+
+    json.hcursor.downField("guided_json").as[Json].value shouldBe Json.obj("type" -> Json.fromString("object"))
+    json.hcursor.downField("top_k").as[Int].value shouldBe 40
+    json.hcursor.downField("extra_body").succeeded shouldBe false
+  }
+
+  it should "let an extraBody entry override a colliding typed field" in {
+    val chatBody = ChatBody(
+      messages = Seq(Message.User(content = Content.TextContent("hi"))),
+      model = ChatCompletionModel.GPT4oMini,
+      temperature = Some(0.2),
+      extraBody = Map("temperature" -> Json.fromDoubleOrNull(0.9))
+    )
+
+    val json = parse(requestBodyOf(chatBody)).value
+
+    json.hcursor.downField("temperature").as[Double].value shouldBe 0.9
+  }
+
   private def responsesRequestBodyOf(requestBody: ResponsesRequestBody): String =
     new OpenAI("test-key").createModelResponse(requestBody).body match {
       case StringBody(s, _, _) => s

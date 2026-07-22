@@ -127,6 +127,10 @@ object ChatRequestBody {
     * @param promptCacheRetention
     *   Can be used to specify policy on how long the prompt cache should be retained, not every model support every policy, check the API
     *   documentation for more details.
+    * @param extraBody
+    *   Arbitrary extra parameters merged into the top level of the serialized request JSON, alongside the fields above. Useful for
+    *   parameters supported only by an OpenAI-compatible backend (e.g. vLLM's `guided_json`, `top_k`), which have no typed field here. If a
+    *   key collides with one of the typed fields above, the `extraBody` value wins.
     */
   case class ChatBody(
       messages: Seq[Message],
@@ -157,7 +161,8 @@ object ChatRequestBody {
       prediction: Option[Prediction] = None,
       audio: Option[Audio] = None,
       promptCacheKey: Option[String] = None,
-      promptCacheRetention: Option[CacheRetentionPolicy] = None
+      promptCacheRetention: Option[CacheRetentionPolicy] = None,
+      extraBody: Map[String, Json] = Map.empty
   )
 
   object ChatBody {
