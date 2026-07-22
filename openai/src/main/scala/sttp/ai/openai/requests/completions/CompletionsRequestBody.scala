@@ -1,5 +1,7 @@
 package sttp.ai.openai.requests.completions
 
+import io.circe.Json
+
 object CompletionsRequestBody {
 
   /** @param model
@@ -37,6 +39,10 @@ object CompletionsRequestBody {
     *   Modify the likelihood of specified tokens appearing in the completion.
     * @param user
     *   A unique identifier representing your end-user, which can help OpenAI to monitor and detect abuse.
+    * @param extraBody
+    *   Arbitrary extra parameters merged into the top level of the serialized request JSON, alongside the fields above. Useful for
+    *   parameters supported only by an OpenAI-compatible backend, which have no typed field here. If a key collides with one of the typed
+    *   fields above, the `extraBody` value wins.
     *
     * For more information please visit: [[https://platform.openai.com/docs/api-reference/completions/create]]
     */
@@ -55,7 +61,8 @@ object CompletionsRequestBody {
       frequencyPenalty: Option[Double] = None,
       bestOf: Option[Int] = None,
       logitBias: Option[Map[String, Float]] = None,
-      user: Option[String] = None
+      user: Option[String] = None,
+      extraBody: Map[String, Json] = Map.empty
   )
 
   sealed abstract class CompletionModel(val value: String)

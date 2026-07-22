@@ -260,7 +260,8 @@ object OpenAIDerivedCodecs {
   // request bodies
   implicit val embeddingsBodyEncoder: Encoder[EmbReq.EmbeddingsBody] = ConfiguredEncoder.derived
   implicit val moderationsBodyEncoder: Encoder[ModReq.ModerationsBody] = ConfiguredEncoder.derived
-  implicit val completionsBodyEncoder: Encoder[CompReq.CompletionsBody] = ConfiguredEncoder.derived
+  implicit val completionsBodyEncoder: Encoder[CompReq.CompletionsBody] =
+    ConfiguredEncoder.derived[CompReq.CompletionsBody].mapJson(mergeExtraBody("extra_body"))
   implicit val speechRequestBodyEncoder: Encoder[SpeechRequestBody] = ConfiguredEncoder.derived
 
   // embeddings response
