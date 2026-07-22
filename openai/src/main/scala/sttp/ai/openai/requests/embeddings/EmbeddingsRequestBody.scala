@@ -1,5 +1,7 @@
 package sttp.ai.openai.requests.embeddings
 
+import io.circe.Json
+
 object EmbeddingsRequestBody {
 
   /** @param model
@@ -10,8 +12,18 @@ object EmbeddingsRequestBody {
     *   A unique identifier representing your end-user, which can help OpenAI to monitor and detect abuse.
     * @param dimensions
     *   The number of dimensions for the embeddings. Only supported in text-embedding-3 and later models.
+    * @param extraBody
+    *   Arbitrary extra parameters merged into the top level of the serialized request JSON, alongside the fields above. Useful for
+    *   parameters supported only by an OpenAI-compatible backend, which have no typed field here. If a key collides with one of the typed
+    *   fields above, the `extraBody` value wins.
     */
-  case class EmbeddingsBody(model: EmbeddingsModel, input: EmbeddingsInput, user: Option[String] = None, dimensions: Option[Int] = None)
+  case class EmbeddingsBody(
+      model: EmbeddingsModel,
+      input: EmbeddingsInput,
+      user: Option[String] = None,
+      dimensions: Option[Int] = None,
+      extraBody: Map[String, Json] = Map.empty
+  )
 
   sealed abstract class EmbeddingsModel(val value: String)
 

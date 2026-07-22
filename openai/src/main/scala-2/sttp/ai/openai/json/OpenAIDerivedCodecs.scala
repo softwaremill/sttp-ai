@@ -275,7 +275,8 @@ object OpenAIDerivedCodecs {
   implicit val chatChunkResponseCodec: Codec[Chunk.ChatChunkResponse] = deriveConfiguredCodec
 
   // request bodies
-  implicit val embeddingsBodyEncoder: Encoder[EmbReq.EmbeddingsBody] = deriveConfiguredEncoder
+  implicit val embeddingsBodyEncoder: Encoder[EmbReq.EmbeddingsBody] =
+    deriveConfiguredEncoder[EmbReq.EmbeddingsBody].mapJson(mergeExtraBody("extra_body"))
   implicit val moderationsBodyEncoder: Encoder[ModReq.ModerationsBody] = deriveConfiguredEncoder
   implicit val completionsBodyEncoder: Encoder[CompReq.CompletionsBody] =
     deriveConfiguredEncoder[CompReq.CompletionsBody].mapJson(mergeExtraBody("extra_body"))

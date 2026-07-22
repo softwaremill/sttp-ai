@@ -7,6 +7,8 @@ import sttp.ai.openai.fixtures
 import sttp.ai.openai.requests.embeddings.EmbeddingsRequestBody.EmbeddingsModel
 import sttp.ai.openai.requests.embeddings.EmbeddingsResponseBody._
 import io.circe.parser.decode
+import io.circe.Json
+import io.circe.syntax._
 import sttp.ai.openai.json.OpenAIDerivedCodecs._
 import sttp.ai.openai.json.OpenAIManualCodecs._
 
@@ -37,6 +39,19 @@ class EmbeddingsDataSpec extends AnyFlatSpec with Matchers with EitherValues {
 
     // then
     givenResponse.value shouldBe expectedResponse
+  }
+
+  "Given embeddings request with extraBody" should "merge extraBody entries into the top level of the serialized Json" in {
+    val givenRequest = EmbeddingsRequestBody.EmbeddingsBody(
+      model = EmbeddingsModel.TextEmbeddingAda002,
+      input = EmbeddingsRequestBody.EmbeddingsInput.SingleInput("hello"),
+      extraBody = Map("truncate" -> Json.fromString("END"))
+    )
+
+    val serializedJson = givenRequest.asJson.deepDropNullValues
+
+    serializedJson.hcursor.downField("truncate").as[String].value shouldBe "END"
+    serializedJson.hcursor.downField("extra_body").succeeded shouldBe false
   }
 
 }
