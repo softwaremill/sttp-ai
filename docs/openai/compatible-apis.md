@@ -1,6 +1,6 @@
 # OpenAI-compatible APIs
 
-## To use Ollama or Grok (OpenAI-compatible APIs)
+## To use Ollama, Grok, or OpenRouter (OpenAI-compatible APIs)
 
 Ollama with sync backend:
 
@@ -52,6 +52,58 @@ object Main:
       "chat.completion",
       Usage(0, 187, 187),
       Some("fp_ollama")
+    )
+  */
+```
+
+OpenRouter with sync backend:
+
+```scala mdoc:compile-only
+//> using dep com.softwaremill.sttp.ai::openai:@VERSION@
+
+import sttp.model.Uri.*
+import sttp.ai.openai.OpenAISyncClient
+import sttp.ai.openai.requests.completions.chat.ChatRequestResponseData.ChatResponse
+import sttp.ai.openai.requests.completions.chat.ChatRequestBody.{ChatBody, ChatCompletionModel}
+import sttp.ai.openai.requests.completions.chat.message.*
+
+object Main:
+  def main(args: Array[String]): Unit =
+    val apiKey = System.getenv("OPENROUTER_API_KEY")
+    val openAI: OpenAISyncClient = OpenAISyncClient(apiKey, uri"https://openrouter.ai/api/v1")
+
+    val bodyMessages: Seq[Message] = Seq(
+      Message.User(
+        content = Content.TextContent("Hello!"),
+      )
+    )
+
+    val chatRequestBody: ChatBody = ChatBody(
+      // OpenRouter model identifiers are "provider/model", see https://openrouter.ai/models
+      model = ChatCompletionModel.CustomChatCompletionModel("openai/gpt-4o-mini"),
+      messages = bodyMessages
+    )
+
+    // be aware that calling `createChatCompletion` may throw an OpenAIException
+    // e.g. AuthenticationException, RateLimitException and many more
+    val chatResponse: ChatResponse = openAI.createChatCompletion(chatRequestBody)
+
+    println(chatResponse)
+  /*
+    ChatResponse(
+      "gen-1234567890-abcdefghijklmnopqrstuvwx",
+      List(
+        Choices(
+          Message(Assistant, """Hello there! How can I help you today?""", List(), None),
+          "stop",
+          0
+        )
+      ),
+      1714663831,
+      "openai/gpt-4o-mini",
+      "chat.completion",
+      Usage(10, 10, 20),
+      None
     )
   */
 ```

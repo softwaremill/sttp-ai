@@ -9,7 +9,7 @@ sttp-ai is a Scala library providing a non-official client wrapper for OpenAI, C
 **Key Features:**
 - Native OpenAI API support (Chat, Completions, Embeddings, Audio, Images, etc.)
 - Native Claude (Anthropic) API support with dedicated module
-- OpenAI-compatible API support (Ollama, Grok, etc.)
+- OpenAI-compatible API support (Ollama, Grok, OpenRouter, etc.)
 - Streaming support for all major effect systems
 - Cross-platform: Scala 2.13.16 and Scala 3.3.6
 - Agent loop tools loadable from [MCP](https://modelcontextprotocol.io) servers (`mcp` module, Scala 3 only, via [chimp](https://github.com/softwaremill/chimp)), in addition to manually defined `AgentTool`s
@@ -138,7 +138,7 @@ Each streaming module (`streaming/{effect-system}/`) provides extensions for **b
 - **Sync Clients**: `OpenAISyncClient` / `ClaudeSyncClient` - Use `DefaultSyncBackend`, block on responses, may throw exceptions
 - **Async Clients**: `OpenAI` / `ClaudeClient` - Raw sttp requests, choose backend (cats-effect, ZIO, etc.)
 - **Custom Backends**: Pass backend to `.send(backend)`
-- **OpenAI-Compatible**: Use `OpenAI` client with custom base URL for Ollama, Grok, etc.
+- **OpenAI-Compatible**: Use `OpenAI` client with custom base URL for Ollama, Grok, OpenRouter, etc.
 
 ## Debugging with Scratch Files (*.sc)
 
