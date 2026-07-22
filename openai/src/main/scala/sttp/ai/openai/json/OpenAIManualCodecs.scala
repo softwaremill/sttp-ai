@@ -252,10 +252,10 @@ object OpenAIManualCodecs {
     )
 
   implicit val rrespInputMessageContentDecoder: Decoder[Either[String, List[ResponsesResponseBody.InputItem.InputContent]]] =
-    Decoder[String].either(Decoder[List[ResponsesResponseBody.InputItem.InputContent]])
+    Decoder.instance(c => Decoder[String].either(Decoder[List[ResponsesResponseBody.InputItem.InputContent]]).apply(c))
 
   implicit val rrespInstructionsDecoder: Decoder[Either[String, List[ResponsesResponseBody.InputItem]]] =
-    Decoder[String].either(Decoder[List[ResponsesResponseBody.InputItem]])
+    Decoder.instance(c => Decoder[String].either(Decoder[List[ResponsesResponseBody.InputItem]]).apply(c))
 
   // --- responses/Tool ---
   implicit val respWebSearchPreviewCodec: Codec[RespTool.WebSearchPreview] = Codec.from(
