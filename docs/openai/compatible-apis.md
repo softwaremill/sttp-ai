@@ -151,7 +151,6 @@ object Main:
 
     println(chatResponse)
 ```
-```
 
 Grok with cats-effect based backend:
 
