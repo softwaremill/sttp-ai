@@ -9,9 +9,15 @@ import sttp.ai.claude.ClaudeClient
 import sttp.ai.claude.config.ClaudeConfig
 import sttp.ai.claude.models.Tool
 import sttp.ai.core.agent.AgentTool
+import sttp.ai.core.agent.ConversationHistory
 import sttp.apispec.Schema
+import sttp.client4._
+import sttp.client4.testing.ResponseStub
+import sttp.model.StatusCode
 import sttp.monad.IdentityMonad
 import sttp.shared.Identity
+
+import java.util.concurrent.atomic.AtomicReference
 
 class ClaudeAgentBackendSpec extends AnyFlatSpec with Matchers with EitherValues {
 
@@ -96,5 +102,42 @@ class ClaudeAgentBackendSpec extends AnyFlatSpec with Matchers with EitherValues
       case raw: Tool.CustomRaw => raw.inputSchema shouldBe parse("""{"type":"object"}""").value
       case other               => fail(s"expected Tool.CustomRaw, got $other")
     }
+  }
+
+  private val minimalMessageResponse =
+    """{
+      |  "id": "msg_1",
+      |  "type": "message",
+      |  "role": "assistant",
+      |  "content": [{"type": "text", "text": "done"}],
+      |  "model": "claude-haiku-4-5-20251001",
+      |  "stop_reason": "end_turn",
+      |  "usage": {"input_tokens": 10, "output_tokens": 20}
+      |}""".stripMargin
+
+  private def captureRequestBody(includeTools: Boolean): String = {
+    val schema = parse(rawSchema).value.as[Schema](sttp.apispec.circe.schemaDecoder).value
+    val tool = AgentTool.dynamic("create-event", "Creates an event", schema)(_ => "ok")
+    val client = ClaudeClient(ClaudeConfig(apiKey = "test-key"))
+    val backend = new ClaudeAgentBackend[Identity](client, "claude-haiku-4-5-20251001", Seq(tool), None, None)(IdentityMonad)
+
+    val captured = new AtomicReference[GenericRequest[_, _]](null)
+    val httpStub = DefaultSyncBackend.stub.whenAnyRequest.thenRespondF { request =>
+      captured.set(request)
+      ResponseStub.adjust(minimalMessageResponse, StatusCode.Ok)
+    }
+    backend.sendRequest(ConversationHistory.withInitialPrompt("hello"), httpStub, includeTools = includeTools)
+    captured.get().body match {
+      case StringBody(s, _, _) => s
+      case other               => fail(s"expected StringBody, got $other")
+    }
+  }
+
+  it should "include tools in the request body when includeTools is true" in {
+    captureRequestBody(includeTools = true) should include("\"tools\"")
+  }
+
+  it should "omit tools from the request body when includeTools is false" in {
+    captureRequestBody(includeTools = false) should not include "\"tools\""
   }
 }
