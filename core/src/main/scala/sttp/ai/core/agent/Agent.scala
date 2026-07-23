@@ -22,6 +22,8 @@ class Agent[F[_]](
     val initialHistory = ConversationHistory.withInitialPrompt(initialPrompt)
 
     def loop(history: ConversationHistory, iteration: Int, toolCallRecords: Seq[ToolCallRecord]): F[AgentResult[String]] =
+      // Safety net for maxIterations <= 0. For maxIterations >= 1 this is unreachable: the isLastIteration branch below
+      // always returns at iteration == maxIterations - 1, so the loop never recurses to iteration == maxIterations.
       if (iteration >= config.maxIterations) {
         monad.unit(
           AgentResult(

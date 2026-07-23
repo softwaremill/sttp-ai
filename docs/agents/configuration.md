@@ -14,6 +14,12 @@ val agent = OpenAIAgent
   .build
 ```
 
+`maxIterations` bounds the total number of model calls. The **last** allowed iteration is sent without tools, forcing the
+model to produce a final text answer instead of a tool call whose result would be discarded (that iteration finishes with
+`FinishReason.MaxIterations`). Tools are therefore only available for the first `maxIterations - 1` iterations — so with
+`maxIterations = 1` the agent never gets to use its tools. Set `maxIterations` at least one higher than the number of
+tool-using steps you expect the task to need.
+
 The OpenAI factories additionally accept a `strictTools` flag (default `true`): when `true`, tool schemas are
 normalized for OpenAI's strict function calling (`additionalProperties: false`, all properties required, optional
 properties nullable); when `false`, tools are registered as non-strict with their original schemas.
