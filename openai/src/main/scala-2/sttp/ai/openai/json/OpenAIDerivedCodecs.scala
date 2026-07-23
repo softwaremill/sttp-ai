@@ -9,7 +9,7 @@ import io.circe.generic.extras.semiauto.{
   deriveEnumerationEncoder
 }
 import sttp.ai.core.json.CirceConfiguration.jsonConfiguration
-import sttp.ai.core.json.CirceHelpers.dropEmptyTopLevel
+import sttp.ai.core.json.CirceHelpers.{dropEmptyTopLevel, mergeExtraBody}
 import sttp.ai.openai.requests.completions.{CompletionTokensDetails, PromptTokensDetails, Usage}
 import sttp.ai.openai.requests.completions.chat.Audio
 import sttp.ai.openai.requests.completions.chat.{ChatChunkRequestResponseData => Chunk, ChatRequestResponseData => Resp}
@@ -250,7 +250,7 @@ object OpenAIDerivedCodecs {
     Codec.from(deriveConfiguredDecoder[Message], deriveConfiguredEncoder[Message].mapJson(dropEmptyTopLevel))
   }
 
-  implicit val chatBodyEncoder: Encoder[ChatBody] = deriveConfiguredEncoder
+  implicit val chatBodyEncoder: Encoder[ChatBody] = deriveConfiguredEncoder[ChatBody].mapJson(mergeExtraBody("extra_body"))
 
   // usage
   implicit val completionTokensDetailsCodec: Codec[CompletionTokensDetails] = deriveConfiguredCodec
@@ -275,9 +275,11 @@ object OpenAIDerivedCodecs {
   implicit val chatChunkResponseCodec: Codec[Chunk.ChatChunkResponse] = deriveConfiguredCodec
 
   // request bodies
-  implicit val embeddingsBodyEncoder: Encoder[EmbReq.EmbeddingsBody] = deriveConfiguredEncoder
+  implicit val embeddingsBodyEncoder: Encoder[EmbReq.EmbeddingsBody] =
+    deriveConfiguredEncoder[EmbReq.EmbeddingsBody].mapJson(mergeExtraBody("extra_body"))
   implicit val moderationsBodyEncoder: Encoder[ModReq.ModerationsBody] = deriveConfiguredEncoder
-  implicit val completionsBodyEncoder: Encoder[CompReq.CompletionsBody] = deriveConfiguredEncoder
+  implicit val completionsBodyEncoder: Encoder[CompReq.CompletionsBody] =
+    deriveConfiguredEncoder[CompReq.CompletionsBody].mapJson(mergeExtraBody("extra_body"))
   implicit val speechRequestBodyEncoder: Encoder[SpeechRequestBody] = deriveConfiguredEncoder
 
   // embeddings response

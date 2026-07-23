@@ -127,6 +127,13 @@ object ChatRequestBody {
     * @param promptCacheRetention
     *   Can be used to specify policy on how long the prompt cache should be retained, not every model support every policy, check the API
     *   documentation for more details.
+    * @param extraBody
+    *   Arbitrary extra parameters merged into the top level of the serialized request JSON, alongside the fields above. Useful for
+    *   parameters supported only by an OpenAI-compatible backend (e.g. vLLM's `guided_json`, `top_k`), which have no typed field here. If a
+    *   key collides with one of the typed fields above, the `extraBody` value wins for scalar/array values; if both sides are JSON objects,
+    *   they are merged recursively (deep merge), so unset sub-keys of the typed field's object may still survive alongside `extraBody`'s.
+    *   Map keys are used as-is, with no snake_case conversion (unlike the typed fields above), so use the backend's actual wire name for
+    *   each key. Explicit `Json.Null` values are dropped like any other unset field and will not reach the wire.
     */
   case class ChatBody(
       messages: Seq[Message],
@@ -157,7 +164,8 @@ object ChatRequestBody {
       prediction: Option[Prediction] = None,
       audio: Option[Audio] = None,
       promptCacheKey: Option[String] = None,
-      promptCacheRetention: Option[CacheRetentionPolicy] = None
+      promptCacheRetention: Option[CacheRetentionPolicy] = None,
+      extraBody: Map[String, Json] = Map.empty
   )
 
   object ChatBody {

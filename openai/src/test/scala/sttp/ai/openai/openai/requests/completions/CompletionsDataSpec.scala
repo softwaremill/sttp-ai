@@ -7,6 +7,7 @@ import sttp.ai.openai.fixtures
 import sttp.ai.openai.requests.completions.Stop.SingleStop
 import io.circe.parser.{decode, parse}
 import io.circe.syntax._
+import io.circe.Json
 import sttp.ai.openai.json.OpenAIDerivedCodecs._
 import sttp.ai.openai.json.OpenAIManualCodecs._
 
@@ -230,6 +231,23 @@ class CompletionsDataSpec extends AnyFlatSpec with Matchers with EitherValues {
 
     // then
     serializedJson shouldBe jsonRequest
+  }
+
+  "Given completions request with extraBody" should "merge extraBody entries into the top level of the serialized Json" in {
+    import sttp.ai.openai.requests.completions.CompletionsRequestBody.CompletionModel.GPT35TurboInstruct
+    import sttp.ai.openai.requests.completions.CompletionsRequestBody.CompletionsBody._
+    import sttp.ai.openai.requests.completions.CompletionsRequestBody._
+
+    val givenRequest = CompletionsRequestBody.CompletionsBody(
+      model = GPT35TurboInstruct,
+      prompt = Some(SinglePrompt("Say this is a test")),
+      extraBody = Map("top_k" -> Json.fromInt(40))
+    )
+
+    val serializedJson: io.circe.Json = givenRequest.asJson.deepDropNullValues
+
+    serializedJson.hcursor.downField("top_k").as[Int].value shouldBe 40
+    serializedJson.hcursor.downField("extra_body").succeeded shouldBe false
   }
 
 }

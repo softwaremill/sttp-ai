@@ -108,6 +108,50 @@ object Main:
   */
 ```
 
+### Extra body parameters (vLLM, etc.)
+
+Some OpenAI-compatible backends — vLLM in particular — accept request parameters that aren't part of the official OpenAI API and have no
+typed field on `ChatBody`, `CompletionsBody`, or `EmbeddingsBody` (e.g. vLLM's `guided_json` or `top_k`). Use `extraBody` to merge arbitrary
+JSON values into the top level of the serialized request, alongside the typed fields:
+
+```scala mdoc:compile-only
+//> using dep com.softwaremill.sttp.ai::openai:@VERSION@
+
+import io.circe.Json
+import sttp.model.Uri.*
+import sttp.ai.openai.OpenAISyncClient
+import sttp.ai.openai.requests.completions.chat.ChatRequestResponseData.ChatResponse
+import sttp.ai.openai.requests.completions.chat.ChatRequestBody.{ChatBody, ChatCompletionModel}
+import sttp.ai.openai.requests.completions.chat.message.*
+
+object Main:
+  def main(args: Array[String]): Unit =
+    val openAI: OpenAISyncClient = OpenAISyncClient("vllm", uri"http://localhost:8000/v1")
+
+    val bodyMessages: Seq[Message] = Seq(
+      Message.User(
+        content = Content.TextContent("List three colors as JSON."),
+      )
+    )
+
+    val chatRequestBody: ChatBody = ChatBody(
+      model = ChatCompletionModel.CustomChatCompletionModel("meta-llama/Llama-3.1-8B-Instruct"),
+      messages = bodyMessages,
+      // vLLM-specific parameters with no typed field on ChatBody, merged into the top-level request JSON:
+      extraBody = Map(
+        "guided_json" -> Json.obj(
+          "type" -> Json.fromString("object"),
+          "properties" -> Json.obj("colors" -> Json.obj("type" -> Json.fromString("array")))
+        ),
+        "top_k" -> Json.fromInt(40)
+      )
+    )
+
+    val chatResponse: ChatResponse = openAI.createChatCompletion(chatRequestBody)
+
+    println(chatResponse)
+```
+
 Grok with cats-effect based backend:
 
 ```scala mdoc:compile-only

@@ -3,7 +3,7 @@ package sttp.ai.openai.json
 import io.circe.{Codec, Decoder, DecodingFailure, Encoder, Json, JsonObject}
 import io.circe.derivation.{Configuration, ConfiguredCodec, ConfiguredDecoder, ConfiguredEncoder, ConfiguredEnumCodec}
 import sttp.ai.core.json.CirceConfiguration.jsonConfiguration
-import sttp.ai.core.json.CirceHelpers.dropEmptyTopLevel
+import sttp.ai.core.json.CirceHelpers.{dropEmptyTopLevel, mergeExtraBody}
 import scala.deriving.Mirror
 import sttp.ai.openai.requests.completions.{CompletionTokensDetails, PromptTokensDetails, Usage}
 import sttp.ai.openai.requests.completions.chat.Audio
@@ -233,7 +233,7 @@ object OpenAIDerivedCodecs {
     Codec.from(ConfiguredDecoder.derived[Message], ConfiguredEncoder.derived[Message].mapJson(dropEmptyTopLevel))
   }
 
-  implicit val chatBodyEncoder: Encoder[ChatBody] = ConfiguredEncoder.derived
+  implicit val chatBodyEncoder: Encoder[ChatBody] = ConfiguredEncoder.derived[ChatBody].mapJson(mergeExtraBody("extra_body"))
 
   // usage
   implicit val completionTokensDetailsCodec: Codec[CompletionTokensDetails] = ConfiguredCodec.derived
@@ -258,9 +258,11 @@ object OpenAIDerivedCodecs {
   implicit val chatChunkResponseCodec: Codec[Chunk.ChatChunkResponse] = ConfiguredCodec.derived
 
   // request bodies
-  implicit val embeddingsBodyEncoder: Encoder[EmbReq.EmbeddingsBody] = ConfiguredEncoder.derived
+  implicit val embeddingsBodyEncoder: Encoder[EmbReq.EmbeddingsBody] =
+    ConfiguredEncoder.derived[EmbReq.EmbeddingsBody].mapJson(mergeExtraBody("extra_body"))
   implicit val moderationsBodyEncoder: Encoder[ModReq.ModerationsBody] = ConfiguredEncoder.derived
-  implicit val completionsBodyEncoder: Encoder[CompReq.CompletionsBody] = ConfiguredEncoder.derived
+  implicit val completionsBodyEncoder: Encoder[CompReq.CompletionsBody] =
+    ConfiguredEncoder.derived[CompReq.CompletionsBody].mapJson(mergeExtraBody("extra_body"))
   implicit val speechRequestBodyEncoder: Encoder[SpeechRequestBody] = ConfiguredEncoder.derived
 
   // embeddings response
