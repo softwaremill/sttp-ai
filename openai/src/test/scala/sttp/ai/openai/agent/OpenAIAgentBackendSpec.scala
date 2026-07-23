@@ -6,10 +6,16 @@ import org.scalatest.EitherValues
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
 import sttp.ai.core.agent.AgentTool
+import sttp.ai.core.agent.ConversationHistory
 import sttp.ai.openai.OpenAI
 import sttp.apispec.Schema
+import sttp.client4._
+import sttp.client4.testing.ResponseStub
+import sttp.model.StatusCode
 import sttp.monad.IdentityMonad
 import sttp.shared.Identity
+
+import java.util.concurrent.atomic.AtomicReference
 
 class OpenAIAgentBackendSpec extends AnyFlatSpec with Matchers with EitherValues {
 
@@ -40,5 +46,30 @@ class OpenAIAgentBackendSpec extends AnyFlatSpec with Matchers with EitherValues
     params.hcursor.downField("additionalProperties").focus shouldBe None
     params.hcursor.downField("required").as[List[String]] shouldBe Right(List("title"))
     params.hcursor.downField("properties").downField("note").downField("type").as[String] shouldBe Right("string")
+  }
+
+  private def captureRequestBody(includeTools: Boolean): String = {
+    val captured = new AtomicReference[GenericRequest[_, _]](null)
+    val httpStub = DefaultSyncBackend.stub.whenAnyRequest.thenRespondF { request =>
+      captured.set(request)
+      ResponseStub.adjust(sttp.ai.openai.fixtures.CompletionsFixture.structuredOutputsResponse, StatusCode.Ok)
+    }
+    backend(strictTools = true).sendRequest(
+      ConversationHistory.withInitialPrompt("hello"),
+      httpStub,
+      includeTools = includeTools
+    ): Unit
+    captured.get().body match {
+      case StringBody(s, _, _) => s
+      case other               => fail(s"expected StringBody, got $other")
+    }
+  }
+
+  it should "include tools in the request body when includeTools is true" in {
+    captureRequestBody(includeTools = true) should include("\"tools\"")
+  }
+
+  it should "omit tools from the request body when includeTools is false" in {
+    captureRequestBody(includeTools = false) should not include "\"tools\""
   }
 }
