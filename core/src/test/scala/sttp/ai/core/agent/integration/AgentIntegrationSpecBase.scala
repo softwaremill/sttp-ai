@@ -164,6 +164,19 @@ abstract class AgentIntegrationSpecBase extends AnyFlatSpec with Matchers {
     ()
   }
 
+  it should "force a tool-free final answer without an API error when tool history precedes the last iteration" in
+    withAgent(maxIter = 2, tools = Seq(calculatorTool)) { (agent, backend) =>
+      val result = agent.run(
+        "Use the calculator to add 2 and 3, then tell me the result in a sentence."
+      )(backend)
+
+      assertToolCalled(result, "calculator", minTimes = 1)
+      result.iterations shouldBe 2
+      result.finishReason shouldBe FinishReason.MaxIterations
+      result.finalAnswer should not be empty
+      ()
+    }
+
   case class TripSummary(weather: String, calculation: String, conclusion: String)
   implicit val tripSummaryCodec: Codec[TripSummary] = deriveCodec
   implicit val tripSummarySchema: Schema[TripSummary] = Schema.derived
