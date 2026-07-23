@@ -58,7 +58,7 @@ class OpenAIAgentBackendSpec extends AnyFlatSpec with Matchers with EitherValues
       ConversationHistory.withInitialPrompt("hello"),
       httpStub,
       includeTools = includeTools
-    )
+    ): Unit
     captured.get().body match {
       case StringBody(s, _, _) => s
       case other               => fail(s"expected StringBody, got $other")
