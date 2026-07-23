@@ -42,7 +42,8 @@ object CompletionsRequestBody {
     * @param extraBody
     *   Arbitrary extra parameters merged into the top level of the serialized request JSON, alongside the fields above. Useful for
     *   parameters supported only by an OpenAI-compatible backend, which have no typed field here. If a key collides with one of the typed
-    *   fields above, the `extraBody` value wins.
+    *   fields above, the `extraBody` value wins for scalar/array values; if both sides are JSON objects, they are merged recursively (deep
+    *   merge), so unset sub-keys of the typed field's object may still survive alongside `extraBody`'s.
     *
     * For more information please visit: [[https://platform.openai.com/docs/api-reference/completions/create]]
     */

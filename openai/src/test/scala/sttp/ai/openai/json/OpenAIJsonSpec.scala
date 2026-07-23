@@ -131,6 +131,17 @@ class OpenAIJsonSpec extends AnyFlatSpec with Matchers with EitherValues {
     json.hcursor.downField("temperature").as[Double].value shouldBe 0.9
   }
 
+  it should "omit the extra_body key entirely when extraBody is left at its default empty map" in {
+    val chatBody = ChatBody(
+      messages = Seq(Message.User(content = Content.TextContent("hi"))),
+      model = ChatCompletionModel.GPT4oMini
+    )
+
+    val json = parse(requestBodyOf(chatBody)).value
+
+    json.hcursor.downField("extra_body").succeeded shouldBe false
+  }
+
   private def responsesRequestBodyOf(requestBody: ResponsesRequestBody): String =
     new OpenAI("test-key").createModelResponse(requestBody).body match {
       case StringBody(s, _, _) => s
