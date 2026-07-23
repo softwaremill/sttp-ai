@@ -16,15 +16,18 @@ class AgentSpec extends AnyFlatSpec with Matchers with OptionValues {
   class StubAgentBackend(responses: Seq[AgentResponse]) extends AgentBackend[Identity] {
     private var callCount = 0
     var receivedHistories: Seq[ConversationHistory] = Seq.empty
+    var receivedIncludeTools: Seq[Boolean] = Seq.empty
 
     override def tools: Seq[AgentTool[Identity, _]] = Seq.empty
     override def systemPrompt: Option[String] = None
 
     override def sendRequest(
         history: ConversationHistory,
-        backend: sttp.client4.Backend[Identity]
+        backend: sttp.client4.Backend[Identity],
+        includeTools: Boolean
     ): Identity[AgentResponse] = {
       receivedHistories = receivedHistories :+ history
+      receivedIncludeTools = receivedIncludeTools :+ includeTools
       val response = if (callCount < responses.length) {
         responses(callCount)
       } else {
@@ -80,7 +83,30 @@ class AgentSpec extends AnyFlatSpec with Matchers with OptionValues {
 
     result.finishReason shouldBe FinishReason.MaxIterations
     result.iterations shouldBe 5
-    result.toolCalls should have size 5
+    result.toolCalls should have size 4
+  }
+
+  it should "not offer tools on the last iteration and use the forced text answer" in {
+    val dummyTool = AgentTool.fromFunction(
+      "dummy",
+      "Dummy tool"
+    )((_: DummyInput) => "dummy result")
+
+    val stubBackend = new StubAgentBackend(
+      Seq(
+        AgentResponse("r1", Seq(ToolCall(id = "call_1", toolName = "dummy", input = "{}")), StopReason.ToolUse),
+        AgentResponse("r2", Seq(ToolCall(id = "call_2", toolName = "dummy", input = "{}")), StopReason.ToolUse),
+        AgentResponse("final answer", Seq(ToolCall(id = "call_3", toolName = "dummy", input = "{}")), StopReason.ToolUse)
+      )
+    )
+
+    val result = runLoop(AgentBuilder[Identity](_ => stubBackend)(IdentityMonad).maxIterations(3).tools(dummyTool))
+
+    stubBackend.receivedIncludeTools shouldBe Seq(true, true, false)
+    result.toolCalls should have size 2
+    result.iterations shouldBe 3
+    result.finishReason shouldBe FinishReason.MaxIterations
+    result.finalAnswer shouldBe "final answer"
   }
 
   it should "complete the loop when the response has no tool calls and empty text" in {
@@ -224,7 +250,7 @@ class AgentSpec extends AnyFlatSpec with Matchers with OptionValues {
     config.userTools.head.name shouldBe "custom"
   }
 
-  it should "extract final answer from last tool result on max iterations" in {
+  it should "use the model's forced text answer on the last iteration instead of a discarded tool result" in {
     val dummyTool = AgentTool.fromFunction(
       "dummy",
       "Dummy tool"
@@ -239,7 +265,7 @@ class AgentSpec extends AnyFlatSpec with Matchers with OptionValues {
     )
 
     result.finishReason shouldBe FinishReason.MaxIterations
-    result.finalAnswer shouldBe "final tool result"
+    result.finalAnswer shouldBe "Third response"
     result.iterations shouldBe 3
   }
 

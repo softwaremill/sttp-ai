@@ -32,13 +32,15 @@ class Agent[F[_]](
           )
         )
       } else {
+        val isLastIteration = iteration == config.maxIterations - 1
+
         val historyWithMarker = if (iteration > 0) {
           history.addIterationMarker(iteration + 1, config.maxIterations)
         } else {
           history
         }
 
-        val response = agentBackend.sendRequest(historyWithMarker, backend)
+        val response = agentBackend.sendRequest(historyWithMarker, backend, includeTools = !isLastIteration)
 
         response.flatMap { response =>
           if (response.stopReason == StopReason.MaxTokens) {
@@ -48,6 +50,19 @@ class Agent[F[_]](
                 iterations = iteration + 1,
                 toolCalls = toolCallRecords,
                 finishReason = FinishReason.TokenLimit
+              )
+            )
+          } else if (isLastIteration) {
+            // Tools were not offered on the last allowed iteration, so any tool calls in the response are
+            // spurious and must not be executed. Force the final answer: prefer the model's text, and fall
+            // back to the last tool result / assistant text if the model returned no text.
+            val finalAnswer = if (response.textContent.nonEmpty) response.textContent else extractFinalAnswer(history)
+            monad.unit(
+              AgentResult(
+                finalAnswer = finalAnswer,
+                iterations = iteration + 1,
+                toolCalls = toolCallRecords,
+                finishReason = FinishReason.MaxIterations
               )
             )
           } else if (response.toolCalls.isEmpty) {

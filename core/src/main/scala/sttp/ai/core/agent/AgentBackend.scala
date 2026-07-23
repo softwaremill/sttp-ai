@@ -28,12 +28,16 @@ trait AgentBackend[F[_]] {
     *   The complete conversation history including prompts, responses, tool calls, and results
     * @param backend
     *   The HTTP backend used to send requests (supports various effect systems via sttp)
+    * @param includeTools
+    *   Whether the agent's tools should be offered on this call. The agent loop sets this to `false` on the last allowed iteration so the
+    *   model is forced to produce a final answer instead of making tool calls whose results would be discarded.
     * @return
     *   The LLM's response wrapped in the effect type F, containing text content, tool calls, and stop reason
     */
   def sendRequest(
       history: ConversationHistory,
-      backend: Backend[F]
+      backend: Backend[F],
+      includeTools: Boolean
   ): F[AgentResponse]
 }
 

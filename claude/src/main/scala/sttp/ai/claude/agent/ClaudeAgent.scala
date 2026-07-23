@@ -81,7 +81,8 @@ private[claude] class ClaudeAgentBackend[F[_]](
 
   override def sendRequest(
       history: ConversationHistory,
-      backend: Backend[F]
+      backend: Backend[F],
+      includeTools: Boolean
   ): F[AgentResponse] = {
     val messages = buildMessages(history)
     val request = MessageRequest(
@@ -89,7 +90,7 @@ private[claude] class ClaudeAgentBackend[F[_]](
       messages = messages.toList,
       maxTokens = 4096,
       system = systemPrompt,
-      tools = if (convertedTools.nonEmpty) Some(convertedTools.toList) else None,
+      tools = if (includeTools && convertedTools.nonEmpty) Some(convertedTools.toList) else None,
       outputConfig = outputConfig
     )
 

@@ -81,13 +81,14 @@ private[openai] class OpenAIAgentBackend[F[_]](
 
   override def sendRequest(
       history: ConversationHistory,
-      backend: Backend[F]
+      backend: Backend[F],
+      includeTools: Boolean
   ): F[AgentResponse] = {
     val messages = buildMessages(history)
     val request = ChatBody(
       model = ChatCompletionModel.CustomChatCompletionModel(modelName),
       messages = messages,
-      tools = if (convertedTools.nonEmpty) Some(convertedTools) else None,
+      tools = if (includeTools && convertedTools.nonEmpty) Some(convertedTools) else None,
       responseFormat = responseFormat
     )
     monad.flatMap(monad.map(openAI.createChatCompletion(request).send(backend))(_.body)) {
