@@ -179,7 +179,11 @@ lazy val ox = (projectMatrix in file("streaming/ox"))
   .settings(
     libraryDependencies ++= Libraries.sttpClientOx
   )
-  .dependsOn(openai % "compile->compile;test->test", claude % "compile->compile;test->test")
+  .dependsOn(
+    openai % "compile->compile;test->test",
+    claude % "compile->compile;test->test",
+    gemini % "compile->compile;test->test"
+  )
 
 lazy val mcp = (projectMatrix in file("mcp"))
   .jvmPlatform(
