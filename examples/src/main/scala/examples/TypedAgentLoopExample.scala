@@ -50,8 +50,14 @@ object TypedAgentLoopExample extends App {
         println(s"calculation: ${summary.calculation}")
         println(s"conclusion:  ${summary.conclusion}")
       case Left(err) =>
-        println(s"Failed to parse structured answer: ${err.cause.getMessage}")
-        println(s"Raw answer was: ${err.rawAnswer}")
+        println(s"No structured answer available, raw answer was: ${err.rawAnswer}")
+      // TODO: replace the case above with the two cases below once a version with AgentIncomplete is released
+      // (examples are compiled by CI against the released artifact, which doesn't contain it yet)
+      // case Left(AgentParseError(rawAnswer, cause)) =>
+      //   println(s"Failed to parse structured answer: ${cause.getMessage}")
+      //   println(s"Raw answer was: $rawAnswer")
+      // case Left(AgentIncomplete(rawAnswer, finishReason, _)) =>
+      //   println(s"Agent did not finish cleanly ($finishReason), raw answer was: $rawAnswer")
     }
   } finally backend.close()
 }

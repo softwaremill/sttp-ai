@@ -24,7 +24,17 @@ final case class AgentResult[T](
     finishReason: FinishReason
 )
 
+sealed trait AgentFailure {
+  def rawAnswer: String
+}
+
 final case class AgentParseError(
     rawAnswer: String,
     cause: Throwable
-)
+) extends AgentFailure
+
+final case class AgentIncomplete(
+    rawAnswer: String,
+    finishReason: FinishReason,
+    parseError: Option[Throwable]
+) extends AgentFailure

@@ -93,10 +93,17 @@ class Agent[F[_]](
 
   def runAs[T](
       initialPrompt: String
-  )(backend: Backend[F])(implicit r: Decoder[T]): F[AgentResult[Either[AgentParseError, T]]] =
+  )(backend: Backend[F])(implicit r: Decoder[T]): F[AgentResult[Either[AgentFailure, T]]] =
     monad.map(run(initialPrompt)(backend)) { res =>
-      val parsed: Either[AgentParseError, T] =
-        decode[T](res.finalAnswer).left.map(e => AgentParseError(res.finalAnswer, e))
+      val parsed: Either[AgentFailure, T] = res.finishReason match {
+        case FinishReason.NaturalStop =>
+          decode[T](res.finalAnswer).left.map(e => AgentParseError(res.finalAnswer, e))
+        case FinishReason.MaxIterations =>
+          // The last iteration forces a no-tools, schema-guided answer, so it may still be valid.
+          decode[T](res.finalAnswer).left.map(e => AgentIncomplete(res.finalAnswer, res.finishReason, Some(e)))
+        case FinishReason.TokenLimit | FinishReason.Error(_) =>
+          Left(AgentIncomplete(res.finalAnswer, res.finishReason, parseError = None))
+      }
       AgentResult(parsed, res.iterations, res.toolCalls, res.finishReason)
     }
 
