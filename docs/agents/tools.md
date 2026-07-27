@@ -50,6 +50,8 @@ On failure the iteration trace is preserved: `finalAnswer` is a `Left(AgentFailu
 - `AgentParseError` - the loop stopped naturally but the answer couldn't be parsed as `T`.
 - `AgentIncomplete` - the loop was cut short (`FinishReason.MaxIterations` or `FinishReason.TokenLimit`). On `MaxIterations` a parse is still attempted (the final iteration forces a schema-guided answer without tools), and `parseError` carries the cause if it failed; on `TokenLimit` the answer is truncated, so no parse is attempted and `parseError` is `None`.
 
+Note that because `MaxIterations` still parses, `finalAnswer` can be `Right(t)` even though the run hit the iteration cap - check `AgentResult.finishReason` if you need to distinguish a capped run from a natural stop.
+
 ```scala mdoc:compile-only
 //> using dep com.softwaremill.sttp.ai::openai:@VERSION@
 
@@ -76,8 +78,8 @@ object TypedAgentExample extends App {
       .deriveResponseSchema[TripSummary]
       .build
     agent.runAs[TripSummary]("What's the weather in Paris?")(backend).finalAnswer match {
-      case Right(summary)                             => println(s"Weather: ${summary.weather}")
-      case Left(AgentParseError(raw, cause))          => println(s"Parse failed: ${cause.getMessage}; raw=$raw")
+      case Right(summary)                              => println(s"Weather: ${summary.weather}")
+      case Left(AgentParseError(raw, cause))           => println(s"Parse failed: ${cause.getMessage}; raw=$raw")
       case Left(AgentIncomplete(raw, finishReason, _)) => println(s"Run incomplete ($finishReason); raw=$raw")
     }
   } finally backend.close()
