@@ -12,7 +12,6 @@ import io.circe.{Decoder, Json}
 import io.circe.parser.decode
 import io.circe.syntax._
 import sttp.ai.gemini.json.GeminiDerivedCodecs._
-import sttp.ai.gemini.json.GeminiManualCodecs._
 import java.io.InputStream
 
 trait GeminiClient {
@@ -64,6 +63,23 @@ class GeminiClientImpl(config: GeminiConfig) extends GeminiClient with ResponseH
       case _                             => new GeminiException.APIException(message, status, None, None, cause)
     }
   }
+
+  /** Parse a successful JSON response into `T`, mapping non-2xx responses to the corresponding [[GeminiException]] (rate limit, invalid
+    * request, etc.) rather than a generic deserialization error. The core default (`ResponseHandlers.asJson_parseErrors`) treats
+    * `asString`'s `Left(body)` for non-2xx responses as a deserialization failure, so it never reaches `mapErrorToException`; this override
+    * restores status-based dispatch, matching `OpenAIJson.asJson_parseErrors`.
+    */
+  override def asJson_parseErrors[T: Decoder]: ResponseAs[Either[GeminiException, T]] =
+    asString.mapWithMetadata { (responseBody, metadata) =>
+      responseBody match {
+        case Left(errorBody) => Left(mapErrorToException(errorBody, metadata))
+        case Right(body)     =>
+          try Right(read[T](body))
+          catch {
+            case e: Exception => Left(deserializationException(e, metadata))
+          }
+      }
+    }
 
   private def asUnit_parseErrors: ResponseAs[Either[GeminiException, Unit]] =
     asString.mapWithMetadata { (body, metadata) =>

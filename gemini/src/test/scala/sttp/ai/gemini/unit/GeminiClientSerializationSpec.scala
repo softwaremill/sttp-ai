@@ -9,7 +9,8 @@ import sttp.ai.gemini.GeminiExceptions.GeminiException
 import sttp.ai.gemini.config.GeminiConfig
 import sttp.ai.gemini.models._
 import sttp.ai.gemini.requests.InteractionRequest
-import sttp.client4.StringBody
+import sttp.client4.{DefaultSyncBackend, StringBody}
+import sttp.client4.testing.ResponseStub
 import sttp.model.{Header, ResponseMetadata, StatusCode}
 
 class GeminiClientSerializationSpec extends AnyFlatSpec with Matchers with EitherValues {
@@ -27,6 +28,7 @@ class GeminiClientSerializationSpec extends AnyFlatSpec with Matchers with Eithe
     req.uri.toString should endWith("/v1beta/interactions")
     req.method.method shouldBe "POST"
     req.headers should contain(Header("x-goog-api-key", "test-key"))
+    req.headers should contain(Header("content-type", "application/json"))
   }
 
   it should "drop unset optional fields from the serialized body" in {
@@ -57,6 +59,15 @@ class GeminiClientSerializationSpec extends AnyFlatSpec with Matchers with Eithe
     client.mapErrorToException(errorBody, meta(StatusCode.ServiceUnavailable)) shouldBe a[GeminiException.ServiceUnavailableException]
     client.mapErrorToException(errorBody, meta(StatusCode.InternalServerError)) shouldBe a[GeminiException.APIException]
     client.mapErrorToException(errorBody, meta(StatusCode.TooManyRequests)).getMessage shouldBe "quota exceeded"
+  }
+
+  it should "map non-2xx responses through the status-based exception dispatch" in {
+    val errorBody = """{"error":{"code":401,"message":"invalid key","status":"UNAUTHENTICATED"}}"""
+    val stub = DefaultSyncBackend.stub.whenAnyRequest
+      .thenRespondF(_ => ResponseStub.adjust(errorBody, StatusCode.Unauthorized))
+    val result = client.createInteraction(InteractionRequest.simple("gemini-2.5-flash-lite", "hi")).send(stub).body
+    result.left.toOption.get shouldBe a[GeminiException.AuthenticationException]
+    result.left.toOption.get.getMessage shouldBe "invalid key"
   }
 
   it should "set stream=true on streaming request bodies" in {
