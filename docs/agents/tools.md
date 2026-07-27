@@ -45,7 +45,10 @@ case class AgentResult[T](
 
 Set `responseSchema` on `AgentConfig` and use `runAs[T]` to receive a parsed Scala value as the agent's final answer. The response schema, derived from `T`, is sent to the model to define the structured output of the agent's final answer. The answer is then parsed back into `T` via circe.
 
-On parse failure the iteration trace is preserved: `finalAnswer` is `Left(AgentParseError)` rather than a thrown exception.
+On failure the iteration trace is preserved: `finalAnswer` is a `Left(AgentFailure)` rather than a thrown exception. There are two failure cases:
+
+- `AgentParseError` - the loop stopped naturally but the answer couldn't be parsed as `T`.
+- `AgentIncomplete` - the loop was cut short (`FinishReason.MaxIterations` or `FinishReason.TokenLimit`). On `MaxIterations` a parse is still attempted (the final iteration forces a schema-guided answer without tools), and `parseError` carries the cause if it failed; on `TokenLimit` the answer is truncated, so no parse is attempted and `parseError` is `None`.
 
 ```scala mdoc:compile-only
 //> using dep com.softwaremill.sttp.ai::openai:@VERSION@
@@ -73,8 +76,9 @@ object TypedAgentExample extends App {
       .deriveResponseSchema[TripSummary]
       .build
     agent.runAs[TripSummary]("What's the weather in Paris?")(backend).finalAnswer match {
-      case Right(summary) => println(s"Weather: ${summary.weather}")
-      case Left(err)      => println(s"Parse failed: ${err.cause.getMessage}; raw=${err.rawAnswer}")
+      case Right(summary)                             => println(s"Weather: ${summary.weather}")
+      case Left(AgentParseError(raw, cause))          => println(s"Parse failed: ${cause.getMessage}; raw=$raw")
+      case Left(AgentIncomplete(raw, finishReason, _)) => println(s"Run incomplete ($finishReason); raw=$raw")
     }
   } finally backend.close()
 }

@@ -49,9 +49,11 @@ object TypedAgentLoopExample extends App {
         println(s"weather:     ${summary.weatherSummary}")
         println(s"calculation: ${summary.calculation}")
         println(s"conclusion:  ${summary.conclusion}")
-      case Left(err) =>
-        println(s"Failed to parse structured answer: ${err.cause.getMessage}")
-        println(s"Raw answer was: ${err.rawAnswer}")
+      case Left(AgentParseError(rawAnswer, cause)) =>
+        println(s"Failed to parse structured answer: ${cause.getMessage}")
+        println(s"Raw answer was: $rawAnswer")
+      case Left(AgentIncomplete(rawAnswer, finishReason, _)) =>
+        println(s"Agent did not finish cleanly ($finishReason), raw answer was: $rawAnswer")
     }
   } finally backend.close()
 }

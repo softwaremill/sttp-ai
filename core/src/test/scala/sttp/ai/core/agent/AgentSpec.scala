@@ -437,12 +437,34 @@ class AgentSpec extends AnyFlatSpec with Matchers with OptionValues {
     result.iterations shouldBe 1: Unit
     result.finishReason shouldBe FinishReason.NaturalStop: Unit
     result.finalAnswer.isLeft shouldBe true: Unit
-    val err = result.finalAnswer.left.toOption.get
-    err.rawAnswer should include("wrong"): Unit
-    err.cause should not be null
+    result.finalAnswer.left.toOption.get match {
+      case AgentParseError(rawAnswer, cause) =>
+        rawAnswer should include("wrong"): Unit
+        cause should not be null
+      case other => fail(s"Expected AgentParseError, got $other")
+    }
   }
 
-  it should "return Left(AgentParseError) on the maxIterations path where the capped answer is not schema-shaped" in {
+  it should "return Right(T) on the maxIterations path when the forced final answer is schema-shaped" in {
+    val dummyTool = AgentTool.fromFunction(
+      "dummy",
+      "Dummy tool"
+    )((_: DummyInput) => "dummy result")
+
+    val result = agentBuilder(
+      AgentResponse("", Seq(ToolCall(id = "call_1", toolName = "dummy", input = "{}")), StopReason.ToolUse),
+      AgentResponse("""{"city":"Krakow","temp_c":12.0,"conditions":"sunny"}""", Seq.empty, StopReason.EndTurn)
+    ).maxIterations(2)
+      .tools(dummyTool)
+      .deriveResponseSchema[WeatherSummary]
+      .build
+      .runAs[WeatherSummary]("What's the weather?")(backend)
+
+    result.finishReason shouldBe FinishReason.MaxIterations: Unit
+    result.finalAnswer shouldBe Right(WeatherSummary("Krakow", 12.0, "sunny"))
+  }
+
+  it should "return Left(AgentIncomplete) with the parse error on the maxIterations path where the capped answer is not schema-shaped" in {
     val dummyTool = AgentTool.fromFunction(
       "dummy",
       "Dummy tool"
@@ -457,7 +479,24 @@ class AgentSpec extends AnyFlatSpec with Matchers with OptionValues {
 
     result.finishReason shouldBe FinishReason.MaxIterations: Unit
     result.finalAnswer.isLeft shouldBe true: Unit
-    result.finalAnswer.left.toOption.get.rawAnswer shouldBe "not json"
+    result.finalAnswer.left.toOption.get match {
+      case AgentIncomplete(rawAnswer, finishReason, parseError) =>
+        rawAnswer shouldBe "not json": Unit
+        finishReason shouldBe FinishReason.MaxIterations: Unit
+        parseError shouldBe defined
+      case other => fail(s"Expected AgentIncomplete, got $other")
+    }
+  }
+
+  it should "return Left(AgentIncomplete) without attempting a parse when the token limit is hit" in {
+    val result = agentBuilder(
+      AgentResponse("""{"city":"Krakow","temp_c":12.0,"conditions":"sunny"}""", Seq.empty, StopReason.MaxTokens)
+    ).deriveResponseSchema[WeatherSummary].build.runAs[WeatherSummary]("What's the weather?")(backend)
+
+    result.finishReason shouldBe FinishReason.TokenLimit: Unit
+    result.finalAnswer shouldBe Left(
+      AgentIncomplete("""{"city":"Krakow","temp_c":12.0,"conditions":"sunny"}""", FinishReason.TokenLimit, parseError = None)
+    )
   }
 
   "Agent finish reason" should "be TokenLimit when the final answer is cut off by the token limit" in {
