@@ -60,4 +60,17 @@ object GeminiManualCodecs {
         Json.obj("type" := "json_schema", "json_schema" -> inner)
     }
   )
+
+  implicit val interactionInputCodec: Codec[InteractionInput] = Codec.from(
+    Decoder.instance { c =>
+      c.value.asString match {
+        case Some(text) => Right(InteractionInput.TextInput(text))
+        case None       => c.as[List[Step]](Decoder.decodeList(GeminiDerivedCodecs.stepCodec)).map(InteractionInput.StepsInput.apply)
+      }
+    },
+    Encoder.instance {
+      case InteractionInput.TextInput(text)   => Json.fromString(text)
+      case InteractionInput.StepsInput(steps) => Json.fromValues(steps.map(_.asJson(GeminiDerivedCodecs.stepCodec)))
+    }
+  )
 }
