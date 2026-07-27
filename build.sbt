@@ -35,6 +35,7 @@ lazy val root = (project in file("."))
 lazy val allAgregates = core.projectRefs ++
   openai.projectRefs ++
   claude.projectRefs ++
+  gemini.projectRefs ++
   fs2.projectRefs ++
   zio.projectRefs ++
   pekko.projectRefs ++
@@ -81,6 +82,23 @@ lazy val openai = (projectMatrix in file("openai"))
   .dependsOn(core % "compile->compile;test->test")
 
 lazy val claude = (projectMatrix in file("claude"))
+  .jvmPlatform(
+    scalaVersions = scala3 ++ scala2 // Scala 3 first priority
+  )
+  .nativePlatform(
+    scalaVersions = scala3
+  )
+  .settings(commonSettings: _*)
+  .settings(
+    libraryDependencies ++=
+      Seq(Libraries.tapirApispecDocs.value) ++
+        Libraries.sttpApispec.value ++ Libraries.circe.value ++
+        Libraries.sttpClient.value ++ Seq(Libraries.scalaTest.value),
+    libraryDependencies ++= (if (scalaVersion.value.startsWith("2.")) Seq(Libraries.circeGenericExtras.value) else Seq.empty)
+  )
+  .dependsOn(core % "compile->compile;test->test")
+
+lazy val gemini = (projectMatrix in file("gemini"))
   .jvmPlatform(
     scalaVersions = scala3 ++ scala2 // Scala 3 first priority
   )
