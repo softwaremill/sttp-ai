@@ -1,11 +1,11 @@
 # OpenAI-compatible APIs
 
-## To use Ollama or Grok (OpenAI-compatible APIs)
+## To use Ollama, Grok, or OpenRouter (OpenAI-compatible APIs)
 
 Ollama with sync backend:
 
 ```scala
-//> using dep com.softwaremill.sttp.ai::openai:0.5.4
+//> using dep com.softwaremill.sttp.ai::openai:0.5.5
 
 import sttp.model.Uri.*
 import sttp.ai.openai.OpenAISyncClient
@@ -56,10 +56,106 @@ object Main:
   */
 ```
 
+OpenRouter with sync backend:
+
+```scala
+//> using dep com.softwaremill.sttp.ai::openai:0.5.5
+
+import sttp.model.Uri.*
+import sttp.ai.openai.OpenAISyncClient
+import sttp.ai.openai.requests.completions.chat.ChatRequestResponseData.ChatResponse
+import sttp.ai.openai.requests.completions.chat.ChatRequestBody.{ChatBody, ChatCompletionModel}
+import sttp.ai.openai.requests.completions.chat.message.*
+
+object Main:
+  def main(args: Array[String]): Unit =
+    val apiKey = System.getenv("OPENROUTER_API_KEY")
+    val openAI: OpenAISyncClient = OpenAISyncClient(apiKey, uri"https://openrouter.ai/api/v1")
+
+    val bodyMessages: Seq[Message] = Seq(
+      Message.User(
+        content = Content.TextContent("Hello!"),
+      )
+    )
+
+    val chatRequestBody: ChatBody = ChatBody(
+      // OpenRouter model identifiers are "provider/model", see https://openrouter.ai/models
+      model = ChatCompletionModel.CustomChatCompletionModel("openai/gpt-4o-mini"),
+      messages = bodyMessages
+    )
+
+    // be aware that calling `createChatCompletion` may throw an OpenAIException
+    // e.g. AuthenticationException, RateLimitException and many more
+    val chatResponse: ChatResponse = openAI.createChatCompletion(chatRequestBody)
+
+    println(chatResponse)
+  /*
+    ChatResponse(
+      "gen-1234567890-abcdefghijklmnopqrstuvwx",
+      List(
+        Choices(
+          Message(Assistant, """Hello there! How can I help you today?""", List(), None),
+          "stop",
+          0
+        )
+      ),
+      1714663831,
+      "openai/gpt-4o-mini",
+      "chat.completion",
+      Usage(10, 10, 20),
+      None
+    )
+  */
+```
+
+### Extra body parameters (vLLM, etc.)
+
+Some OpenAI-compatible backends — vLLM in particular — accept request parameters that aren't part of the official OpenAI API and have no
+typed field on `ChatBody`, `CompletionsBody`, or `EmbeddingsBody` (e.g. vLLM's `guided_json` or `top_k`). Use `extraBody` to merge arbitrary
+JSON values into the top level of the serialized request, alongside the typed fields:
+
+```scala
+//> using dep com.softwaremill.sttp.ai::openai:0.5.5
+
+import io.circe.Json
+import sttp.model.Uri.*
+import sttp.ai.openai.OpenAISyncClient
+import sttp.ai.openai.requests.completions.chat.ChatRequestResponseData.ChatResponse
+import sttp.ai.openai.requests.completions.chat.ChatRequestBody.{ChatBody, ChatCompletionModel}
+import sttp.ai.openai.requests.completions.chat.message.*
+
+object Main:
+  def main(args: Array[String]): Unit =
+    val openAI: OpenAISyncClient = OpenAISyncClient("vllm", uri"http://localhost:8000/v1")
+
+    val bodyMessages: Seq[Message] = Seq(
+      Message.User(
+        content = Content.TextContent("List three colors as JSON."),
+      )
+    )
+
+    val chatRequestBody: ChatBody = ChatBody(
+      model = ChatCompletionModel.CustomChatCompletionModel("meta-llama/Llama-3.1-8B-Instruct"),
+      messages = bodyMessages,
+      // vLLM-specific parameters with no typed field on ChatBody, merged into the top-level request JSON:
+      extraBody = Map(
+        "guided_json" -> Json.obj(
+          "type" -> Json.fromString("object"),
+          "properties" -> Json.obj("colors" -> Json.obj("type" -> Json.fromString("array")))
+        ),
+        "top_k" -> Json.fromInt(40)
+      )
+    )
+
+    val chatResponse: ChatResponse = openAI.createChatCompletion(chatRequestBody)
+
+    println(chatResponse)
+```
+
 Grok with cats-effect based backend:
 
 ```scala
-//> using dep com.softwaremill.sttp.ai::openai:0.5.4
+//> using dep com.softwaremill.sttp.ai::openai:0.5.5
 //> using dep com.softwaremill.sttp.client4::cats:4.0.0-M17
 
 import cats.effect.IO
@@ -135,7 +231,7 @@ Example below uses `HttpClientCatsBackend` as a backend, make sure to [add it to
 or use backend of your choice.
 
 ```scala
-//> using dep com.softwaremill.sttp.ai::openai:0.5.4
+//> using dep com.softwaremill.sttp.ai::openai:0.5.5
 //> using dep com.softwaremill.sttp.client4::cats:4.0.0-M17
 
 import cats.effect.IO
