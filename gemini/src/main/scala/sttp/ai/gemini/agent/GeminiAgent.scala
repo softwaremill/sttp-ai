@@ -2,7 +2,7 @@ package sttp.ai.gemini.agent
 
 import sttp.ai.gemini.GeminiClient
 import sttp.ai.gemini.config.GeminiConfig
-import sttp.ai.gemini.models.{Content, InteractionInput, ResponseFormat, Step, Tool}
+import sttp.ai.gemini.models.{Content, InteractionInput, InteractionStatus, ResponseFormat, Step, Tool}
 import sttp.ai.gemini.requests.InteractionRequest
 import sttp.ai.gemini.responses.InteractionResponse
 import sttp.ai.core.agent._
@@ -83,8 +83,12 @@ private[gemini] class GeminiAgentBackend[F[_]](
 
     monad.flatMap(monad.map(client.createInteraction(request).send(backend))(_.body)) {
       case Right(response) =>
-        val toolCalls = response.functionCalls.map(fc => ToolCall(fc.id, fc.name, fc.arguments.noSpaces))
-        monad.unit(AgentResponse(response.outputText, toolCalls, mapStopReason(response, toolCalls.nonEmpty)))
+        if (response.status == InteractionStatus.Failed)
+          monad.error(new RuntimeException(s"Gemini interaction ${response.id} failed"))
+        else {
+          val toolCalls = response.functionCalls.map(fc => ToolCall(fc.id, fc.name, fc.arguments.noSpaces))
+          monad.unit(AgentResponse(response.outputText, toolCalls, mapStopReason(response, toolCalls.nonEmpty)))
+        }
 
       case Left(error) =>
         monad.error(new RuntimeException(s"Gemini API error: ${error.getMessage}"))

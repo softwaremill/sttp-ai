@@ -138,4 +138,26 @@ class GeminiAgentBackendSpec extends AnyFlatSpec with Matchers with EitherValues
     response.stopReason shouldBe StopReason.ToolUse
     response.toolCalls shouldBe Seq(ToolCall("call_9", "get_weather", """{"city":"Warsaw"}"""))
   }
+
+  it should "raise an error when the interaction status is failed" in {
+    val failedResponse = """{"id":"int_3","status":"failed"}"""
+    val backend = newBackend(Seq.empty)
+    val httpStub = DefaultSyncBackend.stub.whenAnyRequest.thenRespondF(_ => ResponseStub.adjust(failedResponse, StatusCode.Ok))
+
+    a[RuntimeException] should be thrownBy
+      backend.sendRequest(ConversationHistory.withInitialPrompt("hi"), httpStub, includeTools = false)
+  }
+
+  it should "map completed responses that still contain function calls to ToolUse" in {
+    val completedWithCalls =
+      """{"id":"int_4","status":"completed",
+        |"steps":[{"type":"model_output","content":[{"type":"text","text":"calling"}]},
+        |{"type":"function_call","id":"call_5","name":"get_weather","arguments":{"city":"Krakow"}}]}""".stripMargin
+    val backend = newBackend(Seq.empty)
+    val httpStub = DefaultSyncBackend.stub.whenAnyRequest.thenRespondF(_ => ResponseStub.adjust(completedWithCalls, StatusCode.Ok))
+
+    val response = backend.sendRequest(ConversationHistory.withInitialPrompt("hi"), httpStub, includeTools = false)
+    response.stopReason shouldBe StopReason.ToolUse
+    response.toolCalls.map(_.toolName) shouldBe Seq("get_weather")
+  }
 }
