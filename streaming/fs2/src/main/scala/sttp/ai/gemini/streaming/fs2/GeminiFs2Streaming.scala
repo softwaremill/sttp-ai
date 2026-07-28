@@ -16,6 +16,10 @@ import sttp.ai.gemini.json.GeminiDerivedCodecs._
 
 object GeminiFs2Streaming {
 
+  // The Interactions API does not document a terminating sentinel, but OpenAI-style SSE endpoints
+  // commonly emit one; skipping it defensively avoids failing the stream on a non-JSON frame.
+  private val DoneEvent = "[DONE]"
+
   implicit class GeminiClientFs2Extension(val client: GeminiClient) {
 
     /** Creates and streams an interaction response as SSE event objects for the given request. The request will complete and the connection
@@ -45,7 +49,7 @@ object GeminiFs2Streaming {
     )
 
   private def deserializeEvent[F[_]](metadata: ResponseMetadata): Pipe[F, ServerSentEvent, Either[Exception, InteractionStreamEvent]] =
-    _.filter(_.data.exists(_.trim.nonEmpty))
+    _.filter(_.data.exists(data => data.trim.nonEmpty && data != DoneEvent))
       .collect { case ServerSentEvent(Some(data), _, _, _) =>
         try
           Right(decode[InteractionStreamEvent](data).fold(throw _, identity))

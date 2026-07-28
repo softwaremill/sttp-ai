@@ -15,6 +15,10 @@ import sttp.model.sse.ServerSentEvent
 
 import java.io.InputStream
 
+// The Interactions API does not document a terminating sentinel, but OpenAI-style SSE endpoints
+// commonly emit one; skipping it defensively avoids failing the stream on a non-JSON frame.
+private val DoneEvent = "[DONE]"
+
 extension (client: GeminiClient)
   /** Creates and streams an interaction response as SSE event objects for the given request.
     *
@@ -38,7 +42,7 @@ private def mapEventToResponse(
   response.map(s =>
     OxServerSentEvents
       .parse(s)
-      .filter(_.data.exists(_.trim.nonEmpty))
+      .filter(_.data.exists(data => data.trim.nonEmpty && data != DoneEvent))
       .collect { case ServerSentEvent(Some(data), _, _, _) =>
         try
           Right(decode[InteractionStreamEvent](data).fold(throw _, identity))

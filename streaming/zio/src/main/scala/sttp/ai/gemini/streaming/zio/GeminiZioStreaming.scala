@@ -17,6 +17,10 @@ import sttp.ai.gemini.json.GeminiDerivedCodecs._
 
 object GeminiZioStreaming {
 
+  // The Interactions API does not document a terminating sentinel, but OpenAI-style SSE endpoints
+  // commonly emit one; skipping it defensively avoids failing the stream on a non-JSON frame.
+  private val DoneEvent = "[DONE]"
+
   implicit class GeminiClientZioExtension(val client: GeminiClient) {
 
     /** Creates and streams an interaction response as SSE event objects for the given request. The request will complete and the connection
@@ -45,7 +49,7 @@ object GeminiZioStreaming {
     )
 
   private def deserializeEvent(metadata: ResponseMetadata): ZioStreams.Pipe[ServerSentEvent, InteractionStreamEvent] =
-    _.filter(_.data.exists(_.trim.nonEmpty))
+    _.filter(_.data.exists(data => data.trim.nonEmpty && data != DoneEvent))
       .collectZIO { case ServerSentEvent(Some(data), _, _, _) =>
         ZIO.fromEither(
           try

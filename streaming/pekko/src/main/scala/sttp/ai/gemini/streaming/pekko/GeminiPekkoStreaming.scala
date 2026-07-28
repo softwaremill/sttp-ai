@@ -17,6 +17,10 @@ import sttp.ai.gemini.json.GeminiDerivedCodecs._
 
 object GeminiPekkoStreaming {
 
+  // The Interactions API does not document a terminating sentinel, but OpenAI-style SSE endpoints
+  // commonly emit one; skipping it defensively avoids failing the stream on a non-JSON frame.
+  private val DoneEvent = "[DONE]"
+
   implicit class GeminiClientPekkoExtension(val client: GeminiClient) {
 
     /** Creates and streams an interaction response as SSE event objects for the given request. The request will complete and the connection
@@ -46,7 +50,7 @@ object GeminiPekkoStreaming {
 
   private def deserializeEvent(metadata: ResponseMetadata): Flow[ServerSentEvent, InteractionStreamEvent, Any] =
     Flow[ServerSentEvent]
-      .filter(_.data.exists(_.trim.nonEmpty))
+      .filter(_.data.exists(data => data.trim.nonEmpty && data != DoneEvent))
       .collect { case ServerSentEvent(Some(data), _, _, _) =>
         try
           decode[InteractionStreamEvent](data).fold(throw _, identity)
