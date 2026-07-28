@@ -44,7 +44,7 @@ object Main:
 
 ## Async Usage
 
-For non-blocking code, use `GeminiClient` directly with an sttp backend of your choice. Every method returns a plain sttp `Request` whose body is `Either[GeminiException, InteractionResponse]` — nothing is thrown, and you choose when and how to `.send` it.
+For non-blocking code, use `GeminiClient` directly with an sttp backend of your choice. Every method returns a plain sttp `Request` whose body is an `Either` — nothing is thrown, and you choose when and how to `.send` it. `createInteraction`, `getInteraction`, and `cancelInteraction` return `Either[GeminiException, InteractionResponse]`; `deleteInteraction` returns `Either[GeminiException, Unit]`.
 
 ```scala mdoc:compile-only
 //> using dep com.softwaremill.sttp.ai::gemini:@VERSION@

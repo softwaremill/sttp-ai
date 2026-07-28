@@ -32,7 +32,7 @@ object ModelsExample:
 
 ## Gemini Error Handling
 
-`GeminiClient`/`GeminiClient`'s async methods return `Either[GeminiException, A]`; `GeminiSyncClient` throws the same exceptions instead. Every non-2xx HTTP response is mapped to a `GeminiException` subclass based on the status code, since the Gemini error body carries a numeric `code` and a Google status string (e.g. `RESOURCE_EXHAUSTED`) rather than a stable error `type`:
+`GeminiClient`'s async methods return `Either[GeminiException, A]`; `GeminiSyncClient` throws the same exceptions instead. Every non-2xx HTTP response is mapped to a `GeminiException` subclass based on the status code, since the Gemini error body carries a numeric `code` and a Google status string (e.g. `RESOURCE_EXHAUSTED`) rather than a stable error `type`:
 
 | HTTP Status | Exception |
 |-------------|-----------|

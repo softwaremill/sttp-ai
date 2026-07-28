@@ -1,6 +1,6 @@
 # Streaming
 
-Every effect system supported by sttp-ai exposes the same extension method — `createStreamedInteraction` — added to `GeminiClient` for a `GeminiClient`-shaped request. It turns on server-sent-event streaming (`stream = true`) and decodes each event into an `InteractionStreamEvent`.
+Every effect system supported by sttp-ai exposes the same extension method — `createStreamedInteraction` — added to `GeminiClient`, taking an `InteractionRequest`. It turns on server-sent-event streaming (`stream = true`) and decodes each event into an `InteractionStreamEvent`.
 
 | Effect System | Import | Element type |
 |---------------|--------|--------------|
