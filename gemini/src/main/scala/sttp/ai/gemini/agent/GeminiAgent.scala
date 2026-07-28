@@ -47,53 +47,85 @@ private[gemini] class GeminiAgentBackend[F[_]](
         case _                                  => schema
       }
 
-  private def buildSteps(history: ConversationHistory): List[Step] =
-    history.entries.flatMap {
+  /** Converts conversation history entries into replay steps.
+    *
+    * Note: `thought` steps returned by the API are not replayed — ConversationHistory has no representation for them. The live integration
+    * suite's multi-iteration tool tests pass without echoing thought signatures, so the API currently accepts replays without them; if that
+    * changes, carrying signatures would need support in core's ConversationHistory.
+    *
+    * Returns `Left` on the first tool-call argument that fails to parse as JSON, instead of throwing, so the failure surfaces through the
+    * effect's error channel (`F`) rather than escaping it synchronously.
+    */
+  private def buildSteps(history: ConversationHistory): Either[Exception, List[Step]] = {
+    def stepsFor(entry: ConversationEntry): Either[Exception, List[Step]] = entry match {
       case ConversationEntry.UserPrompt(content) =>
-        List(Step.userText(content))
+        Right(List(Step.userText(content)))
 
       case ConversationEntry.AssistantResponse(content, toolCalls) =>
         val outputStep = if (content.nonEmpty) List(Step.ModelOutput(List(Content.Text(content)))) else List.empty
-        val callSteps = toolCalls.map { tc =>
-          val arguments = parseJson(tc.input).fold(throw _, identity)
-          Step.FunctionCall(tc.id, tc.toolName, arguments)
-        }
-        outputStep ++ callSteps
+        toolCalls
+          .foldLeft[Either[Exception, List[Step]]](Right(List.empty)) { (acc, tc) =>
+            for {
+              steps <- acc
+              arguments <- parseJson(tc.input)
+            } yield steps :+ Step.FunctionCall(tc.id, tc.toolName, arguments)
+          }
+          .map(outputStep ++ _)
 
       case ConversationEntry.ToolResult(toolCallId, toolName, result) =>
-        List(Step.FunctionResult(callId = toolCallId, name = toolName, result = Json.fromString(result)))
+        Right(List(Step.FunctionResult(callId = toolCallId, name = toolName, result = Json.fromString(result))))
 
       case ConversationEntry.IterationMarker(current, max) =>
-        List(Step.userText(s"[Iteration $current of $max]"))
-    }.toList
+        Right(List(Step.userText(s"[Iteration $current of $max]")))
+    }
+
+    history.entries.foldLeft[Either[Exception, List[Step]]](Right(List.empty)) { (acc, entry) =>
+      for {
+        steps <- acc
+        next <- stepsFor(entry)
+      } yield steps ++ next
+    }
+  }
 
   override def sendRequest(
       history: ConversationHistory,
       backend: Backend[F],
       includeTools: Boolean
-  ): F[AgentResponse] = {
-    val request = InteractionRequest(
-      model = modelName,
-      input = InteractionInput.StepsInput(buildSteps(history)),
-      systemInstruction = systemPrompt,
-      tools = if (includeTools && convertedTools.nonEmpty) Some(convertedTools.toList) else None,
-      responseFormat = responseFormat,
-      store = Some(false)
-    )
+  ): F[AgentResponse] =
+    buildSteps(history) match {
+      case Left(e)      => monad.error(e)
+      case Right(steps) =>
+        val request = InteractionRequest(
+          model = modelName,
+          input = InteractionInput.StepsInput(steps),
+          systemInstruction = systemPrompt,
+          tools = if (includeTools && convertedTools.nonEmpty) Some(convertedTools.toList) else None,
+          responseFormat = responseFormat,
+          store = Some(false)
+        )
 
-    monad.flatMap(monad.map(client.createInteraction(request).send(backend))(_.body)) {
-      case Right(response) =>
-        if (response.status == InteractionStatus.Failed)
-          monad.error(new RuntimeException(s"Gemini interaction ${response.id.getOrElse("<unstored>")} failed"))
-        else {
-          val toolCalls = response.functionCalls.map(fc => ToolCall(fc.id, fc.name, fc.arguments.noSpaces))
-          monad.unit(AgentResponse(response.outputText, toolCalls, mapStopReason(response, toolCalls.nonEmpty)))
+        monad.flatMap(monad.map(client.createInteraction(request).send(backend))(_.body)) {
+          case Right(response) =>
+            if (response.status == InteractionStatus.Failed || response.status == InteractionStatus.Cancelled)
+              monad.error(
+                new RuntimeException(
+                  s"Gemini interaction ended with status '${response.status.value}'" +
+                    s" (model: ${response.model.getOrElse("unknown")})" +
+                    (if (response.outputText.nonEmpty) s": ${response.outputText}" else "")
+                )
+              )
+            else {
+              val toolCalls = response.functionCalls.map { fc =>
+                val arguments = if (fc.arguments.isNull) Json.obj() else fc.arguments
+                ToolCall(fc.id, fc.name, arguments.noSpaces)
+              }
+              monad.unit(AgentResponse(response.outputText, toolCalls, mapStopReason(response, toolCalls.nonEmpty)))
+            }
+
+          case Left(error) =>
+            monad.error(error)
         }
-
-      case Left(error) =>
-        monad.error(new RuntimeException(s"Gemini API error: ${error.getMessage}"))
     }
-  }
 
   private def mapStopReason(response: InteractionResponse, hasToolCalls: Boolean): StopReason = {
     import sttp.ai.gemini.models.InteractionStatus._

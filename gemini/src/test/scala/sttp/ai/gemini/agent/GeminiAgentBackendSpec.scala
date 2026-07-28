@@ -1,11 +1,13 @@
 package sttp.ai.gemini.agent
 
 import io.circe.Json
+import io.circe.generic.semiauto.deriveCodec
 import io.circe.parser.parse
 import org.scalatest.EitherValues
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
 import sttp.ai.gemini.GeminiClient
+import sttp.ai.gemini.GeminiExceptions.GeminiException
 import sttp.ai.gemini.config.GeminiConfig
 import sttp.ai.gemini.models.Tool
 import sttp.ai.core.agent._
@@ -15,8 +17,16 @@ import sttp.client4.testing.ResponseStub
 import sttp.model.StatusCode
 import sttp.monad.IdentityMonad
 import sttp.shared.Identity
+import sttp.tapir.{Schema => TapirSchema}
 
 import java.util.concurrent.atomic.AtomicReference
+
+case class GeminiAgentWeatherSummary(city: String, tempC: Double)
+
+object GeminiAgentWeatherSummary {
+  implicit val codec: io.circe.Codec[GeminiAgentWeatherSummary] = deriveCodec
+  implicit val schema: TapirSchema[GeminiAgentWeatherSummary] = TapirSchema.derived
+}
 
 class GeminiAgentBackendSpec extends AnyFlatSpec with Matchers with EitherValues {
 
@@ -28,9 +38,13 @@ class GeminiAgentBackendSpec extends AnyFlatSpec with Matchers with EitherValues
       |},
       |"required":["title","location"]}""".stripMargin
 
-  private def newBackend(tools: Seq[AgentTool[Identity, _]]): GeminiAgentBackend[Identity] = {
+  private def newBackend(
+      tools: Seq[AgentTool[Identity, _]],
+      systemPrompt: Option[String] = None,
+      responseSchema: Option[ResponseSchema[_]] = None
+  ): GeminiAgentBackend[Identity] = {
     val client = GeminiClient(GeminiConfig(apiKey = "test-key"))
-    new GeminiAgentBackend[Identity](client, "gemini-2.5-flash-lite", tools, None, None)(IdentityMonad)
+    new GeminiAgentBackend[Identity](client, "gemini-2.5-flash-lite", tools, systemPrompt, responseSchema)(IdentityMonad)
   }
 
   "GeminiAgentBackend" should "pass the full tool schema through, preserving nested structure" in {
@@ -70,10 +84,15 @@ class GeminiAgentBackendSpec extends AnyFlatSpec with Matchers with EitherValues
       |  "usage": {"total_input_tokens": 10, "total_output_tokens": 5}
       |}""".stripMargin
 
-  private def captureRequestBody(includeTools: Boolean, history: ConversationHistory): String = {
+  private def captureRequestBody(
+      includeTools: Boolean,
+      history: ConversationHistory,
+      systemPrompt: Option[String] = None,
+      responseSchema: Option[ResponseSchema[_]] = None
+  ): String = {
     val schema = parse(rawSchema).value.as[Schema](sttp.apispec.circe.schemaDecoder).value
     val tool = AgentTool.dynamic("create-event", "Creates an event", schema)(_ => "ok")
-    val backend = newBackend(Seq(tool))
+    val backend = newBackend(Seq(tool), systemPrompt, responseSchema)
 
     val captured = new AtomicReference[GenericRequest[_, _]](null)
     val httpStub = DefaultSyncBackend.stub.whenAnyRequest.thenRespondF { request =>
@@ -162,5 +181,95 @@ class GeminiAgentBackendSpec extends AnyFlatSpec with Matchers with EitherValues
     val response = backend.sendRequest(ConversationHistory.withInitialPrompt("hi"), httpStub, includeTools = false)
     response.stopReason shouldBe StopReason.ToolUse
     response.toolCalls.map(_.toolName) shouldBe Seq("get_weather")
+  }
+
+  it should "raise an error when the interaction status is cancelled, mentioning the status in the message" in {
+    val cancelledResponse = """{"id":"int_6","status":"cancelled","model":"gemini-2.5-flash-lite"}"""
+    val backend = newBackend(Seq.empty)
+    val httpStub = DefaultSyncBackend.stub.whenAnyRequest.thenRespondF(_ => ResponseStub.adjust(cancelledResponse, StatusCode.Ok))
+
+    val ex = the[RuntimeException] thrownBy
+      backend.sendRequest(ConversationHistory.withInitialPrompt("hi"), httpStub, includeTools = false)
+    ex.getMessage should include("cancelled")
+  }
+
+  it should "normalize a null function_call arguments field to an empty-object ToolCall input" in {
+    val nullArgsResponse =
+      """{"id":"int_7","status":"requires_action",
+        |"steps":[{"type":"function_call","id":"call_9","name":"now","arguments":null}]}""".stripMargin
+    val backend = newBackend(Seq.empty)
+    val httpStub = DefaultSyncBackend.stub.whenAnyRequest.thenRespondF(_ => ResponseStub.adjust(nullArgsResponse, StatusCode.Ok))
+
+    val response = backend.sendRequest(ConversationHistory.withInitialPrompt("hi"), httpStub, includeTools = false)
+    response.toolCalls shouldBe Seq(ToolCall("call_9", "now", "{}"))
+  }
+
+  it should "fail through the effect's error channel, not by throwing eagerly outside it, when replaying a malformed tool-call input" in {
+    val history = ConversationHistory.empty.addAssistantResponse("", Seq(ToolCall("c1", "t", "not-json")))
+    val backend = newBackend(Seq.empty)
+    val httpStub = DefaultSyncBackend.stub.whenAnyRequest.thenRespondF(_ => ResponseStub.adjust(completedResponse, StatusCode.Ok))
+
+    a[io.circe.ParsingFailure] should be thrownBy backend.sendRequest(history, httpStub, includeTools = false)
+  }
+
+  it should "surface the typed GeminiException instead of wrapping it in a generic RuntimeException" in {
+    val errorBody = """{"error":{"code":429,"message":"quota exceeded","status":"RESOURCE_EXHAUSTED"}}"""
+    val backend = newBackend(Seq.empty)
+    val httpStub = DefaultSyncBackend.stub.whenAnyRequest.thenRespondF(_ => ResponseStub.adjust(errorBody, StatusCode.TooManyRequests))
+
+    an[GeminiException.RateLimitException] should be thrownBy
+      backend.sendRequest(ConversationHistory.withInitialPrompt("hi"), httpStub, includeTools = false)
+  }
+
+  it should "send the system prompt as system_instruction" in {
+    val bodyJson =
+      parse(captureRequestBody(includeTools = true, ConversationHistory.withInitialPrompt("hi"), systemPrompt = Some("Be terse"))).value
+    bodyJson.hcursor.downField("system_instruction").as[String] shouldBe Right("Be terse")
+  }
+
+  it should "send the response schema as response_format, carrying the case class's fields" in {
+    val bodyJson = parse(
+      captureRequestBody(
+        includeTools = false,
+        ConversationHistory.withInitialPrompt("hi"),
+        responseSchema = Some(ResponseSchema.derived[GeminiAgentWeatherSummary]())
+      )
+    ).value
+
+    bodyJson.hcursor.downField("response_format").downField("properties").as[Map[String, Json]].value.keySet should contain("city")
+  }
+
+  it should "map incomplete and budget_exceeded statuses to StopReason.MaxTokens" in {
+    val backend = newBackend(Seq.empty)
+
+    val incompleteStub =
+      DefaultSyncBackend.stub.whenAnyRequest.thenRespondF(_ => ResponseStub.adjust("""{"status":"incomplete"}""", StatusCode.Ok))
+    backend
+      .sendRequest(ConversationHistory.withInitialPrompt("hi"), incompleteStub, includeTools = false)
+      .stopReason shouldBe StopReason.MaxTokens
+
+    val budgetStub =
+      DefaultSyncBackend.stub.whenAnyRequest.thenRespondF(_ => ResponseStub.adjust("""{"status":"budget_exceeded"}""", StatusCode.Ok))
+    backend
+      .sendRequest(ConversationHistory.withInitialPrompt("hi"), budgetStub, includeTools = false)
+      .stopReason shouldBe StopReason.MaxTokens
+  }
+
+  it should "map a queued status with no tool calls to StopReason.Other" in {
+    val backend = newBackend(Seq.empty)
+    val httpStub = DefaultSyncBackend.stub.whenAnyRequest.thenRespondF(_ => ResponseStub.adjust("""{"status":"queued"}""", StatusCode.Ok))
+
+    backend
+      .sendRequest(ConversationHistory.withInitialPrompt("hi"), httpStub, includeTools = false)
+      .stopReason shouldBe StopReason.Other("queued")
+  }
+
+  it should "replay an iteration marker as a user_input step carrying the iteration text" in {
+    val history = ConversationHistory.empty.addUserPrompt("go").addIterationMarker(2, 5)
+    val bodyJson = parse(captureRequestBody(includeTools = false, history)).value
+    val input = bodyJson.hcursor.downField("input")
+
+    input.downN(1).downField("type").as[String] shouldBe Right("user_input")
+    input.downN(1).downField("content").downN(0).downField("text").as[String] shouldBe Right("[Iteration 2 of 5]")
   }
 }

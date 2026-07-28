@@ -10,7 +10,7 @@ sealed trait Step
 object Step {
   case class UserInput(content: List[Content]) extends Step
   case class ModelOutput(content: List[Content]) extends Step
-  case class FunctionCall(id: String, name: String, arguments: Json) extends Step
+  case class FunctionCall(id: String, name: String, arguments: Json = Json.obj()) extends Step
   case class FunctionResult(callId: String, name: String, result: Json) extends Step
 
   /** A model reasoning step. `signature` is an opaque server token; `content` may carry thought summaries. */
