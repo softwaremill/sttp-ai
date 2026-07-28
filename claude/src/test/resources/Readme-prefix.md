@@ -73,6 +73,21 @@ Add the following dependency:
 "com.softwaremill.sttp.ai" %% "claude-streaming-ox" % "0.4.14"    // Ox direct-style (Scala 3 only)
 ```
 
+### For Gemini (Google) API
+
+Add the following dependency:
+
+```sbt
+"com.softwaremill.sttp.ai" %% "gemini" % "0.4.14"
+
+// For streaming support, add one or more:
+"com.softwaremill.sttp.ai" %% "gemini-streaming-fs2" % "0.4.14"    // cats-effect/fs2
+"com.softwaremill.sttp.ai" %% "gemini-streaming-zio" % "0.4.14"    // ZIO
+"com.softwaremill.sttp.ai" %% "gemini-streaming-akka" % "0.4.14"   // Akka Streams (Scala 2.13 only)
+"com.softwaremill.sttp.ai" %% "gemini-streaming-pekko" % "0.4.14"  // Pekko Streams
+"com.softwaremill.sttp.ai" %% "gemini-streaming-ox" % "0.4.14"    // Ox direct-style (Scala 3 only)
+```
+
 sttp-openai is available for Scala 2.13 and Scala 3
 
 ## OpenAI API
