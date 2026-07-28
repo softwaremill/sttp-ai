@@ -2,7 +2,7 @@ package sttp.ai.gemini.agent
 
 import sttp.ai.gemini.GeminiClient
 import sttp.ai.gemini.config.GeminiConfig
-import sttp.ai.gemini.models.{Content, InteractionInput, InteractionStatus, ResponseFormat, Step, Tool}
+import sttp.ai.gemini.models.{Content, GenerationConfig, InteractionInput, InteractionStatus, ResponseFormat, Step, Tool}
 import sttp.ai.gemini.requests.InteractionRequest
 import sttp.ai.gemini.responses.InteractionResponse
 import sttp.ai.core.agent._
@@ -89,7 +89,8 @@ private[gemini] class GeminiAgentBackend[F[_]](
           systemInstruction = systemPrompt,
           tools = if (includeTools && convertedTools.nonEmpty) Some(convertedTools.toList) else None,
           responseFormat = responseFormat,
-          store = Some(false)
+          store = Some(false),
+          generationConfig = Some(GenerationConfig(maxOutputTokens = Some(4096)))
         )
 
         monad.flatMap(monad.map(client.createInteraction(request).send(backend))(_.body)) {

@@ -5,12 +5,13 @@ import sttp.ai.core.agent._
 import sttp.ai.gemini.GeminiClient
 import sttp.ai.gemini.agent._
 import sttp.ai.gemini.config.GeminiConfig
+import sttp.ai.gemini.models.GeminiModel
 import sttp.monad.IdentityMonad
 import sttp.shared.Identity
 
 class GeminiAgentIntegrationSpec extends AgentIntegrationSpecBase {
 
-  private val testModel = "gemini-3.5-flash-lite"
+  private val testModel = GeminiModel.Gemini35FlashLite.value
 
   override def providerName: String = "Gemini"
   override def apiKeyEnvVar: String = "GEMINI_API_KEY"

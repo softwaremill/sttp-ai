@@ -4,9 +4,10 @@ import io.circe.generic.semiauto.deriveCodec
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
+import sttp.ai.gemini.GeminiExceptions.GeminiException
 import sttp.ai.gemini.GeminiSyncClient
 import sttp.ai.gemini.config.GeminiConfig
-import sttp.ai.gemini.models.InteractionStatus
+import sttp.ai.gemini.models.{GeminiModel, GenerationConfig, InteractionStatus}
 import sttp.ai.gemini.requests.InteractionRequest
 import sttp.tapir.{Schema => TSchema}
 
@@ -23,7 +24,11 @@ object CityAnswer {
   */
 class GeminiIntegrationSpec extends AnyFlatSpec with Matchers with BeforeAndAfterAll {
 
-  private val testModel = "gemini-3.5-flash-lite"
+  private val testModel = GeminiModel.Gemini35FlashLite.value
+
+  // gemini-3.5-flash-lite bills "thought" tokens against max_output_tokens, so a too-small cap would truncate replies to
+  // status=incomplete before any visible output is produced. 1024 leaves enough headroom for both thinking and the short answer.
+  private val testGenerationConfig = Some(GenerationConfig(maxOutputTokens = Some(1024)))
 
   private var clientOpt: Option[GeminiSyncClient] = None
   private val maybeApiKey: Option[String] = sys.env.get("GEMINI_API_KEY")
@@ -48,7 +53,7 @@ class GeminiIntegrationSpec extends AnyFlatSpec with Matchers with BeforeAndAfte
     val response = client.createInteraction(
       InteractionRequest
         .simple(testModel, "Reply with a short greeting.")
-        .copy(store = Some(false))
+        .copy(store = Some(false), generationConfig = testGenerationConfig)
     )
 
     response.status shouldBe InteractionStatus.Completed
@@ -59,7 +64,7 @@ class GeminiIntegrationSpec extends AnyFlatSpec with Matchers with BeforeAndAfte
     val answer = client.createInteractionAs[CityAnswer](
       InteractionRequest
         .simple(testModel, "What is the capital of France?")
-        .copy(store = Some(false))
+        .copy(store = Some(false), generationConfig = testGenerationConfig)
     )
 
     answer.city.toLowerCase should include("paris")
@@ -67,7 +72,9 @@ class GeminiIntegrationSpec extends AnyFlatSpec with Matchers with BeforeAndAfte
 
   it should "store, retrieve and delete an interaction" in withClient { client =>
     val created = client.createInteraction(
-      InteractionRequest.simple(testModel, "Reply with exactly one word: stored").copy(store = Some(true))
+      InteractionRequest
+        .simple(testModel, "Reply with exactly one word: stored")
+        .copy(store = Some(true), generationConfig = testGenerationConfig)
     )
 
     created.id shouldBe defined
@@ -76,5 +83,16 @@ class GeminiIntegrationSpec extends AnyFlatSpec with Matchers with BeforeAndAfte
     fetched.id shouldBe created.id
 
     client.deleteInteraction(created.id.get)
+  }
+
+  // No GEMINI_API_KEY required: this hits the real API with a deliberately invalid key, so it runs unconditionally
+  // (unlike the tests above, it must NOT go through withClient/cancel).
+  it should "map a real API error for an invalid key" in {
+    val client = GeminiSyncClient(GeminiConfig(apiKey = "invalid-test-key"))
+    try
+      the[GeminiException.InvalidRequestException] thrownBy
+        client.createInteraction(InteractionRequest.simple(testModel, "hi").copy(store = Some(false))) should have message
+        "API key not valid. Please pass a valid API key."
+    finally client.close()
   }
 }
