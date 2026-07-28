@@ -61,6 +61,15 @@ class GeminiClientSerializationSpec extends AnyFlatSpec with Matchers with Eithe
     client.mapErrorToException(errorBody, meta(StatusCode.TooManyRequests)).getMessage shouldBe "quota exceeded"
   }
 
+  it should "map error responses whose code is a JSON string, not just an int" in {
+    val errorBody = """{"error":{"message":"quota exceeded","code":"rate_limit"}}"""
+    def meta(status: StatusCode) = ResponseMetadata(status, "", Nil)
+
+    val ex = client.mapErrorToException(errorBody, meta(StatusCode.TooManyRequests))
+    ex shouldBe a[GeminiException.RateLimitException]
+    ex.getMessage shouldBe "quota exceeded"
+  }
+
   it should "map non-2xx responses through the status-based exception dispatch" in {
     val errorBody = """{"error":{"code":401,"message":"invalid key","status":"UNAUTHENTICATED"}}"""
     val stub = DefaultSyncBackend.stub.whenAnyRequest

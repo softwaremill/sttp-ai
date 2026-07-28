@@ -32,7 +32,7 @@ class GeminiSyncClientSpec extends AnyFlatSpec with Matchers {
 
   "GeminiSyncClient" should "return the interaction response on success" in {
     val response = clientReturning(completedResponse).createInteraction(InteractionRequest.simple("gemini-2.5-flash-lite", "hi"))
-    response.id shouldBe "int_1"
+    response.id shouldBe Some("int_1")
   }
 
   it should "throw the mapped exception on API errors" in {

@@ -30,7 +30,7 @@ class GeminiSyncClient(config: GeminiConfig, backend: SyncBackend = DefaultSyncB
       if (request.usesStructuredOutput) request
       else {
         val schemaJson = TapirSchemaToJsonSchema(implicitly[TapirSchema[T]], markOptionsAsNullable = true).asJson.deepDropNullValues
-        request.withStructuredOutput(ResponseFormat.JsonSchema(name = "response", schema = schemaJson))
+        request.withStructuredOutput(ResponseFormat.JsonSchema(schemaJson))
       }
 
     val response = createInteraction(withSchema)
