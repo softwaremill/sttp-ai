@@ -15,6 +15,14 @@ case class InteractionStreamEvent(
     metadata: Option[StreamMetadata] = None
 )
 
+object InteractionStreamEvent {
+
+  /** The Interactions API does not document a terminating sentinel, but OpenAI-style SSE endpoints commonly emit one; adapters skip it
+    * defensively so a non-JSON `[DONE]` frame never fails the stream.
+    */
+  val DoneEvent = "[DONE]"
+}
+
 case class StreamError(code: Option[String] = None, message: Option[String] = None)
 
 case class StreamMetadata(totalUsage: Option[Usage] = None)

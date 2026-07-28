@@ -123,7 +123,11 @@ lazy val fs2 = (projectMatrix in file("streaming/fs2"))
   .settings(
     libraryDependencies ++= Libraries.sttpClientFs2
   )
-  .dependsOn(openai % "compile->compile;test->test", claude % "compile->compile;test->test")
+  .dependsOn(
+    openai % "compile->compile;test->test",
+    claude % "compile->compile;test->test",
+    gemini % "compile->compile;test->test"
+  )
 
 lazy val zio = (projectMatrix in file("streaming/zio"))
   .jvmPlatform(
@@ -133,7 +137,11 @@ lazy val zio = (projectMatrix in file("streaming/zio"))
   .settings(
     libraryDependencies += Libraries.sttpClientZio
   )
-  .dependsOn(openai % "compile->compile;test->test", claude % "compile->compile;test->test")
+  .dependsOn(
+    openai % "compile->compile;test->test",
+    claude % "compile->compile;test->test",
+    gemini % "compile->compile;test->test"
+  )
 
 lazy val pekko = (projectMatrix in file("streaming/pekko"))
   .jvmPlatform(
@@ -143,7 +151,11 @@ lazy val pekko = (projectMatrix in file("streaming/pekko"))
   .settings(
     libraryDependencies ++= Libraries.sttpClientPekko
   )
-  .dependsOn(openai % "compile->compile;test->test", claude % "compile->compile;test->test")
+  .dependsOn(
+    openai % "compile->compile;test->test",
+    claude % "compile->compile;test->test",
+    gemini % "compile->compile;test->test"
+  )
 
 lazy val akka = (projectMatrix in file("streaming/akka"))
   .jvmPlatform(
@@ -153,7 +165,11 @@ lazy val akka = (projectMatrix in file("streaming/akka"))
   .settings(
     libraryDependencies ++= Libraries.sttpClientAkka
   )
-  .dependsOn(openai % "compile->compile;test->test", claude % "compile->compile;test->test")
+  .dependsOn(
+    openai % "compile->compile;test->test",
+    claude % "compile->compile;test->test",
+    gemini % "compile->compile;test->test"
+  )
 
 lazy val ox = (projectMatrix in file("streaming/ox"))
   .jvmPlatform(
@@ -163,7 +179,11 @@ lazy val ox = (projectMatrix in file("streaming/ox"))
   .settings(
     libraryDependencies ++= Libraries.sttpClientOx
   )
-  .dependsOn(openai % "compile->compile;test->test", claude % "compile->compile;test->test")
+  .dependsOn(
+    openai % "compile->compile;test->test",
+    claude % "compile->compile;test->test",
+    gemini % "compile->compile;test->test"
+  )
 
 lazy val mcp = (projectMatrix in file("mcp"))
   .jvmPlatform(
