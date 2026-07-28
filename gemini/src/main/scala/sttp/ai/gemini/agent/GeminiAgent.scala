@@ -32,20 +32,8 @@ private[gemini] class GeminiAgentBackend[F[_]](
     Tool.Function(
       name = tool.name,
       description = Some(tool.description),
-      parameters = ensureObjectType(tool.rawJsonSchema)
+      parameters = AgentTool.ensureObjectType(tool.rawJsonSchema)
     )
-
-  /** Gemini function declarations require an object parameters schema; MCP allows schemas that omit `type` (e.g. `{}` for no-argument
-    * tools) and the JSON Schema/MCP boolean form `true` ("any input is valid"). Both are normalized to a minimal object schema; any other
-    * schema is passed through unchanged.
-    */
-  private def ensureObjectType(schema: Json): Json =
-    if (schema.isBoolean) Json.obj("type" -> Json.fromString("object"))
-    else
-      schema.asObject match {
-        case Some(obj) if !obj.contains("type") => Json.fromJsonObject(obj.add("type", Json.fromString("object")))
-        case _                                  => schema
-      }
 
   /** Converts conversation history entries into replay steps.
     *

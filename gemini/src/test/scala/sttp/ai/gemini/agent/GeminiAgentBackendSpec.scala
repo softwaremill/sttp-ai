@@ -239,6 +239,22 @@ class GeminiAgentBackendSpec extends AnyFlatSpec with Matchers with EitherValues
     bodyJson.hcursor.downField("response_format").downField("properties").as[Map[String, Json]].value.keySet should contain("city")
   }
 
+  it should "normalize a tool schema that omits `type` to a minimal object schema" in {
+    val tool = new AgentTool[Identity, Map[String, Json]] {
+      override def name: String = "no-type-tool"
+      override def description: String = "Accepts anything, schema omits type"
+      override def jsonSchema: Schema = parse("""{"type":"object"}""").value.as[Schema](sttp.apispec.circe.schemaDecoder).value
+      override def codec: io.circe.Codec[Map[String, Json]] = io.circe.Codec.implied
+      override def execute(input: Map[String, Json]): Identity[String] = "ok"
+      override def rawJsonSchema: Json = Json.obj()
+    }
+
+    newBackend(Seq(tool)).convertedTools.head match {
+      case Tool.Function(_, _, parameters) => parameters shouldBe Json.obj("type" -> Json.fromString("object"))
+      case other                           => fail(s"expected Tool.Function, got $other")
+    }
+  }
+
   it should "map incomplete and budget_exceeded statuses to StopReason.MaxTokens" in {
     val backend = newBackend(Seq.empty)
 

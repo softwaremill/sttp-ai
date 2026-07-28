@@ -60,4 +60,16 @@ object AgentTool {
       override def codec: Codec[Map[String, Json]] = Codec.implied
       override def execute(input: Map[String, Json]): F[String] = f(input)
     }
+
+  /** Providers require a tool's input/parameters schema to be a JSON-Schema *object*; MCP allows schemas that omit `type` (e.g. `{}` for
+    * no-argument tools) and the boolean form `true` ("any input is valid"). Both are normalized to a minimal object schema; anything else
+    * passes through unchanged.
+    */
+  private[ai] def ensureObjectType(schema: Json): Json =
+    if (schema.isBoolean) Json.obj("type" -> Json.fromString("object"))
+    else
+      schema.asObject match {
+        case Some(obj) if !obj.contains("type") => Json.fromJsonObject(obj.add("type", Json.fromString("object")))
+        case _                                  => schema
+      }
 }
