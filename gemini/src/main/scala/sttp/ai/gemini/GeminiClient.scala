@@ -33,9 +33,7 @@ class GeminiClientImpl(config: GeminiConfig) extends GeminiClient with ResponseH
   private val geminiUris = new GeminiUris(config.baseUrl)
 
   private def geminiAuthRequest =
-    basicRequest
-      .header("x-goog-api-key", config.apiKey)
-      .header("content-type", "application/json")
+    config.authHeaders.foldLeft(basicRequest) { case (request, (name, value)) => request.header(name, value) }
 
   override def read[T: Decoder](s: String): T = decode[T](s).fold(throw _, identity)
 
