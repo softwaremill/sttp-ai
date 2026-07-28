@@ -1,5 +1,6 @@
 package sttp.ai.gemini.unit.responses
 
+import io.circe.Json
 import io.circe.parser.decode
 import org.scalatest.EitherValues
 import org.scalatest.flatspec.AnyFlatSpec
@@ -89,5 +90,12 @@ class InteractionResponseSpec extends AnyFlatSpec with Matchers with EitherValue
     decode[InteractionResponse](
       """{"status":"completed","steps":[{"type":"function_call","name":"get_weather","arguments":{}}]}"""
     ).isLeft shouldBe true
+  }
+
+  it should "decode a function_call step with no arguments field as an empty object, not a failure" in {
+    val response =
+      decode[InteractionResponse]("""{"status":"completed","steps":[{"type":"function_call","id":"c1","name":"now"}]}""").value
+
+    response.steps shouldBe List(Step.FunctionCall("c1", "now", Json.obj()))
   }
 }
