@@ -14,10 +14,7 @@ import io.circe.parser.decode
 import sttp.ai.gemini.json.GeminiDerivedCodecs._
 
 object GeminiFs2Streaming {
-
-  // The Interactions API does not document a terminating sentinel, but OpenAI-style SSE endpoints
-  // commonly emit one; skipping it defensively avoids failing the stream on a non-JSON frame.
-  private val DoneEvent = "[DONE]"
+  import InteractionStreamEvent.DoneEvent
 
   implicit class GeminiClientFs2Extension(val client: GeminiClient) {
 

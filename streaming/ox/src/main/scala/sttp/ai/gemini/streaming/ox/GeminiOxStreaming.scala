@@ -5,6 +5,7 @@ import sttp.ai.gemini.GeminiClient
 import sttp.ai.gemini.GeminiExceptions.GeminiException
 import sttp.ai.gemini.requests.InteractionRequest
 import sttp.ai.gemini.responses.InteractionStreamEvent
+import sttp.ai.gemini.responses.InteractionStreamEvent.DoneEvent
 import io.circe.parser.decode
 import sttp.ai.gemini.json.GeminiDerivedCodecs._
 import sttp.client4.Request
@@ -13,10 +14,6 @@ import sttp.model.ResponseMetadata
 import sttp.model.sse.ServerSentEvent
 
 import java.io.InputStream
-
-// The Interactions API does not document a terminating sentinel, but OpenAI-style SSE endpoints
-// commonly emit one; skipping it defensively avoids failing the stream on a non-JSON frame.
-private val DoneEvent = "[DONE]"
 
 extension (client: GeminiClient)
   /** Creates and streams an interaction response as SSE event objects for the given request.
