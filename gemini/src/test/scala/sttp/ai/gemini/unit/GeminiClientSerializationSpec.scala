@@ -47,6 +47,29 @@ class GeminiClientSerializationSpec extends AnyFlatSpec with Matchers with Eithe
     bodyJson.hcursor.downField("tools").downN(0).downField("parameters").focus shouldBe Some(schema)
   }
 
+  it should "preserve response_format schemas verbatim, including legitimate nulls" in {
+    val schema = parse("""{"type":"object","properties":{"level":{"enum":["low","high",null],"default":null}}}""").value
+    val request =
+      InteractionRequest.simple("gemini-3.5-flash-lite", "hi").copy(responseFormat = Some(ResponseFormat.JsonSchema(schema)))
+
+    parse(bodyOf(request)).value.hcursor.downField("response_format").focus shouldBe Some(schema)
+  }
+
+  it should "preserve replayed function_call arguments and function_result results verbatim" in {
+    val arguments = parse("""{"city":"Paris","unit":null}""").value
+    val result = parse("""{"temp":20,"error":null}""").value
+    val request = InteractionRequest(
+      model = "gemini-3.5-flash-lite",
+      input = InteractionInput.StepsInput(
+        List(Step.FunctionCall("c1", "get_weather", arguments), Step.FunctionResult("c1", "get_weather", result))
+      )
+    )
+
+    val input = parse(bodyOf(request)).value.hcursor.downField("input")
+    input.downN(0).downField("arguments").focus shouldBe Some(arguments)
+    input.downN(1).downField("result").focus shouldBe Some(result)
+  }
+
   it should "map error responses by HTTP status code" in {
     val errorBody = """{"error":{"code":429,"message":"quota exceeded","status":"RESOURCE_EXHAUSTED"}}"""
     def meta(status: StatusCode) = ResponseMetadata(status, "", Nil)

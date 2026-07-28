@@ -8,7 +8,7 @@ import sttp.ai.core.http.ResponseHandlers
 import sttp.capabilities.Streams
 import sttp.client4._
 import sttp.model.{ResponseMetadata, StatusCode, Uri}
-import io.circe.{Decoder, Json}
+import io.circe.{Decoder, Json, JsonObject}
 import io.circe.parser.decode
 import io.circe.syntax._
 import sttp.ai.gemini.json.GeminiDerivedCodecs._
@@ -131,40 +131,37 @@ class GeminiClientImpl(config: GeminiConfig) extends GeminiClient with ResponseH
 
   /** Serializes an [[InteractionRequest]] to the JSON body sent on the wire.
     *
-    * `deepDropNullValues` strips unset-`Option` fields, but it would also strip legitimate JSON `null`s nested inside tool parameter
-    * schemas (e.g. `"enum": ["low", "high", null]`). To keep those schemas byte-faithful: capture each tool's `parameters` from the
-    * pre-drop encoding, run `deepDropNullValues`, then splice the untouched `parameters` values back (tools are index-aligned, since
-    * `deepDropNullValues` never removes array elements, only null values). Built-in tools without `parameters` are left alone. Same
-    * approach as `ClaudeClientImpl.dropNullsPreservingInputSchemas`.
+    * Our derived encoders emit `null` for every unset `Option` field (e.g. `"temperature": null`); those must be dropped. But several
+    * request fields carry caller-supplied JSON that must reach the API byte-faithful, including any legitimate `null`s inside it (e.g.
+    * `"enum": ["low", "high", null]`, `"default": null`): the `response_format` schema, each tool's `parameters` schema, and replayed
+    * conversation data in `input[*].arguments` / `input[*].result`. So instead of `deepDropNullValues` (which would also strip nulls inside
+    * those subtrees — and removes null array elements to boot), this walks the document dropping null object fields everywhere except
+    * inside the protected subtrees, and never touches array elements.
     */
   private def serializeInteractionRequest(request: InteractionRequest): String =
-    dropNullsPreservingToolParameters(request.asJson).noSpaces
+    dropNullsOutsideVerbatimJson(request.asJson, path = Nil).noSpaces
 
-  private def dropNullsPreservingToolParameters(requestJson: Json): Json = {
-    val originalParameters: Option[Vector[Option[Json]]] =
-      requestJson.asObject
-        .flatMap(_("tools"))
-        .flatMap(_.asArray)
-        .map(_.map(_.asObject.flatMap(_("parameters")).filter(!_.isNull)))
+  /** Object-field paths whose subtrees are caller-supplied verbatim JSON. `*` matches any array index. */
+  private val VerbatimJsonPaths: Set[List[String]] = Set(
+    List("response_format"),
+    List("tools", "*", "parameters"),
+    List("input", "*", "arguments"),
+    List("input", "*", "result")
+  )
 
-    val cleaned = requestJson.deepDropNullValues
-
-    originalParameters match {
-      case Some(parameters) =>
-        cleaned.mapObject { obj =>
-          obj("tools").flatMap(_.asArray) match {
-            case Some(cleanedTools) =>
-              val restoredTools = cleanedTools.zip(parameters).map {
-                case (toolJson, Some(params)) => toolJson.mapObject(_.add("parameters", params))
-                case (toolJson, None)         => toolJson
-              }
-              obj.add("tools", Json.fromValues(restoredTools))
-            case None => obj
-          }
-        }
-      case None => cleaned
-    }
-  }
+  private def dropNullsOutsideVerbatimJson(json: Json, path: List[String]): Json =
+    if (VerbatimJsonPaths.contains(path)) json
+    else
+      json.arrayOrObject(
+        json,
+        arr => Json.fromValues(arr.map(dropNullsOutsideVerbatimJson(_, path :+ "*"))),
+        obj =>
+          Json.fromJsonObject(
+            JsonObject.fromIterable(
+              obj.toIterable.collect { case (key, value) if !value.isNull => key -> dropNullsOutsideVerbatimJson(value, path :+ key) }
+            )
+          )
+      )
 }
 
 class GeminiUris(baseUri: Uri) {
