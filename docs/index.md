@@ -1,12 +1,12 @@
-# sttp-ai: Scala client for OpenAI, Claude, and compatible APIs
+# sttp-ai: Scala client for OpenAI, Claude, Gemini, and compatible APIs
 
 sttp is a family of Scala HTTP-related projects, and currently includes:
 
 * [sttp client](https://github.com/softwaremill/sttp): The Scala HTTP client you always wanted!
 * [sttp tapir](https://github.com/softwaremill/tapir): Typed API descRiptions
-* sttp ai: this project. Non-official Scala client wrapper for OpenAI, Claude (Anthropic), and OpenAI-compatible APIs (e.g. Ollama, Grok, OpenRouter). Use the power of ChatGPT and Claude inside your code!
+* sttp ai: this project. Non-official Scala client wrapper for OpenAI, Claude (Anthropic), Gemini (Google), and OpenAI-compatible APIs (e.g. Ollama, Grok, OpenRouter). Use the power of ChatGPT, Claude, and Gemini inside your code!
 
-sttp-ai uses sttp client to describe requests and responses used in OpenAI, Claude (Anthropic), and OpenAI-compatible endpoints.
+sttp-ai uses sttp client to describe requests and responses used in OpenAI, Claude (Anthropic), Gemini (Google), and OpenAI-compatible endpoints.
 
 ```{eval-rst}
 .. toctree::
@@ -34,6 +34,17 @@ sttp-ai uses sttp client to describe requests and responses used in OpenAI, Clau
    claude/tool-calling
    claude/streaming
    claude/models-and-errors
+
+.. toctree::
+   :maxdepth: 2
+   :caption: Gemini
+
+   gemini/basics
+   gemini/interactions
+   gemini/tool-calling
+   gemini/structured-outputs
+   gemini/streaming
+   gemini/models-and-errors
 
 .. toctree::
    :maxdepth: 2

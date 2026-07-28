@@ -65,12 +65,27 @@ Add the following dependency:
 ```sbt
 "com.softwaremill.sttp.ai" %% "claude" % "0.4.14"
 
-// For streaming support, add one or more:
-"com.softwaremill.sttp.ai" %% "claude-streaming-fs2" % "0.4.14"    // cats-effect/fs2
-"com.softwaremill.sttp.ai" %% "claude-streaming-zio" % "0.4.14"    // ZIO
-"com.softwaremill.sttp.ai" %% "claude-streaming-akka" % "0.4.14"   // Akka Streams (Scala 2.13 only)
-"com.softwaremill.sttp.ai" %% "claude-streaming-pekko" % "0.4.14"  // Pekko Streams
-"com.softwaremill.sttp.ai" %% "claude-streaming-ox" % "0.4.14"    // Ox direct-style (Scala 3 only)
+// For streaming support, add one or more (these modules are shared across OpenAI, Claude, and Gemini):
+"com.softwaremill.sttp.ai" %% "fs2" % "0.4.14"    // cats-effect/fs2
+"com.softwaremill.sttp.ai" %% "zio" % "0.4.14"    // ZIO
+"com.softwaremill.sttp.ai" %% "akka" % "0.4.14"   // Akka Streams (Scala 2.13 only)
+"com.softwaremill.sttp.ai" %% "pekko" % "0.4.14"  // Pekko Streams
+"com.softwaremill.sttp.ai" %% "ox" % "0.4.14"    // Ox direct-style (Scala 3 only)
+```
+
+### For Gemini (Google) API
+
+Add the following dependency:
+
+```sbt
+"com.softwaremill.sttp.ai" %% "gemini" % "0.4.14"
+
+// For streaming support, add one or more (these modules are shared across OpenAI, Claude, and Gemini):
+"com.softwaremill.sttp.ai" %% "fs2" % "0.4.14"    // cats-effect/fs2
+"com.softwaremill.sttp.ai" %% "zio" % "0.4.14"    // ZIO
+"com.softwaremill.sttp.ai" %% "akka" % "0.4.14"   // Akka Streams (Scala 2.13 only)
+"com.softwaremill.sttp.ai" %% "pekko" % "0.4.14"  // Pekko Streams
+"com.softwaremill.sttp.ai" %% "ox" % "0.4.14"    // Ox direct-style (Scala 3 only)
 ```
 
 sttp-openai is available for Scala 2.13 and Scala 3

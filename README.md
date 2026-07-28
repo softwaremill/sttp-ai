@@ -6,6 +6,7 @@
 [![sttp.ai:core](https://maven-badges.sml.io/sonatype-central/com.softwaremill.sttp.ai/core_3/badge.svg?subject=sttp.ai:core)](https://maven-badges.sml.io/sonatype-central/com.softwaremill.sttp.ai/core_3/)
 [![sttp.ai:openai](https://maven-badges.sml.io/sonatype-central/com.softwaremill.sttp.ai/openai_3/badge.svg?subject=sttp.ai:openai)](https://maven-badges.sml.io/sonatype-central/com.softwaremill.sttp.ai/openai_3/)
 [![sttp.ai:claude](https://maven-badges.sml.io/sonatype-central/com.softwaremill.sttp.ai/claude_3/badge.svg?subject=sttp.ai:claude)](https://maven-badges.sml.io/sonatype-central/com.softwaremill.sttp.ai/claude_3/)
+[![sttp.ai:gemini](https://maven-badges.sml.io/sonatype-central/com.softwaremill.sttp.ai/gemini_3/badge.svg?subject=sttp.ai:gemini)](https://maven-badges.sml.io/sonatype-central/com.softwaremill.sttp.ai/gemini_3/)
 
 sttp is a family of Scala HTTP-related projects, and currently includes:
 
@@ -36,17 +37,32 @@ Add the following dependency:
 ```sbt
 "com.softwaremill.sttp.ai" %% "claude" % "0.5.5"
 
-// For streaming support, add one or more:
-"com.softwaremill.sttp.ai" %% "claude-streaming-fs2" % "0.5.5"    // cats-effect/fs2
-"com.softwaremill.sttp.ai" %% "claude-streaming-zio" % "0.5.5"    // ZIO
-"com.softwaremill.sttp.ai" %% "claude-streaming-akka" % "0.5.5"   // Akka Streams (Scala 2.13 only)
-"com.softwaremill.sttp.ai" %% "claude-streaming-pekko" % "0.5.5"  // Pekko Streams
-"com.softwaremill.sttp.ai" %% "claude-streaming-ox" % "0.5.5"    // Ox direct-style (Scala 3 only)
+// For streaming support, add one or more (these modules are shared across OpenAI, Claude, and Gemini):
+"com.softwaremill.sttp.ai" %% "fs2" % "0.5.5"    // cats-effect/fs2
+"com.softwaremill.sttp.ai" %% "zio" % "0.5.5"    // ZIO
+"com.softwaremill.sttp.ai" %% "akka" % "0.5.5"   // Akka Streams (Scala 2.13 only)
+"com.softwaremill.sttp.ai" %% "pekko" % "0.5.5"  // Pekko Streams
+"com.softwaremill.sttp.ai" %% "ox" % "0.5.5"    // Ox direct-style (Scala 3 only)
+```
+
+### For Gemini (Google) API
+
+Add the following dependency:
+
+```sbt
+"com.softwaremill.sttp.ai" %% "gemini" % "0.5.5"
+
+// For streaming support, add one or more (these modules are shared across OpenAI, Claude, and Gemini):
+"com.softwaremill.sttp.ai" %% "fs2" % "0.5.5"    // cats-effect/fs2
+"com.softwaremill.sttp.ai" %% "zio" % "0.5.5"    // ZIO
+"com.softwaremill.sttp.ai" %% "akka" % "0.5.5"   // Akka Streams (Scala 2.13 only)
+"com.softwaremill.sttp.ai" %% "pekko" % "0.5.5"  // Pekko Streams
+"com.softwaremill.sttp.ai" %% "ox" % "0.5.5"    // Ox direct-style (Scala 3 only)
 ```
 
 sttp-openai is available for Scala 2.13 and Scala 3
 
-Then head to the [documentation](https://sttp-ai.softwaremill.com) for usage examples: OpenAI and Claude clients, streaming, structured outputs, tool calling, and the agent loop.
+Then head to the [documentation](https://sttp-ai.softwaremill.com) for usage examples: OpenAI, Claude, and Gemini clients, streaming, structured outputs, tool calling, and the agent loop.
 
 ## Contributing
 
