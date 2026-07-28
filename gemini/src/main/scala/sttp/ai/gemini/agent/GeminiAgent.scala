@@ -26,7 +26,7 @@ private[gemini] class GeminiAgentBackend[F[_]](
   private[gemini] val convertedTools: Seq[Tool] = tools.map(convertTool)
 
   private val responseFormat: Option[ResponseFormat] =
-    responseSchema.map(rs => ResponseFormat.JsonSchema(name = "response", schema = rs.schema.asJson.deepDropNullValues))
+    responseSchema.map(rs => ResponseFormat.JsonSchema(rs.schema.asJson.deepDropNullValues))
 
   private def convertTool(tool: AgentTool[F, _]): Tool =
     Tool.Function(
@@ -84,7 +84,7 @@ private[gemini] class GeminiAgentBackend[F[_]](
     monad.flatMap(monad.map(client.createInteraction(request).send(backend))(_.body)) {
       case Right(response) =>
         if (response.status == InteractionStatus.Failed)
-          monad.error(new RuntimeException(s"Gemini interaction ${response.id} failed"))
+          monad.error(new RuntimeException(s"Gemini interaction ${response.id.getOrElse("<unstored>")} failed"))
         else {
           val toolCalls = response.functionCalls.map(fc => ToolCall(fc.id, fc.name, fc.arguments.noSpaces))
           monad.unit(AgentResponse(response.outputText, toolCalls, mapStopReason(response, toolCalls.nonEmpty)))
