@@ -24,6 +24,7 @@ fi
 # Check which API keys are available
 OPENAI_SET=false
 ANTHROPIC_SET=false
+GEMINI_SET=false
 
 if [ -n "${OPENAI_API_KEY}" ]; then
     OPENAI_SET=true
@@ -39,11 +40,18 @@ else
     echo "⚠️  ANTHROPIC_API_KEY is not set - Claude tests will be skipped"
 fi
 
-if [ "$OPENAI_SET" = false ] && [ "$ANTHROPIC_SET" = false ]; then
+if [ -n "${GEMINI_API_KEY}" ]; then
+    GEMINI_SET=true
+    echo "✓ GEMINI_API_KEY is set"
+else
+    echo "⚠️  GEMINI_API_KEY is not set - Gemini tests will be skipped"
+fi
+
+if [ "$OPENAI_SET" = false ] && [ "$ANTHROPIC_SET" = false ] && [ "$GEMINI_SET" = false ]; then
     echo ""
     echo "Usage:"
-    echo "  1. Create .env file with OPENAI_API_KEY and ANTHROPIC_API_KEY"
-    echo "  2. Or set environment variables: export OPENAI_API_KEY=... ANTHROPIC_API_KEY=..."
+    echo "  1. Create .env file with OPENAI_API_KEY, ANTHROPIC_API_KEY and GEMINI_API_KEY"
+    echo "  2. Or set environment variables: export OPENAI_API_KEY=... ANTHROPIC_API_KEY=... GEMINI_API_KEY=..."
     echo "  3. Or pass OpenAI key as argument: ./run-integration-tests.sh your-key-here"
     echo ""
     echo "📝 Note: Without API keys, all integration tests will be skipped (not failed)"
@@ -54,10 +62,10 @@ echo ""
 echo "🧪 Running integration tests..."
 
 # Run the integration tests (including agent tests)
-sbt "testOnly *OpenAIIntegrationSpec *ClaudeIntegrationSpec *OpenAIAgentIntegrationSpec *ClaudeAgentIntegrationSpec"
+sbt "testOnly *OpenAIIntegrationSpec *ClaudeIntegrationSpec *GeminiIntegrationSpec *OpenAIAgentIntegrationSpec *ClaudeAgentIntegrationSpec *GeminiAgentIntegrationSpec"
 
 echo ""
-if [ "$OPENAI_SET" = true ] || [ "$ANTHROPIC_SET" = true ]; then
+if [ "$OPENAI_SET" = true ] || [ "$ANTHROPIC_SET" = true ] || [ "$GEMINI_SET" = true ]; then
     echo "✅ Integration tests completed!"
 else
     echo "✅ Integration tests skipped (no API keys provided)"

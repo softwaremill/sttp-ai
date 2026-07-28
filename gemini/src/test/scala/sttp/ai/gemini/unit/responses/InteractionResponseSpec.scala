@@ -11,12 +11,14 @@ import sttp.ai.gemini.responses.InteractionResponse
 
 class InteractionResponseSpec extends AnyFlatSpec with Matchers with EitherValues {
 
+  private val testModel = GeminiModel.Gemini35FlashLite.value
+
   private val responseJson =
-    """{
+    s"""{
       |  "id": "int_abc",
       |  "object": "interaction",
       |  "status": "completed",
-      |  "model": "gemini-2.5-flash-lite",
+      |  "model": "$testModel",
       |  "steps": [
       |    {"type": "model_output", "content": [{"type": "text", "text": "It is "}, {"type": "text", "text": "sunny."}]},
       |    {"type": "function_call", "id": "call_1", "name": "get_weather", "arguments": {"city": "Warsaw"}}
@@ -30,7 +32,7 @@ class InteractionResponseSpec extends AnyFlatSpec with Matchers with EitherValue
 
     response.id shouldBe Some("int_abc")
     response.status shouldBe InteractionStatus.Completed
-    response.model shouldBe Some("gemini-2.5-flash-lite")
+    response.model shouldBe Some(testModel)
     response.steps should have size 2
     response.usage.flatMap(_.totalTokens) shouldBe Some(15L)
   }
@@ -51,7 +53,7 @@ class InteractionResponseSpec extends AnyFlatSpec with Matchers with EitherValue
   // Verbatim live fixture from a real store=false Interactions API call: no `id` (stateless response), and a
   // `{"type":"thought", "signature":...}` step preceding the model_output step.
   private val liveFixture =
-    """{"status":"completed","usage":{"total_tokens":23,"total_input_tokens":12,"input_tokens_by_modality":[{"modality":"text","tokens":12}],"total_cached_tokens":0,"total_output_tokens":11,"total_tool_use_tokens":0,"total_thought_tokens":0},"created":"2026-07-28T07:51:28Z","updated":"2026-07-28T07:51:28Z","service_tier":"standard","steps":[{"signature":"EjQKMgERTTIPUzlM4o4F/05UJ0vCCNg4Vd+GMV47cIlVpIevfAKyVhBjafSKil/2rhl4muYY","type":"thought"},{"content":[{"text":"{\n  \"city\": \"Paris\"\n}","type":"text"}],"type":"model_output"}],"object":"interaction","model":"gemini-3.5-flash-lite"}"""
+    s"""{"status":"completed","usage":{"total_tokens":23,"total_input_tokens":12,"input_tokens_by_modality":[{"modality":"text","tokens":12}],"total_cached_tokens":0,"total_output_tokens":11,"total_tool_use_tokens":0,"total_thought_tokens":0},"created":"2026-07-28T07:51:28Z","updated":"2026-07-28T07:51:28Z","service_tier":"standard","steps":[{"signature":"EjQKMgERTTIPUzlM4o4F/05UJ0vCCNg4Vd+GMV47cIlVpIevfAKyVhBjafSKil/2rhl4muYY","type":"thought"},{"content":[{"text":"{\\n  \\"city\\": \\"Paris\\"\\n}","type":"text"}],"type":"model_output"}],"object":"interaction","model":"$testModel"}"""
 
   it should "decode a live store=false response with no id and a thought step" in {
     val response = decode[InteractionResponse](liveFixture).value

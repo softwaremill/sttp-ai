@@ -42,13 +42,18 @@ private[gemini] class GeminiClientImpl(config: GeminiConfig) extends GeminiClien
 
   /** Maps an error response to an exception based on the HTTP status code. The Gemini error body carries a numeric `code` and a Google
     * status string (e.g. `RESOURCE_EXHAUSTED`) rather than a stable error `type`, so the HTTP status is the reliable dispatch key.
+    *
+    * The error body is usually a single object (`{"error": {...}}`), but some endpoints (observed on invalid-API-key responses) wrap it in
+    * a JSON array (`[{"error": {...}}]`) instead. Both shapes are tried before falling back to the raw body as the message.
     */
   override def mapErrorToException(errorResponse: String, metadata: ResponseMetadata): GeminiException = {
-    val (message, status, code) =
-      decode[sttp.ai.gemini.responses.ErrorResponse](errorResponse) match {
-        case Right(parsed) => (Some(parsed.error.message), parsed.error.status, parsed.error.code)
-        case Left(_)       => (Some(errorResponse), None, None)
-      }
+    val parsed = decode[sttp.ai.gemini.responses.ErrorResponse](errorResponse).toOption
+      .orElse(decode[List[sttp.ai.gemini.responses.ErrorResponse]](errorResponse).toOption.flatMap(_.headOption))
+
+    val (message, status, code) = parsed match {
+      case Some(parsed) => (Some(parsed.error.message), parsed.error.status, parsed.error.code)
+      case None         => (Some(errorResponse), None, None)
+    }
     val cause = ResponseException.UnexpectedStatusCode(message.getOrElse(""), metadata)
 
     metadata.code match {

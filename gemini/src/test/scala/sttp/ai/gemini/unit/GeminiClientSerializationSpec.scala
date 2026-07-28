@@ -25,6 +25,8 @@ object TestStreams extends sttp.capabilities.Streams[TestCapability] {
 
 class GeminiClientSerializationSpec extends AnyFlatSpec with Matchers with EitherValues {
 
+  private val testModel = GeminiModel.Gemini35FlashLite.value
+
   private val client = new GeminiClientImpl(GeminiConfig("test-key"))
 
   private def bodyOf(request: InteractionRequest): String =
@@ -34,7 +36,7 @@ class GeminiClientSerializationSpec extends AnyFlatSpec with Matchers with Eithe
     }
 
   "GeminiClientImpl" should "target POST v1beta/interactions with the x-goog-api-key header" in {
-    val req = client.createInteraction(InteractionRequest.simple("gemini-2.5-flash-lite", "hi"))
+    val req = client.createInteraction(InteractionRequest.simple(testModel, "hi"))
     req.uri.toString should endWith("/v1beta/interactions")
     req.method.method shouldBe "POST"
     req.headers should contain(Header("x-goog-api-key", "test-key"))
@@ -42,14 +44,14 @@ class GeminiClientSerializationSpec extends AnyFlatSpec with Matchers with Eithe
   }
 
   it should "drop unset optional fields from the serialized body" in {
-    val bodyJson = parse(bodyOf(InteractionRequest.simple("gemini-2.5-flash-lite", "hi"))).value
+    val bodyJson = parse(bodyOf(InteractionRequest.simple(testModel, "hi"))).value
     bodyJson.hcursor.downField("system_instruction").succeeded shouldBe false
   }
 
   it should "preserve tool parameters verbatim, including legitimate nulls" in {
     val schema = parse("""{"type":"object","properties":{"level":{"enum":["low","high",null],"default":null}}}""").value
     val request = InteractionRequest
-      .simple("gemini-2.5-flash-lite", "hi")
+      .simple(testModel, "hi")
       .copy(tools = Some(List(Tool.Function("set-level", Some("Sets level"), schema))))
 
     val bodyJson = parse(bodyOf(request)).value
@@ -59,7 +61,7 @@ class GeminiClientSerializationSpec extends AnyFlatSpec with Matchers with Eithe
   it should "preserve response_format schemas verbatim, including legitimate nulls" in {
     val schema = parse("""{"type":"object","properties":{"level":{"enum":["low","high",null],"default":null}}}""").value
     val request =
-      InteractionRequest.simple("gemini-3.5-flash-lite", "hi").copy(responseFormat = Some(ResponseFormat.JsonSchema(schema)))
+      InteractionRequest.simple(testModel, "hi").copy(responseFormat = Some(ResponseFormat.JsonSchema(schema)))
 
     parse(bodyOf(request)).value.hcursor.downField("response_format").focus shouldBe Some(schema)
   }
@@ -68,7 +70,7 @@ class GeminiClientSerializationSpec extends AnyFlatSpec with Matchers with Eithe
     val arguments = parse("""{"city":"Paris","unit":null}""").value
     val result = parse("""{"temp":20,"error":null}""").value
     val request = InteractionRequest(
-      model = "gemini-3.5-flash-lite",
+      model = testModel,
       input = InteractionInput.StepsInput(
         List(Step.FunctionCall("c1", "get_weather", arguments), Step.FunctionResult("c1", "get_weather", result))
       )
@@ -94,6 +96,18 @@ class GeminiClientSerializationSpec extends AnyFlatSpec with Matchers with Eithe
     client.mapErrorToException(errorBody, meta(StatusCode.TooManyRequests)).code shouldBe Some("429")
   }
 
+  it should "map an array-wrapped error body (observed on invalid-API-key responses) to the mapped exception" in {
+    val errorBody =
+      """[{"error":{"code":400,"message":"API key not valid. Please pass a valid API key.","status":"INVALID_ARGUMENT"}}]"""
+    val stub = DefaultSyncBackend.stub.whenAnyRequest
+      .thenRespondF(_ => ResponseStub.adjust(errorBody, StatusCode.BadRequest))
+    val result = client.createInteraction(InteractionRequest.simple(testModel, "hi")).send(stub).body
+
+    result shouldBe a[Left[_, _]]
+    result.left.toOption.get shouldBe a[GeminiException.InvalidRequestException]
+    result.left.toOption.get.getMessage shouldBe "API key not valid. Please pass a valid API key."
+  }
+
   it should "map error responses whose code is a JSON string, not just an int" in {
     val errorBody = """{"error":{"message":"quota exceeded","code":"rate_limit"}}"""
     def meta(status: StatusCode) = ResponseMetadata(status, "", Nil)
@@ -107,7 +121,7 @@ class GeminiClientSerializationSpec extends AnyFlatSpec with Matchers with Eithe
     val errorBody = """{"error":{"code":401,"message":"invalid key","status":"UNAUTHENTICATED"}}"""
     val stub = DefaultSyncBackend.stub.whenAnyRequest
       .thenRespondF(_ => ResponseStub.adjust(errorBody, StatusCode.Unauthorized))
-    val result = client.createInteraction(InteractionRequest.simple("gemini-2.5-flash-lite", "hi")).send(stub).body
+    val result = client.createInteraction(InteractionRequest.simple(testModel, "hi")).send(stub).body
     result.left.toOption.get shouldBe a[GeminiException.AuthenticationException]
     result.left.toOption.get.getMessage shouldBe "invalid key"
   }
@@ -116,7 +130,7 @@ class GeminiClientSerializationSpec extends AnyFlatSpec with Matchers with Eithe
     val errorBody = "<html>Service Unavailable</html>"
     val stub = DefaultSyncBackend.stub.whenAnyRequest
       .thenRespondF(_ => ResponseStub.adjust(errorBody, StatusCode.ServiceUnavailable))
-    val result = client.createInteraction(InteractionRequest.simple("gemini-2.5-flash-lite", "hi")).send(stub).body
+    val result = client.createInteraction(InteractionRequest.simple(testModel, "hi")).send(stub).body
     result.left.toOption.get shouldBe a[GeminiException.ServiceUnavailableException]
     result.left.toOption.get.getMessage shouldBe errorBody
   }
@@ -125,14 +139,14 @@ class GeminiClientSerializationSpec extends AnyFlatSpec with Matchers with Eithe
     val errorBody = """{"error":{"code":400}}"""
     val stub = DefaultSyncBackend.stub.whenAnyRequest
       .thenRespondF(_ => ResponseStub.adjust(errorBody, StatusCode.BadRequest))
-    val result = client.createInteraction(InteractionRequest.simple("gemini-2.5-flash-lite", "hi")).send(stub).body
+    val result = client.createInteraction(InteractionRequest.simple(testModel, "hi")).send(stub).body
     result.left.toOption.get shouldBe a[GeminiException.InvalidRequestException]
     result.left.toOption.get.getMessage shouldBe errorBody
   }
 
   it should "map a malformed 200 body to a DeserializationGeminiException" in {
     val stub = DefaultSyncBackend.stub.whenAnyRequest.thenRespondF(_ => ResponseStub.adjust("not json", StatusCode.Ok))
-    val result = client.createInteraction(InteractionRequest.simple("gemini-2.5-flash-lite", "hi")).send(stub).body
+    val result = client.createInteraction(InteractionRequest.simple(testModel, "hi")).send(stub).body
     result.left.toOption.get shouldBe a[GeminiException.DeserializationGeminiException]
   }
 
@@ -165,7 +179,7 @@ class GeminiClientSerializationSpec extends AnyFlatSpec with Matchers with Eithe
   }
 
   it should "set stream=true on streaming request bodies" in {
-    val req = client.createInteractionAsInputStream(InteractionRequest.simple("gemini-2.5-flash-lite", "hi"))
+    val req = client.createInteractionAsInputStream(InteractionRequest.simple(testModel, "hi"))
     req.body match {
       case StringBody(s, _, _) => s should include("\"stream\":true")
       case other               => fail(s"expected StringBody, got $other")
@@ -173,7 +187,7 @@ class GeminiClientSerializationSpec extends AnyFlatSpec with Matchers with Eithe
   }
 
   it should "set stream=true on binary-stream request bodies" in {
-    val req = client.createInteractionAsBinaryStream(TestStreams, InteractionRequest.simple("gemini-3.5-flash-lite", "hi"))
+    val req = client.createInteractionAsBinaryStream(TestStreams, InteractionRequest.simple(testModel, "hi"))
     req.body match {
       case StringBody(s, _, _) => parse(s).value.hcursor.downField("stream").as[Boolean] shouldBe Right(true)
       case other               => fail(s"expected StringBody, got $other")

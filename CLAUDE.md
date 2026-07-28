@@ -9,9 +9,10 @@ sttp-ai is a Scala library providing a non-official client wrapper for OpenAI, C
 **Key Features:**
 - Native OpenAI API support (Chat, Completions, Embeddings, Audio, Images, etc.)
 - Native Claude (Anthropic) API support with dedicated module
+- Native Gemini (Google) API support via the Interactions API with dedicated module
 - OpenAI-compatible API support (Ollama, Grok, OpenRouter, etc.)
 - Streaming support for all major effect systems
-- Cross-platform: Scala 2.13.16 and Scala 3.3.6
+- Cross-platform: Scala 2.13.18 and Scala 3.3.8
 - Agent loop tools loadable from [MCP](https://modelcontextprotocol.io) servers (`mcp` module, Scala 3 only, via [chimp](https://github.com/softwaremill/chimp)), in addition to manually defined `AgentTool`s
 
 ## Development Commands
@@ -22,12 +23,14 @@ sttp-ai is a Scala library providing a non-official client wrapper for OpenAI, C
 sbt compile                              # All modules
 sbt openai/compile                       # OpenAI module
 sbt claude/compile                       # Claude module
+sbt gemini/compile                       # Gemini module
 sbt mcp3/compile                         # MCP module (Scala 3 only; sbt-projectmatrix suffixes the Scala 3 row with "3")
 
 # Test
 sbt test                                 # Unit tests (excludes integration)
 sbt "testOnly *OpenAIIntegrationSpec"   # OpenAI integration (requires OPENAI_API_KEY)
 sbt "testOnly *ClaudeIntegrationSpec"   # Claude integration (requires ANTHROPIC_API_KEY)
+sbt "testOnly *GeminiIntegrationSpec"   # Gemini integration (requires GEMINI_API_KEY)
 ./run-integration-tests.sh              # All integration tests
 
 # Format (CRITICAL - always run after changes!)
@@ -51,44 +54,46 @@ sbt scalafmtAll                                                           # 3. F
 
 ## Architecture Patterns
 
-### Dual API Support (OpenAI + Claude)
+### Multi-provider support (OpenAI + Claude + Gemini)
 
 **Core Differences:**
 
-| Aspect | OpenAI (`openai/`) | Claude (`claude/`) |
-|--------|-----------------|-------------------|
-| **Client** | `OpenAI` / `OpenAISyncClient` | `ClaudeClient` / `ClaudeSyncClient` |
-| **Return Type** | `Either[OpenAIException, A]` | `Either[ClaudeException, A]` |
-| **Message Content** | Simple strings | `ContentBlock` arrays (rich content) |
-| **System Messages** | Role-based in messages array | Separate `system` parameter |
-| **Authentication** | `Authorization: Bearer <key>` | `x-api-key: <key>` + `anthropic-version` |
-| **Package Structure** | `sttp.ai.openai.*` | `sttp.ai.claude.*` |
+| Aspect | OpenAI (`openai/`) | Claude (`claude/`) | Gemini (`gemini/`) |
+|--------|-----------------|-------------------|-------------------|
+| **Client** | `OpenAI` / `OpenAISyncClient` | `ClaudeClient` / `ClaudeSyncClient` | `GeminiClient` / `GeminiSyncClient` |
+| **Return Type** | `Either[OpenAIException, A]` | `Either[ClaudeException, A]` | `Either[GeminiException, A]` |
+| **Message Content** | Simple strings | `ContentBlock` arrays (rich content) | `Step`/`Content` arrays |
+| **System Messages** | Role-based in messages array | Separate `system` parameter | Separate `system_instruction` parameter |
+| **Authentication** | `Authorization: Bearer <key>` | `x-api-key: <key>` + `anthropic-version` | `x-goog-api-key: <key>` |
+| **Package Structure** | `sttp.ai.openai.*` | `sttp.ai.claude.*` | `sttp.ai.gemini.*` |
 
 **Shared Patterns:**
-- Both use **uPickle with SnakePickle** for JSON (snake_case conversion)
-- Both have **comprehensive exception hierarchies** for API errors
-- Both support **streaming via SSE** with same effect systems
+- All use **circe with snake_case configuration** for JSON
+- All have **comprehensive exception hierarchies** for API errors
+- All support **streaming via SSE** with same effect systems
 
 ### Streaming Architecture
 
-Each streaming module (`streaming/{effect-system}/`) provides extensions for **both** APIs:
+Each streaming module (`streaming/{effect-system}/`) provides extensions for **all three** APIs:
 
-| Effect System | Module Location | OpenAI Extension | Claude Extension | Scala Version |
-|--------------|----------------|-----------------|------------------|---------------|
-| **fs2** | `streaming/fs2/` | `sttp.ai.openai.streaming.fs2.*` | `sttp.ai.claude.streaming.fs2.*` | 2.13, 3 |
-| **zio** | `streaming/zio/` | `sttp.ai.openai.streaming.zio.*` | `sttp.ai.claude.streaming.zio.*` | 2.13, 3 |
-| **akka** | `streaming/akka/` | `sttp.ai.openai.streaming.akka.*` | `sttp.ai.claude.streaming.akka.*` | 2.13 only |
-| **pekko** | `streaming/pekko/` | `sttp.ai.openai.streaming.pekko.*` | `sttp.ai.claude.streaming.pekko.*` | 2.13, 3 |
-| **ox** | `streaming/ox/` | `sttp.ai.openai.streaming.ox.*` | `sttp.ai.claude.streaming.ox.*` | 3 only |
+| Effect System | Module Location | OpenAI Extension | Claude Extension | Gemini Extension | Scala Version |
+|--------------|----------------|-----------------|------------------|------------------|---------------|
+| **fs2** | `streaming/fs2/` | `sttp.ai.openai.streaming.fs2.*` | `sttp.ai.claude.streaming.fs2.*` | `sttp.ai.gemini.streaming.fs2.*` | 2.13, 3 |
+| **zio** | `streaming/zio/` | `sttp.ai.openai.streaming.zio.*` | `sttp.ai.claude.streaming.zio.*` | `sttp.ai.gemini.streaming.zio.*` | 2.13, 3 |
+| **akka** | `streaming/akka/` | `sttp.ai.openai.streaming.akka.*` | `sttp.ai.claude.streaming.akka.*` | `sttp.ai.gemini.streaming.akka.*` | 2.13 only |
+| **pekko** | `streaming/pekko/` | `sttp.ai.openai.streaming.pekko.*` | `sttp.ai.claude.streaming.pekko.*` | `sttp.ai.gemini.streaming.pekko.*` | 2.13, 3 |
+| **ox** | `streaming/ox/` | `sttp.ai.openai.streaming.ox.*` | `sttp.ai.claude.streaming.ox.*` | `sttp.ai.gemini.streaming.ox.*` | 3 only |
 
-**Pattern:** Extension methods add `.parseSSE` + `.parseClaudeStreamResponse`/`.parseOpenAIStreamResponse`
+**Pattern:** Extension methods add `createStreamedChatCompletion` (OpenAI) / `createStreamedMessage` (Claude) / `createStreamedInteraction` (Gemini), each returning a stream of parsed SSE events for the given effect system.
 
 ### Key Navigation Tips
 
 - **OpenAI API endpoints**: `openai/src/main/scala/sttp/ai/openai/requests/{api-category}/`
 - **Claude API code**: `claude/src/main/scala/sttp/ai/claude/`
+- **Gemini API code**: `gemini/src/main/scala/sttp/ai/gemini/`
 - **OpenAI models**: Search for `ChatCompletionModel`, `EmbeddingModel` in `openai/` request bodies
 - **Claude models**: `claude/src/main/scala/sttp/ai/claude/models/ClaudeModel.scala`
+- **Gemini models**: `gemini/src/main/scala/sttp/ai/gemini/models/GeminiModel.scala`
 - **Streaming implementations**: `streaming/{effect-system}/src/main/scala/`
 - **MCP tool loading**: `mcp/src/main/scala/sttp/ai/core/agent/mcp/McpTools.scala` (Scala 3 only; depends on `core` and chimp's `chimp-client`, not on `openai`/`claude`)
 - **Examples**: `examples/src/main/scala/examples/` (runnable with scala-cli)
@@ -120,7 +125,7 @@ Each streaming module (`streaming/{effect-system}/`) provides extensions for **b
   - AVOID `import _root_.xxxx.yyyy`, USE `import xxxx.yyyy`
   - **Scala 3 syntax preferred**: `import package.*` (not `import package._`)
   - SortImports rule applied, RedundantBraces/Parens removed
-- **Naming**: Snake_case for JSON fields (handled by SnakePickle)
+- **Naming**: Snake_case for JSON fields (handled by the shared circe snake_case configuration)
 - **Models**: Case objects extending sealed traits, companion values for easy access
 - **Documentation**: Always use Scala 3 syntax (`@main`, `given`, `import package.*`)
 
@@ -130,13 +135,14 @@ Each streaming module (`streaming/{effect-system}/`) provides extensions for **b
 - **Integration tests**: Hit real APIs, cost-efficient (minimal inputs)
   - OpenAI: Requires `OPENAI_API_KEY`, 30s timeouts, rate limiting handled
   - Claude: Requires `ANTHROPIC_API_KEY`, minimal token usage
+  - Gemini: Requires `GEMINI_API_KEY`, minimal token usage
   - Auto-skip if API key not set
-- **Cross-building**: sbt-projectmatrix for Scala 2.13.16 & 3.3.6
+- **Cross-building**: sbt-projectmatrix for Scala 2.13.18 & 3.3.8
 
 ## Client Implementation Patterns
 
-- **Sync Clients**: `OpenAISyncClient` / `ClaudeSyncClient` - Use `DefaultSyncBackend`, block on responses, may throw exceptions
-- **Async Clients**: `OpenAI` / `ClaudeClient` - Raw sttp requests, choose backend (cats-effect, ZIO, etc.)
+- **Sync Clients**: `OpenAISyncClient` / `ClaudeSyncClient` / `GeminiSyncClient` - Use `DefaultSyncBackend`, block on responses, may throw exceptions
+- **Async Clients**: `OpenAI` / `ClaudeClient` / `GeminiClient` - Raw sttp requests, choose backend (cats-effect, ZIO, etc.)
 - **Custom Backends**: Pass backend to `.send(backend)`
 - **OpenAI-Compatible**: Use `OpenAI` client with custom base URL for Ollama, Grok, OpenRouter, etc.
 
@@ -147,7 +153,7 @@ Scratch files are powerful debugging tools using scala-cli for rapid prototyping
 ### When to Use
 
 **Ideal for:**
-- JSON serialization debugging (test uPickle behavior)
+- JSON serialization debugging (test circe behavior)
 - API request validation (verify structures before integration tests)
 - Library behavior testing (test specific features/edge cases)
 - Hypothesis validation (confirm assumptions)
@@ -158,10 +164,11 @@ Scratch files are powerful debugging tools using scala-cli for rapid prototyping
 ```scala
 // debug_serialization.sc - Test JSON output
 //> using dep com.softwaremill.sttp.ai::claude:0.3.10+SNAPSHOT
-import sttp.ai.claude.json.SnakePickle._
+import sttp.ai.claude.json.ClaudeDerivedCodecs.*
+import io.circe.syntax.*
 
 val obj = MyModel(...)
-println(write(obj))  // Check JSON structure
+println(obj.asJson.noSpaces)  // Check JSON structure
 ```
 
 ### Best Practices

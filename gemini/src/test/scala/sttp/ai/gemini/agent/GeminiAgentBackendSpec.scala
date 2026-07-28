@@ -9,7 +9,7 @@ import org.scalatest.matchers.should.Matchers
 import sttp.ai.gemini.GeminiClient
 import sttp.ai.gemini.GeminiExceptions.GeminiException
 import sttp.ai.gemini.config.GeminiConfig
-import sttp.ai.gemini.models.Tool
+import sttp.ai.gemini.models.{GeminiModel, Tool}
 import sttp.ai.core.agent._
 import sttp.apispec.Schema
 import sttp.client4._
@@ -30,6 +30,8 @@ object GeminiAgentWeatherSummary {
 
 class GeminiAgentBackendSpec extends AnyFlatSpec with Matchers with EitherValues {
 
+  private val testModel = GeminiModel.Gemini35FlashLite.value
+
   private val rawSchema =
     """{"type":"object",
       |"properties":{
@@ -44,7 +46,7 @@ class GeminiAgentBackendSpec extends AnyFlatSpec with Matchers with EitherValues
       responseSchema: Option[ResponseSchema[_]] = None
   ): GeminiAgentBackend[Identity] = {
     val client = GeminiClient(GeminiConfig(apiKey = "test-key"))
-    new GeminiAgentBackend[Identity](client, "gemini-2.5-flash-lite", tools, systemPrompt, responseSchema)(IdentityMonad)
+    new GeminiAgentBackend[Identity](client, testModel, tools, systemPrompt, responseSchema)(IdentityMonad)
   }
 
   "GeminiAgentBackend" should "pass the full tool schema through, preserving nested structure" in {
@@ -110,6 +112,11 @@ class GeminiAgentBackendSpec extends AnyFlatSpec with Matchers with EitherValues
     val bodyJson = parse(captureRequestBody(includeTools = true, ConversationHistory.withInitialPrompt("hello"))).value
     bodyJson.hcursor.downField("store").as[Boolean] shouldBe Right(false)
     bodyJson.hcursor.downField("previous_interaction_id").succeeded shouldBe false
+  }
+
+  it should "bound the response with a default generation_config.max_output_tokens of 4096" in {
+    val bodyJson = parse(captureRequestBody(includeTools = true, ConversationHistory.withInitialPrompt("hello"))).value
+    bodyJson.hcursor.downField("generation_config").downField("max_output_tokens").as[Int] shouldBe Right(4096)
   }
 
   it should "replay the full history as input steps" in {
@@ -184,7 +191,7 @@ class GeminiAgentBackendSpec extends AnyFlatSpec with Matchers with EitherValues
   }
 
   it should "raise an error when the interaction status is cancelled, mentioning the status in the message" in {
-    val cancelledResponse = """{"id":"int_6","status":"cancelled","model":"gemini-2.5-flash-lite"}"""
+    val cancelledResponse = s"""{"id":"int_6","status":"cancelled","model":"$testModel"}"""
     val backend = newBackend(Seq.empty)
     val httpStub = DefaultSyncBackend.stub.whenAnyRequest.thenRespondF(_ => ResponseStub.adjust(cancelledResponse, StatusCode.Ok))
 

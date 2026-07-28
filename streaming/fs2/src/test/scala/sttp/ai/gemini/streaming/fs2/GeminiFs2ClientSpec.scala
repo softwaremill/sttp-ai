@@ -10,6 +10,7 @@ import sttp.ai.gemini.GeminiClient
 import sttp.ai.gemini.GeminiExceptions.GeminiException
 import sttp.ai.gemini.GeminiExceptions.GeminiException.DeserializationGeminiException
 import sttp.ai.gemini.config.GeminiConfig
+import sttp.ai.gemini.models.GeminiModel
 import sttp.ai.gemini.requests.InteractionRequest
 import sttp.ai.gemini.responses.InteractionStreamEvent
 import sttp.ai.gemini.responses.InteractionStreamEvent.DoneEvent
@@ -23,6 +24,8 @@ import sttp.model.StatusCode._
 import sttp.model.sse.ServerSentEvent
 
 class GeminiFs2ClientSpec extends AsyncFlatSpec with AsyncIOSpec with Matchers with EitherValues {
+
+  private val testModel = GeminiModel.Gemini35FlashLite.value
 
   private val errorMessage = "Some error message."
 
@@ -50,7 +53,7 @@ class GeminiFs2ClientSpec extends AsyncFlatSpec with AsyncIOSpec with Matchers w
       val fs2BackendStub = HttpClientFs2Backend.stub[IO].whenAnyRequest.thenRespondAdjust(errorJson, statusCode)
       val client = GeminiClient(GeminiConfig("test-token"))
 
-      val givenRequest = InteractionRequest.simple("gemini-3.5-flash-lite", "Hello")
+      val givenRequest = InteractionRequest.simple(testModel, "Hello")
 
       // when
       val caught = client
@@ -75,7 +78,7 @@ class GeminiFs2ClientSpec extends AsyncFlatSpec with AsyncIOSpec with Matchers w
     val fs2BackendStub = HttpClientFs2Backend.stub[IO].whenAnyRequest.thenRespond(ResponseStub.adjust(streamedResponse))
     val client = GeminiClient(GeminiConfig("test-token"))
 
-    val givenRequest = InteractionRequest.simple("gemini-3.5-flash-lite", "Hello")
+    val givenRequest = InteractionRequest.simple(testModel, "Hello")
 
     // when
     val response = client
@@ -130,7 +133,7 @@ class GeminiFs2ClientSpec extends AsyncFlatSpec with AsyncIOSpec with Matchers w
     val fs2BackendStub = HttpClientFs2Backend.stub[IO].whenAnyRequest.thenRespond(ResponseStub.adjust(givenResponse))
     val client = GeminiClient(GeminiConfig("test-token"))
 
-    val givenRequest = InteractionRequest.simple("gemini-3.5-flash-lite", "Hello")
+    val givenRequest = InteractionRequest.simple(testModel, "Hello")
 
     // when
     val response = client

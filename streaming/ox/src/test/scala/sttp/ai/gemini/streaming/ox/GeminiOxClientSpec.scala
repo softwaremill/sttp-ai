@@ -8,6 +8,7 @@ import sttp.ai.gemini.GeminiClient
 import sttp.ai.gemini.GeminiExceptions.GeminiException
 import sttp.ai.gemini.GeminiExceptions.GeminiException.DeserializationGeminiException
 import sttp.ai.gemini.config.GeminiConfig
+import sttp.ai.gemini.models.GeminiModel
 import sttp.ai.gemini.requests.InteractionRequest
 import sttp.ai.gemini.responses.InteractionStreamEvent
 import sttp.ai.gemini.responses.InteractionStreamEvent.DoneEvent
@@ -22,6 +23,8 @@ import sttp.model.sse.ServerSentEvent
 import java.io.{ByteArrayInputStream, InputStream}
 
 class GeminiOxClientSpec extends AnyFlatSpec with Matchers with EitherValues {
+
+  private val testModel = GeminiModel.Gemini35FlashLite.value
 
   private val errorMessage = "Some error message."
 
@@ -49,7 +52,7 @@ class GeminiOxClientSpec extends AnyFlatSpec with Matchers with EitherValues {
       val stub = DefaultSyncBackend.stub.whenAnyRequest.thenRespondAdjust(errorJson, statusCode)
       val client = GeminiClient(GeminiConfig("test-token"))
 
-      val givenRequest = InteractionRequest.simple("gemini-3.5-flash-lite", "Hello")
+      val givenRequest = InteractionRequest.simple(testModel, "Hello")
 
       // when
       val caught = client
@@ -73,7 +76,7 @@ class GeminiOxClientSpec extends AnyFlatSpec with Matchers with EitherValues {
     val stub = DefaultSyncBackend.stub.whenAnyRequest.thenRespond(ResponseStub.adjust(streamedResponse))
     val client = GeminiClient(GeminiConfig("test-token"))
 
-    val givenRequest = InteractionRequest.simple("gemini-3.5-flash-lite", "Hello")
+    val givenRequest = InteractionRequest.simple(testModel, "Hello")
 
     // when
     supervised {
@@ -137,7 +140,7 @@ class GeminiOxClientSpec extends AnyFlatSpec with Matchers with EitherValues {
     val stub = DefaultSyncBackend.stub.whenAnyRequest.thenRespond(ResponseStub.adjust(givenResponse))
     val client = GeminiClient(GeminiConfig("test-token"))
 
-    val givenRequest = InteractionRequest.simple("gemini-3.5-flash-lite", "Hello")
+    val givenRequest = InteractionRequest.simple(testModel, "Hello")
 
     // when
     val response = client

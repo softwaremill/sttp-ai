@@ -11,6 +11,8 @@ import sttp.ai.gemini.requests.InteractionRequest
 
 class InteractionRequestSpec extends AnyFlatSpec with Matchers with EitherValues {
 
+  private val testModel = GeminiModel.Gemini35FlashLite.value
+
   "InteractionInput" should "encode a text input as a plain JSON string" in {
     (InteractionInput.TextInput("hello"): InteractionInput).asJson shouldBe io.circe.Json.fromString("hello")
   }
@@ -41,7 +43,7 @@ class InteractionRequestSpec extends AnyFlatSpec with Matchers with EitherValues
 
   "InteractionRequest" should "serialize with snake_case fields" in {
     val request = InteractionRequest
-      .simple("gemini-2.5-flash-lite", "hello")
+      .simple(testModel, "hello")
       .copy(
         systemInstruction = Some("be brief"),
         previousInteractionId = Some("int_123"),
@@ -49,7 +51,7 @@ class InteractionRequestSpec extends AnyFlatSpec with Matchers with EitherValues
       )
     val json = request.asJson.deepDropNullValues
     json shouldBe parse(
-      """{"model":"gemini-2.5-flash-lite","input":"hello","system_instruction":"be brief",
+      s"""{"model":"$testModel","input":"hello","system_instruction":"be brief",
         |"previous_interaction_id":"int_123","store":false}""".stripMargin
     ).value
   }
