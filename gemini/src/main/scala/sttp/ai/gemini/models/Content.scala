@@ -29,4 +29,9 @@ object Content {
       uri: Option[String] = None,
       mimeType: Option[String] = None
   ) extends Content
+
+  /** Fallback for content types this client does not know yet (e.g. `executable_code` from the code-execution tool); carries the raw JSON
+    * so decoding a response never fails on a new content type.
+    */
+  case class Unknown(raw: io.circe.Json) extends Content
 }

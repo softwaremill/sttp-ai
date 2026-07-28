@@ -59,7 +59,7 @@ object GeminiManualCodecs {
   /** `response_format` is either `{"type": "text"}` or a JSON schema object sent verbatim (no `json_schema` envelope). */
   implicit val responseFormatCodec: Codec[ResponseFormat] = Codec.from(
     Decoder.instance(c =>
-      c.get[Option[String]]("type").flatMap {
+      c.get[Option[Json]]("type").map(_.flatMap(_.asString)).flatMap {
         case Some("text") => Right(ResponseFormat.Text)
         case _            => c.as[Json].map(ResponseFormat.JsonSchema.apply)
       }
@@ -70,16 +70,4 @@ object GeminiManualCodecs {
     }
   )
 
-  implicit val interactionInputCodec: Codec[InteractionInput] = Codec.from(
-    Decoder.instance { c =>
-      c.value.asString match {
-        case Some(text) => Right(InteractionInput.TextInput(text))
-        case None       => c.as[List[Step]](Decoder.decodeList(GeminiDerivedCodecs.stepCodec)).map(InteractionInput.StepsInput.apply)
-      }
-    },
-    Encoder.instance {
-      case InteractionInput.TextInput(text)   => Json.fromString(text)
-      case InteractionInput.StepsInput(steps) => Json.fromValues(steps.map(_.asJson(GeminiDerivedCodecs.stepCodec)))
-    }
-  )
 }

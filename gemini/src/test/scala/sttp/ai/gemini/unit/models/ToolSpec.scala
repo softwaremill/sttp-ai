@@ -18,7 +18,7 @@ class ToolSpec extends AnyFlatSpec with Matchers with EitherValues {
     json.hcursor.get[String]("type").value shouldBe "function"
     json.hcursor.get[String]("name").value shouldBe "set-level"
     json.hcursor.get[String]("description").value shouldBe "Sets the level"
-    // parameters must be preserved verbatim, including legitimate nulls
+    // the encoder embeds parameters verbatim; null-preservation through request serialization is covered by GeminiClientSerializationSpec
     json.hcursor.downField("parameters").focus shouldBe Some(params)
   }
 

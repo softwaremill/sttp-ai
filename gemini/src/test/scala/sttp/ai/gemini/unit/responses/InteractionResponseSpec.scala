@@ -71,4 +71,23 @@ class InteractionResponseSpec extends AnyFlatSpec with Matchers with EitherValue
     response.steps should have size 1
     response.steps.head shouldBe a[Step.Unknown]
   }
+
+  it should "decode unknown content types as Content.Unknown without losing sibling text" in {
+    val response = decode[InteractionResponse](
+      """{"status":"completed","steps":[{"type":"model_output","content":[
+        |{"type":"text","text":"hi"},{"type":"executable_code","code":"x=1"}]}]}""".stripMargin
+    ).value
+
+    response.outputText shouldBe "hi"
+    response.steps.head match {
+      case Step.ModelOutput(content) => content.collect { case u: Content.Unknown => u } should have size 1
+      case other                     => fail(s"expected ModelOutput, got $other")
+    }
+  }
+
+  it should "fail loudly when a known step type is malformed instead of degrading to Unknown" in {
+    decode[InteractionResponse](
+      """{"status":"completed","steps":[{"type":"function_call","name":"get_weather","arguments":{}}]}"""
+    ).isLeft shouldBe true
+  }
 }

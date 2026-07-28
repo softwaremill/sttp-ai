@@ -6,7 +6,6 @@ import org.scalatest.EitherValues
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
 import sttp.ai.gemini.json.GeminiDerivedCodecs._
-import sttp.ai.gemini.json.GeminiManualCodecs._
 import sttp.ai.gemini.models._
 import sttp.ai.gemini.requests.InteractionRequest
 

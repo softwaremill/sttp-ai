@@ -38,4 +38,12 @@ class ResponseFormatSpec extends AnyFlatSpec with Matchers with EitherValues {
     val format: ResponseFormat = ResponseFormat.JsonSchema(schema)
     decode[ResponseFormat](format.asJson.noSpaces).value shouldBe format
   }
+
+  it should "decode a schema with a non-string type array (e.g. nullable) as JsonSchema and encode it back verbatim" in {
+    val schemaJson = """{"type":["object","null"]}"""
+    val schema = parse(schemaJson).value
+
+    decode[ResponseFormat](schemaJson).value shouldBe ResponseFormat.JsonSchema(schema)
+    (ResponseFormat.JsonSchema(schema): ResponseFormat).asJson shouldBe schema
+  }
 }

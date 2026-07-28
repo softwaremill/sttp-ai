@@ -15,7 +15,10 @@ case class InteractionRequest(
     background: Option[Boolean] = None,
     safetySettings: Option[List[SafetySetting]] = None
 ) {
-  def usesStructuredOutput: Boolean = responseFormat.exists(_.isInstanceOf[ResponseFormat.JsonSchema])
+  def usesStructuredOutput: Boolean = responseFormat.exists {
+    case ResponseFormat.JsonSchema(_) => true
+    case ResponseFormat.Text          => false
+  }
 
   def withStructuredOutput(format: ResponseFormat): InteractionRequest =
     this.copy(responseFormat = Some(format))
