@@ -14,18 +14,28 @@ class ResponseFormatSpec extends AnyFlatSpec with Matchers with EitherValues {
     (ResponseFormat.Text: ResponseFormat).asJson shouldBe parse("""{"type":"text"}""").value
   }
 
-  "ResponseFormat.JsonSchema" should "encode with a nested json_schema object" in {
-    val schema = parse("""{"type":"object","properties":{"name":{"type":"string"}}}""").value
-    val format: ResponseFormat = ResponseFormat.JsonSchema(name = "person", schema = schema)
-
-    format.asJson shouldBe parse(
-      """{"type":"json_schema","json_schema":{"name":"person","schema":{"type":"object","properties":{"name":{"type":"string"}}}}}"""
-    ).value
+  it should "round-trip" in {
+    val format: ResponseFormat = ResponseFormat.Text
+    decode[ResponseFormat](format.asJson.noSpaces).value shouldBe format
   }
 
-  it should "round-trip with description and strict" in {
+  "ResponseFormat.JsonSchema" should "encode the schema verbatim, without a json_schema envelope" in {
+    val schema = parse("""{"type":"object","properties":{"city":{"type":"string"}},"required":["city"]}""").value
+    val format: ResponseFormat = ResponseFormat.JsonSchema(schema)
+
+    format.asJson shouldBe schema
+  }
+
+  it should "decode a schema object (no type=text) as JsonSchema" in {
+    val schemaJson = """{"type":"object","properties":{"city":{"type":"string"}},"required":["city"]}"""
+    val schema = parse(schemaJson).value
+
+    decode[ResponseFormat](schemaJson).value shouldBe ResponseFormat.JsonSchema(schema)
+  }
+
+  it should "round-trip through encode/decode" in {
     val schema = parse("""{"type":"object"}""").value
-    val format: ResponseFormat = ResponseFormat.JsonSchema("p", schema, description = Some("d"), strict = Some(true))
+    val format: ResponseFormat = ResponseFormat.JsonSchema(schema)
     decode[ResponseFormat](format.asJson.noSpaces).value shouldBe format
   }
 }

@@ -1,6 +1,6 @@
 package sttp.ai.gemini.json
 
-import io.circe.Codec
+import io.circe.{Codec, Decoder, Encoder, Json}
 import io.circe.derivation.ConfiguredCodec
 import sttp.ai.gemini.models._
 import sttp.ai.gemini.requests.InteractionRequest
@@ -14,11 +14,21 @@ object GeminiDerivedCodecs {
   implicit val contentCodec: Codec[Content] = ConfiguredCodec.derived
   implicit val generationConfigCodec: Codec[GenerationConfig] = ConfiguredCodec.derived
   implicit val safetySettingCodec: Codec[SafetySetting] = ConfiguredCodec.derived
-  implicit val stepCodec: Codec[Step] = ConfiguredCodec.derived
+
+  // Derived codec for the known Step discriminators only; unrecognized `type` values fall back to Step.Unknown so that
+  // decoding a response never fails just because the API introduced a new step type.
+  private val stepBaseCodec: Codec[Step] = ConfiguredCodec.derived
+  implicit val stepCodec: Codec[Step] = Codec.from(
+    stepBaseCodec.or(Decoder[Json].map(Step.Unknown.apply)),
+    Encoder.instance {
+      case Step.Unknown(raw) => raw
+      case other             => stepBaseCodec(other)
+    }
+  )
+
   implicit val interactionRequestCodec: Codec[InteractionRequest] = ConfiguredCodec.derived
 
   implicit val interactionResponseCodec: Codec[InteractionResponse] = ConfiguredCodec.derived
-  implicit val errorDetailCodec: Codec[ErrorDetail] = ConfiguredCodec.derived
   implicit val errorResponseCodec: Codec[ErrorResponse] = ConfiguredCodec.derived
   implicit val streamErrorCodec: Codec[StreamError] = ConfiguredCodec.derived
   implicit val streamMetadataCodec: Codec[StreamMetadata] = ConfiguredCodec.derived

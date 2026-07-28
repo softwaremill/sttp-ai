@@ -27,7 +27,7 @@ class InteractionResponseSpec extends AnyFlatSpec with Matchers with EitherValue
   "InteractionResponse" should "decode from API JSON, ignoring unknown fields like object" in {
     val response = decode[InteractionResponse](responseJson).value
 
-    response.id shouldBe "int_abc"
+    response.id shouldBe Some("int_abc")
     response.status shouldBe InteractionStatus.Completed
     response.model shouldBe Some("gemini-2.5-flash-lite")
     response.steps should have size 2
@@ -45,5 +45,30 @@ class InteractionResponseSpec extends AnyFlatSpec with Matchers with EitherValue
     val response = decode[InteractionResponse]("""{"id":"int_x","status":"queued"}""").value
     response.steps shouldBe empty
     response.outputText shouldBe ""
+  }
+
+  // Verbatim live fixture from a real store=false Interactions API call: no `id` (stateless response), and a
+  // `{"type":"thought", "signature":...}` step preceding the model_output step.
+  private val liveFixture =
+    """{"status":"completed","usage":{"total_tokens":23,"total_input_tokens":12,"input_tokens_by_modality":[{"modality":"text","tokens":12}],"total_cached_tokens":0,"total_output_tokens":11,"total_tool_use_tokens":0,"total_thought_tokens":0},"created":"2026-07-28T07:51:28Z","updated":"2026-07-28T07:51:28Z","service_tier":"standard","steps":[{"signature":"EjQKMgERTTIPUzlM4o4F/05UJ0vCCNg4Vd+GMV47cIlVpIevfAKyVhBjafSKil/2rhl4muYY","type":"thought"},{"content":[{"text":"{\n  \"city\": \"Paris\"\n}","type":"text"}],"type":"model_output"}],"object":"interaction","model":"gemini-3.5-flash-lite"}"""
+
+  it should "decode a live store=false response with no id and a thought step" in {
+    val response = decode[InteractionResponse](liveFixture).value
+
+    response.status shouldBe InteractionStatus.Completed
+    response.id shouldBe None
+    response.outputText shouldBe "{\n  \"city\": \"Paris\"\n}"
+    response.steps.collectFirst { case t: Step.Thought => t } shouldBe Some(
+      Step.Thought(signature = Some("EjQKMgERTTIPUzlM4o4F/05UJ0vCCNg4Vd+GMV47cIlVpIevfAKyVhBjafSKil/2rhl4muYY"))
+    )
+    response.usage.flatMap(_.totalTokens) shouldBe Some(23L)
+  }
+
+  it should "decode an unrecognized step type as Step.Unknown instead of failing" in {
+    val json = """{"id":"int_y","status":"completed","steps":[{"type":"some_future_step","x":1}]}"""
+    val response = decode[InteractionResponse](json).value
+
+    response.steps should have size 1
+    response.steps.head shouldBe a[Step.Unknown]
   }
 }

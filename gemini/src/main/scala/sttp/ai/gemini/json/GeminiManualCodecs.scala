@@ -3,12 +3,33 @@ package sttp.ai.gemini.json
 import io.circe.{Codec, Decoder, DecodingFailure, Encoder, Json}
 import io.circe.syntax._
 import sttp.ai.gemini.models._
+import sttp.ai.gemini.responses.ErrorDetail
 
 object GeminiManualCodecs {
 
   implicit val interactionStatusCodec: Codec[InteractionStatus] = Codec.from(
     Decoder.decodeString.map(InteractionStatus.fromString),
     Encoder.encodeString.contramap(_.value)
+  )
+
+  /** `code` can be a JSON string or a JSON number on the wire; it is normalized to a String. */
+  implicit val errorDetailCodec: Codec[ErrorDetail] = Codec.from(
+    Decoder.instance { c =>
+      for {
+        codeJson <- c.get[Option[Json]]("code")
+        message <- c.get[String]("message")
+        status <- c.get[Option[String]]("status")
+      } yield {
+        val code = codeJson.flatMap(j => j.asString.orElse(j.asNumber.map(_.toString)))
+        ErrorDetail(code, message, status)
+      }
+    },
+    Encoder.instance { detail =>
+      Json
+        .obj("message" := detail.message)
+        .mapObject(obj => detail.code.fold(obj)(c => obj.add("code", Json.fromString(c))))
+        .mapObject(obj => detail.status.fold(obj)(s => obj.add("status", Json.fromString(s))))
+    }
   )
 
   implicit val toolCodec: Codec[Tool] = Codec.from(
@@ -35,29 +56,17 @@ object GeminiManualCodecs {
     }
   )
 
+  /** `response_format` is either `{"type": "text"}` or a JSON schema object sent verbatim (no `json_schema` envelope). */
   implicit val responseFormatCodec: Codec[ResponseFormat] = Codec.from(
     Decoder.instance(c =>
-      c.get[String]("type").flatMap {
-        case "text"        => Right(ResponseFormat.Text)
-        case "json_schema" =>
-          val js = c.downField("json_schema")
-          for {
-            name <- js.get[String]("name")
-            schema <- js.get[Json]("schema")
-            description <- js.get[Option[String]]("description")
-            strict <- js.get[Option[Boolean]]("strict")
-          } yield ResponseFormat.JsonSchema(name, schema, description, strict)
-        case other => Left(DecodingFailure(s"Unknown ResponseFormat type: $other", c.history))
+      c.get[Option[String]]("type").flatMap {
+        case Some("text") => Right(ResponseFormat.Text)
+        case _            => c.as[Json].map(ResponseFormat.JsonSchema.apply)
       }
     ),
     Encoder.instance {
-      case ResponseFormat.Text                                          => Json.obj("type" := "text")
-      case ResponseFormat.JsonSchema(name, schema, description, strict) =>
-        val inner = Json
-          .obj("name" := name, "schema" -> schema)
-          .mapObject(obj => description.fold(obj)(d => obj.add("description", Json.fromString(d))))
-          .mapObject(obj => strict.fold(obj)(s => obj.add("strict", Json.fromBoolean(s))))
-        Json.obj("type" := "json_schema", "json_schema" -> inner)
+      case ResponseFormat.Text               => Json.obj("type" := "text")
+      case ResponseFormat.JsonSchema(schema) => schema
     }
   )
 

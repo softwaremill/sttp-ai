@@ -16,7 +16,7 @@ class InteractionStreamEventSpec extends AnyFlatSpec with Matchers with EitherVa
     ).value
 
     event.eventType shouldBe "interaction.completed"
-    event.interaction.map(_.id) shouldBe Some("int_1")
+    event.interaction.flatMap(_.id) shouldBe Some("int_1")
   }
 
   it should "decode an error event" in {

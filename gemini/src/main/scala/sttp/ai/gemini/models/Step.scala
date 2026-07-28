@@ -13,5 +13,11 @@ object Step {
   case class FunctionCall(id: String, name: String, arguments: Json) extends Step
   case class FunctionResult(callId: String, name: String, result: Json) extends Step
 
+  /** A model reasoning step. `signature` is an opaque server token; `content` may carry thought summaries. */
+  case class Thought(signature: Option[String] = None, content: Option[List[Content]] = None) extends Step
+
+  /** Fallback for step types this client does not know yet; carries the raw JSON so decoding a response never fails on a new step type. */
+  case class Unknown(raw: io.circe.Json) extends Step
+
   def userText(text: String): Step = UserInput(List(Content.Text(text)))
 }

@@ -3,7 +3,7 @@ package sttp.ai.gemini.responses
 import sttp.ai.gemini.models.{Content, InteractionStatus, Step, Usage}
 
 case class InteractionResponse(
-    id: String,
+    id: Option[String] = None,
     status: InteractionStatus,
     model: Option[String] = None,
     steps: List[Step] = List.empty,
