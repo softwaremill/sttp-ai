@@ -88,9 +88,9 @@ class GeminiAgentBackendSpec extends AnyFlatSpec with Matchers with EitherValues
   }
 
   it should "always send store=false and never previous_interaction_id (stateless replay)" in {
-    val body = captureRequestBody(includeTools = true, ConversationHistory.withInitialPrompt("hello"))
-    body should include("\"store\":false")
-    body should not include "previous_interaction_id"
+    val bodyJson = parse(captureRequestBody(includeTools = true, ConversationHistory.withInitialPrompt("hello"))).value
+    bodyJson.hcursor.downField("store").as[Boolean] shouldBe Right(false)
+    bodyJson.hcursor.downField("previous_interaction_id").succeeded shouldBe false
   }
 
   it should "replay the full history as input steps" in {
@@ -110,8 +110,11 @@ class GeminiAgentBackendSpec extends AnyFlatSpec with Matchers with EitherValues
   }
 
   it should "include tools when includeTools is true and omit them when false" in {
-    captureRequestBody(includeTools = true, ConversationHistory.withInitialPrompt("hi")) should include("\"tools\"")
-    captureRequestBody(includeTools = false, ConversationHistory.withInitialPrompt("hi")) should not include "\"tools\""
+    val withTools = parse(captureRequestBody(includeTools = true, ConversationHistory.withInitialPrompt("hi"))).value
+    withTools.hcursor.downField("tools").succeeded shouldBe true
+
+    val withoutTools = parse(captureRequestBody(includeTools = false, ConversationHistory.withInitialPrompt("hi"))).value
+    withoutTools.hcursor.downField("tools").succeeded shouldBe false
   }
 
   it should "map a completed response to EndTurn with the model output text" in {
