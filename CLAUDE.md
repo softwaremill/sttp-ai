@@ -30,7 +30,7 @@ sbt mcp3/compile                         # MCP module (Scala 3 only; sbt-project
 sbt test                                 # Unit tests (excludes integration)
 sbt "testOnly *OpenAIIntegrationSpec"   # OpenAI integration (requires OPENAI_API_KEY)
 sbt "testOnly *ClaudeIntegrationSpec"   # Claude integration (requires ANTHROPIC_API_KEY)
-sbt "testOnly *GeminiIntegrationSpec"   # (requires GEMINI_API_KEY)
+sbt "testOnly *GeminiIntegrationSpec"   # Gemini integration (requires GEMINI_API_KEY)
 ./run-integration-tests.sh              # All integration tests
 
 # Format (CRITICAL - always run after changes!)
