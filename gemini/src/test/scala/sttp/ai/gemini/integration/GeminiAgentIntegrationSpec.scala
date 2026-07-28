@@ -10,7 +10,7 @@ import sttp.shared.Identity
 
 class GeminiAgentIntegrationSpec extends AgentIntegrationSpecBase {
 
-  private val testModel = "gemini-2.5-flash-lite"
+  private val testModel = "gemini-3.5-flash-lite"
 
   override def providerName: String = "Gemini"
   override def apiKeyEnvVar: String = "GEMINI_API_KEY"

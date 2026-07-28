@@ -23,7 +23,7 @@ object CityAnswer {
   */
 class GeminiIntegrationSpec extends AnyFlatSpec with Matchers with BeforeAndAfterAll {
 
-  private val testModel = "gemini-2.5-flash-lite"
+  private val testModel = "gemini-3.5-flash-lite"
 
   private var clientOpt: Option[GeminiSyncClient] = None
   private val maybeApiKey: Option[String] = sys.env.get("GEMINI_API_KEY")
@@ -70,9 +70,11 @@ class GeminiIntegrationSpec extends AnyFlatSpec with Matchers with BeforeAndAfte
       InteractionRequest.simple(testModel, "Reply with exactly one word: stored").copy(store = Some(true))
     )
 
-    val fetched = client.getInteraction(created.id)
+    created.id shouldBe defined
+
+    val fetched = client.getInteraction(created.id.get)
     fetched.id shouldBe created.id
 
-    client.deleteInteraction(created.id)
+    client.deleteInteraction(created.id.get)
   }
 }
