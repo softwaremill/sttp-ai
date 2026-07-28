@@ -13,6 +13,16 @@ import sttp.client4.{DefaultSyncBackend, StringBody}
 import sttp.client4.testing.ResponseStub
 import sttp.model.{Header, ResponseMetadata, StatusCode}
 
+/** Phantom tag for a minimal test [[sttp.capabilities.Streams]] instance. Tagging with `TestCapability` rather than `TestStreams.type`
+  * avoids "illegal cyclic reference involving object TestStreams" under Scala 2.13 (Scala 3 tolerates the self-referential singleton type,
+  * but 2.13 does not).
+  */
+trait TestCapability
+object TestStreams extends sttp.capabilities.Streams[TestCapability] {
+  override type BinaryStream = Unit
+  override type Pipe[A, B] = Unit
+}
+
 class GeminiClientSerializationSpec extends AnyFlatSpec with Matchers with EitherValues {
 
   private val client = new GeminiClientImpl(GeminiConfig("test-key"))
@@ -32,9 +42,8 @@ class GeminiClientSerializationSpec extends AnyFlatSpec with Matchers with Eithe
   }
 
   it should "drop unset optional fields from the serialized body" in {
-    val body = bodyOf(InteractionRequest.simple("gemini-2.5-flash-lite", "hi"))
-    body should not include "\"system_instruction\""
-    body should not include "null"
+    val bodyJson = parse(bodyOf(InteractionRequest.simple("gemini-2.5-flash-lite", "hi"))).value
+    bodyJson.hcursor.downField("system_instruction").succeeded shouldBe false
   }
 
   it should "preserve tool parameters verbatim, including legitimate nulls" in {
@@ -82,6 +91,7 @@ class GeminiClientSerializationSpec extends AnyFlatSpec with Matchers with Eithe
     client.mapErrorToException(errorBody, meta(StatusCode.ServiceUnavailable)) shouldBe a[GeminiException.ServiceUnavailableException]
     client.mapErrorToException(errorBody, meta(StatusCode.InternalServerError)) shouldBe a[GeminiException.APIException]
     client.mapErrorToException(errorBody, meta(StatusCode.TooManyRequests)).getMessage shouldBe "quota exceeded"
+    client.mapErrorToException(errorBody, meta(StatusCode.TooManyRequests)).code shouldBe Some("429")
   }
 
   it should "map error responses whose code is a JSON string, not just an int" in {
@@ -89,8 +99,8 @@ class GeminiClientSerializationSpec extends AnyFlatSpec with Matchers with Eithe
     def meta(status: StatusCode) = ResponseMetadata(status, "", Nil)
 
     val ex = client.mapErrorToException(errorBody, meta(StatusCode.TooManyRequests))
-    ex shouldBe a[GeminiException.RateLimitException]
     ex.getMessage shouldBe "quota exceeded"
+    ex.code shouldBe Some("rate_limit")
   }
 
   it should "map non-2xx responses through the status-based exception dispatch" in {
@@ -102,10 +112,70 @@ class GeminiClientSerializationSpec extends AnyFlatSpec with Matchers with Eithe
     result.left.toOption.get.getMessage shouldBe "invalid key"
   }
 
+  it should "map a non-JSON error body to an exception carrying the raw body as message" in {
+    val errorBody = "<html>Service Unavailable</html>"
+    val stub = DefaultSyncBackend.stub.whenAnyRequest
+      .thenRespondF(_ => ResponseStub.adjust(errorBody, StatusCode.ServiceUnavailable))
+    val result = client.createInteraction(InteractionRequest.simple("gemini-2.5-flash-lite", "hi")).send(stub).body
+    result.left.toOption.get shouldBe a[GeminiException.ServiceUnavailableException]
+    result.left.toOption.get.getMessage shouldBe errorBody
+  }
+
+  it should "map an error body without a message to an exception carrying the raw body as message" in {
+    val errorBody = """{"error":{"code":400}}"""
+    val stub = DefaultSyncBackend.stub.whenAnyRequest
+      .thenRespondF(_ => ResponseStub.adjust(errorBody, StatusCode.BadRequest))
+    val result = client.createInteraction(InteractionRequest.simple("gemini-2.5-flash-lite", "hi")).send(stub).body
+    result.left.toOption.get shouldBe a[GeminiException.InvalidRequestException]
+    result.left.toOption.get.getMessage shouldBe errorBody
+  }
+
+  it should "map a malformed 200 body to a DeserializationGeminiException" in {
+    val stub = DefaultSyncBackend.stub.whenAnyRequest.thenRespondF(_ => ResponseStub.adjust("not json", StatusCode.Ok))
+    val result = client.createInteraction(InteractionRequest.simple("gemini-2.5-flash-lite", "hi")).send(stub).body
+    result.left.toOption.get shouldBe a[GeminiException.DeserializationGeminiException]
+  }
+
+  it should "map deleteInteraction responses via asUnit_parseErrors" in {
+    val okStub = DefaultSyncBackend.stub.whenAnyRequest.thenRespondF(_ => ResponseStub.adjust("", StatusCode.Ok))
+    client.deleteInteraction("int_1").send(okStub).body shouldBe Right(())
+
+    val errorBody = """{"error":{"code":404,"message":"not found","status":"NOT_FOUND"}}"""
+    val notFoundStub = DefaultSyncBackend.stub.whenAnyRequest
+      .thenRespondF(_ => ResponseStub.adjust(errorBody, StatusCode.NotFound))
+    client.deleteInteraction("int_1").send(notFoundStub).body.left.toOption.get shouldBe a[GeminiException.NotFoundException]
+  }
+
+  it should "target GET v1beta/interactions/{id} for getInteraction" in {
+    val req = client.getInteraction("int_1")
+    req.uri.toString should endWith("/v1beta/interactions/int_1")
+    req.method.method shouldBe "GET"
+  }
+
+  it should "target DELETE v1beta/interactions/{id} for deleteInteraction" in {
+    val req = client.deleteInteraction("int_1")
+    req.uri.toString should endWith("/v1beta/interactions/int_1")
+    req.method.method shouldBe "DELETE"
+  }
+
+  it should "target POST v1beta/interactions/{id}/cancel for cancelInteraction" in {
+    val req = client.cancelInteraction("int_1")
+    req.uri.toString should endWith("/v1beta/interactions/int_1/cancel")
+    req.method.method shouldBe "POST"
+  }
+
   it should "set stream=true on streaming request bodies" in {
     val req = client.createInteractionAsInputStream(InteractionRequest.simple("gemini-2.5-flash-lite", "hi"))
     req.body match {
       case StringBody(s, _, _) => s should include("\"stream\":true")
+      case other               => fail(s"expected StringBody, got $other")
+    }
+  }
+
+  it should "set stream=true on binary-stream request bodies" in {
+    val req = client.createInteractionAsBinaryStream(TestStreams, InteractionRequest.simple("gemini-3.5-flash-lite", "hi"))
+    req.body match {
+      case StringBody(s, _, _) => parse(s).value.hcursor.downField("stream").as[Boolean] shouldBe Right(true)
       case other               => fail(s"expected StringBody, got $other")
     }
   }

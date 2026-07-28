@@ -28,7 +28,7 @@ trait GeminiClient {
   def createInteractionAsInputStream(request: InteractionRequest): Request[Either[GeminiException, InputStream]]
 }
 
-class GeminiClientImpl(config: GeminiConfig) extends GeminiClient with ResponseHandlers[GeminiException, Decoder] {
+private[gemini] class GeminiClientImpl(config: GeminiConfig) extends GeminiClient with ResponseHandlers[GeminiException, Decoder] {
 
   private val geminiUris = new GeminiUris(config.baseUrl)
 
@@ -44,21 +44,21 @@ class GeminiClientImpl(config: GeminiConfig) extends GeminiClient with ResponseH
     * status string (e.g. `RESOURCE_EXHAUSTED`) rather than a stable error `type`, so the HTTP status is the reliable dispatch key.
     */
   override def mapErrorToException(errorResponse: String, metadata: ResponseMetadata): GeminiException = {
-    val (message, status) =
+    val (message, status, code) =
       decode[sttp.ai.gemini.responses.ErrorResponse](errorResponse) match {
-        case Right(parsed) => (Some(parsed.error.message), parsed.error.status)
-        case Left(_)       => (Some(errorResponse), None)
+        case Right(parsed) => (Some(parsed.error.message), parsed.error.status, parsed.error.code)
+        case Left(_)       => (Some(errorResponse), None, None)
       }
     val cause = ResponseException.UnexpectedStatusCode(message.getOrElse(""), metadata)
 
     metadata.code match {
-      case StatusCode.Unauthorized       => new GeminiException.AuthenticationException(message, status, None, None, cause)
-      case StatusCode.Forbidden          => new GeminiException.PermissionException(message, status, None, None, cause)
-      case StatusCode.TooManyRequests    => new GeminiException.RateLimitException(message, status, None, None, cause)
-      case StatusCode.BadRequest         => new GeminiException.InvalidRequestException(message, status, None, None, cause)
-      case StatusCode.NotFound           => new GeminiException.NotFoundException(message, status, None, None, cause)
-      case StatusCode.ServiceUnavailable => new GeminiException.ServiceUnavailableException(message, status, None, None, cause)
-      case _                             => new GeminiException.APIException(message, status, None, None, cause)
+      case StatusCode.Unauthorized       => new GeminiException.AuthenticationException(message, status, None, code, cause)
+      case StatusCode.Forbidden          => new GeminiException.PermissionException(message, status, None, code, cause)
+      case StatusCode.TooManyRequests    => new GeminiException.RateLimitException(message, status, None, code, cause)
+      case StatusCode.BadRequest         => new GeminiException.InvalidRequestException(message, status, None, code, cause)
+      case StatusCode.NotFound           => new GeminiException.NotFoundException(message, status, None, code, cause)
+      case StatusCode.ServiceUnavailable => new GeminiException.ServiceUnavailableException(message, status, None, code, cause)
+      case _                             => new GeminiException.APIException(message, status, None, code, cause)
     }
   }
 
@@ -164,7 +164,7 @@ class GeminiClientImpl(config: GeminiConfig) extends GeminiClient with ResponseH
       )
 }
 
-class GeminiUris(baseUri: Uri) {
+private[gemini] class GeminiUris(baseUri: Uri) {
   val Interactions: Uri = baseUri.addPath("v1beta", "interactions")
   def interaction(id: String): Uri = baseUri.addPath("v1beta", "interactions", id)
   def cancel(id: String): Uri = baseUri.addPath("v1beta", "interactions", id, "cancel")

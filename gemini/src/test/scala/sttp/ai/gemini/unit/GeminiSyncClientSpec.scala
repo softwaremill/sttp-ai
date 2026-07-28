@@ -1,16 +1,21 @@
 package sttp.ai.gemini.unit
 
 import io.circe.generic.semiauto.deriveCodec
+import io.circe.parser.parse
+import org.scalatest.EitherValues
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
 import sttp.ai.gemini.GeminiExceptions.GeminiException
 import sttp.ai.gemini.GeminiSyncClient
 import sttp.ai.gemini.config.GeminiConfig
+import sttp.ai.gemini.models.ResponseFormat
 import sttp.ai.gemini.requests.InteractionRequest
 import sttp.client4.testing.ResponseStub
-import sttp.client4.DefaultSyncBackend
+import sttp.client4.{DefaultSyncBackend, GenericRequest, StringBody}
 import sttp.model.StatusCode
 import sttp.tapir.{Schema => TapirSchema}
+
+import java.util.concurrent.atomic.AtomicReference
 
 case class WeatherReport(city: String, temperature: Double)
 
@@ -19,7 +24,7 @@ object WeatherReport {
   implicit val schema: TapirSchema[WeatherReport] = TapirSchema.derived
 }
 
-class GeminiSyncClientSpec extends AnyFlatSpec with Matchers {
+class GeminiSyncClientSpec extends AnyFlatSpec with Matchers with EitherValues {
 
   private val completedResponse =
     """{"id":"int_1","status":"completed",
@@ -52,5 +57,33 @@ class GeminiSyncClientSpec extends AnyFlatSpec with Matchers {
       """{"id":"int_1","status":"completed","steps":[{"type":"model_output","content":[{"type":"text","text":"not json"}]}]}"""
     an[GeminiException.DeserializationGeminiException] should be thrownBy
       clientReturning(badResponse).createInteractionAs[WeatherReport](InteractionRequest.simple("gemini-2.5-flash-lite", "hi"))
+  }
+
+  private def captureCreateInteractionAsBody(request: InteractionRequest): String = {
+    val captured = new AtomicReference[GenericRequest[_, _]](null)
+    val httpStub = DefaultSyncBackend.stub.whenAnyRequest.thenRespondF { req =>
+      captured.set(req)
+      ResponseStub.adjust(completedResponse, StatusCode.Ok)
+    }
+    GeminiSyncClient(GeminiConfig("test-key"), httpStub).createInteractionAs[WeatherReport](request): Unit
+    captured.get().body match {
+      case StringBody(s, _, _) => s
+      case other               => fail(s"expected StringBody, got $other")
+    }
+  }
+
+  it should "derive a response_format schema from T's tapir schema when the request has none" in {
+    val bodyJson = parse(captureCreateInteractionAsBody(InteractionRequest.simple("gemini-2.5-flash-lite", "weather"))).value
+    bodyJson.hcursor.downField("response_format").downField("properties").downField("city").succeeded shouldBe true
+  }
+
+  it should "leave an existing response_format untouched" in {
+    val customSchema = parse("""{"type":"object","properties":{"custom":{"type":"string"}}}""").value
+    val request = InteractionRequest
+      .simple("gemini-2.5-flash-lite", "weather")
+      .copy(responseFormat = Some(ResponseFormat.JsonSchema(customSchema)))
+
+    val bodyJson = parse(captureCreateInteractionAsBody(request)).value
+    bodyJson.hcursor.downField("response_format").focus shouldBe Some(customSchema)
   }
 }

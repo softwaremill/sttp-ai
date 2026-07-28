@@ -1,5 +1,6 @@
 package sttp.ai.gemini
 
+import sttp.ai.gemini.GeminiExceptions.GeminiException
 import sttp.ai.gemini.GeminiExceptions.GeminiException.DeserializationGeminiException
 import sttp.ai.gemini.config.GeminiConfig
 import sttp.ai.gemini.models.ResponseFormat
@@ -7,20 +8,20 @@ import sttp.ai.gemini.requests.InteractionRequest
 import sttp.ai.gemini.responses.InteractionResponse
 import io.circe.Decoder
 import io.circe.parser.decode
-import io.circe.syntax._
-import sttp.apispec.circe._
-import sttp.client4.{DefaultSyncBackend, SyncBackend}
-import sttp.tapir.docs.apispec.schema.TapirSchemaToJsonSchema
+import sttp.client4.{DefaultSyncBackend, Request, SyncBackend}
 import sttp.tapir.{Schema => TapirSchema}
 
 class GeminiSyncClient(config: GeminiConfig, backend: SyncBackend = DefaultSyncBackend()) {
   private val client = new GeminiClientImpl(config)
 
-  def createInteraction(request: InteractionRequest): InteractionResponse =
-    client.createInteraction(request).send(backend).body match {
+  private def sendOrThrow[A](request: Request[Either[GeminiException, A]]): A =
+    request.send(backend).body match {
       case Left(exception) => throw exception
-      case Right(response) => response
+      case Right(value)    => value
     }
+
+  def createInteraction(request: InteractionRequest): InteractionResponse =
+    sendOrThrow(client.createInteraction(request))
 
   /** Creates an interaction with a JSON-schema response format derived from `T`'s tapir schema (unless the request already carries one) and
     * decodes the model output text as `T`.
@@ -28,10 +29,7 @@ class GeminiSyncClient(config: GeminiConfig, backend: SyncBackend = DefaultSyncB
   def createInteractionAs[T: TapirSchema: Decoder](request: InteractionRequest): T = {
     val withSchema =
       if (request.usesStructuredOutput) request
-      else {
-        val schemaJson = TapirSchemaToJsonSchema(implicitly[TapirSchema[T]], markOptionsAsNullable = true).asJson.deepDropNullValues
-        request.withStructuredOutput(ResponseFormat.JsonSchema(schemaJson))
-      }
+      else request.withStructuredOutput(ResponseFormat.JsonSchema.withTapirSchema[T])
 
     val response = createInteraction(withSchema)
 
@@ -43,22 +41,13 @@ class GeminiSyncClient(config: GeminiConfig, backend: SyncBackend = DefaultSyncB
   }
 
   def getInteraction(id: String): InteractionResponse =
-    client.getInteraction(id).send(backend).body match {
-      case Left(exception) => throw exception
-      case Right(response) => response
-    }
+    sendOrThrow(client.getInteraction(id))
 
   def deleteInteraction(id: String): Unit =
-    client.deleteInteraction(id).send(backend).body match {
-      case Left(exception) => throw exception
-      case Right(_)        => ()
-    }
+    sendOrThrow(client.deleteInteraction(id))
 
   def cancelInteraction(id: String): InteractionResponse =
-    client.cancelInteraction(id).send(backend).body match {
-      case Left(exception) => throw exception
-      case Right(response) => response
-    }
+    sendOrThrow(client.cancelInteraction(id))
 
   def close(): Unit = backend.close()
 }
