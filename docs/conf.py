@@ -24,7 +24,7 @@ extensions = ['myst_parser', 'sphinx_rtd_theme', 'sphinxcontrib.mermaid', 'sphin
 myst_enable_extensions = ['attrs_block']
 
 llms_txt_title = "sttp-ai"
-llms_txt_summary = "Scala client for OpenAI, Claude (Anthropic), and OpenAI-compatible APIs"
+llms_txt_summary = "Scala client for OpenAI, Claude (Anthropic), Gemini (Google), and OpenAI-compatible APIs"
 llms_txt_full_file = True
 
 # The suffix(es) of source filenames.

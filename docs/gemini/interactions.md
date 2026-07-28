@@ -41,14 +41,20 @@ object LifecycleExample:
 
 The API's own default is `store = true` — every interaction you create is persisted server-side unless you opt out. Pass `store = Some(false)` to skip persistence (nothing to fetch or delete afterwards):
 
-```scala
-val request = InteractionRequest
-  .simple("gemini-2.5-flash", "Reply with exactly one word: stored")
-  .copy(store = Some(true)) // the default; shown here for clarity
+```scala mdoc:compile-only
+//> using dep com.softwaremill.sttp.ai::gemini:@VERSION@
 
-val ephemeral = InteractionRequest
-  .simple("gemini-2.5-flash", "Reply with exactly one word: ephemeral")
-  .copy(store = Some(false))
+import sttp.ai.gemini.requests.InteractionRequest
+
+object StoreExample:
+  def main(args: Array[String]): Unit =
+    val request = InteractionRequest
+      .simple("gemini-2.5-flash", "Reply with exactly one word: stored")
+      .copy(store = Some(true)) // the default; shown here for clarity
+
+    val ephemeral = InteractionRequest
+      .simple("gemini-2.5-flash", "Reply with exactly one word: ephemeral")
+      .copy(store = Some(false))
 ```
 
 ## Multi-turn conversations
@@ -106,10 +112,14 @@ object Step {
   case class ModelOutput(content: List[Content]) extends Step
   case class FunctionCall(id: String, name: String, arguments: io.circe.Json) extends Step
   case class FunctionResult(callId: String, name: String, result: io.circe.Json) extends Step
+  case class Thought(signature: Option[String], content: Option[List[Content]]) extends Step // model reasoning, returned by the live API
+  case class Unknown(raw: io.circe.Json) extends Step // forward-compat fallback for step types this client doesn't know yet
 
   def userText(text: String): Step = UserInput(List(Content.Text(text)))
 }
 ```
+
+The set of `Step` subtypes is open: the live API can return `Thought` steps (and, if it introduces new step types, they decode as `Unknown` rather than failing). Any `match` over `Step` should handle `Thought`/`Unknown` explicitly, or fall back to a wildcard case.
 
 `Content` is the payload carried by `UserInput`/`ModelOutput` steps — plain text or a media reference (inline base64 `data` or a remote `uri`, with an optional `mimeType`):
 

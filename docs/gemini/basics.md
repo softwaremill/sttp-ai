@@ -12,7 +12,7 @@ This module provides **native support for Google's Gemini API**, built on the [I
 - **Streaming** — Server-Sent Events streaming for fs2, ZIO, Akka, Pekko, and Ox
 - **Agent loop integration** — `GeminiAgent` plugs into the shared `sttp.ai.core.agent` framework
 - **Comprehensive error handling** — Gemini-specific exception hierarchy
-- **Cross-platform** — Scala 2.13 and Scala 3
+- **Cross-platform** — Scala 2.13 and Scala 3 on the JVM, plus Scala Native (Scala 3)
 
 ## Basic Usage (Gemini)
 

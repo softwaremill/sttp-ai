@@ -11,7 +11,7 @@ sttp is a family of Scala HTTP-related projects, and currently includes:
 
 * [sttp client](https://github.com/softwaremill/sttp): The Scala HTTP client you always wanted!
 * [sttp tapir](https://github.com/softwaremill/tapir): Typed API descRiptions
-* sttp ai: this project. Non-official Scala client wrapper for OpenAI, Claude (Anthropic), and OpenAI-compatible APIs. Use the power of ChatGPT and Claude inside your code!
+* sttp ai: this project. Non-official Scala client wrapper for OpenAI, Claude (Anthropic), Gemini (Google), and OpenAI-compatible APIs. Use the power of ChatGPT, Claude, and Gemini inside your code!
 
 ## Table of Contents
 

@@ -26,7 +26,7 @@ object ModelsExample:
 - `Gemini31FlashLite` (`gemini-3.1-flash-lite`)
 - `Gemini25Pro` (`gemini-2.5-pro`) — highest-capability, best for complex reasoning
 - `Gemini25Flash` (`gemini-2.5-flash`) — balanced performance and speed
-- `Gemini25FlashLite` (`gemini-2.5-flash-lite`) — fastest and cheapest, good for integration tests
+- `Gemini25FlashLite` (`gemini-2.5-flash-lite`) — fastest and cheapest
 
 `GeminiModel.fromString(s)` parses a raw model name back into a known `GeminiModel` case object, falling back to `CustomModel(s)`.
 

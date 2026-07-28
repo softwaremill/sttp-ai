@@ -12,7 +12,7 @@ sttp-ai is a Scala library providing a non-official client wrapper for OpenAI, C
 - Native Gemini (Google) API support via the Interactions API with dedicated module
 - OpenAI-compatible API support (Ollama, Grok, OpenRouter, etc.)
 - Streaming support for all major effect systems
-- Cross-platform: Scala 2.13.16 and Scala 3.3.6
+- Cross-platform: Scala 2.13.18 and Scala 3.3.8
 - Agent loop tools loadable from [MCP](https://modelcontextprotocol.io) servers (`mcp` module, Scala 3 only, via [chimp](https://github.com/softwaremill/chimp)), in addition to manually defined `AgentTool`s
 
 ## Development Commands
@@ -84,7 +84,7 @@ Each streaming module (`streaming/{effect-system}/`) provides extensions for **a
 | **pekko** | `streaming/pekko/` | `sttp.ai.openai.streaming.pekko.*` | `sttp.ai.claude.streaming.pekko.*` | `sttp.ai.gemini.streaming.pekko.*` | 2.13, 3 |
 | **ox** | `streaming/ox/` | `sttp.ai.openai.streaming.ox.*` | `sttp.ai.claude.streaming.ox.*` | `sttp.ai.gemini.streaming.ox.*` | 3 only |
 
-**Pattern:** Extension methods add `.parseSSE` + `.parseClaudeStreamResponse`/`.parseOpenAIStreamResponse`
+**Pattern:** Extension methods add `createStreamedChatCompletion` (OpenAI) / `createStreamedMessage` (Claude) / `createStreamedInteraction` (Gemini), each returning a stream of parsed SSE events for the given effect system.
 
 ### Key Navigation Tips
 
@@ -125,7 +125,7 @@ Each streaming module (`streaming/{effect-system}/`) provides extensions for **a
   - AVOID `import _root_.xxxx.yyyy`, USE `import xxxx.yyyy`
   - **Scala 3 syntax preferred**: `import package.*` (not `import package._`)
   - SortImports rule applied, RedundantBraces/Parens removed
-- **Naming**: Snake_case for JSON fields (handled by SnakePickle)
+- **Naming**: Snake_case for JSON fields (handled by the shared circe snake_case configuration)
 - **Models**: Case objects extending sealed traits, companion values for easy access
 - **Documentation**: Always use Scala 3 syntax (`@main`, `given`, `import package.*`)
 
@@ -135,13 +135,14 @@ Each streaming module (`streaming/{effect-system}/`) provides extensions for **a
 - **Integration tests**: Hit real APIs, cost-efficient (minimal inputs)
   - OpenAI: Requires `OPENAI_API_KEY`, 30s timeouts, rate limiting handled
   - Claude: Requires `ANTHROPIC_API_KEY`, minimal token usage
+  - Gemini: Requires `GEMINI_API_KEY`, minimal token usage
   - Auto-skip if API key not set
-- **Cross-building**: sbt-projectmatrix for Scala 2.13.16 & 3.3.6
+- **Cross-building**: sbt-projectmatrix for Scala 2.13.18 & 3.3.8
 
 ## Client Implementation Patterns
 
-- **Sync Clients**: `OpenAISyncClient` / `ClaudeSyncClient` - Use `DefaultSyncBackend`, block on responses, may throw exceptions
-- **Async Clients**: `OpenAI` / `ClaudeClient` - Raw sttp requests, choose backend (cats-effect, ZIO, etc.)
+- **Sync Clients**: `OpenAISyncClient` / `ClaudeSyncClient` / `GeminiSyncClient` - Use `DefaultSyncBackend`, block on responses, may throw exceptions
+- **Async Clients**: `OpenAI` / `ClaudeClient` / `GeminiClient` - Raw sttp requests, choose backend (cats-effect, ZIO, etc.)
 - **Custom Backends**: Pass backend to `.send(backend)`
 - **OpenAI-Compatible**: Use `OpenAI` client with custom base URL for Ollama, Grok, OpenRouter, etc.
 
@@ -152,7 +153,7 @@ Scratch files are powerful debugging tools using scala-cli for rapid prototyping
 ### When to Use
 
 **Ideal for:**
-- JSON serialization debugging (test uPickle behavior)
+- JSON serialization debugging (test circe behavior)
 - API request validation (verify structures before integration tests)
 - Library behavior testing (test specific features/edge cases)
 - Hypothesis validation (confirm assumptions)
@@ -163,10 +164,11 @@ Scratch files are powerful debugging tools using scala-cli for rapid prototyping
 ```scala
 // debug_serialization.sc - Test JSON output
 //> using dep com.softwaremill.sttp.ai::claude:0.3.10+SNAPSHOT
-import sttp.ai.claude.json.SnakePickle._
+import sttp.ai.claude.json.ClaudeDerivedCodecs.*
+import io.circe.syntax.*
 
 val obj = MyModel(...)
-println(write(obj))  // Check JSON structure
+println(obj.asJson.noSpaces)  // Check JSON structure
 ```
 
 ### Best Practices
