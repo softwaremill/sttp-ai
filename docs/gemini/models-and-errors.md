@@ -30,9 +30,11 @@ object ModelsExample:
 
 `GeminiModel.fromString(s)` parses a raw model name back into a known `GeminiModel` case object, falling back to `CustomModel(s)`.
 
+> **Note:** the 2.5-generation `-lite` models (`gemini-2.5-flash-lite` and older) are no longer available to new Gemini API users — requesting them returns a 404 `not_found` error. Prefer `Gemini35FlashLite` (`gemini-3.5-flash-lite`) or later for new integrations.
+
 ## Gemini Error Handling
 
-`GeminiClient`'s async methods return `Either[GeminiException, A]`; `GeminiSyncClient` throws the same exceptions instead. Every non-2xx HTTP response is mapped to a `GeminiException` subclass based on the status code, since the Gemini error body carries a numeric `code` and a Google status string (e.g. `RESOURCE_EXHAUSTED`) rather than a stable error `type`:
+`GeminiClient`'s async methods return `Either[GeminiException, A]`; `GeminiSyncClient` throws the same exceptions instead. Every non-2xx HTTP response is mapped to a `GeminiException` subclass based on the status code, since the Gemini error body's `code` field is not a stable error `type` — it can be either a JSON string (e.g. `"not_found"`) or a JSON number depending on the endpoint, and a Google status string (e.g. `RESOURCE_EXHAUSTED`) is not always present either:
 
 | HTTP Status | Exception |
 |-------------|-----------|

@@ -33,7 +33,7 @@ object Main:
 
 ## Manual `ResponseFormat.JsonSchema`
 
-If you'd rather build (or already have) the JSON Schema yourself, set `ResponseFormat.JsonSchema` on the request directly with `withStructuredOutput` and parse the response text yourself:
+If you'd rather build (or already have) the JSON Schema yourself, set `ResponseFormat.JsonSchema` on the request directly with `withStructuredOutput` and parse the response text yourself. Gemini's Interactions API takes the schema verbatim — there is no `json_schema` wrapper envelope:
 
 ```scala mdoc:compile-only
 //> using dep com.softwaremill.sttp.ai::gemini:@VERSION@
@@ -65,7 +65,7 @@ object ManualSchemaExample:
 
       val request = InteractionRequest
         .simple("gemini-2.5-flash", "Extract information about John, a 30-year-old software engineer who knows Python and Scala.")
-        .withStructuredOutput(ResponseFormat.JsonSchema(name = "person_info", schema = schema))
+        .withStructuredOutput(ResponseFormat.JsonSchema(schema))
 
       val response = gemini.createInteraction(request)
 
@@ -80,5 +80,5 @@ object ManualSchemaExample:
 
 **Notes:**
 - `usesStructuredOutput` on `InteractionRequest` reports whether a `ResponseFormat.JsonSchema` is already set — `createInteractionAs[T]` uses it to avoid overwriting a schema you set explicitly.
-- `ResponseFormat.JsonSchema` also accepts `description` and `strict` fields; leave them `None` unless the API docs call for them.
+- `ResponseFormat.JsonSchema(schema)` wraps a single JSON schema value, sent to the API exactly as given — Gemini does not use OpenAI's `{"type": "json_schema", "json_schema": {...}}` envelope.
 - JSON schemas must be valid and follow standard JSON Schema conventions.

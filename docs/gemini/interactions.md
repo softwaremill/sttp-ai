@@ -20,19 +20,22 @@ object LifecycleExample:
       )
       println(s"status: ${created.status}")
 
-      // Get (only meaningful when the interaction was stored server-side)
-      val fetched = gemini.getInteraction(created.id)
+      // Get (only meaningful when the interaction was stored server-side; created.id is None for stateless responses)
+      val id = created.id.getOrElse(throw new RuntimeException("interaction was not stored"))
+      val fetched = gemini.getInteraction(id)
       println(fetched.outputText)
 
       // Cancel a still-running interaction (e.g. one created with background = Some(true))
-      // gemini.cancelInteraction(created.id)
+      // gemini.cancelInteraction(id)
 
       // Delete
-      gemini.deleteInteraction(created.id)
+      gemini.deleteInteraction(id)
     } finally gemini.close()
 ```
 
 `createInteraction`/`getInteraction`/`cancelInteraction` return an `InteractionResponse`; `deleteInteraction` returns `Unit`. All four throw a `GeminiException` subclass on failure on the sync client, or hand back an `Either[GeminiException, A]` on the async `GeminiClient` (see [basics.md](basics.md)).
+
+`InteractionResponse.id` is an `Option[String]` — it is absent on stateless (`store = false`) responses, since there is nothing server-side to identify.
 
 ## `store`: server-side persistence
 
@@ -71,7 +74,7 @@ object MultiTurnExample:
       val second = gemini.createInteraction(
         InteractionRequest
           .simple("gemini-2.5-flash", "What is my name?")
-          .copy(previousInteractionId = Some(first.id))
+          .copy(previousInteractionId = first.id)
       )
       println(second.outputText)
 
