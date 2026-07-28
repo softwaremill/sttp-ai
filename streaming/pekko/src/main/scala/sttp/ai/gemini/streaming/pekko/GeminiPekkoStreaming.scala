@@ -12,7 +12,6 @@ import sttp.client4.pekkohttp.PekkoHttpServerSentEvents
 import sttp.model.ResponseMetadata
 import sttp.model.sse.ServerSentEvent
 import io.circe.parser.decode
-import sttp.ai.gemini.json.GeminiManualCodecs._
 import sttp.ai.gemini.json.GeminiDerivedCodecs._
 
 object GeminiPekkoStreaming {

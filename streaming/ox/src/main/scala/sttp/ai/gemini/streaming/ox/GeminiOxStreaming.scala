@@ -6,7 +6,6 @@ import sttp.ai.gemini.GeminiExceptions.GeminiException
 import sttp.ai.gemini.requests.InteractionRequest
 import sttp.ai.gemini.responses.InteractionStreamEvent
 import io.circe.parser.decode
-import sttp.ai.gemini.json.GeminiManualCodecs._
 import sttp.ai.gemini.json.GeminiDerivedCodecs._
 import sttp.client4.Request
 import sttp.client4.impl.ox.sse.OxServerSentEvents
