@@ -1,4 +1,6 @@
-# Models and errors
+# Models and error handling
+
+For choosing between the sync and async client, see [basics](basics.md).
 
 ## Gemini Models
 
@@ -77,41 +79,3 @@ object ErrorHandlingExample:
 ```
 
 On the async `GeminiClient`, the same hierarchy shows up in the `Left` branch of `Either[GeminiException, InteractionResponse]` instead of being thrown — pattern-match there the same way.
-
-## Key Differences from OpenAI and Claude
-
-| Feature | Gemini API | Claude API | OpenAI API |
-|---------|------------|------------|------------|
-| **Endpoint shape** | Single `interactions` resource (create/get/cancel/delete) | `/v1/messages` | `/v1/chat/completions` |
-| **Conversation history** | `previousInteractionId` (server-side) or `InteractionInput.StepsInput` (stateless replay) | Resent message list | Resent message list |
-| **Message Content** | `Step` + `Content` (rich, structured) | `ContentBlock` arrays | Simple strings |
-| **System Instructions** | `systemInstruction` parameter | `system` parameter | Role-based message |
-| **Authentication** | `x-goog-api-key` header | `x-api-key` + `anthropic-version` headers | `Authorization` header |
-| **Tool Calling** | `Tool.Function` + built-in `GoogleSearch`/`CodeExecution` | Native tool structure | Function calling |
-| **Streaming** | Server-Sent Events | Server-Sent Events | Server-Sent Events |
-| **Model Names** | `gemini-2.5-flash` | `claude-3-sonnet-20240229` | `gpt-4` |
-
-## Synchronous Gemini Client
-
-For blocking operations, use `GeminiSyncClient`:
-
-```scala mdoc:compile-only
-//> using dep com.softwaremill.sttp.ai::gemini:@VERSION@
-
-import sttp.ai.gemini.GeminiExceptions.GeminiException
-import sttp.ai.gemini.GeminiSyncClient
-import sttp.ai.gemini.config.GeminiConfig
-import sttp.ai.gemini.requests.InteractionRequest
-
-object SyncClientExample:
-  def main(args: Array[String]): Unit =
-    val syncClient = GeminiSyncClient(GeminiConfig.fromEnv)
-
-    // Throws a GeminiException subclass on error
-    try {
-      val response = syncClient.createInteraction(InteractionRequest.simple("gemini-2.5-flash", "Hello!"))
-      println(response.outputText)
-    } catch {
-      case e: GeminiException => println(s"Error: ${e.getMessage}")
-    } finally syncClient.close()
-```
