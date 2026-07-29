@@ -1,15 +1,15 @@
 # Agent loop
 
-Framework for building autonomous AI agents that iteratively solve tasks using tool calling. Provides unified interface for OpenAI, Claude, and custom backends.
+Framework for building autonomous AI agents that iteratively solve tasks using tool calling. Provides a unified interface for OpenAI, Claude, Gemini, and custom backends.
 
 **Key Features:**
 
-- Unified API for OpenAI and Claude
+- Unified API for OpenAI, Claude, and Gemini
 - Type-safe tool definitions
 - Type-safe structured output (optionally)
 - Full execution history tracking
 - Support for Identity, cats-effect, ZIO, and other effect systems
-- Easy custom backend implementation
+- Easy [custom backend](custom-backends.md) implementation
 
 ## Quick Start
 
@@ -49,5 +49,7 @@ object BasicExample extends App {
 ```
 
 **For Claude:** Use `ClaudeAgent.synchronous(ClaudeConfig.fromEnv, "claude-haiku-4-5-20251001")` instead.
+
+**For Gemini:** Use `GeminiAgent.synchronous(GeminiConfig.fromEnv, "gemini-2.5-flash")` — see [Gemini tool calling](../gemini/tool-calling.md) for a full example.
 
 **For effect systems:** use `OpenAIAgent.builder[F]` / `ClaudeAgent.builder[F]` (e.g. `builder[IO]`), then add configuration and `.build`.
