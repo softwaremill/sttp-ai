@@ -27,11 +27,13 @@ import sttp.ai.openai.requests.completions.chat.message.*
 object OpenAIHello:
   def main(args: Array[String]): Unit =
     val openAI = OpenAISyncClient(System.getenv("OPENAI_KEY"))
-    val chatBody = ChatBody(
-      model = ChatCompletionModel.GPT4oMini,
-      messages = Seq(Message.User(Content.TextContent("Hello!")))
-    )
-    println(openAI.createChatCompletion(chatBody))
+    try {
+      val chatBody = ChatBody(
+        model = ChatCompletionModel.GPT4oMini,
+        messages = Seq(Message.User(Content.TextContent("Hello!")))
+      )
+      println(openAI.createChatCompletion(chatBody).choices.head.message.content)
+    } finally openAI.close()
 ```
 
 See [OpenAI API basics](openai/basics.md) for more.
@@ -57,7 +59,7 @@ Then send your first request (reads the `ANTHROPIC_API_KEY` environment variable
 //> using dep com.softwaremill.sttp.ai::claude:@VERSION@
 
 import sttp.ai.claude.ClaudeSyncClient
-import sttp.ai.claude.models.Message
+import sttp.ai.claude.models.{ClaudeModel, Message}
 import sttp.ai.claude.requests.MessageRequest
 
 object ClaudeHello:
@@ -65,7 +67,7 @@ object ClaudeHello:
     val claude = ClaudeSyncClient.fromEnv
     try {
       val request = MessageRequest.simple(
-        model = "claude-haiku-4-5-20251001",
+        model = ClaudeModel.ClaudeHaiku4_5.value,
         messages = List(Message.user("Hello!")),
         maxTokens = 100
       )

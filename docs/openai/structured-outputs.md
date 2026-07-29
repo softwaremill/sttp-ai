@@ -1,10 +1,14 @@
 # Structured outputs / JSON Schema
 
-[OpenAI's Structured Outputs](https://platform.openai.com/docs/guides/structured-outputs/introduction) constrain the model to produce JSON matching a given JSON Schema. The simplest way to use them is `OpenAISyncClient.createChatCompletionAs[T]` — the response schema is derived from a Scala case class via Tapir, set as `responseFormat` automatically, and the model's response is parsed back into `T` via circe:
+[OpenAI's Structured Outputs](https://platform.openai.com/docs/guides/structured-outputs/introduction) constrain the model to produce JSON matching a given JSON Schema.
 
 A structured output request needs a JSON Schema. The easiest way is to have it derived from a case class — see [JSON Schemas: structured outputs & tools](../other/json-schemas.md) for all the options, from automatic derivation to hand-built schemas.
 
-## Typed responses with createChatCompletionAs[T]
+## Typed responses with `createChatCompletionAs[T]`
+
+The response schema is derived from a Scala case class via [Tapir](https://tapir.softwaremill.com), set as the
+request's `responseFormat` automatically (only when the request doesn't already carry one), and the model's response
+is parsed back into `T` via circe:
 
 ```scala mdoc:compile-only
 //> using dep com.softwaremill.sttp.ai::openai:@VERSION@
@@ -36,12 +40,14 @@ object Main:
 
 ## Strict mode and schema normalization
 
-normalization is applied only when `strict = true` is requested; otherwise the schema is encoded
-faithfully, unchanged. When a schema *is* normalized for strict mode, `additionalProperties: false` is set on every
-object, all properties are listed as `required`, and properties that were optional in the source schema (absent
-from its original `required` list) are made nullable — the model returns `null` for them instead of inventing a
-value. If you decode structured outputs into classes with non-`Option` fields, mark optional fields as `Option` or
-list them as required in your schema.
+When strict mode is requested — by passing `strict = Some(true)` to `ResponseFormat.JsonSchema` directly, or
+implicitly via `createChatCompletionAs`/`createChatCompletion[T]`, which set it automatically whenever the request
+doesn't already carry a `responseFormat` — this library normalizes the schema before sending it: `additionalProperties`
+is set to `false` on every object, all properties are listed as `required`, and properties that were optional in the
+source schema (absent from its original `required` list) are made nullable — the model returns `null` for them
+instead of inventing a value. If you decode structured outputs into classes with non-`Option` fields, mark optional
+fields as `Option` or list them as required in your schema. Otherwise (`strict = None`/`Some(false)`, or no
+`responseFormat` requested at all) the schema is encoded faithfully, unchanged.
 
 ## Lower-level: building `ResponseFormat.JsonSchema` yourself
 

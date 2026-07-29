@@ -68,12 +68,12 @@ sttp-ai implements the native APIs of all three major providers — OpenAI, Clau
    agents/configuration
    agents/tools
    agents/mcp
+   agents/custom-backends
 
 .. toctree::
    :maxdepth: 2
    :caption: Other
 
    other/json-schemas
-   other/backends
    other/examples
 ```

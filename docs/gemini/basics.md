@@ -6,12 +6,12 @@ This module provides **native support for Google's Gemini API**, built on the [I
 
 - **Native Interactions API support** — direct integration, not a compatibility layer
 - **Step-based conversation model** — `Step` (`UserInput`, `ModelOutput`, `FunctionCall`, `FunctionResult`) and rich `Content` (text, image, audio, video, document)
-- **Server-side or stateless conversations** — `store`/`previousInteractionId` for server-side history, or `InteractionInput.StepsInput` for full stateless replay
-- **Tool calling** — custom `Tool.Function` declarations plus Google-hosted `Tool.GoogleSearch` and `Tool.CodeExecution`
-- **Structured outputs** — `ResponseFormat.JsonSchema`, including a typed `createInteractionAs[T]` helper
-- **Streaming** — Server-Sent Events streaming for fs2, ZIO, Akka, Pekko, and Ox
-- **Agent loop integration** — `GeminiAgent` plugs into the shared `sttp.ai.core.agent` framework
-- **Comprehensive error handling** — Gemini-specific exception hierarchy
+- **Server-side or stateless conversations** — `store`/`previousInteractionId` for server-side history, or `InteractionInput.StepsInput` for full stateless replay; see [Interactions](interactions.md)
+- **Tool calling** — custom `Tool.Function` declarations plus Google-hosted `Tool.GoogleSearch` and `Tool.CodeExecution`; see [Tool calling](tool-calling.md)
+- **Structured outputs** — `ResponseFormat.JsonSchema`, including a typed `createInteractionAs[T]` helper; see [Structured outputs](structured-outputs.md)
+- **Streaming** — Server-Sent Events streaming for fs2, ZIO, Akka, Pekko, and Ox; see [Streaming](streaming.md)
+- **Agent loop integration** — `GeminiAgent` plugs into the shared `sttp.ai.core.agent` framework; see the [agent loop](../agents/quickstart.md)
+- **Comprehensive error handling** — Gemini-specific exception hierarchy; see [Models and error handling](models-and-errors.md)
 - **Cross-platform** — Scala 2.13 and Scala 3 on the JVM, plus Scala Native (Scala 3)
 
 ## Basic Usage (Gemini)

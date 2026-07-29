@@ -58,6 +58,7 @@ import chimp.client.transport.ClientStdioTransport
 import chimp.protocol.Implementation
 import sttp.ai.claude.agent.ClaudeAgent
 import sttp.ai.claude.config.ClaudeConfig
+import sttp.ai.claude.models.ClaudeModel
 import sttp.ai.core.agent.mcp.McpTools
 import sttp.client4.DefaultSyncBackend
 import sttp.monad.{IdentityMonad, MonadError}
@@ -74,7 +75,7 @@ try
   val mcpTools = McpTools.fromClient(claudeClient, namePrefix = Some("mcp"))
 
   val agent = ClaudeAgent
-    .synchronous(ClaudeConfig.fromEnv, "claude-haiku-4-5-20251001")
+    .synchronous(ClaudeConfig.fromEnv, ClaudeModel.ClaudeHaiku4_5.value)
     .maxIterations(10)
     .tools(mcpTools)
     .build

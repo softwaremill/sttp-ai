@@ -16,7 +16,7 @@ class StructuredOutputValidationSpec extends AnyFlatSpec with Matchers {
   it should "suggest supported models" in {
     val exception = new UnsupportedModelForStructuredOutputException("claude-3-opus-20240229")
 
-    exception.getMessage should include("Claude 4.x models")
+    exception.getMessage should include("Claude 4.1+ models")
   }
 
   it should "extend Exception" in {

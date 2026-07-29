@@ -135,23 +135,75 @@ object Main extends ZIOAppDefault:
     }
 ```
 
-## Using Akka / Pekko Streams
-
-Both are supported with the same extension method; add the module and import for the one you use (Akka is Scala 2.13 only):
+## Using Pekko Streams
 
 ```scala
-// sbt dependency — Akka Streams (Scala 2.13 only):
-"com.softwaremill.sttp.ai" %% "akka" % "@VERSION@"
-// import
-import sttp.ai.openai.streaming.akka.*
-
-// sbt dependency — Pekko Streams:
+// sbt dependency
 "com.softwaremill.sttp.ai" %% "pekko" % "@VERSION@"
+
 // import
 import sttp.ai.openai.streaming.pekko.*
 ```
 
-Use `AkkaHttpBackend` / `PekkoHttpBackend` and consume the resulting `Source[ChatChunkResponse, _]` as in the fs2 and ZIO examples above.
+The example below uses `PekkoHttpBackend` as a backend:
+
+```scala mdoc:compile-only
+//> using dep com.softwaremill.sttp.ai::pekko:@VERSION@
+
+import org.apache.pekko.actor.ActorSystem
+import scala.concurrent.{Await, ExecutionContext, Future}
+import scala.concurrent.duration.*
+import sttp.client4.pekkohttp.PekkoHttpBackend
+import sttp.ai.openai.OpenAI
+import sttp.ai.openai.streaming.pekko.*
+import sttp.ai.openai.requests.completions.chat.ChatRequestBody.{ChatBody, ChatCompletionModel}
+import sttp.ai.openai.requests.completions.chat.message.*
+
+object Main:
+  def main(args: Array[String]): Unit =
+    implicit val system: ActorSystem = ActorSystem("openai-pekko-example")
+    implicit val ec: ExecutionContext = system.dispatcher
+
+    val apiKey = System.getenv("OPENAI_KEY")
+    val openAI = new OpenAI(apiKey)
+    val backend = PekkoHttpBackend.usingActorSystem(system)
+
+    val bodyMessages: Seq[Message] = Seq(
+      Message.User(
+        content = Content.TextContent("Hello!"),
+      )
+    )
+
+    val chatRequestBody: ChatBody = ChatBody(
+      model = ChatCompletionModel.GPT35Turbo,
+      messages = bodyMessages
+    )
+
+    val program: Future[Unit] =
+      openAI
+        .createStreamedChatCompletion(chatRequestBody)
+        .send(backend)
+        .map(_.body)
+        .flatMap {
+          case Left(exception) => Future.successful(println(exception.getMessage))
+          case Right(stream)   => stream.runForeach(println).map(_ => ())
+        }
+
+    try Await.result(program, 30.seconds)
+    finally (system.terminate(): Unit)
+```
+
+## Using Akka Streams (Scala 2.13)
+
+```scala
+// sbt dependency (Scala 2.13 only)
+"com.softwaremill.sttp.ai" %% "akka" % "@VERSION@"
+
+// import
+import sttp.ai.openai.streaming.akka.*
+```
+
+The `akka` module mirrors the Pekko example above: use `AkkaHttpBackend` in place of `PekkoHttpBackend` and consume the resulting `Source[ChatChunkResponse, _]` the same way.
 
 ## Using Ox (Scala 3)
 

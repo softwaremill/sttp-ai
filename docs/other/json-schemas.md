@@ -16,6 +16,8 @@ Most schema-accepting APIs in this library take a `sttp.apispec.Schema` — the 
 In Scala 3, a `derives` clause supplies both the Tapir schema and the circe codec:
 
 ```scala mdoc:compile-only
+//> using dep com.softwaremill.sttp.ai::openai:@VERSION@
+
 import sttp.tapir.Schema
 
 case class Step(explanation: String, output: String) derives io.circe.Codec.AsObject, Schema
@@ -35,6 +37,8 @@ With these instances in scope, the high-level entry points derive and attach the
 Underneath, the Tapir schema is converted to JSON Schema with [Tapir's `TapirSchemaToJsonSchema`](https://tapir.softwaremill.com/en/latest/docs/json-schema.html). You can run the conversion yourself to inspect or post-process the result:
 
 ```scala mdoc:compile-only
+//> using dep com.softwaremill.sttp.tapir::tapir-apispec-docs:1.13.28
+
 import sttp.apispec.{Schema => ASchema}
 import sttp.tapir.Schema
 import sttp.tapir.docs.apispec.schema.TapirSchemaToJsonSchema
@@ -60,6 +64,8 @@ Note: when OpenAI structured outputs run in strict mode, the schema is additiona
 If you prefer not to use Tapir derivation — or the schema doesn't correspond to any case class — build the `sttp.apispec.Schema` by hand:
 
 ```scala mdoc:compile-only
+//> using dep com.softwaremill.sttp.ai::openai:@VERSION@
+
 import scala.collection.immutable.ListMap
 import sttp.apispec.{Schema, SchemaType}
 
