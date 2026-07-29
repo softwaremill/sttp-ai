@@ -64,12 +64,12 @@ sttp-ai uses [sttp client](https://github.com/softwaremill/sttp) to describe req
    agents/configuration
    agents/tools
    agents/mcp
+   agents/custom-backends
 
 .. toctree::
    :maxdepth: 2
    :caption: Other
 
    other/json-schemas
-   other/backends
    other/examples
 ```
