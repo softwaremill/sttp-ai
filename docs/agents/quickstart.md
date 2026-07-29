@@ -48,7 +48,7 @@ object BasicExample extends App {
 }
 ```
 
-**For Claude:** Use `ClaudeAgent.synchronous(ClaudeConfig.fromEnv, "claude-haiku-4-5-20251001")` instead.
+**For Claude:** Use `ClaudeAgent.synchronous(ClaudeConfig.fromEnv, ClaudeModel.ClaudeHaiku4_5.value)` instead.
 
 **For Gemini:** Use `GeminiAgent.synchronous(GeminiConfig.fromEnv, "gemini-2.5-flash")` — see [Gemini tool calling](../gemini/tool-calling.md) for a full example.
 

@@ -9,7 +9,7 @@ Define your own tools that Claude calls and your application executes:
 ```scala mdoc:compile-only
 //> using dep com.softwaremill.sttp.ai::claude:@VERSION@
 
-import sttp.ai.claude.models.{ContentBlock, Message, PropertySchema, Tool, ToolInputSchema}
+import sttp.ai.claude.models.{ClaudeModel, ContentBlock, Message, PropertySchema, Tool, ToolInputSchema}
 import sttp.ai.claude.requests.MessageRequest
 
 val weatherTool = Tool(
@@ -26,7 +26,7 @@ val weatherTool = Tool(
 )
 
 val request = MessageRequest.withTools(
-  model = "claude-sonnet-4-5-20250929",
+  model = ClaudeModel.ClaudeSonnet5.value,
   messages = List(Message.user(List(ContentBlock.text("What's the weather in Paris?")))),
   maxTokens = 1000,
   tools = List(weatherTool)
@@ -41,7 +41,7 @@ When Claude decides to call a tool, the response contains `ContentBlock.ToolUse`
 //> using dep com.softwaremill.sttp.ai::claude:@VERSION@
 
 import sttp.ai.claude.ClaudeSyncClient
-import sttp.ai.claude.models.{ContentBlock, Message, PropertySchema, Tool, ToolInputSchema}
+import sttp.ai.claude.models.{ClaudeModel, ContentBlock, Message, PropertySchema, Tool, ToolInputSchema}
 import sttp.ai.claude.requests.MessageRequest
 
 object ToolRoundTrip:
@@ -62,7 +62,7 @@ object ToolRoundTrip:
 
       val first = claude.createMessage(
         MessageRequest.withTools(
-          model = "claude-haiku-4-5-20251001",
+          model = ClaudeModel.ClaudeHaiku4_5.value,
           messages = List(question),
           maxTokens = 1000,
           tools = List(weatherTool)
@@ -78,7 +78,7 @@ object ToolRoundTrip:
 
       val second = claude.createMessage(
         MessageRequest.withTools(
-          model = "claude-haiku-4-5-20251001",
+          model = ClaudeModel.ClaudeHaiku4_5.value,
           messages = List(question, Message.assistant(first.content)) ++ toolResults,
           maxTokens = 1000,
           tools = List(weatherTool)
@@ -102,7 +102,7 @@ Currently supported:
 //> using dep com.softwaremill.sttp.ai::claude:@VERSION@
 
 import sttp.ai.claude.ClaudeSyncClient
-import sttp.ai.claude.models.{ContentBlock, Message, Tool}
+import sttp.ai.claude.models.{ClaudeModel, ContentBlock, Message, Tool}
 import sttp.ai.claude.requests.MessageRequest
 
 object WebSearchExample:
@@ -110,7 +110,7 @@ object WebSearchExample:
     val claude = ClaudeSyncClient.fromEnv
     try {
       val request = MessageRequest.withTools(
-        model = "claude-sonnet-4-5-20250929",
+        model = ClaudeModel.ClaudeSonnet5.value,
         messages = List(Message.user(List(ContentBlock.text("What was the most recent SpaceX launch?")))),
         maxTokens = 1024,
         tools = List(Tool.WebSearch.default)

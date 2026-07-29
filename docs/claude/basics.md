@@ -26,7 +26,7 @@ This module provides **native support for Anthropic's [Claude API](https://docs.
 //> using dep com.softwaremill.sttp.ai::claude:@VERSION@
 
 import sttp.ai.claude.ClaudeSyncClient
-import sttp.ai.claude.models.{ContentBlock, Message}
+import sttp.ai.claude.models.{ClaudeModel, ContentBlock, Message}
 import sttp.ai.claude.requests.MessageRequest
 
 object Main:
@@ -34,7 +34,7 @@ object Main:
     val claude = ClaudeSyncClient.fromEnv // reads ANTHROPIC_API_KEY
     try {
       val request = MessageRequest.simple(
-        model = "claude-haiku-4-5-20251001",
+        model = ClaudeModel.ClaudeHaiku4_5.value,
         messages = List(Message.user("Hello Claude! What's the weather like today?")),
         maxTokens = 500
       )
@@ -59,7 +59,7 @@ For non-blocking code, use `ClaudeClient` with an sttp backend of your choice:
 
 import sttp.ai.claude.*
 import sttp.ai.claude.config.ClaudeConfig
-import sttp.ai.claude.models.{ContentBlock, Message}
+import sttp.ai.claude.models.{ClaudeModel, ContentBlock, Message}
 import sttp.ai.claude.requests.MessageRequest
 import sttp.client4.*
 
@@ -77,7 +77,7 @@ object Main:
     )
 
     val request = MessageRequest.simple(
-      model = "claude-haiku-4-5-20251001",  // Fast, cost-effective model
+      model = ClaudeModel.ClaudeHaiku4_5.value,  // Fast, cost-effective model
       messages = messages,
       maxTokens = 500
     )

@@ -5,7 +5,7 @@ Claude's structured output feature (currently in beta) allows you to enforce tha
 A structured output request needs a JSON Schema. The easiest way is to have it derived from a case class — see [JSON Schemas: structured outputs & tools](../other/json-schemas.md) for all the options.
 
 **Model Support:**
-- ✅ **Supported models**: Claude 4.1+ models (`claude-opus-4-1-20250805`, `claude-sonnet-4-5-20250929`, `claude-haiku-4-5-20251001`, `claude-opus-4-5-20251101`, etc.)
+- ✅ **Supported models**: Claude 4.1+ models — `claude-opus-4-1-*`, the 4.5 family (`claude-sonnet-4-5-*`, `claude-haiku-4-5-*`, `claude-opus-4-5-*`), and the 5 family (`claude-sonnet-5`, `claude-opus-5`)
 - ❌ **Legacy models**: Claude 3.x series don't support structured outputs
 - ✅ **Forward compatibility**: Unknown/future models default to supported
 
@@ -17,7 +17,7 @@ For the shortest path, use `ClaudeSyncClient.createMessageAs[T]` — the respons
 //> using dep com.softwaremill.sttp.ai::claude:@VERSION@
 
 import sttp.ai.claude.ClaudeSyncClient
-import sttp.ai.claude.models.Message
+import sttp.ai.claude.models.{ClaudeModel, Message}
 import sttp.ai.claude.requests.MessageRequest
 import sttp.tapir.Schema
 
@@ -29,7 +29,7 @@ object Main:
     val claude = ClaudeSyncClient.fromEnv
     try {
       val request = MessageRequest.simple(
-        model = "claude-haiku-4-5-20251001",
+        model = ClaudeModel.ClaudeHaiku4_5.value,
         messages = List(Message.user(
           "List 10 well-known programming languages. For each, give the dominant paradigm and a one-sentence summary."
         )),
@@ -52,7 +52,7 @@ If you need finer control — a hand-built schema or custom parsing — derive o
 
 import sttp.ai.claude.*
 import sttp.ai.claude.config.ClaudeConfig
-import sttp.ai.claude.models.{ContentBlock, Message, OutputFormat}
+import sttp.ai.claude.models.{ClaudeModel, ContentBlock, Message, OutputFormat}
 import sttp.ai.claude.requests.MessageRequest
 import sttp.apispec.{Schema => ASchema}
 import sttp.client4.*
@@ -90,7 +90,7 @@ object StructuredOutputExample:
     )
 
     val request = MessageRequest
-      .simple("claude-sonnet-4-5-20250929", messages, 500)
+      .simple(ClaudeModel.ClaudeSonnet5.value, messages, 500)
       .withStructuredOutput(outputFormat)
 
     val response = client.createMessage(request).send(backend)
@@ -139,7 +139,7 @@ val outputFormat = OutputFormat.JsonSchema(schema)
 See [JSON Schemas: structured outputs & tools](../other/json-schemas.md) for deriving schemas with Tapir instead of writing them by hand.
 
 **Important Notes:**
-- Structured outputs require Claude 4.1+ models (`claude-opus-4-1-*`, `claude-sonnet-4-5-*`, `claude-haiku-4-5-*`, `claude-opus-4-5-*`, etc.)
+- Structured outputs require Claude 4.1+ models (`claude-opus-4-1-*`, the 4.5 family (`claude-sonnet-4-5-*`, `claude-haiku-4-5-*`, `claude-opus-4-5-*`), and the 5 family (`claude-sonnet-5`, `claude-opus-5`) — the `ClaudeModel.WithStructuredOutput` entries)
 - Legacy models will throw `UnsupportedModelForStructuredOutputException`
 - The beta feature uses `anthropic-beta: structured-outputs-2025-11-13` header automatically
 - Unknown/future models default to supporting structured outputs for forward compatibility

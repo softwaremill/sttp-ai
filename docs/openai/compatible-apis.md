@@ -226,10 +226,7 @@ object Main:
 
 ## Client implementations
 
-* `OpenAISyncClient` which provides high-level methods to interact with OpenAI. All the methods send requests synchronously and are blocking, might throw `OpenAIException`
-* `OpenAI` which provides raw sttp-client4 `Request`s and parses `Response`s as `Either[OpenAIException, A]`
-
-If you want to make use of other effects, you have to use `OpenAI` and pass the chosen backend directly to `request.send(backend)` function.
+The client comes in two flavours — the blocking `OpenAISyncClient` and the request-based `OpenAI` — see [OpenAI API basics](basics.md).
 
 To customize a request when using the `OpenAISyncClient`, e.g. by adding a header, or changing the timeout (via request options), you can use the `.customizeRequest` method on the client.
 

@@ -7,7 +7,7 @@ The [Messages API](https://docs.anthropic.com/claude/reference/messages_post) is
 ```scala mdoc:compile-only
 //> using dep com.softwaremill.sttp.ai::claude:@VERSION@
 
-import sttp.ai.claude.models.{ContentBlock, Message}
+import sttp.ai.claude.models.{ClaudeModel, ContentBlock, Message}
 import sttp.ai.claude.requests.MessageRequest
 
 val messages = List(
@@ -17,7 +17,7 @@ val messages = List(
 )
 
 val request = MessageRequest.simple(
-  model = "claude-sonnet-4-5-20250929",
+  model = ClaudeModel.ClaudeSonnet5.value,
   messages = messages,
   maxTokens = 1000
 )
@@ -30,11 +30,11 @@ Unlike OpenAI, Claude uses a separate `system` parameter instead of system role 
 ```scala mdoc:compile-only
 //> using dep com.softwaremill.sttp.ai::claude:@VERSION@
 
-import sttp.ai.claude.models.{ContentBlock, Message}
+import sttp.ai.claude.models.{ClaudeModel, ContentBlock, Message}
 import sttp.ai.claude.requests.MessageRequest
 
 val request = MessageRequest.withSystem(
-  model = "claude-sonnet-4-5-20250929",
+  model = ClaudeModel.ClaudeSonnet5.value,
   system = "You are a helpful assistant that always responds in French.",
   messages = List(Message.user(List(ContentBlock.text("Hello!")))),
   maxTokens = 1000
@@ -48,7 +48,7 @@ val request = MessageRequest.withSystem(
 
 import java.util.Base64
 import java.nio.file.{Files, Paths}
-import sttp.ai.claude.models.{ContentBlock, Message}
+import sttp.ai.claude.models.{ClaudeModel, ContentBlock, Message}
 import sttp.ai.claude.requests.MessageRequest
 
 // Read and encode image
@@ -66,7 +66,7 @@ val messages = List(
 )
 
 val request = MessageRequest.simple(
-  model = "claude-sonnet-4-5-20250929",
+  model = ClaudeModel.ClaudeSonnet5.value,
   messages = messages,
   maxTokens = 1000
 )
@@ -77,13 +77,13 @@ val request = MessageRequest.simple(
 ```scala mdoc:compile-only
 //> using dep com.softwaremill.sttp.ai::claude:@VERSION@
 
-import sttp.ai.claude.models.{CacheControl, ContentBlock, Message}
+import sttp.ai.claude.models.{CacheControl, ClaudeModel, ContentBlock, Message}
 import sttp.ai.claude.requests.MessageRequest
 
 val messages = List(Message.user(List(ContentBlock.text("Hello!"))))
 
 val request = MessageRequest(
-  model = "claude-sonnet-4-5-20250929",
+  model = ClaudeModel.ClaudeSonnet5.value,
   messages = messages,
   maxTokens = 4000,
   temperature = Some(0.7),            // Creativity (0.0 - 1.0)
