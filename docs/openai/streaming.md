@@ -1,21 +1,18 @@
 # Streaming
 
-## Create completion with streaming:
+The Chat Completions API can stream responses as server-sent events. Add the streaming module for your chosen library — [fs2](https://fs2.io), [ZIO](https://zio.dev), [Akka Streams](https://doc.akka.io/libraries/akka-core/current/stream/) / [Pekko Streams](https://pekko.apache.org/docs/pekko/current/stream/), or [Ox](https://github.com/softwaremill/ox) — and an extension method `createStreamedChatCompletion` becomes available on the `OpenAI` client, returning a stream of `ChatChunkResponse` events.
 
-To enable streaming support for the Chat Completion API using server-sent events, you must include the appropriate
-dependency for your chosen streaming library. We provide support for the following libraries: _fs2_, _ZIO_, _Akka / Pekko Streams_ and _Ox_.
-
-For example, to use `fs2` add the following dependency & import:
+## Using fs2 (cats-effect)
 
 ```scala
 // sbt dependency
 "com.softwaremill.sttp.ai" %% "fs2" % "@VERSION@"
 
-// import 
+// import
 import sttp.ai.openai.streaming.fs2.*
 ```
 
-Example below uses `HttpClientFs2Backend` as a backend:
+The example below uses `HttpClientFs2Backend` as a backend:
 
 ```scala mdoc:compile-only
 //> using dep com.softwaremill.sttp.ai::fs2:@VERSION@
@@ -95,19 +92,82 @@ object Main:
    */
 ```
 
-To use direct-style streaming (requires Scala 3) add the following dependency & import:
+## Using ZIO
+
+```scala
+// sbt dependency
+"com.softwaremill.sttp.ai" %% "zio" % "@VERSION@"
+
+// import
+import sttp.ai.openai.streaming.zio.*
+```
+
+The example below uses `HttpClientZioBackend` as a backend:
+
+```scala mdoc:compile-only
+//> using dep com.softwaremill.sttp.ai::zio:@VERSION@
+
+import sttp.ai.openai.OpenAI
+import sttp.ai.openai.requests.completions.chat.ChatRequestBody.{ChatBody, ChatCompletionModel}
+import sttp.ai.openai.requests.completions.chat.message.*
+import sttp.ai.openai.streaming.zio.*
+import sttp.client4.httpclient.zio.HttpClientZioBackend
+import zio.*
+
+object Main extends ZIOAppDefault:
+  override def run =
+    val openAI = new OpenAI(java.lang.System.getenv("OPENAI_KEY"))
+
+    val chatRequestBody: ChatBody = ChatBody(
+      model = ChatCompletionModel.GPT4oMini,
+      messages = Seq(Message.User(Content.TextContent("Hello!")))
+    )
+
+    ZIO.scoped {
+      for {
+        backend <- HttpClientZioBackend.scoped()
+        response <- openAI.createStreamedChatCompletion(chatRequestBody).send(backend)
+        _ <- response.body match {
+          case Left(exception) => Console.printLine(exception.getMessage)
+          case Right(stream)   => stream.tap(chunk => Console.printLine(chunk.toString)).runDrain
+        }
+      } yield ()
+    }
+```
+
+## Using Akka / Pekko Streams
+
+Both are supported with the same extension method; add the module and import for the one you use (Akka is Scala 2.13 only):
+
+```scala
+// sbt dependency — Akka Streams (Scala 2.13 only):
+"com.softwaremill.sttp.ai" %% "akka" % "@VERSION@"
+// import
+import sttp.ai.openai.streaming.akka.*
+
+// sbt dependency — Pekko Streams:
+"com.softwaremill.sttp.ai" %% "pekko" % "@VERSION@"
+// import
+import sttp.ai.openai.streaming.pekko.*
+```
+
+Use `AkkaHttpBackend` / `PekkoHttpBackend` and consume the resulting `Source[ChatChunkResponse, _]` as in the fs2 and ZIO examples above.
+
+## Using Ox (Scala 3)
+
+Direct-style streaming, without an effect system:
 
 ```scala
 // sbt dependency
 "com.softwaremill.sttp.ai" %% "ox" % "@VERSION@"
 
-// import 
+// import
 import sttp.ai.openai.streaming.ox.*
 ```
 
 Example code:
 
-```scala
+```scala mdoc:compile-only
 //> using dep com.softwaremill.sttp.ai::ox:@VERSION@
 
 import ox.*
