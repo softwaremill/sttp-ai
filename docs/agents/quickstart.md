@@ -48,6 +48,6 @@ object BasicExample extends App {
 }
 ```
 
-**For Claude:** Use `ClaudeAgent.synchronous(ClaudeConfig.fromEnv, "claude-3-haiku-20240307")` instead.
+**For Claude:** Use `ClaudeAgent.synchronous(ClaudeConfig.fromEnv, "claude-haiku-4-5-20251001")` instead.
 
 **For effect systems:** use `OpenAIAgent.builder[F]` / `ClaudeAgent.builder[F]` (e.g. `builder[IO]`), then add configuration and `.build`.

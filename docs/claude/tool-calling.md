@@ -21,7 +21,7 @@ val weatherTool = Tool(
 )
 
 val request = MessageRequest.withTools(
-  model = "claude-3-sonnet-20240229",
+  model = "claude-sonnet-4-5-20250514",
   messages = List(Message.user(List(ContentBlock.text("What's the weather in Paris?")))),
   maxTokens = 1000,
   tools = List(weatherTool)
