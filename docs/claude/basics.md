@@ -1,6 +1,6 @@
 # Claude API
 
-This module provides **native support for Anthropic's Claude API** within the sttp-openai library. Unlike OpenAI compatibility layers, this provides direct access to Claude's unique features and API structure.
+This module provides **native support for Anthropic's Claude API** within the sttp-ai library. Unlike OpenAI compatibility layers, this provides direct access to Claude's unique features and API structure.
 
 ## Claude Features
 
@@ -42,7 +42,7 @@ object Main:
     )
 
     val request = MessageRequest.simple(
-      model = "claude-3-haiku-20240307",  // Fast, cost-effective model
+      model = "claude-haiku-4-5-20251001",  // Fast, cost-effective model
       messages = messages,
       maxTokens = 500
     )
@@ -68,7 +68,7 @@ object Main:
 - Uses `ContentBlock` instead of simple strings for rich content (text, images)
 - Separate system parameter instead of system role messages
 - Different authentication headers (`x-api-key` + `anthropic-version`)
-- Native Claude model names (e.g., `claude-3-haiku-20240307`)
+- Native Claude model names (e.g., `claude-haiku-4-5-20251001`)
 
 ## Claude Configuration
 

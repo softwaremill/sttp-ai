@@ -21,7 +21,7 @@ val weatherTool = Tool(
 )
 
 val request = MessageRequest.withTools(
-  model = "claude-3-sonnet-20240229",
+  model = "claude-sonnet-4-5-20250929",
   messages = List(Message.user(List(ContentBlock.text("What's the weather in Paris?")))),
   maxTokens = 1000,
   tools = List(weatherTool)
@@ -39,7 +39,7 @@ import sttp.ai.claude.models.{ContentBlock, Message, Tool}
 import sttp.ai.claude.requests.MessageRequest
 
 val request = MessageRequest.withTools(
-  model = "claude-sonnet-4-5-20250514",
+  model = "claude-sonnet-4-5-20250929",
   messages = List(Message.user(List(ContentBlock.text("What was the most recent SpaceX launch?")))),
   maxTokens = 1024,
   tools = List(Tool.WebSearch.default)
