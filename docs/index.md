@@ -13,7 +13,7 @@ sttp-ai uses [sttp client](https://github.com/softwaremill/sttp) to describe req
 * **Call model APIs directly** — [OpenAI](openai/basics.md) (chat completions, embeddings, audio, images, and more), [Claude](claude/basics.md) (Messages API), and [Gemini](gemini/basics.md) (Interactions API); each provider has a blocking sync client and a raw-request async client that works with any effect system
 * **Use OpenAI-compatible providers** — [Ollama, Groq, OpenRouter, vLLM and others](openai/compatible-apis.md) via the OpenAI client with a custom base URL
 * **Stream responses** — [server-sent events streaming](openai/streaming.md) for fs2, ZIO, Akka Streams, Pekko Streams, and Ox
-* **Get structured outputs** — JSON-schema-constrained responses parsed straight into your case classes ([OpenAI](openai/structured-outputs.md), [Claude](claude/structured-outputs.md), [Gemini](gemini/structured-outputs.md))
+* **Get structured outputs** — [JSON-schema-constrained responses](other/json-schemas.md) parsed straight into your case classes ([OpenAI](openai/structured-outputs.md), [Claude](claude/structured-outputs.md), [Gemini](gemini/structured-outputs.md))
 * **Call tools** — let the model invoke functions in your code ([Claude](claude/tool-calling.md), [Gemini](gemini/tool-calling.md))
 * **Run an agent loop** — [autonomous tool-calling agents](agents/quickstart.md) with typed tools and typed results, working across all three providers, with tools loadable from [MCP servers](agents/mcp.md)
 
@@ -68,6 +68,7 @@ sttp-ai uses [sttp client](https://github.com/softwaremill/sttp) to describe req
    :maxdepth: 2
    :caption: Other
 
+   other/json-schemas
    other/backends
    other/examples
 ```
