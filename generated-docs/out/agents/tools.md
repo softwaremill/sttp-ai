@@ -1,8 +1,13 @@
 # Agent tools and results
 
+## Defining tools
+
 Tools are defined using type-safe case classes with the `derives` syntax:
 
 ```scala
+//> using dep com.softwaremill.sttp.ai::openai:0.5.6
+
+import sttp.ai.core.agent.*
 import sttp.tapir.Schema
 
 case class CalculatorInput(
@@ -27,6 +32,8 @@ val calculatorTool = AgentTool.fromFunction(
 ```
 
 The `derives io.circe.Codec.AsObject, Schema` clause automatically generates the necessary serialization and schema information for the tool.
+
+See [JSON Schemas: structured outputs & tools](../other/json-schemas.md) for how schema derivation works and how to customise it.
 
 ## Agent Result
 
@@ -53,7 +60,7 @@ On failure the iteration trace is preserved: `finalAnswer` is a `Left(AgentFailu
 Note that because `MaxIterations` still parses, `finalAnswer` can be `Right(t)` even though the run hit the iteration cap - check `AgentResult.finishReason` if you need to distinguish a capped run from a natural stop.
 
 ```scala
-//> using dep com.softwaremill.sttp.ai::openai:0.5.5
+//> using dep com.softwaremill.sttp.ai::openai:0.5.6
 
 import sttp.ai.core.agent.*
 import sttp.ai.openai.OpenAI

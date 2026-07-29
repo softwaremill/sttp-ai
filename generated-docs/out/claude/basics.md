@@ -1,30 +1,65 @@
-# Claude API
+# Claude API basics
 
-This module provides **native support for Anthropic's Claude API** within the sttp-openai library. Unlike OpenAI compatibility layers, this provides direct access to Claude's unique features and API structure.
+This module provides **native support for Anthropic's [Claude API](https://docs.anthropic.com/claude/reference)** within the sttp-ai library. Unlike OpenAI compatibility layers, this provides direct access to Claude's unique features and API structure.
 
-## Claude Features
+## Claude features
 
-- ✅ **Native Claude API support** - Direct Claude API integration, not compatibility layer
-- ✅ **ContentBlock structure** - Support for Claude's rich message content blocks (text, images)
-- ✅ **Proper Authentication** - Uses `x-api-key` and `anthropic-version` headers
-- ✅ **Messages API** - Complete `/v1/messages` endpoint implementation
-- ✅ **Models API** - List available Claude models via `/v1/models`
-- ✅ **Streaming Support** - Server-Sent Events streaming for all effect systems (fs2, ZIO, Akka, Pekko, Ox)
-- ✅ **Tool Calling** - Native Claude tool calling support
-- ✅ **Structured Outputs** - Beta support for JSON schema validation (Claude 4.1+ models)
-- ✅ **Image Support** - Multi-modal inputs via ContentBlock with base64 encoding
-- ✅ **Comprehensive Error Handling** - Claude-specific exception hierarchy
-- ✅ **System Messages** - Proper system message handling via `system` parameter
-- ✅ **Cross-platform** - Support for Scala 2.13 and Scala 3
+- ✅ **Messages API** — complete `/v1/messages` implementation; see [Messages API](messages.md)
+- ✅ **ContentBlock structure** — rich message content blocks (text, images); see [Messages API](messages.md)
+- ✅ **Streaming** — [server-sent events streaming](streaming.md) for fs2, ZIO, Akka, Pekko, and Ox
+- ✅ **Tool calling** — [native Claude tools](tool-calling.md), custom and predefined
+- ✅ **Structured outputs** — [beta JSON-schema validation](structured-outputs.md) (Claude 4.1+ models)
+- ✅ **Models API** — [list available models](models-and-errors.md) via `/v1/models`
+- ✅ **Error handling** — [Claude-specific exception hierarchy](models-and-errors.md)
+- ✅ **Agent loop** — [autonomous tool-calling agents](../agents/quickstart.md) via `ClaudeAgent`
+- ✅ **Proper authentication** — `x-api-key` and `anthropic-version` headers, handled automatically
+- ✅ **Cross-platform** — Scala 2.13 and Scala 3
 
-## Basic Usage (Claude)
+## Sync and async clients
+
+- `ClaudeSyncClient` — high-level and blocking: methods return the response directly and throw a `ClaudeException` subclass on error. The recommended default, used in most examples in these docs. Create it with `ClaudeSyncClient.fromEnv` (reads `ANTHROPIC_API_KEY`) or `ClaudeSyncClient(config)`; call `close()` when done.
+- `ClaudeClient` — returns raw sttp-client4 `Request`s and parses responses as `Either[ClaudeException, A]`. Pair it with the sttp backend of your choice (cats-effect, ZIO, Akka/Pekko, Ox).
+
+## Basic usage
 
 ```scala
-//> using dep com.softwaremill.sttp.ai::claude:0.5.5
+//> using dep com.softwaremill.sttp.ai::claude:0.5.6
+
+import sttp.ai.claude.ClaudeSyncClient
+import sttp.ai.claude.models.{ClaudeModel, ContentBlock, Message}
+import sttp.ai.claude.requests.MessageRequest
+
+object Main:
+  def main(args: Array[String]): Unit =
+    val claude = ClaudeSyncClient.fromEnv // reads ANTHROPIC_API_KEY
+    try {
+      val request = MessageRequest.simple(
+        model = ClaudeModel.ClaudeHaiku4_5.value,
+        messages = List(Message.user("Hello Claude! What's the weather like today?")),
+        maxTokens = 500
+      )
+
+      // Throws a ClaudeException subclass on error
+      val response = claude.createMessage(request)
+
+      response.content.foreach {
+        case ContentBlock.Text(text, _, _) => println(text)
+        case _                             => () // other content block types
+      }
+      println(s"Usage: ${response.usage}")
+    } finally claude.close()
+```
+
+## Async usage
+
+For non-blocking code, use `ClaudeClient` with an sttp backend of your choice:
+
+```scala
+//> using dep com.softwaremill.sttp.ai::claude:0.5.6
 
 import sttp.ai.claude.*
 import sttp.ai.claude.config.ClaudeConfig
-import sttp.ai.claude.models.{ContentBlock, Message}
+import sttp.ai.claude.models.{ClaudeModel, ContentBlock, Message}
 import sttp.ai.claude.requests.MessageRequest
 import sttp.client4.*
 
@@ -42,7 +77,7 @@ object Main:
     )
 
     val request = MessageRequest.simple(
-      model = "claude-3-haiku-20240307",  // Fast, cost-effective model
+      model = ClaudeModel.ClaudeHaiku4_5.value,  // Fast, cost-effective model
       messages = messages,
       maxTokens = 500
     )
@@ -64,13 +99,15 @@ object Main:
     backend.close()
 ```
 
+The example above uses the synchronous sttp backend for brevity, but `ClaudeClient` works with any sttp4 backend — cats-effect, ZIO, Akka/Pekko, Ox, etc. — by swapping the backend and calling `.send(backend)` in the corresponding effect.
+
 **Key differences from OpenAI:**
 - Uses `ContentBlock` instead of simple strings for rich content (text, images)
 - Separate system parameter instead of system role messages
 - Different authentication headers (`x-api-key` + `anthropic-version`)
-- Native Claude model names (e.g., `claude-3-haiku-20240307`)
+- Native Claude model names (e.g., `claude-haiku-4-5-20251001`)
 
-## Claude Configuration
+## Claude configuration
 
 ```scala
 case class ClaudeConfig(
@@ -88,3 +125,4 @@ case class ClaudeConfig(
 - `ANTHROPIC_VERSION` - API version (optional, defaults to "2023-06-01")
 - `ANTHROPIC_BASE_URL` - Custom base URL (optional)
 
+**Next steps:** see [Messages API](messages.md) for conversations, images, and advanced parameters, [Tool calling](tool-calling.md) and [Structured outputs](structured-outputs.md) for advanced request features, [Streaming](streaming.md) for SSE support, and [Models and error handling](models-and-errors.md) for the models API and exception hierarchy.
