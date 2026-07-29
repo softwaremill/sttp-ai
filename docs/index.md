@@ -4,14 +4,14 @@ sttp is a family of Scala HTTP-related projects, and currently includes:
 
 * [sttp client](https://github.com/softwaremill/sttp): the Scala HTTP client you always wanted!
 * [sttp tapir](https://github.com/softwaremill/tapir): typed API descriptions
-* sttp ai: this project. Non-official Scala client wrapper for OpenAI, Claude (Anthropic), Gemini (Google), and OpenAI-compatible APIs (e.g. Ollama, Groq, OpenRouter). Use the power of ChatGPT, Claude, and Gemini inside your code!
+* sttp ai: this project. Non-official Scala client wrapper for OpenAI, Claude (Anthropic), Gemini (Google), and OpenAI-compatible APIs (e.g. Ollama, Grok, Groq, OpenRouter). Use the power of ChatGPT, Claude, and Gemini inside your code!
 
 sttp-ai uses [sttp client](https://github.com/softwaremill/sttp) to describe requests and responses as plain, type-safe Scala values — request bodies, response models, JSON schemas, and tool definitions are all derived from case classes via [Tapir](https://tapir.softwaremill.com) and [circe](https://circe.github.io/circe/), with minimal ceremony and no hand-written JSON.
 
 ## What can you do with sttp-ai?
 
 * **Call model APIs directly** — [OpenAI](openai/basics.md) (chat completions, embeddings, audio, images, and more), [Claude](claude/basics.md) (Messages API), and [Gemini](gemini/basics.md) (Interactions API); each provider has a blocking sync client and a raw-request async client that works with any effect system
-* **Use OpenAI-compatible providers** — [Ollama, Groq, OpenRouter, vLLM and others](openai/compatible-apis.md) via the OpenAI client with a custom base URL
+* **Use OpenAI-compatible providers** — [Ollama, Grok, Groq, OpenRouter, vLLM and others](openai/compatible-apis.md) via the OpenAI client with a custom base URL
 * **Stream responses** — [server-sent events streaming](openai/streaming.md) for fs2, ZIO, Akka Streams, Pekko Streams, and Ox
 * **Get structured outputs** — JSON-schema-constrained responses parsed straight into your case classes ([OpenAI](openai/structured-outputs.md), [Claude](claude/structured-outputs.md), [Gemini](gemini/structured-outputs.md))
 * **Call tools** — let the model invoke functions in your code ([Claude](claude/tool-calling.md), [Gemini](gemini/tool-calling.md))
