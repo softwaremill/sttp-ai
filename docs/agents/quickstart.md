@@ -52,4 +52,4 @@ object BasicExample extends App {
 
 **For Gemini:** Use `GeminiAgent.synchronous(GeminiConfig.fromEnv, "gemini-2.5-flash")` — see [Gemini tool calling](../gemini/tool-calling.md) for a full example.
 
-**For effect systems:** use `OpenAIAgent.builder[F]` / `ClaudeAgent.builder[F]` (e.g. `builder[IO]`), then add configuration and `.build`.
+**For effect systems:** use `OpenAIAgent.builder[F]` / `ClaudeAgent.builder[F]` / `GeminiAgent.builder[F]` (e.g. `builder[IO]`), then add configuration and `.build`.

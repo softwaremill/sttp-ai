@@ -99,6 +99,8 @@ object Main:
     backend.close()
 ```
 
+The example above uses the synchronous sttp backend for brevity, but `ClaudeClient` works with any sttp4 backend — cats-effect, ZIO, Akka/Pekko, Ox, etc. — by swapping the backend and calling `.send(backend)` in the corresponding effect.
+
 **Key differences from OpenAI:**
 - Uses `ContentBlock` instead of simple strings for rich content (text, images)
 - Separate system parameter instead of system role messages

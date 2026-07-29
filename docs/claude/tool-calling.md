@@ -26,7 +26,7 @@ val weatherTool = Tool(
 )
 
 val request = MessageRequest.withTools(
-  model = "claude-sonnet-4-5-20250514",
+  model = "claude-sonnet-4-5-20250929",
   messages = List(Message.user(List(ContentBlock.text("What's the weather in Paris?")))),
   maxTokens = 1000,
   tools = List(weatherTool)
@@ -110,7 +110,7 @@ object WebSearchExample:
     val claude = ClaudeSyncClient.fromEnv
     try {
       val request = MessageRequest.withTools(
-        model = "claude-sonnet-4-5-20250514",
+        model = "claude-sonnet-4-5-20250929",
         messages = List(Message.user(List(ContentBlock.text("What was the most recent SpaceX launch?")))),
         maxTokens = 1024,
         tools = List(Tool.WebSearch.default)

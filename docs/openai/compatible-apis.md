@@ -261,7 +261,7 @@ object Main:
     )
 
     val chatRequestBody: ChatBody = ChatBody(
-      model = ChatCompletionModel.GPT35Turbo,
+      model = ChatCompletionModel.GPT4oMini,
       messages = bodyMessages
     )
 
@@ -284,7 +284,7 @@ object Main:
     ChatResponse(
       chatcmpl-79shQITCiqTHFlI9tgElqcbMTJCLZ,chat.completion,
       1682589572,
-      gpt-3.5-turbo-0301,
+      gpt-4o-mini,
       Usage(10,10,20),
       List(
         Choices(

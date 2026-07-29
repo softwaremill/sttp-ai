@@ -17,7 +17,7 @@ val messages = List(
 )
 
 val request = MessageRequest.simple(
-  model = "claude-sonnet-4-5-20250514",
+  model = "claude-sonnet-4-5-20250929",
   messages = messages,
   maxTokens = 1000
 )
@@ -34,7 +34,7 @@ import sttp.ai.claude.models.{ContentBlock, Message}
 import sttp.ai.claude.requests.MessageRequest
 
 val request = MessageRequest.withSystem(
-  model = "claude-sonnet-4-5-20250514",
+  model = "claude-sonnet-4-5-20250929",
   system = "You are a helpful assistant that always responds in French.",
   messages = List(Message.user(List(ContentBlock.text("Hello!")))),
   maxTokens = 1000
@@ -66,7 +66,7 @@ val messages = List(
 )
 
 val request = MessageRequest.simple(
-  model = "claude-sonnet-4-5-20250514",
+  model = "claude-sonnet-4-5-20250929",
   messages = messages,
   maxTokens = 1000
 )
@@ -83,7 +83,7 @@ import sttp.ai.claude.requests.MessageRequest
 val messages = List(Message.user(List(ContentBlock.text("Hello!"))))
 
 val request = MessageRequest(
-  model = "claude-sonnet-4-5-20250514",
+  model = "claude-sonnet-4-5-20250929",
   messages = messages,
   maxTokens = 4000,
   temperature = Some(0.7),            // Creativity (0.0 - 1.0)

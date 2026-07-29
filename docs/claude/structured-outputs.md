@@ -5,7 +5,7 @@ Claude's structured output feature (currently in beta) allows you to enforce tha
 A structured output request needs a JSON Schema. The easiest way is to have it derived from a case class — see [JSON Schemas: structured outputs & tools](../other/json-schemas.md) for all the options.
 
 **Model Support:**
-- ✅ **Supported models**: Claude 4.1+ models (`claude-sonnet-4-1-20250514`, `claude-opus-4-1-20250514`, etc.)
+- ✅ **Supported models**: Claude 4.1+ models (`claude-opus-4-1-20250805`, `claude-sonnet-4-5-20250929`, `claude-haiku-4-5-20251001`, `claude-opus-4-5-20251101`, etc.)
 - ❌ **Legacy models**: Claude 3.x series don't support structured outputs
 - ✅ **Forward compatibility**: Unknown/future models default to supported
 
@@ -90,7 +90,7 @@ object StructuredOutputExample:
     )
 
     val request = MessageRequest
-      .simple("claude-sonnet-4-5-20250514", messages, 500)
+      .simple("claude-sonnet-4-5-20250929", messages, 500)
       .withStructuredOutput(outputFormat)
 
     val response = client.createMessage(request).send(backend)
@@ -139,7 +139,7 @@ val outputFormat = OutputFormat.JsonSchema(schema)
 See [JSON Schemas: structured outputs & tools](../other/json-schemas.md) for deriving schemas with Tapir instead of writing them by hand.
 
 **Important Notes:**
-- Structured outputs require Claude 4.1+ models (`claude-sonnet-4-1-*`, `claude-opus-4-1-*`, etc.)
+- Structured outputs require Claude 4.1+ models (`claude-opus-4-1-*`, `claude-sonnet-4-5-*`, `claude-haiku-4-5-*`, `claude-opus-4-5-*`, etc.)
 - Legacy models will throw `UnsupportedModelForStructuredOutputException`
 - The beta feature uses `anthropic-beta: structured-outputs-2025-11-13` header automatically
 - Unknown/future models default to supporting structured outputs for forward compatibility
