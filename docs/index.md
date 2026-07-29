@@ -6,7 +6,7 @@ sttp is a family of Scala HTTP-related projects, and currently includes:
 * [sttp tapir](https://github.com/softwaremill/tapir): typed API descriptions
 * sttp ai: this project. Non-official Scala client wrapper for OpenAI, Claude (Anthropic), Gemini (Google), and OpenAI-compatible APIs (e.g. Ollama, Groq, OpenRouter). Use the power of ChatGPT, Claude, and Gemini inside your code!
 
-sttp-ai uses [sttp client](https://github.com/softwaremill/sttp) to describe requests and responses used in OpenAI, Claude (Anthropic), Gemini (Google), and OpenAI-compatible endpoints.
+sttp-ai uses [sttp client](https://github.com/softwaremill/sttp) to describe requests and responses as plain, type-safe Scala values — request bodies, response models, JSON schemas, and tool definitions are all derived from case classes via [Tapir](https://tapir.softwaremill.com) and [circe](https://circe.github.io/circe/), with minimal ceremony and no hand-written JSON.
 
 ## What can you do with sttp-ai?
 
@@ -16,6 +16,10 @@ sttp-ai uses [sttp client](https://github.com/softwaremill/sttp) to describe req
 * **Get structured outputs** — JSON-schema-constrained responses parsed straight into your case classes ([OpenAI](openai/structured-outputs.md), [Claude](claude/structured-outputs.md), [Gemini](gemini/structured-outputs.md))
 * **Call tools** — let the model invoke functions in your code ([Claude](claude/tool-calling.md), [Gemini](gemini/tool-calling.md))
 * **Run an agent loop** — [autonomous tool-calling agents](agents/quickstart.md) with typed tools and typed results, working across all three providers, with tools loadable from [MCP servers](agents/mcp.md)
+
+## Why sttp-ai?
+
+sttp-ai implements the native APIs of all three major providers — OpenAI, Claude, and Gemini — in one library, rather than funnelling everything through an OpenAI-compatibility shim. You bring your own effect system: cats-effect, ZIO, Akka/Pekko Streams, direct-style [Ox](https://github.com/softwaremill/ox), or plain blocking calls. Structured-output schemas and tool definitions are derived from case classes instead of written by hand, and the built-in agent loop gives you typed tools and typed results, with tools loadable from MCP servers. Cross-built for Scala 2.13 and Scala 3 (plus Scala Native for Gemini).
 
 ```{eval-rst}
 .. toctree::
