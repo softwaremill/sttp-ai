@@ -1,80 +1,57 @@
-# Models, errors and the sync client
+# Models and error handling
+
+For choosing between the sync and async client, see [basics](basics.md).
 
 ## Claude Models API
 
-```scala
-val modelsRequest = client.listModels()
-val models = modelsRequest.send(backend)
+List the models currently available to your API key:
 
-models match {
-  case Right(response) =>
-    response.data.foreach(model => println(s"${model.id} - ${model.displayName.getOrElse("N/A")}"))
-  case Left(error) =>
-    println(s"Error: $error")
-}
-```
+```scala mdoc:compile-only
+//> using dep com.softwaremill.sttp.ai::claude:@VERSION@
 
-**Common Claude models** (use `listModels()` for current list):
-
-- `claude-3-sonnet-20240229` - Balanced performance and speed
-- `claude-3-opus-20240229` - Highest capability model
-- `claude-3-haiku-20240307` - Fastest model
-- `claude-instant-1.2` - Legacy fast model
-
-## Claude Error Handling
-
-Claude-specific exception hierarchy:
-
-```scala
-import sttp.ai.claude.ClaudeExceptions.*
-
-client.createMessage(request).send(backend) match {
-  case Right(response) => // Success
-    handleResponse(response)
-  case Left(error) => error match {
-    case _: AuthenticationException => // Invalid API key
-      println("Authentication failed - check your API key")
-    case _: RateLimitException => // Rate limited
-      println("Rate limited - please wait before retrying")
-    case _: InvalidRequestException => // Malformed request
-      println("Invalid request - check your parameters")
-    case _: PermissionException => // Access denied
-      println("Permission denied for this resource")
-    case _: APIException => // Other API error
-      println(s"API error: ${error.getMessage}")
-    case _: DeserializationClaudeException => // JSON parsing error
-      println("Failed to parse response")
-  }
-}
-```
-
-## Key Differences from OpenAI API
-
-| Feature | Claude API | OpenAI API |
-|---------|------------|------------|
-| **Message Content** | `ContentBlock` arrays | Simple strings |
-| **System Messages** | `system` parameter | Role-based message |
-| **Authentication** | `x-api-key` + `anthropic-version` headers | `Authorization` header |
-| **Image Input** | ContentBlock with base64 | URL or base64 in content |
-| **Tool Calling** | Native tool structure | Function calling |
-| **Streaming** | Server-Sent Events | Server-Sent Events |
-| **Model Names** | `claude-3-sonnet-20240229` | `gpt-4` |
-
-## Synchronous Claude Client
-
-For blocking operations, use `ClaudeSyncClient`:
-
-```scala
 import sttp.ai.claude.ClaudeSyncClient
 
-val syncClient = new ClaudeSyncClient(config)
-
-// Throws ClaudeException on error
-try {
-  val response = syncClient.createMessage(request)
-  println(response.content.head.text.getOrElse(""))
-} catch {
-  case e: ClaudeException => println(s"Error: ${e.getMessage}")
-}
+object ModelsExample:
+  def main(args: Array[String]): Unit =
+    val claude = ClaudeSyncClient.fromEnv
+    try {
+      val models = claude.listModels()
+      models.data.foreach(model => println(s"${model.id} - ${model.displayName}"))
+    } finally claude.close()
 ```
 
+## Claude error handling
+
+`ClaudeSyncClient` throws subclasses of `ClaudeException`; the async `ClaudeClient` returns the same hierarchy in the `Left` branch of `Either[ClaudeException, A]`:
+
+```scala mdoc:compile-only
+//> using dep com.softwaremill.sttp.ai::claude:@VERSION@
+
+import sttp.ai.claude.ClaudeSyncClient
+import sttp.ai.claude.ClaudeExceptions.ClaudeException
+import sttp.ai.claude.models.Message
+import sttp.ai.claude.requests.MessageRequest
+
+object ErrorHandlingExample:
+  def main(args: Array[String]): Unit =
+    val claude = ClaudeSyncClient.fromEnv
+    try {
+      val request = MessageRequest.simple("claude-haiku-4-5-20251001", List(Message.user("Hello!")), 100)
+
+      try {
+        val response = claude.createMessage(request)
+        println(response.content)
+      } catch {
+        case _: ClaudeException.AuthenticationException        => println("Authentication failed - check your API key")
+        case _: ClaudeException.RateLimitException             => println("Rate limited - please wait before retrying")
+        case _: ClaudeException.InvalidRequestException        => println("Invalid request - check your parameters")
+        case _: ClaudeException.PermissionException            => println("Permission denied for this resource")
+        case _: ClaudeException.TryAgain                       => println("Transient error - retry the request")
+        case _: ClaudeException.ServiceUnavailableException    => println("Claude is temporarily unavailable")
+        case e: ClaudeException.APIException                   => println(s"API error: ${e.getMessage}")
+        case _: ClaudeException.DeserializationClaudeException => println("Failed to parse response")
+      }
+    } finally claude.close()
+```
+
+Additionally, [structured outputs](structured-outputs.md) on an unsupported model throw `UnsupportedModelForStructuredOutputException` (also under `ClaudeExceptions`).
