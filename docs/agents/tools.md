@@ -1,8 +1,13 @@
 # Agent tools and results
 
+## Defining tools
+
 Tools are defined using type-safe case classes with the `derives` syntax:
 
-```scala
+```scala mdoc:compile-only
+//> using dep com.softwaremill.sttp.ai::openai:@VERSION@
+
+import sttp.ai.core.agent.*
 import sttp.tapir.Schema
 
 case class CalculatorInput(
@@ -27,6 +32,8 @@ val calculatorTool = AgentTool.fromFunction(
 ```
 
 The `derives io.circe.Codec.AsObject, Schema` clause automatically generates the necessary serialization and schema information for the tool.
+
+See [JSON Schemas: structured outputs & tools](../other/json-schemas.md) for how schema derivation works and how to customise it.
 
 ## Agent Result
 
