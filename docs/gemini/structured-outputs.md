@@ -2,6 +2,8 @@
 
 Gemini's structured output feature lets you force the model's response to conform to a JSON Schema — useful for data extraction, populating a typed model, or any case where you need a guaranteed shape back instead of free-form text.
 
+See [JSON Schemas: structured outputs & tools](../other/json-schemas.md) for all the ways to produce a schema, from automatic derivation to hand-built.
+
 ## Typed responses with `createInteractionAs[T]`
 
 For the shortest path, use `GeminiSyncClient.createInteractionAs[T]` — the JSON Schema is derived from `T` via Tapir and set on the request automatically (unless the request already carries a `ResponseFormat.JsonSchema`), and the model's output text is parsed back into `T` via circe.
