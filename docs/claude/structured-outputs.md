@@ -2,6 +2,8 @@
 
 Claude's structured output feature (currently in beta) allows you to enforce that the model's response follows a specific JSON schema. This is useful for getting consistently formatted responses for data extraction, API responses, and structured data processing.
 
+A structured output request needs a JSON Schema. The easiest way is to have it derived from a case class — see [JSON Schemas: structured outputs & tools](../other/json-schemas.md) for all the options.
+
 **Model Support:**
 - ✅ **Supported models**: Claude 4.1+ models (`claude-sonnet-4-1-20250514`, `claude-opus-4-1-20250514`, etc.)
 - ❌ **Legacy models**: Claude 3.x series don't support structured outputs
@@ -40,7 +42,9 @@ object Main:
 
 `T` must have both a `sttp.tapir.Schema[T]` (for schema generation) and a circe `Codec[T]` (for parsing) — the `derives` clause supplies both in Scala 3.
 
-## Basic Structured Output Example
+## Lower-level: setting `OutputFormat.JsonSchema` yourself
+
+If you need finer control — a hand-built schema or custom parsing — derive or build the `sttp.apispec.Schema` yourself and set it via `withStructuredOutput`:
 
 ```scala mdoc:compile-only
 //> using dep com.softwaremill.sttp.ai::claude:@VERSION@
@@ -115,19 +119,24 @@ object StructuredOutputExample:
 
 If you prefer not to use Tapir, you can define schemas manually:
 
-```scala
-import sttp.apispec.{Schema => ASchema, SchemaType}
+```scala mdoc:compile-only
+//> using dep com.softwaremill.sttp.ai::claude:@VERSION@
+
 import scala.collection.immutable.ListMap
+import sttp.ai.claude.models.OutputFormat
+import sttp.apispec.{Schema => ASchema, SchemaType}
 
 val schema: ASchema = ASchema(SchemaType.Object).copy(
   properties = ListMap(
     "summary" -> ASchema(SchemaType.String),
-    "confidence" -> ASchema(SchemaType.Number).copy(minimum = Some(0), maximum = Some(1))
+    "confidence" -> ASchema(SchemaType.Number).copy(minimum = Some(BigDecimal(0)), maximum = Some(BigDecimal(1)))
   ),
   required = List("summary", "confidence")
 )
 val outputFormat = OutputFormat.JsonSchema(schema)
 ```
+
+See [JSON Schemas: structured outputs & tools](../other/json-schemas.md) for deriving schemas with Tapir instead of writing them by hand.
 
 **Important Notes:**
 - Structured outputs require Claude 4.1+ models (`claude-sonnet-4-1-*`, `claude-opus-4-1-*`, etc.)
