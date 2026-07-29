@@ -90,7 +90,7 @@ object StructuredOutputExample:
     )
 
     val request = MessageRequest
-      .simple("claude-sonnet-4-5-20250514", messages, 500)
+      .simple("claude-sonnet-4-5-20250929", messages, 500)
       .withStructuredOutput(outputFormat)
 
     val response = client.createMessage(request).send(backend)
