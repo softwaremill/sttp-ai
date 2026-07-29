@@ -2,7 +2,7 @@
 
 ## Custom Tools
 
-Define your own tools with `Tool.Function`. `parameters` is a raw JSON Schema (`io.circe.Json`), passed to the API byte-for-byte — handy when the schema comes from an MCP server or another source you don't want re-encoded.
+Define your own tools with `Tool.Function`. `parameters` is a raw JSON Schema (`io.circe.Json`), passed to the API byte-for-byte — handy when the schema comes from an MCP server or another source you don't want re-encoded. See [JSON Schemas: structured outputs & tools](../other/json-schemas.md) for ways to produce a schema.
 
 ```scala mdoc:compile-only
 //> using dep com.softwaremill.sttp.ai::gemini:@VERSION@
