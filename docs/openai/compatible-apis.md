@@ -1,4 +1,4 @@
-# OpenAI-compatible APIs: Ollama, Groq, OpenRouter
+# OpenAI-compatible APIs: Ollama, Grok, Groq, OpenRouter
 
 Any provider exposing an OpenAI-compatible endpoint works with the OpenAI client — pass the provider's base URL as the second argument. Named examples below; the same pattern applies to any other compatible provider.
 
@@ -56,7 +56,44 @@ object Main:
   */
 ```
 
+## Grok
+
+[Grok](https://x.ai) is xAI's model family, served from an OpenAI-compatible endpoint:
+
+```scala mdoc:compile-only
+//> using dep com.softwaremill.sttp.ai::openai:@VERSION@
+
+import sttp.model.Uri.*
+import sttp.ai.openai.OpenAISyncClient
+import sttp.ai.openai.requests.completions.chat.ChatRequestResponseData.ChatResponse
+import sttp.ai.openai.requests.completions.chat.ChatRequestBody.{ChatBody, ChatCompletionModel}
+import sttp.ai.openai.requests.completions.chat.message.*
+
+object Main:
+  def main(args: Array[String]): Unit =
+    val openAI: OpenAISyncClient = OpenAISyncClient(System.getenv("XAI_API_KEY"), uri"https://api.x.ai/v1")
+
+    val bodyMessages: Seq[Message] = Seq(
+      Message.User(
+        content = Content.TextContent("Hello!"),
+      )
+    )
+
+    val chatRequestBody: ChatBody = ChatBody(
+      model = ChatCompletionModel.CustomChatCompletionModel("grok-4"),
+      messages = bodyMessages
+    )
+
+    // be aware that calling `createChatCompletion` may throw an OpenAIException
+    // e.g. AuthenticationException, RateLimitException and many more
+    val chatResponse: ChatResponse = openAI.createChatCompletion(chatRequestBody)
+
+    println(chatResponse)
+```
+
 ## Groq
+
+[Groq](https://groq.com) runs open models (Llama, Gemma, ...) on its LPU hardware, exposed via an OpenAI-compatible endpoint:
 
 Groq with cats-effect based backend:
 
@@ -123,8 +160,6 @@ object Main:
     )
   */
 ```
-
-Grok (x.ai) works the same way — use `uri"https://api.x.ai/v1"` and a Grok model name.
 
 ## OpenRouter
 
