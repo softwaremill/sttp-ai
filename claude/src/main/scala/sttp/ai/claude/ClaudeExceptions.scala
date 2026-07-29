@@ -18,7 +18,7 @@ object ClaudeExceptions {
       extends AIException(
         message = Some(
           s"Model '$modelId' does not support structured output. " +
-            "Structured output is only supported by Claude 4.x models (e.g., claude-sonnet-4-1-20250514, claude-opus-4-1-20250514)."
+            "Structured output is only supported by Claude 4.1+ models (e.g., claude-sonnet-4-5, claude-opus-4-1-20250805)."
         ),
         `type` = Some("unsupported_model_for_structured_output"),
         param = Some("model"),

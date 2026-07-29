@@ -29,6 +29,9 @@ object ClaudeModel {
   case object ClaudeOpus4_5 extends WithStructuredOutput("claude-opus-4-5-20251101")
   case object ClaudeOpus4_5Latest extends WithStructuredOutput("claude-opus-4-5")
 
+  case object ClaudeSonnet5 extends WithStructuredOutput("claude-sonnet-5")
+  case object ClaudeOpus5 extends WithStructuredOutput("claude-opus-5")
+
   val values: Set[ClaudeModel] = Set(
     Claude3_5Sonnet,
     Claude3_5SonnetLatest,
@@ -45,7 +48,9 @@ object ClaudeModel {
     ClaudeSonnet4_5,
     ClaudeSonnet4_5Latest,
     ClaudeOpus4_5,
-    ClaudeOpus4_5Latest
+    ClaudeOpus4_5Latest,
+    ClaudeSonnet5,
+    ClaudeOpus5
   )
 
   def fromString(value: String): Option[ClaudeModel] = values.find(_.value == value)

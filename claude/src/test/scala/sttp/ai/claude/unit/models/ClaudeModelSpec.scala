@@ -23,6 +23,8 @@ class ClaudeModelSpec extends AnyFlatSpec with Matchers {
     ClaudeModel.ClaudeHaiku4_5Latest.value shouldBe "claude-haiku-4-5"
     ClaudeModel.ClaudeOpus4_5.value shouldBe "claude-opus-4-5-20251101"
     ClaudeModel.ClaudeOpus4_5Latest.value shouldBe "claude-opus-4-5"
+    ClaudeModel.ClaudeSonnet5.value shouldBe "claude-sonnet-5"
+    ClaudeModel.ClaudeOpus5.value shouldBe "claude-opus-5"
   }
 
   it should "convert toString correctly" in {
@@ -57,7 +59,9 @@ class ClaudeModelSpec extends AnyFlatSpec with Matchers {
     ClaudeModel.values should contain(ClaudeModel.ClaudeSonnet4_5Latest)
     ClaudeModel.values should contain(ClaudeModel.ClaudeOpus4_5)
     ClaudeModel.values should contain(ClaudeModel.ClaudeOpus4_5Latest)
-    ClaudeModel.values should have size 16
+    ClaudeModel.values should contain(ClaudeModel.ClaudeSonnet5)
+    ClaudeModel.values should contain(ClaudeModel.ClaudeOpus5)
+    ClaudeModel.values should have size 18
   }
 
   "Structured output support" should "be false for legacy Claude 3.x models (Default type)" in {
@@ -86,6 +90,11 @@ class ClaudeModelSpec extends AnyFlatSpec with Matchers {
     ClaudeModel.ClaudeHaiku4_5Latest shouldBe a[ClaudeModel.WithStructuredOutput]
     ClaudeModel.ClaudeOpus4_5 shouldBe a[ClaudeModel.WithStructuredOutput]
     ClaudeModel.ClaudeOpus4_5Latest shouldBe a[ClaudeModel.WithStructuredOutput]
+  }
+
+  it should "be true for Claude 5 models (WithStructuredOutput type)" in {
+    ClaudeModel.ClaudeSonnet5 shouldBe a[ClaudeModel.WithStructuredOutput]
+    ClaudeModel.ClaudeOpus5 shouldBe a[ClaudeModel.WithStructuredOutput]
   }
 
   "modelSupportsStructuredOutput" should "return false for known legacy model IDs" in {
