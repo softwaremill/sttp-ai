@@ -253,6 +253,46 @@ object Main:
   */
 ```
 
+## Reasoning models
+
+Reasoning models served through OpenAI-compatible APIs return their chain-of-thought in a dedicated response field. Providers use two
+spellings on the wire — `reasoning_content` (DeepSeek, Qwen, vLLM-served models, Ollama) or `reasoning` (OpenRouter, Groq, xAI) — and both
+are decoded into the same `reasoningContent: Option[String]` field, on the response `Message` (non-streaming) and on each streamed `Delta`
+(accumulate the deltas exactly like `content`):
+
+```scala mdoc:compile-only
+//> using dep com.softwaremill.sttp.ai::openai:@VERSION@
+
+import sttp.model.Uri.*
+import sttp.ai.openai.OpenAISyncClient
+import sttp.ai.openai.requests.completions.chat.ChatRequestResponseData.ChatResponse
+import sttp.ai.openai.requests.completions.chat.ChatRequestBody.{ChatBody, ChatCompletionModel}
+import sttp.ai.openai.requests.completions.chat.message.*
+
+object Main:
+  def main(args: Array[String]): Unit =
+    val openAI: OpenAISyncClient = OpenAISyncClient("ollama", uri"http://localhost:11434/v1")
+
+    val chatRequestBody: ChatBody = ChatBody(
+      // assuming one has already executed `ollama pull qwen3` in console
+      model = ChatCompletionModel.CustomChatCompletionModel("qwen3"),
+      messages = Seq(
+        Message.User(
+          content = Content.TextContent("What is 2+2?")
+        )
+      )
+    )
+
+    val chatResponse: ChatResponse = openAI.createChatCompletion(chatRequestBody)
+    val message = chatResponse.choices.head.message
+
+    println(message.reasoningContent) // Some("Okay, the user is asking what 2 plus 2 is...")
+    println(message.content) // "4"
+```
+
+The answer itself stays in `content`; `reasoningContent` is `None` for models (or providers) that don't emit reasoning. Reasoning is never
+sent back in requests — some providers (e.g. DeepSeek) reject request messages carrying `reasoning_content`.
+
 ## Extra body parameters (vLLM and other extensions)
 
 Some OpenAI-compatible backends — vLLM in particular — accept request parameters that aren't part of the official OpenAI API and have no
