@@ -47,13 +47,16 @@ object OpenAIManualCodecs {
 
   /** Copies a provider-specific `reasoning` field (OpenRouter, Groq, xAI) into `reasoning_content` (the DeepSeek-style name our models
     * decode) when the latter is absent or null, so both spellings land in `reasoningContent`. Applied via `Decoder#prepare` to the chat
-    * response `Message` and streaming `Delta` decoders in [[OpenAIDerivedCodecs]].
+    * response `Message` and streaming `Delta` decoders in [[OpenAIDerivedCodecs]]. Only string `reasoning` values are copied: a non-string
+    * shape (e.g. structured reasoning from a proxy) was ignored as an unknown field before this normalization existed, and must not start
+    * failing the whole response decode.
     */
   val normalizeReasoning: Json => Json = json =>
     json.asObject.fold(json) { obj =>
       val hasReasoningContent = obj("reasoning_content").exists(!_.isNull)
-      if (hasReasoningContent || !obj.contains("reasoning")) json
-      else Json.fromJsonObject(obj.add("reasoning_content", obj("reasoning").get))
+      val reasoningFallback = obj("reasoning").filter(_.isString)
+      if (hasReasoningContent) json
+      else reasoningFallback.fold(json)(r => Json.fromJsonObject(obj.add("reasoning_content", r)))
     }
 
   implicit val assistantsModelCodec: Codec[AssistantsModel] = Codec.from(
