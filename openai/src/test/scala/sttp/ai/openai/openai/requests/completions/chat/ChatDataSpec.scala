@@ -215,4 +215,50 @@ class ChatDataSpec extends AnyFlatSpec with Matchers with EitherValues {
     // then
     serializedJson shouldBe jsonRequest.deepDropNullValues
   }
+
+  "Given chat response message with reasoning_content (DeepSeek style)" should "deserialize it into reasoningContent" in {
+    import ChatRequestResponseData._
+
+    // given
+    val json = """{"role": "assistant", "content": "4", "reasoning_content": "2 + 2 is basic arithmetic"}"""
+
+    // when
+    val givenMessage = decode[Message](json)
+
+    // then
+    givenMessage.value shouldBe Message(role = Role.Assistant, content = "4", reasoningContent = Some("2 + 2 is basic arithmetic"))
+  }
+
+  "Given chat response message with reasoning (OpenRouter/Groq style)" should "deserialize it into reasoningContent" in {
+    import ChatRequestResponseData._
+
+    // given
+    val json = """{"role": "assistant", "content": "4", "reasoning": "Simple sum"}"""
+
+    // when
+    val givenMessage = decode[Message](json)
+
+    // then
+    givenMessage.value shouldBe Message(role = Role.Assistant, content = "4", reasoningContent = Some("Simple sum"))
+  }
+
+  "Given chat response message with both reasoning fields" should "prefer reasoning_content unless it is null" in {
+    import ChatRequestResponseData._
+
+    decode[Message]("""{"role": "assistant", "content": "", "reasoning_content": "primary", "reasoning": "secondary"}""").value
+      .shouldBe(Message(role = Role.Assistant, reasoningContent = Some("primary")))
+
+    decode[Message]("""{"role": "assistant", "content": "", "reasoning_content": null, "reasoning": "fallback"}""").value
+      .shouldBe(Message(role = Role.Assistant, reasoningContent = Some("fallback")))
+  }
+
+  "Given chat response message with reasoningContent" should "serialize it as reasoning_content" in {
+    import ChatRequestResponseData._
+
+    // given
+    val message = Message(role = Role.Assistant, content = "4", reasoningContent = Some("thoughts"))
+
+    // then
+    message.asJson.hcursor.get[Option[String]]("reasoning_content").value shouldBe Some("thoughts")
+  }
 }

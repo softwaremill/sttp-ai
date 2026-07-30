@@ -262,7 +262,10 @@ object OpenAIDerivedCodecs {
   implicit val topLogprobsCodec: Codec[Resp.TopLogprobs] = deriveConfiguredCodec
   implicit val logprobDataCodec: Codec[Resp.LogprobData] = deriveConfiguredCodec
   implicit val logprobsCodec: Codec[Resp.Logprobs] = deriveConfiguredCodec
-  implicit val chatRespMessageCodec: Codec[Resp.Message] = deriveConfiguredCodec
+  implicit val chatRespMessageCodec: Codec[Resp.Message] = {
+    val derived = deriveConfiguredCodec[Resp.Message]
+    Codec.from(derived.prepare(_.withFocus(normalizeReasoning)), derived)
+  }
   implicit val chatRespChoicesCodec: Codec[Resp.Choices] = deriveConfiguredCodec
   implicit val chatResponseCodec: Codec[Resp.ChatResponse] = deriveConfiguredCodec
   implicit val listMessageResponseCodec: Codec[Resp.ListMessageResponse] = deriveConfiguredCodec
