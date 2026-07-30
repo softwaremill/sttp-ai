@@ -5,9 +5,17 @@ package sttp.ai.openai
   *   - [[AuthScheme.Bearer]] sends `Authorization: Bearer <key>` — OpenAI and most compatible providers (default).
   *   - [[AuthScheme.AzureApiKey]] sends `api-key: <key>` — Azure OpenAI deployment endpoints.
   */
-sealed trait AuthScheme
+sealed trait AuthScheme {
+
+  /** The header (name -> value) carrying the given API key under this scheme. */
+  def authHeader(apiKey: String): (String, String)
+}
 
 object AuthScheme {
-  case object Bearer extends AuthScheme
-  case object AzureApiKey extends AuthScheme
+  case object Bearer extends AuthScheme {
+    override def authHeader(apiKey: String): (String, String) = "Authorization" -> s"Bearer $apiKey"
+  }
+  case object AzureApiKey extends AuthScheme {
+    override def authHeader(apiKey: String): (String, String) = "api-key" -> apiKey
+  }
 }

@@ -31,12 +31,8 @@ case class OpenAIConfig(
 ) extends AIClientConfig {
 
   override def authHeaders: Map[String, String] = {
-    val authHeader = authScheme match {
-      case AuthScheme.Bearer      => "Authorization" -> s"Bearer $apiKey"
-      case AuthScheme.AzureApiKey => "api-key" -> apiKey
-    }
     val baseHeaders = Map(
-      authHeader,
+      authScheme.authHeader(apiKey),
       "content-type" -> "application/json"
     )
     organization match {

@@ -1616,10 +1616,8 @@ class OpenAI(
       .response(asJson_parseErrors[DeleteAdminApiKeyResponse])
 
   protected def openAIAuthRequest: PartialRequest[Either[String, String]] = {
-    val baseReq = authScheme match {
-      case AuthScheme.Bearer      => basicRequest.auth.bearer(authToken)
-      case AuthScheme.AzureApiKey => basicRequest.header("api-key", authToken)
-    }
+    val (authHeaderName, authHeaderValue) = authScheme.authHeader(authToken)
+    val baseReq = basicRequest.header(authHeaderName, authHeaderValue)
     organization match {
       case Some(org) => baseReq.header("OpenAI-Organization", org)
       case None      => baseReq
