@@ -58,8 +58,8 @@ fi
 if [ "$OPENAI_SET" = false ] && [ "$ANTHROPIC_SET" = false ] && [ "$GEMINI_SET" = false ] && [ "$AZURE_SET" = false ]; then
     echo ""
     echo "Usage:"
-    echo "  1. Create .env file with OPENAI_API_KEY, ANTHROPIC_API_KEY and GEMINI_API_KEY"
-    echo "  2. Or set environment variables: export OPENAI_API_KEY=... ANTHROPIC_API_KEY=... GEMINI_API_KEY=..."
+    echo "  1. Create .env file with OPENAI_API_KEY, ANTHROPIC_API_KEY, GEMINI_API_KEY and AZURE_OPENAI_API_KEY/AZURE_OPENAI_ENDPOINT"
+    echo "  2. Or set environment variables: export OPENAI_API_KEY=... ANTHROPIC_API_KEY=... GEMINI_API_KEY=... AZURE_OPENAI_API_KEY=... AZURE_OPENAI_ENDPOINT=..."
     echo "  3. Or pass OpenAI key as argument: ./run-integration-tests.sh your-key-here"
     echo ""
     echo "📝 Note: Without API keys, all integration tests will be skipped (not failed)"
