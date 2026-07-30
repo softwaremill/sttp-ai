@@ -25,8 +25,12 @@ object ChatChunkRequestResponseData {
       index: Int
   )
 
+  /** @param id
+    *   A unique identifier for the chat completion chunk. Some OpenAI-compatible providers (e.g. Gemini's OpenAI-compatible endpoint) do
+    *   not return it.
+    */
   case class ChatChunkResponse(
-      id: String,
+      id: Option[String] = None,
       choices: Seq[Choices],
       created: Int,
       model: String,

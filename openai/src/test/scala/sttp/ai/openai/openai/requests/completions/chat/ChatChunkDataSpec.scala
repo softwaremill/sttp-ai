@@ -39,7 +39,7 @@ class ChatChunkDataSpec extends AnyFlatSpec with Matchers with EitherValues {
     )
 
     val expectedResponse: ChatChunkResponse = ChatChunkResponse(
-      id = "chatcmpl-76FxnKOjnPkDVYTAQ1wK8iUNFJPvR",
+      id = Some("chatcmpl-76FxnKOjnPkDVYTAQ1wK8iUNFJPvR"),
       `object` = "chat.completion",
       created = 1681725687,
       model = "gpt-3.5-turbo-0301",
@@ -104,7 +104,7 @@ class ChatChunkDataSpec extends AnyFlatSpec with Matchers with EitherValues {
       |}""".stripMargin
 
     val expectedResponse = ChatChunkResponse(
-      id = "chatcmpl-usage",
+      id = Some("chatcmpl-usage"),
       `object` = "chat.completion.chunk",
       created = 1681725687,
       model = "gpt-4",
@@ -121,6 +121,44 @@ class ChatChunkDataSpec extends AnyFlatSpec with Matchers with EitherValues {
 
     // when
     val givenResponse: Either[Exception, ChatChunkResponse] = decode[ChatChunkResponse](jsonWithUsage)
+
+    // then
+    givenResponse.value shouldBe expectedResponse
+  }
+
+  "Given chat chunk response without id as Json" should "be properly deserialized to case class" in {
+    import ChatChunkRequestResponseData._
+
+    // given
+    val jsonWithoutId = """{
+      |  "object": "chat.completion.chunk",
+      |  "created": 1747469284,
+      |  "model": "models/gemini-2.5-flash-preview-04-17",
+      |  "choices": [
+      |    {
+      |      "delta": {
+      |        "content": "Hi"
+      |      },
+      |      "index": 0
+      |    }
+      |  ]
+      |}""".stripMargin
+
+    val expectedResponse = ChatChunkResponse(
+      id = None,
+      `object` = "chat.completion.chunk",
+      created = 1747469284,
+      model = "models/gemini-2.5-flash-preview-04-17",
+      choices = Seq(
+        Choices(
+          delta = Delta(content = Some("Hi")),
+          index = 0
+        )
+      )
+    )
+
+    // when
+    val givenResponse: Either[Exception, ChatChunkResponse] = decode[ChatChunkResponse](jsonWithoutId)
 
     // then
     givenResponse.value shouldBe expectedResponse
