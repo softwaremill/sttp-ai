@@ -46,18 +46,23 @@ object OpenAIManualCodecs {
     json.asObject.fold(json)(o => Json.fromJsonObject(o.add("type", Json.fromString(tpe))))
 
   /** Copies a provider-specific `reasoning` field (OpenRouter, Groq, xAI) into `reasoning_content` (the DeepSeek-style name our models
-    * decode) when the latter is absent or null, so both spellings land in `reasoningContent`. Applied via `Decoder#prepare` to the chat
-    * response `Message` and streaming `Delta` decoders in [[OpenAIDerivedCodecs]]. Only string `reasoning` values are copied: a non-string
-    * shape (e.g. structured reasoning from a proxy) was ignored as an unknown field before this normalization existed, and must not start
-    * failing the whole response decode.
+    * decode) when the latter carries no string, so both spellings land in `reasoningContent`. Only string values are considered, for either
+    * spelling: a non-string shape (e.g. structured reasoning from a proxy) was ignored as an unknown field before this normalization
+    * existed, and must not start failing the whole response decode — it degrades to `None` instead.
     */
-  val normalizeReasoning: Json => Json = json =>
+  private val normalizeReasoning: Json => Json = json =>
     json.asObject.fold(json) { obj =>
-      val hasReasoningContent = obj("reasoning_content").exists(!_.isNull)
-      val reasoningFallback = obj("reasoning").filter(_.isString)
-      if (hasReasoningContent) json
-      else reasoningFallback.fold(json)(r => Json.fromJsonObject(obj.add("reasoning_content", r)))
+      obj("reasoning_content").filter(_.isString).orElse(obj("reasoning").filter(_.isString)) match {
+        case Some(reasoning) => Json.fromJsonObject(obj.add("reasoning_content", reasoning))
+        case None            => Json.fromJsonObject(obj.remove("reasoning_content"))
+      }
     }
+
+  /** Wraps a codec so its decoder first applies [[normalizeReasoning]]; encoding is unchanged. Used by the chat response `Message` and
+    * streaming `Delta` codecs in [[OpenAIDerivedCodecs]].
+    */
+  def withReasoningNormalization[A](codec: Codec[A]): Codec[A] =
+    Codec.from(codec.prepare(_.withFocus(normalizeReasoning)), codec)
 
   implicit val assistantsModelCodec: Codec[AssistantsModel] = Codec.from(
     Decoder[String].map(AssistantsModel.get),

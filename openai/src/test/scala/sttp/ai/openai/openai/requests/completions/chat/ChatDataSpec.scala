@@ -264,6 +264,18 @@ class ChatDataSpec extends AnyFlatSpec with Matchers with EitherValues {
       .shouldBe(Message(role = Role.Assistant, content = "4"))
   }
 
+  "Given chat response message with non-string reasoning_content" should "ignore it instead of failing the decode" in {
+    import ChatRequestResponseData._
+
+    // non-string reasoning_content alone -> None (was an ignored unknown field before this feature)
+    decode[Message]("""{"role": "assistant", "content": "4", "reasoning_content": {"detail": "structured"}}""").value
+      .shouldBe(Message(role = Role.Assistant, content = "4"))
+
+    // non-string reasoning_content falls through to a string reasoning
+    decode[Message]("""{"role": "assistant", "content": "4", "reasoning_content": [1], "reasoning": "fallback"}""").value
+      .shouldBe(Message(role = Role.Assistant, content = "4", reasoningContent = Some("fallback")))
+  }
+
   "Given chat response message with reasoningContent" should "serialize it as reasoning_content" in {
     import ChatRequestResponseData._
 

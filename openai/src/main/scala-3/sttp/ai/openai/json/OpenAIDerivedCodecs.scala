@@ -245,10 +245,7 @@ object OpenAIDerivedCodecs {
   implicit val topLogprobsCodec: Codec[Resp.TopLogprobs] = ConfiguredCodec.derived
   implicit val logprobDataCodec: Codec[Resp.LogprobData] = ConfiguredCodec.derived
   implicit val logprobsCodec: Codec[Resp.Logprobs] = ConfiguredCodec.derived
-  implicit val chatRespMessageCodec: Codec[Resp.Message] = {
-    val derived = ConfiguredCodec.derived[Resp.Message]
-    Codec.from(derived.prepare(_.withFocus(normalizeReasoning)), derived)
-  }
+  implicit val chatRespMessageCodec: Codec[Resp.Message] = withReasoningNormalization(ConfiguredCodec.derived[Resp.Message])
   implicit val chatRespChoicesCodec: Codec[Resp.Choices] = ConfiguredCodec.derived
   implicit val chatResponseCodec: Codec[Resp.ChatResponse] = ConfiguredCodec.derived
   implicit val listMessageResponseCodec: Codec[Resp.ListMessageResponse] = ConfiguredCodec.derived
@@ -256,10 +253,7 @@ object OpenAIDerivedCodecs {
   implicit val deleteChatCompletionResponseCodec: Codec[Resp.DeleteChatCompletionResponse] = ConfiguredCodec.derived
 
   // chat chunk (streaming) response
-  implicit val chunkDeltaCodec: Codec[Chunk.Delta] = {
-    val derived = ConfiguredCodec.derived[Chunk.Delta]
-    Codec.from(derived.prepare(_.withFocus(normalizeReasoning)), derived)
-  }
+  implicit val chunkDeltaCodec: Codec[Chunk.Delta] = withReasoningNormalization(ConfiguredCodec.derived[Chunk.Delta])
   implicit val chunkChoicesCodec: Codec[Chunk.Choices] = ConfiguredCodec.derived
   implicit val chatChunkResponseCodec: Codec[Chunk.ChatChunkResponse] = ConfiguredCodec.derived
 
