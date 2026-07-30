@@ -61,7 +61,12 @@ import java.io.{File, InputStream}
 import java.nio.file.Paths
 import sttp.ai.openai.config.OpenAIConfig
 
-class OpenAI(authToken: String, baseUri: Uri = OpenAIUris.OpenAIBaseUri, organization: Option[String] = None) {
+class OpenAI(
+    authToken: String,
+    baseUri: Uri = OpenAIUris.OpenAIBaseUri,
+    organization: Option[String] = None,
+    authScheme: AuthScheme = AuthScheme.Bearer
+) {
 
   private val openAIUris = new OpenAIUris(baseUri)
 
@@ -1611,7 +1616,10 @@ class OpenAI(authToken: String, baseUri: Uri = OpenAIUris.OpenAIBaseUri, organiz
       .response(asJson_parseErrors[DeleteAdminApiKeyResponse])
 
   protected def openAIAuthRequest: PartialRequest[Either[String, String]] = {
-    val baseReq = basicRequest.auth.bearer(authToken)
+    val baseReq = authScheme match {
+      case AuthScheme.Bearer      => basicRequest.auth.bearer(authToken)
+      case AuthScheme.AzureApiKey => basicRequest.header("api-key", authToken)
+    }
     organization match {
       case Some(org) => baseReq.header("OpenAI-Organization", org)
       case None      => baseReq
