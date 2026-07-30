@@ -1633,7 +1633,7 @@ class OpenAI(
 object OpenAI {
 
   def apply(config: OpenAIConfig): OpenAI =
-    new OpenAI(config.apiKey, config.baseUrl, config.organization)
+    new OpenAI(config.apiKey, config.baseUrl, config.organization, config.authScheme)
 
   def fromEnv: OpenAI = apply(OpenAIConfig.fromEnv)
 }
