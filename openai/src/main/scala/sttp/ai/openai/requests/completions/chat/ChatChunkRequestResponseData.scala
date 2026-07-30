@@ -11,12 +11,17 @@ object ChatChunkRequestResponseData {
     *   The contents of the message.
     * @param functionCall
     *   The name of the author of this message. May contain a-z, A-Z, 0-9, and underscores, with a maximum length of 64 characters.
+    * @param reasoningContent
+    *   The reasoning/chain-of-thought delta produced by reasoning models served through OpenAI-compatible APIs. Populated from
+    *   `reasoning_content` (DeepSeek, Qwen, vLLM, Ollama), falling back to `reasoning` (OpenRouter, Groq, xAI). Accumulate these deltas
+    *   exactly like `content`.
     */
   case class Delta(
       role: Option[Role] = None,
       content: Option[String] = None,
       toolCalls: Seq[ToolCall] = Nil,
-      functionCall: Option[FunctionCall] = None
+      functionCall: Option[FunctionCall] = None,
+      reasoningContent: Option[String] = None
   )
 
   case class Choices(

@@ -253,7 +253,10 @@ object OpenAIDerivedCodecs {
   implicit val deleteChatCompletionResponseCodec: Codec[Resp.DeleteChatCompletionResponse] = ConfiguredCodec.derived
 
   // chat chunk (streaming) response
-  implicit val chunkDeltaCodec: Codec[Chunk.Delta] = ConfiguredCodec.derived
+  implicit val chunkDeltaCodec: Codec[Chunk.Delta] = {
+    val derived = ConfiguredCodec.derived[Chunk.Delta]
+    Codec.from(derived.prepare(_.withFocus(normalizeReasoning)), derived)
+  }
   implicit val chunkChoicesCodec: Codec[Chunk.Choices] = ConfiguredCodec.derived
   implicit val chatChunkResponseCodec: Codec[Chunk.ChatChunkResponse] = ConfiguredCodec.derived
 

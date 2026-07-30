@@ -45,6 +45,17 @@ object OpenAIManualCodecs {
   private def tagged(tpe: String, json: Json): Json =
     json.asObject.fold(json)(o => Json.fromJsonObject(o.add("type", Json.fromString(tpe))))
 
+  /** Copies a provider-specific `reasoning` field (OpenRouter, Groq, xAI) into `reasoning_content` (the DeepSeek-style name our models
+    * decode) when the latter is absent or null, so both spellings land in `reasoningContent`. Applied via `Decoder#prepare` to the chat
+    * response `Message` and streaming `Delta` decoders in [[OpenAIDerivedCodecs]].
+    */
+  val normalizeReasoning: Json => Json = json =>
+    json.asObject.fold(json) { obj =>
+      val hasReasoningContent = obj("reasoning_content").exists(!_.isNull)
+      if (hasReasoningContent || !obj.contains("reasoning")) json
+      else Json.fromJsonObject(obj.add("reasoning_content", obj("reasoning").get))
+    }
+
   implicit val assistantsModelCodec: Codec[AssistantsModel] = Codec.from(
     Decoder[String].map(AssistantsModel.get),
     Encoder[String].contramap(_.value)

@@ -125,4 +125,79 @@ class ChatChunkDataSpec extends AnyFlatSpec with Matchers with EitherValues {
     // then
     givenResponse.value shouldBe expectedResponse
   }
+
+  "Given chat chunk with reasoning_content (DeepSeek style)" should "deserialize it into reasoningContent" in {
+    import ChatChunkRequestResponseData._
+
+    // given
+    val jsonResponse = """{
+      |  "id": "chatcmpl-r1",
+      |  "object": "chat.completion.chunk",
+      |  "created": 1681725687,
+      |  "model": "deepseek-reasoner",
+      |  "choices": [
+      |    {
+      |      "delta": {"role": "assistant", "reasoning_content": "Let me think"},
+      |      "index": 0
+      |    }
+      |  ]
+      |}""".stripMargin
+
+    // when
+    val givenResponse = decode[ChatChunkResponse](jsonResponse)
+
+    // then
+    givenResponse.value.choices.head.delta shouldBe Delta(
+      role = Some(Role.Assistant),
+      reasoningContent = Some("Let me think")
+    )
+  }
+
+  "Given chat chunk with reasoning (OpenRouter/Groq style)" should "deserialize it into reasoningContent" in {
+    import ChatChunkRequestResponseData._
+
+    // given
+    val jsonResponse = """{
+      |  "id": "chatcmpl-r2",
+      |  "object": "chat.completion.chunk",
+      |  "created": 1681725687,
+      |  "model": "grok-4",
+      |  "choices": [
+      |    {
+      |      "delta": {"reasoning": "Weighing options"},
+      |      "index": 0
+      |    }
+      |  ]
+      |}""".stripMargin
+
+    // when
+    val givenResponse = decode[ChatChunkResponse](jsonResponse)
+
+    // then
+    givenResponse.value.choices.head.delta shouldBe Delta(reasoningContent = Some("Weighing options"))
+  }
+
+  "Given chat chunk with both reasoning fields" should "prefer reasoning_content unless it is null" in {
+    import ChatChunkRequestResponseData._
+
+    def chunkWithDelta(delta: String) = s"""{
+      | "id": "chatcmpl-r3",
+      | "object": "chat.completion.chunk",
+      | "created": 1681725687,
+      | "model": "m",
+      | "choices": [{"delta": $delta, "index": 0}]
+      |}""".stripMargin
+
+    // both carry values -> reasoning_content wins
+    decode[ChatChunkResponse](chunkWithDelta("""{"reasoning_content": "primary", "reasoning": "secondary"}""")).value.choices.head.delta
+      .shouldBe(Delta(reasoningContent = Some("primary")))
+
+    // reasoning_content is null -> falls back to reasoning
+    decode[ChatChunkResponse](chunkWithDelta("""{"reasoning_content": null, "reasoning": "fallback"}""")).value.choices.head.delta
+      .shouldBe(Delta(reasoningContent = Some("fallback")))
+
+    // neither present -> None (and existing suite passing proves backward compat)
+    decode[ChatChunkResponse](chunkWithDelta("""{"content": "hi"}""")).value.choices.head.delta
+      .shouldBe(Delta(content = Some("hi")))
+  }
 }
