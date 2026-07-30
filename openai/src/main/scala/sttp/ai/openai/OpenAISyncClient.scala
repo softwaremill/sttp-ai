@@ -64,10 +64,11 @@ class OpenAISyncClient private (
     closeClient: Boolean,
     baseUri: Uri,
     customizeRequest: CustomizeOpenAIRequest,
-    organization: Option[String] = None
+    organization: Option[String] = None,
+    authScheme: AuthScheme = AuthScheme.Bearer
 ) {
 
-  private val openAI = new OpenAI(authToken, baseUri, organization)
+  private val openAI = new OpenAI(authToken, baseUri, organization, authScheme)
 
   /** Lists the currently available models, and provides basic information about each one such as the owner and availability.
     *
@@ -1217,7 +1218,7 @@ class OpenAISyncClient private (
     * will be applied before the given one.
     */
   def customizeRequest(customize: CustomizeOpenAIRequest): OpenAISyncClient =
-    new OpenAISyncClient(authToken, backend, closeClient, baseUri, customizeRequest.andThen(customize))
+    new OpenAISyncClient(authToken, backend, closeClient, baseUri, customizeRequest.andThen(customize), organization, authScheme)
 
   private def sendOrThrow[A](request: Request[Either[OpenAIException, A]]): A =
     customizeRequest.apply(request).send(backend).body match {
@@ -1236,6 +1237,11 @@ object OpenAISyncClient {
   def apply(authToken: String, baseUrl: Uri) =
     new OpenAISyncClient(authToken, DefaultSyncBackend(), true, baseUrl, CustomizeOpenAIRequest.Identity)
 
+  def apply(authToken: String, backend: SyncBackend, baseUrl: Uri, authScheme: AuthScheme) =
+    new OpenAISyncClient(authToken, backend, false, baseUrl, CustomizeOpenAIRequest.Identity, None, authScheme)
+  def apply(authToken: String, baseUrl: Uri, authScheme: AuthScheme) =
+    new OpenAISyncClient(authToken, DefaultSyncBackend(), true, baseUrl, CustomizeOpenAIRequest.Identity, None, authScheme)
+
   def apply(config: OpenAIConfig): OpenAISyncClient =
     new OpenAISyncClient(
       config.apiKey,
@@ -1243,11 +1249,20 @@ object OpenAISyncClient {
       true,
       config.baseUrl,
       CustomizeOpenAIRequest.Identity,
-      config.organization
+      config.organization,
+      config.authScheme
     )
 
   def apply(config: OpenAIConfig, backend: SyncBackend): OpenAISyncClient =
-    new OpenAISyncClient(config.apiKey, backend, false, config.baseUrl, CustomizeOpenAIRequest.Identity, config.organization)
+    new OpenAISyncClient(
+      config.apiKey,
+      backend,
+      false,
+      config.baseUrl,
+      CustomizeOpenAIRequest.Identity,
+      config.organization,
+      config.authScheme
+    )
 
   def fromEnv: OpenAISyncClient = apply(OpenAIConfig.fromEnv)
 
