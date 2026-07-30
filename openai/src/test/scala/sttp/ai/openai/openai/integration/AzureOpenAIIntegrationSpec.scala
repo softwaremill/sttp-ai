@@ -54,7 +54,7 @@ class AzureOpenAIIntegrationSpec extends AnyFlatSpec with Matchers with BeforeAn
       val chatBody = ChatBody(
         messages = Seq(Message.User(content = Content.TextContent("Say 'hello' and nothing else."))),
         model = ChatCompletionModel.CustomChatCompletionModel(sys.env.getOrElse("AZURE_OPENAI_DEPLOYMENT", "gpt-4o-mini")),
-        maxTokens = Some(10)
+        maxCompletionTokens = Some(50)
       )
 
       // when
