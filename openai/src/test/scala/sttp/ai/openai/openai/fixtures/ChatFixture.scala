@@ -230,6 +230,28 @@ object ChatFixture {
       |}
       |""".stripMargin
 
+  val jsonGeminiResponseWithoutId: String =
+    """{
+      |  "choices": [
+      |    {
+      |      "finish_reason": "stop",
+      |      "index": 0,
+      |      "message": {
+      |        "content": "OK. I can book a flight from London to Tokyo for Jane Doe, age 34. Shall I proceed?",
+      |        "role": "assistant"
+      |      }
+      |    }
+      |  ],
+      |  "created": 1747469284,
+      |  "model": "models/gemini-2.5-flash-preview-04-17",
+      |  "object": "chat.completion",
+      |  "usage": {
+      |    "completion_tokens": 24,
+      |    "prompt_tokens": 138,
+      |    "total_tokens": 448
+      |  }
+      |}""".stripMargin
+
   val jsonListMessageResponse: String =
     """{
       |  "object": "list",

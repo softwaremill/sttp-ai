@@ -182,7 +182,7 @@ class OpenAIIntegrationSpec extends AnyFlatSpec with Matchers with BeforeAndAfte
 
       // then
       response should not be null
-      response.id should not be empty
+      response.id shouldBe defined
       response.`object` shouldBe "chat.completion"
       response.model should not be empty
       response.choices should not be empty

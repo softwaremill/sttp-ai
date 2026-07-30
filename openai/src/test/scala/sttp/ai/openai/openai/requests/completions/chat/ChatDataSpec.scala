@@ -142,7 +142,7 @@ class ChatDataSpec extends AnyFlatSpec with Matchers with EitherValues {
     )
 
     val expectedResponse: ChatResponse = ChatResponse(
-      id = "chatcmpl-76FxnKOjnPkDVYTAQ1wK8iUNFJPvR",
+      id = Some("chatcmpl-76FxnKOjnPkDVYTAQ1wK8iUNFJPvR"),
       `object` = "chat.completion",
       created = 1681725687,
       model = "gpt-3.5-turbo-0301",
@@ -150,6 +150,41 @@ class ChatDataSpec extends AnyFlatSpec with Matchers with EitherValues {
       choices = Seq(choices),
       systemFingerprint = Some("systemFingerprint"),
       serviceTier = Some("advanced")
+    )
+
+    // when
+    val givenResponse: Either[Exception, ChatResponse] = decode[ChatResponse](jsonResponse)
+
+    // then
+    givenResponse.value shouldBe expectedResponse
+  }
+
+  "Given chat completions response without id as Json" should "be properly deserialized to case class" in {
+    import ChatRequestResponseData.ChatResponse._
+    import ChatRequestResponseData._
+
+    // given
+    val jsonResponse = fixtures.ChatFixture.jsonGeminiResponseWithoutId
+    val expectedResponse: ChatResponse = ChatResponse(
+      id = None,
+      `object` = "chat.completion",
+      created = 1747469284,
+      model = "models/gemini-2.5-flash-preview-04-17",
+      usage = Usage(
+        promptTokens = 138,
+        completionTokens = 24,
+        totalTokens = 448
+      ),
+      choices = Seq(
+        Choices(
+          message = Message(
+            role = Role.Assistant,
+            content = "OK. I can book a flight from London to Tokyo for Jane Doe, age 34. Shall I proceed?"
+          ),
+          finishReason = "stop",
+          index = 0
+        )
+      )
     )
 
     // when

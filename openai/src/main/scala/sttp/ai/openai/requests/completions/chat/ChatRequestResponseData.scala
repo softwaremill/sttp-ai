@@ -117,7 +117,8 @@ object ChatRequestResponseData {
   /** Represents the response of a chat completion.
     *
     * @param id
-    *   A unique identifier for the chat completion.
+    *   A unique identifier for the chat completion. Some OpenAI-compatible providers (e.g. Gemini's OpenAI-compatible endpoint) do not
+    *   return it.
     * @param choices
     *   A list of chat completion choices. Can be more than one if n is greater than 1.
     * @param created
@@ -135,7 +136,7 @@ object ChatRequestResponseData {
     *   The service tier used for processing the request.
     */
   case class ChatResponse(
-      id: String,
+      id: Option[String] = None,
       choices: Seq[Choices],
       created: Int,
       model: String,
