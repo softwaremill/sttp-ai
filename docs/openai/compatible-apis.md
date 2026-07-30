@@ -1,6 +1,44 @@
-# OpenAI-compatible APIs: Ollama, Grok, Groq, OpenRouter
+# OpenAI-compatible APIs: Azure OpenAI, Ollama, Grok, Groq, OpenRouter
 
 Any provider exposing an OpenAI-compatible endpoint works with the OpenAI client — pass the provider's base URL as the second argument. Named examples below; the same pattern applies to any other compatible provider.
+
+## Azure OpenAI
+
+Azure OpenAI's API-key authentication uses an `api-key: <key>` header instead of the standard `Authorization: Bearer <key>`. Pass `AuthScheme.AzureApiKey` together with your deployment's endpoint URL (including the `api-version` query parameter — it is preserved on every request):
+
+```scala mdoc:compile-only
+//> using dep com.softwaremill.sttp.ai::openai:@VERSION@
+
+import sttp.model.Uri.*
+import sttp.ai.openai.{AuthScheme, OpenAISyncClient}
+import sttp.ai.openai.requests.completions.chat.ChatRequestResponseData.ChatResponse
+import sttp.ai.openai.requests.completions.chat.ChatRequestBody.{ChatBody, ChatCompletionModel}
+import sttp.ai.openai.requests.completions.chat.message.*
+
+object Main:
+  def main(args: Array[String]): Unit =
+    val openAI: OpenAISyncClient = OpenAISyncClient(
+      System.getenv("AZURE_OPENAI_API_KEY"),
+      uri"https://my-resource.openai.azure.com/openai/deployments/gpt-4o?api-version=2024-10-21",
+      AuthScheme.AzureApiKey
+    )
+
+    val chatRequestBody: ChatBody = ChatBody(
+      // for deployment-scoped endpoints the model is selected by the URL's deployment path;
+      // the body's model field is ignored by Azure but required by the API shape
+      model = ChatCompletionModel.CustomChatCompletionModel("gpt-4o"),
+      messages = Seq(
+        Message.User(
+          content = Content.TextContent("Hello!")
+        )
+      )
+    )
+
+    val chatResponse: ChatResponse = openAI.createChatCompletion(chatRequestBody)
+    println(chatResponse)
+```
+
+The newer Azure `/openai/v1/` endpoint also accepts standard Bearer authentication with the API key, so it works like any other OpenAI-compatible provider — pass `uri"https://my-resource.openai.azure.com/openai/v1"` as the base URL and keep the default auth scheme.
 
 ## Ollama
 

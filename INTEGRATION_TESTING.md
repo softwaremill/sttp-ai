@@ -23,6 +23,25 @@ export OPENAI_API_KEY=your-openai-api-key-here
 export ANTHROPIC_API_KEY=your-anthropic-api-key-here
 ```
 
+### Azure OpenAI
+
+To run the Azure OpenAI integration tests, set:
+
+```bash
+export AZURE_OPENAI_API_KEY=your-azure-api-key
+export AZURE_OPENAI_ENDPOINT="https://my-resource.openai.azure.com/openai/deployments/gpt-4o-mini?api-version=2024-10-21"
+# optional - deployment name sent in the request body (defaults to gpt-4o-mini)
+export AZURE_OPENAI_DEPLOYMENT=gpt-4o-mini
+```
+
+`AZURE_OPENAI_ENDPOINT` must be the full base URL including the deployment path and `api-version` query. Then run:
+
+```bash
+sbt "testOnly *AzureOpenAIIntegrationSpec"
+```
+
+If the variables are not set, the tests are skipped (not failed).
+
 ### Running Tests
 
 #### Run all integration tests:

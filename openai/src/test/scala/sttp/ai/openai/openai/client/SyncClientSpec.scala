@@ -19,7 +19,7 @@ import sttp.ai.openai.json.OpenAIManualCodecs._
 import sttp.ai.openai.requests.completions.chat.ChatRequestBody.{ChatBody, ChatCompletionModel}
 import sttp.ai.openai.requests.models.ModelsResponseData._
 import sttp.ai.openai.requests.responses.ResponsesModel.GPT4oMini
-import sttp.ai.openai.{CustomizeOpenAIRequest, OpenAISyncClient}
+import sttp.ai.openai.{AuthScheme, CustomizeOpenAIRequest, OpenAISyncClient}
 import sttp.tapir.Schema
 
 import java.util.concurrent.atomic.AtomicReference
@@ -299,5 +299,24 @@ class SyncClientSpec extends AnyFlatSpec with Matchers with EitherValues {
     caught.code shouldBe expectedError.code: Unit
     caught.param shouldBe expectedError.param: Unit
     caught.`type` shouldBe expectedError.`type`
+  }
+
+  "OpenAISyncClient with AuthScheme.AzureApiKey" should "send the api-key header and no Authorization header" in {
+    // given
+    val azureBase = uri"https://my-res.openai.azure.com/openai/deployments/gpt-4o?api-version=2024-10-21"
+    val capturedRequest = new AtomicReference[GenericRequest[_, _]](null)
+    val syncBackendStub = DefaultSyncBackend.stub.whenAnyRequest.thenRespondF { request =>
+      capturedRequest.set(request)
+      ResponseStub.adjust("""{"object":"list","data":[]}""", StatusCode.Ok)
+    }
+    val syncClient = OpenAISyncClient("azure-key", syncBackendStub, azureBase, AuthScheme.AzureApiKey)
+
+    // when (response body content is irrelevant - we only assert on the captured request)
+    scala.util.Try(syncClient.getModels): Unit
+
+    // then
+    val headers = capturedRequest.get().headers
+    headers.find(_.name.equalsIgnoreCase("api-key")).map(_.value) shouldBe Some("azure-key"): Unit
+    headers.exists(_.name.equalsIgnoreCase("Authorization")) shouldBe false
   }
 }

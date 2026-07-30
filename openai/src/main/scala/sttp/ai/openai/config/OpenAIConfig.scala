@@ -1,6 +1,7 @@
 package sttp.ai.openai.config
 
 import sttp.ai.core.config.AIClientConfig
+import sttp.ai.openai.AuthScheme
 import sttp.model.Uri
 
 import scala.concurrent.duration.{Duration, DurationInt}
@@ -17,18 +18,21 @@ import scala.concurrent.duration.{Duration, DurationInt}
   *   Maximum number of retry attempts (defaults to 3)
   * @param organization
   *   Optional organization identifier for OpenAI API
+  * @param authScheme
+  *   How the API key is attached to requests (Bearer by default; AzureApiKey for Azure OpenAI)
   */
 case class OpenAIConfig(
     apiKey: String,
     baseUrl: Uri = OpenAIConfig.DefaultBaseUrl,
     timeout: Duration = 60.seconds,
     maxRetries: Int = 3,
-    organization: Option[String] = None
+    organization: Option[String] = None,
+    authScheme: AuthScheme = AuthScheme.Bearer
 ) extends AIClientConfig {
 
   override def authHeaders: Map[String, String] = {
     val baseHeaders = Map(
-      "Authorization" -> s"Bearer $apiKey",
+      authScheme.authHeader(apiKey),
       "content-type" -> "application/json"
     )
     organization match {
