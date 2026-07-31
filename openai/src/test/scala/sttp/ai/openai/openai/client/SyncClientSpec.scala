@@ -13,6 +13,7 @@ import sttp.model.StatusCode
 import sttp.model.StatusCode._
 import sttp.ai.openai.OpenAIExceptions.OpenAIException
 import sttp.ai.openai.OpenAIExceptions.OpenAIException.DeserializationOpenAIException
+import sttp.ai.openai.config.OpenAIConfig
 import sttp.ai.openai.fixtures.ErrorFixture
 import sttp.ai.openai.json.OpenAIDerivedCodecs._
 import sttp.ai.openai.json.OpenAIManualCodecs._
@@ -23,6 +24,7 @@ import sttp.ai.openai.{AuthScheme, CustomizeOpenAIRequest, OpenAISyncClient}
 import sttp.tapir.Schema
 
 import java.util.concurrent.atomic.{AtomicInteger, AtomicReference}
+import scala.concurrent.duration.DurationInt
 
 class SyncClientSpec extends AnyFlatSpec with Matchers with EitherValues {
   for ((statusCode, expectedError) <- ErrorFixture.testData)
@@ -336,5 +338,39 @@ class SyncClientSpec extends AnyFlatSpec with Matchers with EitherValues {
     // then
     models shouldBe ModelsResponse("list", Seq.empty): Unit
     attempts.get() shouldBe 2
+  }
+
+  "OpenAISyncClient(config)" should "retry transient failures through the structured-output createChatCompletion path" in {
+    // given
+    val attempts = new AtomicInteger(0)
+    val backend = DefaultSyncBackend.stub.whenAnyRequest.thenRespondF { _ =>
+      if (attempts.incrementAndGet() == 1) ResponseStub.adjust(ErrorFixture.errorResponse, TooManyRequests)
+      else ResponseStub.adjust(sttp.ai.openai.fixtures.CompletionsFixture.structuredOutputsResponse, Ok)
+    }
+    val syncClient = OpenAISyncClient(OpenAIConfig(apiKey = "test-key", maxRetries = 1), backend)
+
+    // when
+    import sttp.tapir.generic.auto._
+    val res: MathReasoning = syncClient.createChatCompletionAs[MathReasoning](ChatBody(Nil, ChatCompletionModel.GPT4oMini))
+
+    // then
+    res.finalAnswer should include("x ="): Unit
+    attempts.get() shouldBe 2
+  }
+
+  "OpenAISyncClient(config)" should "apply the configured timeout to requests" in {
+    // given
+    val capturedRequest = new AtomicReference[GenericRequest[_, _]](null)
+    val backend = DefaultSyncBackend.stub.whenAnyRequest.thenRespondF { request =>
+      capturedRequest.set(request)
+      ResponseStub.adjust(sttp.ai.openai.fixtures.ModelsGetResponse.singleModelResponse, StatusCode.Ok)
+    }
+    val syncClient = OpenAISyncClient(OpenAIConfig(apiKey = "test-key", timeout = 5.seconds), backend)
+
+    // when
+    syncClient.getModels: Unit
+
+    // then
+    capturedRequest.get().options.readTimeout shouldBe 5.seconds
   }
 }

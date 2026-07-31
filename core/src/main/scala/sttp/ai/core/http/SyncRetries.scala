@@ -74,7 +74,11 @@ object SyncRetries {
     code == StatusCode.RequestTimeout || code == StatusCode.TooManyRequests || code.isServerError
 
   private def retryAfterMillis(response: Response[_]): Option[Long] =
-    response.header(HeaderNames.RetryAfter).flatMap(_.trim.toLongOption).map(_.seconds.min(MaxRetryAfter).toMillis)
+    response
+      .header(HeaderNames.RetryAfter)
+      .flatMap(_.trim.toLongOption)
+      .filter(_ >= 0)
+      .map(seconds => math.min(seconds, MaxRetryAfter.toSeconds) * 1000L)
 
   private def delayMillis(attemptNo: Int, retryAfter: Option[Long]): Long =
     retryAfter.getOrElse((InitialBackoff * (1L << math.min(attemptNo, 30))).min(MaxBackoff).toMillis)

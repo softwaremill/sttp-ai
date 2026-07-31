@@ -2,7 +2,7 @@
 
 All three client configs — `OpenAIConfig`, `ClaudeConfig`, `GeminiConfig` — carry two resilience settings:
 
-```scala
+```scala mdoc:compile-only
 import sttp.ai.openai.OpenAISyncClient
 import sttp.ai.openai.config.OpenAIConfig
 import scala.concurrent.duration.*
@@ -46,3 +46,6 @@ the last retry, the final error surfaces unchanged.
 The **async clients** (`OpenAI`, `ClaudeClient`, `GeminiClient`) return raw sttp requests that you send yourself, so
 `maxRetries` cannot apply there. Use your effect system's retry tooling instead — for example cats-retry, ZIO
 `Schedule`, or an sttp backend wrapper.
+
+The agent loop backends (e.g. `ClaudeAgent`, `GeminiAgent`) likewise send through the caller-provided sttp `Backend`
+and do not apply `maxRetries` either.

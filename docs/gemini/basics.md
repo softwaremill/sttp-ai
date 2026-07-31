@@ -78,8 +78,8 @@ The example above uses the synchronous sttp backend for brevity, but `GeminiClie
 case class GeminiConfig(
   apiKey: String,                                                        // Your Gemini API key
   baseUrl: Uri = Uri.unsafeParse("https://generativelanguage.googleapis.com"),
-  timeout: Duration = 60.seconds,                                        // Request timeout
-  maxRetries: Int = 3,                                                   // Max retry attempts
+  timeout: Duration = 10.minutes,                                        // Request timeout
+  maxRetries: Int = 3,                                                   // Max retry attempts, honored by GeminiSyncClient
   organization: Option[String] = None                                    // Unused by Gemini, present for parity
 )
 ```

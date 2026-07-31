@@ -111,6 +111,30 @@ class SyncRetriesSpec extends AnyFlatSpec with Matchers {
     sleeps.toList shouldBe List(500L)
   }
 
+  it should "fall back to exponential backoff when Retry-After is negative" in {
+    val attempts = new AtomicInteger(0)
+    val sleeps = ListBuffer[Long]()
+    val backend = stubReturning(
+      attempts,
+      (StatusCode.TooManyRequests, Seq(Header(HeaderNames.RetryAfter, "-5"))),
+      (StatusCode.Ok, Seq.empty[Header])
+    )
+    SyncRetries.sendWithRetries(backend, request, maxRetries = 3, sleeps += _).code shouldBe StatusCode.Ok
+    sleeps.toList shouldBe List(500L)
+  }
+
+  it should "cap an absurdly large Retry-After at 30 seconds" in {
+    val attempts = new AtomicInteger(0)
+    val sleeps = ListBuffer[Long]()
+    val backend = stubReturning(
+      attempts,
+      (StatusCode.TooManyRequests, Seq(Header(HeaderNames.RetryAfter, "9223372036854775807"))),
+      (StatusCode.Ok, Seq.empty[Header])
+    )
+    SyncRetries.sendWithRetries(backend, request, maxRetries = 3, sleeps += _).code shouldBe StatusCode.Ok
+    sleeps.toList shouldBe List(30000L)
+  }
+
   it should "retry connection failures" in {
     val attempts = new AtomicInteger(0)
     val sleeps = ListBuffer[Long]()

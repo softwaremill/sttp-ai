@@ -229,7 +229,7 @@ class OpenAISyncClient private (
       else chatBody.copy(responseFormat = Some(JsonSchema.withTapirSchema[T](responseName.getOrElse("response"), None, Some(true))))
 
     val finalRes: Either[OpenAIException, T] = for {
-      res <- customizeRequest.apply(openAI.createChatCompletion(withResponseFormat)).send(backend).body
+      res <- SyncRetries.sendWithRetries(backend, customizeRequest.apply(openAI.createChatCompletion(withResponseFormat)), maxRetries).body
       message <- res.choices.headOption
         .map(_.message)
         .toRight(new DeserializationOpenAIException("no choices found in response", null))
