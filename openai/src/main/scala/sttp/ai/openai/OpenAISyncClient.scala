@@ -5,6 +5,9 @@ import sttp.model.Uri
 import sttp.ai.openai.OpenAIExceptions.OpenAIException
 import sttp.ai.openai.OpenAIExceptions.OpenAIException.DeserializationOpenAIException
 import sttp.ai.openai.config.OpenAIConfig
+import sttp.ai.core.http.SyncRetries
+
+import scala.concurrent.duration.Duration
 import sttp.ai.openai.requests.admin.{QueryParameters => _, _}
 import sttp.ai.openai.requests.assistants.AssistantsRequestBody.{CreateAssistantBody, ModifyAssistantBody}
 import sttp.ai.openai.requests.assistants.AssistantsResponseData.{AssistantData, DeleteAssistantResponse, ListAssistantsResponse}
@@ -65,10 +68,12 @@ class OpenAISyncClient private (
     baseUri: Uri,
     customizeRequest: CustomizeOpenAIRequest,
     organization: Option[String] = None,
-    authScheme: AuthScheme = AuthScheme.Bearer
+    authScheme: AuthScheme = AuthScheme.Bearer,
+    timeout: Duration = OpenAIConfig.DefaultTimeout,
+    maxRetries: Int = OpenAIConfig.DefaultMaxRetries
 ) {
 
-  private val openAI = new OpenAI(authToken, baseUri, organization, authScheme)
+  private val openAI = new OpenAI(authToken, baseUri, organization, authScheme, timeout)
 
   /** Lists the currently available models, and provides basic information about each one such as the owner and availability.
     *
@@ -1218,10 +1223,20 @@ class OpenAISyncClient private (
     * will be applied before the given one.
     */
   def customizeRequest(customize: CustomizeOpenAIRequest): OpenAISyncClient =
-    new OpenAISyncClient(authToken, backend, closeClient, baseUri, customizeRequest.andThen(customize), organization, authScheme)
+    new OpenAISyncClient(
+      authToken,
+      backend,
+      closeClient,
+      baseUri,
+      customizeRequest.andThen(customize),
+      organization,
+      authScheme,
+      timeout,
+      maxRetries
+    )
 
   private def sendOrThrow[A](request: Request[Either[OpenAIException, A]]): A =
-    customizeRequest.apply(request).send(backend).body match {
+    SyncRetries.sendWithRetries(backend, customizeRequest.apply(request), maxRetries).body match {
       case Right(value)    => value
       case Left(exception) => throw exception
     }
@@ -1250,7 +1265,9 @@ object OpenAISyncClient {
       config.baseUrl,
       CustomizeOpenAIRequest.Identity,
       config.organization,
-      config.authScheme
+      config.authScheme,
+      config.timeout,
+      config.maxRetries
     )
 
   def apply(config: OpenAIConfig, backend: SyncBackend): OpenAISyncClient =
@@ -1261,7 +1278,9 @@ object OpenAISyncClient {
       config.baseUrl,
       CustomizeOpenAIRequest.Identity,
       config.organization,
-      config.authScheme
+      config.authScheme,
+      config.timeout,
+      config.maxRetries
     )
 
   def fromEnv: OpenAISyncClient = apply(OpenAIConfig.fromEnv)

@@ -22,7 +22,7 @@ import sttp.ai.openai.requests.responses.ResponsesModel.GPT4oMini
 import sttp.ai.openai.{AuthScheme, CustomizeOpenAIRequest, OpenAISyncClient}
 import sttp.tapir.Schema
 
-import java.util.concurrent.atomic.AtomicReference
+import java.util.concurrent.atomic.{AtomicInteger, AtomicReference}
 
 class SyncClientSpec extends AnyFlatSpec with Matchers with EitherValues {
   for ((statusCode, expectedError) <- ErrorFixture.testData)
@@ -318,5 +318,23 @@ class SyncClientSpec extends AnyFlatSpec with Matchers with EitherValues {
     val headers = capturedRequest.get().headers
     headers.find(_.name.equalsIgnoreCase("api-key")).map(_.value) shouldBe Some("azure-key"): Unit
     headers.exists(_.name.equalsIgnoreCase("Authorization")) shouldBe false
+  }
+
+  "OpenAISyncClient" should "retry transient failures according to maxRetries" in {
+    // given
+    val attempts = new AtomicInteger(0)
+    val modelsBody = """{"object":"list","data":[]}"""
+    val backend = DefaultSyncBackend.stub.whenAnyRequest.thenRespondF { _ =>
+      if (attempts.incrementAndGet() == 1) ResponseStub.adjust(ErrorFixture.errorResponse, TooManyRequests)
+      else ResponseStub.adjust(modelsBody, Ok)
+    }
+    val syncClient = OpenAISyncClient(authToken = "test-token", backend = backend)
+
+    // when
+    val models = syncClient.getModels
+
+    // then
+    models shouldBe ModelsResponse("list", Seq.empty): Unit
+    attempts.get() shouldBe 2
   }
 }
