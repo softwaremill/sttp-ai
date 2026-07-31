@@ -14,9 +14,9 @@ import scala.concurrent.duration.{Duration, DurationInt}
   * @param baseUrl
   *   Base URL for Anthropic API (defaults to official Anthropic endpoint)
   * @param timeout
-  *   Request timeout duration (defaults to 60 seconds)
+  *   Request timeout duration, applied to every request (defaults to 10 minutes)
   * @param maxRetries
-  *   Maximum number of retry attempts (defaults to 3)
+  *   Maximum number of retry attempts for transient failures, honored by the sync client (defaults to 3)
   * @param organization
   *   Optional organization identifier
   */
@@ -24,8 +24,8 @@ case class ClaudeConfig(
     apiKey: String,
     anthropicVersion: String = ClaudeConfig.DefaultApiVersion,
     baseUrl: Uri = ClaudeConfig.DefaultBaseUrl,
-    timeout: Duration = 60.seconds,
-    maxRetries: Int = 3,
+    timeout: Duration = ClaudeConfig.DefaultTimeout,
+    maxRetries: Int = ClaudeConfig.DefaultMaxRetries,
     organization: Option[String] = None
 ) extends AIClientConfig {
 
@@ -39,6 +39,10 @@ case class ClaudeConfig(
 object ClaudeConfig {
   val DefaultBaseUrl: Uri = Uri.unsafeParse("https://api.anthropic.com")
   val DefaultApiVersion = "2023-06-01"
+
+  /** Matches the default request timeout of the official OpenAI/Anthropic SDKs. */
+  val DefaultTimeout: Duration = 10.minutes
+  val DefaultMaxRetries: Int = 3
 
   /** Creates ClaudeConfig from environment variables.
     *

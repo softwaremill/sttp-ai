@@ -13,9 +13,9 @@ import scala.concurrent.duration.{Duration, DurationInt}
   * @param baseUrl
   *   Base URL for OpenAI API (defaults to official OpenAI endpoint)
   * @param timeout
-  *   Request timeout duration (defaults to 60 seconds)
+  *   Request timeout duration, applied to every request (defaults to 10 minutes)
   * @param maxRetries
-  *   Maximum number of retry attempts (defaults to 3)
+  *   Maximum number of retry attempts for transient failures, honored by the sync client (defaults to 3)
   * @param organization
   *   Optional organization identifier for OpenAI API
   * @param authScheme
@@ -24,8 +24,8 @@ import scala.concurrent.duration.{Duration, DurationInt}
 case class OpenAIConfig(
     apiKey: String,
     baseUrl: Uri = OpenAIConfig.DefaultBaseUrl,
-    timeout: Duration = 60.seconds,
-    maxRetries: Int = 3,
+    timeout: Duration = OpenAIConfig.DefaultTimeout,
+    maxRetries: Int = OpenAIConfig.DefaultMaxRetries,
     organization: Option[String] = None,
     authScheme: AuthScheme = AuthScheme.Bearer
 ) extends AIClientConfig {
@@ -44,6 +44,10 @@ case class OpenAIConfig(
 
 object OpenAIConfig {
   val DefaultBaseUrl: Uri = Uri.unsafeParse("https://api.openai.com/v1")
+
+  /** Matches the default request timeout of the official OpenAI/Anthropic SDKs. */
+  val DefaultTimeout: Duration = 10.minutes
+  val DefaultMaxRetries: Int = 3
 
   /** Creates OpenAIConfig from environment variables.
     *
