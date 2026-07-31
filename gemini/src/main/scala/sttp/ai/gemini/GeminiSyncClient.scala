@@ -6,6 +6,7 @@ import sttp.ai.gemini.config.GeminiConfig
 import sttp.ai.gemini.models.ResponseFormat
 import sttp.ai.gemini.requests.InteractionRequest
 import sttp.ai.gemini.responses.InteractionResponse
+import sttp.ai.core.http.SyncRetries
 import io.circe.Decoder
 import io.circe.parser.decode
 import sttp.client4.{DefaultSyncBackend, Request, SyncBackend}
@@ -15,7 +16,7 @@ class GeminiSyncClient(config: GeminiConfig, backend: SyncBackend = DefaultSyncB
   private val client = new GeminiClientImpl(config)
 
   private def sendOrThrow[A](request: Request[Either[GeminiException, A]]): A =
-    request.send(backend).body match {
+    SyncRetries.sendWithRetries(backend, request, config.maxRetries).body match {
       case Left(exception) => throw exception
       case Right(value)    => value
     }
