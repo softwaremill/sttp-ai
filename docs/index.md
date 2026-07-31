@@ -75,5 +75,6 @@ sttp-ai implements the native APIs of all three major providers — OpenAI, Clau
    :caption: Other
 
    other/json-schemas
+   other/timeouts-and-retries
    other/examples
 ```
