@@ -7,10 +7,10 @@ import sttp.ai.claude.ClaudeSyncClient
 import sttp.ai.claude.config.ClaudeConfig
 import sttp.ai.claude.models.{Message, OutputFormat}
 import sttp.ai.claude.requests.MessageRequest
-import sttp.ai.claude.json.ClaudeDerivedCodecs._
-import sttp.ai.claude.json.ClaudeManualCodecs._
 import sttp.client4.DefaultSyncBackend
+import sttp.client4.testing.ResponseStub
 import sttp.model.StatusCode
+import java.util.concurrent.atomic.AtomicInteger
 
 class ClaudeSyncClientSpec extends AnyFlatSpec with Matchers {
 
@@ -84,5 +84,17 @@ class ClaudeSyncClientSpec extends AnyFlatSpec with Matchers {
 
     val res: Weather = client.createMessageAs[Weather](withFmt)
     res shouldBe Weather("Krakow", 12.0, "sunny")
+  }
+
+  it should "retry transient failures according to maxRetries" in {
+    val attempts = new AtomicInteger(0)
+    val rateLimitBody = """{"type":"error","error":{"type":"rate_limit_error","message":"rate limited"}}"""
+    val backend = DefaultSyncBackend.stub.whenAnyRequest.thenRespondF { _ =>
+      if (attempts.incrementAndGet() == 1) ResponseStub.adjust(rateLimitBody, StatusCode.TooManyRequests)
+      else ResponseStub.adjust(structuredResponse, StatusCode.Ok)
+    }
+    val client = ClaudeSyncClient(ClaudeConfig(apiKey = "test-key", maxRetries = 1), backend)
+    client.createMessage(request).id shouldBe "msg_1"
+    attempts.get() shouldBe 2
   }
 }

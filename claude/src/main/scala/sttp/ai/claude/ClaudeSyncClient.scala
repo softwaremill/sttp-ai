@@ -5,6 +5,7 @@ import sttp.ai.claude.config.ClaudeConfig
 import sttp.ai.claude.models.{ContentBlock, OutputFormat}
 import sttp.ai.claude.requests.MessageRequest
 import sttp.ai.claude.responses.{MessageResponse, ModelsResponse}
+import sttp.ai.core.http.SyncRetries
 import io.circe.Decoder
 import io.circe.parser.decode
 import sttp.client4.{DefaultSyncBackend, SyncBackend}
@@ -14,7 +15,7 @@ class ClaudeSyncClient(config: ClaudeConfig, backend: SyncBackend = DefaultSyncB
   private val client = new ClaudeClientImpl(config)
 
   def createMessage(request: MessageRequest): MessageResponse =
-    client.createMessage(request).send(backend).body match {
+    SyncRetries.sendWithRetries(backend, client.createMessage(request), config.maxRetries).body match {
       case Left(exception) => throw exception
       case Right(response) => response
     }
@@ -36,7 +37,7 @@ class ClaudeSyncClient(config: ClaudeConfig, backend: SyncBackend = DefaultSyncB
   }
 
   def listModels(): ModelsResponse =
-    client.listModels().send(backend).body match {
+    SyncRetries.sendWithRetries(backend, client.listModels(), config.maxRetries).body match {
       case Left(exception) => throw exception
       case Right(response) => response
     }
