@@ -74,7 +74,7 @@ object Dependencies {
     // Test-only: an in-process MCP server for wire-level integration tests of the mcp module
     val chimpServer = "com.softwaremill.chimp" %% "chimp-server" % V.chimp % Test
     val tapirNettyServerSync = "com.softwaremill.sttp.tapir" %% "tapir-netty-server-sync" % V.tapir % Test
-    val logbackTest = "ch.qos.logback" % "logback-classic" % "1.6.0" % Test
+    val logbackTest = "ch.qos.logback" % "logback-classic" % "1.6.1" % Test
 
   }
 
