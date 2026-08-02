@@ -1,4 +1,4 @@
-//> using dep com.softwaremill.sttp.ai::openai:0.5.5
+//> using dep com.softwaremill.sttp.ai::openai:0.5.6
 //> using dep ch.qos.logback:logback-classic:1.5.38
 // NOTE: the pinned release above does NOT yet contain the "no tools on the final iteration" behaviour, so running this
 // file directly with scala-cli would log `tools offered: true, true, true`. Run it against the local build to observe the
