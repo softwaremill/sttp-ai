@@ -3,7 +3,7 @@ package sttp.ai.claude.config
 import sttp.ai.core.config.AIClientConfig
 import sttp.model.Uri
 
-import scala.concurrent.duration.{Duration, DurationInt}
+import scala.concurrent.duration.Duration
 
 /** Configuration for Claude (Anthropic) API client.
   *
@@ -41,8 +41,8 @@ object ClaudeConfig {
   val DefaultApiVersion = "2023-06-01"
 
   /** Matches the default request timeout of the official OpenAI/Anthropic SDKs. */
-  val DefaultTimeout: Duration = 10.minutes
-  val DefaultMaxRetries: Int = 3
+  val DefaultTimeout: Duration = AIClientConfig.DefaultTimeout
+  val DefaultMaxRetries: Int = AIClientConfig.DefaultMaxRetries
 
   /** Creates ClaudeConfig from environment variables.
     *

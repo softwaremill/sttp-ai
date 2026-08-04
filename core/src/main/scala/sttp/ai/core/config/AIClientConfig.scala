@@ -2,7 +2,7 @@ package sttp.ai.core.config
 
 import sttp.model.Uri
 
-import scala.concurrent.duration.Duration
+import scala.concurrent.duration.{Duration, DurationInt}
 
 /** Base trait for AI client configuration.
   *
@@ -22,10 +22,10 @@ trait AIClientConfig {
     */
   def timeout: Duration
 
-  /** Maximum number of retry attempts for transient failures (connection errors, HTTP 408/429/5xx), applied on top of the initial attempt;
-    * `0` disables retries. Honored only by the sync clients (`OpenAISyncClient`, `ClaudeSyncClient`, `GeminiSyncClient`) — the async
-    * clients return raw sttp requests, so retries there are the caller's responsibility (e.g. cats-retry, ZIO `Schedule`). See
-    * `sttp.ai.core.http.SyncRetries` for the exact policy.
+  /** Maximum number of retry attempts for transient failures (connection errors, HTTP 408/409/429/5xx), applied on top of the initial
+    * attempt; `0` disables retries. Honored by the sync clients (`OpenAISyncClient`, `ClaudeSyncClient`, `GeminiSyncClient`), which wrap
+    * their backend in `sttp.ai.core.http.RetryingBackend` — see it for the exact policy. The async clients return raw sttp requests, so
+    * this setting cannot apply there automatically; wrap your own backend in `RetryingBackend` with your effect's sleep instead.
     */
   def maxRetries: Int
 
@@ -37,4 +37,12 @@ trait AIClientConfig {
     * This method should be implemented by concrete config classes to provide API-specific authentication headers.
     */
   def authHeaders: Map[String, String]
+}
+
+object AIClientConfig {
+
+  /** Matches the default request timeout of the official OpenAI/Anthropic SDKs. */
+  val DefaultTimeout: Duration = 10.minutes
+
+  val DefaultMaxRetries: Int = 3
 }

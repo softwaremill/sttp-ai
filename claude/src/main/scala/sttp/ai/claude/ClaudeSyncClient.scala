@@ -5,7 +5,7 @@ import sttp.ai.claude.config.ClaudeConfig
 import sttp.ai.claude.models.{ContentBlock, OutputFormat}
 import sttp.ai.claude.requests.MessageRequest
 import sttp.ai.claude.responses.{MessageResponse, ModelsResponse}
-import sttp.ai.core.http.SyncRetries
+import sttp.ai.core.http.RetryingBackend
 import io.circe.Decoder
 import io.circe.parser.decode
 import sttp.client4.{DefaultSyncBackend, SyncBackend}
@@ -13,9 +13,10 @@ import sttp.tapir.{Schema => TapirSchema}
 
 class ClaudeSyncClient(config: ClaudeConfig, backend: SyncBackend = DefaultSyncBackend()) {
   private val client = new ClaudeClientImpl(config)
+  private val sendBackend: SyncBackend = if (config.maxRetries > 0) RetryingBackend(backend, config.maxRetries) else backend
 
   def createMessage(request: MessageRequest): MessageResponse =
-    SyncRetries.sendWithRetries(backend, client.createMessage(request), config.maxRetries).body match {
+    client.createMessage(request).send(sendBackend).body match {
       case Left(exception) => throw exception
       case Right(response) => response
     }
@@ -37,7 +38,7 @@ class ClaudeSyncClient(config: ClaudeConfig, backend: SyncBackend = DefaultSyncB
   }
 
   def listModels(): ModelsResponse =
-    SyncRetries.sendWithRetries(backend, client.listModels(), config.maxRetries).body match {
+    client.listModels().send(sendBackend).body match {
       case Left(exception) => throw exception
       case Right(response) => response
     }
