@@ -6,8 +6,8 @@ import org.scalatest.matchers.{MatchResult, Matcher}
 import sttp.ai.core.agent.{AgentResult, FinishReason}
 
 /** Scalatest matchers over [[RecordedInteractions]] (what was sent to the model) and [[sttp.ai.core.agent.AgentResult]] (what the agent
-  * did). Mix into a spec, or `import AgentMatchers._`. Everything asserted here is also reachable through the plain
-  * [[RecordedInteractions]] accessors, for use with other test frameworks.
+  * did). Mix into a spec, or `import AgentMatchers._` (one or the other — doing both is ambiguous under Scala 3). Everything asserted here
+  * is also reachable through the plain [[RecordedInteractions]] accessors, for use with other test frameworks.
   */
 trait AgentMatchers {
 

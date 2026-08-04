@@ -17,7 +17,9 @@ import sttp.shared.Identity
   * }}}
   *
   * A handle represents one scripted conversation — create a fresh one per test. Each `.build` on the returned builder creates a backend
-  * that consumes the script from the start; recordings from all builds accumulate on this handle in creation order.
+  * that consumes the script from the start; recordings from all builds accumulate on this handle in creation order. The handle is
+  * thread-safe, but `requests` groups recordings by backend-creation order (per `.build`), not globally chronologically across concurrently
+  * used builds.
   */
 final class ScriptedAgent[F[_]] private (script: Seq[AgentResponse])(implicit monad: MonadError[F]) extends RecordedInteractions {
 

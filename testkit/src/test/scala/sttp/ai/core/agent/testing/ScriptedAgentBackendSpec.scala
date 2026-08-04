@@ -2,16 +2,15 @@ package sttp.ai.core.agent.testing
 
 import io.circe.Codec
 import io.circe.generic.semiauto.deriveCodec
-import org.scalatest.OptionValues
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
-import sttp.ai.core.agent.{AgentResponse, AgentTool, ConversationHistory, StopReason}
+import sttp.ai.core.agent.{AgentResponse, AgentTool, ConversationHistory}
 import sttp.client4.testing.SyncBackendStub
 import sttp.monad.IdentityMonad
 import sttp.shared.Identity
 import sttp.tapir.Schema
 
-class ScriptedAgentBackendSpec extends AnyFlatSpec with Matchers with OptionValues {
+class ScriptedAgentBackendSpec extends AnyFlatSpec with Matchers {
 
   case class EchoInput(text: String)
   implicit val echoCodec: Codec[EchoInput] = deriveCodec

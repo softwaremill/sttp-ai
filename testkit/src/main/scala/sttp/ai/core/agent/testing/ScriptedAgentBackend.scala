@@ -5,9 +5,9 @@ import sttp.client4.Backend
 import sttp.monad.MonadError
 
 /** Thrown when the agent loop sends more requests than there are scripted responses. */
-final class ScriptExhaustedException(scriptSize: Int)
+final class ScriptExhaustedException(requestNumber: Int, scriptSize: Int)
     extends Exception(
-      s"Scripted responses exhausted: the agent sent request ${scriptSize + 1}, but only $scriptSize response(s) were scripted"
+      s"Scripted responses exhausted: the agent sent request $requestNumber, but only $scriptSize response(s) were scripted"
     )
 
 /** An [[AgentBackend]] that answers each request with the next queued response instead of calling an LLM API, recording every request for
@@ -32,7 +32,7 @@ class ScriptedAgentBackend[F[_]](
       history: ConversationHistory,
       backend: Backend[F],
       includeTools: Boolean
-  ): F[AgentResponse] = {
+  ): F[AgentResponse] = monad.suspend {
     val toolsOffered =
       if (includeTools) tools.map(tool => OfferedTool(tool.name, tool.description, tool.rawJsonSchema))
       else Seq.empty
@@ -41,6 +41,6 @@ class ScriptedAgentBackend[F[_]](
       recorded.length - 1
     }
     if (index < script.length) monad.unit(script(index))
-    else monad.error(new ScriptExhaustedException(script.length))
+    else monad.error(new ScriptExhaustedException(index + 1, script.length))
   }
 }

@@ -82,4 +82,4 @@ Everything the matchers check is available as plain data, so any test framework 
 
 ## Effect systems
 
-`ScriptedAgent.synchronous(...)` scripts an `Identity` agent. For other effect types use `ScriptedAgent[F](...)` with the corresponding sttp stub backend, e.g. `ScriptedAgent[IO](...)` with `BackendStub[IO](new CatsMonadAsyncError[IO]())`.
+`ScriptedAgent.synchronous(...)` scripts an `Identity` agent. For other effect types use `ScriptedAgent[F](...)` with the corresponding sttp stub backend — an implicit `MonadError[F]` must be in scope, e.g. `ScriptedAgent[IO](responses*)(using new CatsMonadAsyncError[IO]())` with `BackendStub[IO](new CatsMonadAsyncError[IO]())`.
