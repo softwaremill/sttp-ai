@@ -1,7 +1,7 @@
 package sttp.ai.core.agent.testing
 
 import io.circe.Json
-import sttp.ai.core.agent.{ConversationEntry, ConversationHistory}
+import sttp.ai.core.agent.{ConversationEntry, ConversationHistory, ResponseSchema}
 
 /** A tool as it was offered to the (scripted) model: name, description, and the input JSON schema the model would see. */
 final case class OfferedTool(name: String, description: String, schema: Json)
@@ -16,12 +16,15 @@ final case class OfferedTool(name: String, description: String, schema: Json)
   *   the tools offered on this call; empty when includeTools is false
   * @param systemPrompt
   *   the system prompt configured for the agent, as built from its [[sttp.ai.core.agent.AgentConfig]]
+  * @param responseSchema
+  *   the structured-output schema configured for the agent (e.g. via `deriveResponseSchema[T]`), if any
   */
 final case class RecordedRequest(
     history: ConversationHistory,
     includeTools: Boolean,
     toolsOffered: Seq[OfferedTool],
-    systemPrompt: Option[String]
+    systemPrompt: Option[String],
+    responseSchema: Option[ResponseSchema[_]] = None
 )
 
 /** Framework-agnostic query API over the requests recorded by a scripted backend. Everything the scalatest matchers assert on is reachable
@@ -43,7 +46,9 @@ trait RecordedInteractions {
       case ConversationEntry.IterationMarker(current, maxIterations) => s"[Iteration $current of $maxIterations]"
     })
 
-  /** The tools offered on the first request. */
+  /** The tools offered on the first request. Note that the agent loop withholds tools on the last allowed iteration, so with
+    * `maxIterations(1)` no tools are ever offered and this is empty.
+    */
   final def offeredTools: Seq[OfferedTool] = requests.headOption.map(_.toolsOffered).getOrElse(Seq.empty)
 
   /** All (toolName, result) pairs fed back to the model, from the final history, in order. */
@@ -54,4 +59,7 @@ trait RecordedInteractions {
 
   /** The system prompt sent on the first request. */
   final def systemPromptSent: Option[String] = requests.headOption.flatMap(_.systemPrompt)
+
+  /** The structured-output schema configured for the agent, from the first request. */
+  final def responseSchemaSent: Option[ResponseSchema[_]] = requests.headOption.flatMap(_.responseSchema)
 }

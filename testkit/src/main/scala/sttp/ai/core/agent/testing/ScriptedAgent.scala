@@ -17,9 +17,9 @@ import sttp.shared.Identity
   * }}}
   *
   * A handle represents one scripted conversation — create a fresh one per test. Each `.build` on the returned builder creates a backend
-  * that consumes the script from the start; recordings from all builds accumulate on this handle in creation order. The handle is
-  * thread-safe, but `requests` groups recordings by backend-creation order (per `.build`), not globally chronologically across concurrently
-  * used builds.
+  * that consumes the script from the start; a built agent shares one script cursor across its `run` calls, so build a fresh agent per run.
+  * Recordings from all builds accumulate on this handle in creation order. The handle is thread-safe, but `requests` groups recordings by
+  * backend-creation order (per `.build`), not globally chronologically across concurrently used builds.
   */
 final class ScriptedAgent[F[_]] private (script: Seq[AgentResponse])(implicit monad: MonadError[F]) extends RecordedInteractions {
 
@@ -27,7 +27,7 @@ final class ScriptedAgent[F[_]] private (script: Seq[AgentResponse])(implicit mo
 
   /** A standard [[AgentBuilder]] wired to this script — a drop-in replacement for e.g. `OpenAIAgent.builder(...)`. */
   def builder: AgentBuilder[F] = AgentBuilder[F] { config =>
-    val backend = new ScriptedAgentBackend[F](script, config.userTools, config.systemPrompt)
+    val backend = new ScriptedAgentBackend[F](script, config.userTools, config.systemPrompt, config.responseSchema)
     synchronized {
       backends = backends :+ backend
     }

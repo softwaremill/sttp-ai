@@ -78,6 +78,7 @@ Everything the matchers check is available as plain data, so any test framework 
 - `script.offeredTools` — tool name, description, and the exact JSON schema sent
 - `script.toolResultsSent` — `(toolName, result)` pairs fed back to the model
 - `script.systemPromptSent` — the system prompt built from the agent's configuration
+- `script.responseSchemaSent` — the structured-output schema configured for the agent (e.g. via `deriveResponseSchema[T]`), if any
 - `result.toolCalls` — executed tool calls with their arguments, outputs, and iterations (from the agent loop itself)
 
 ## Effect systems

@@ -1,6 +1,6 @@
 package sttp.ai.core.agent.testing
 
-import sttp.ai.core.agent.{AgentBackend, AgentResponse, AgentTool, ConversationHistory}
+import sttp.ai.core.agent.{AgentBackend, AgentResponse, AgentTool, ConversationHistory, ResponseSchema}
 import sttp.client4.Backend
 import sttp.monad.MonadError
 
@@ -19,7 +19,8 @@ final class ScriptExhaustedException(requestNumber: Int, scriptSize: Int)
 class ScriptedAgentBackend[F[_]](
     script: Seq[AgentResponse],
     val tools: Seq[AgentTool[F, _]],
-    val systemPrompt: Option[String]
+    val systemPrompt: Option[String],
+    responseSchema: Option[ResponseSchema[_]] = None
 )(implicit monad: MonadError[F])
     extends AgentBackend[F]
     with RecordedInteractions {
@@ -37,7 +38,7 @@ class ScriptedAgentBackend[F[_]](
       if (includeTools) tools.map(tool => OfferedTool(tool.name, tool.description, tool.rawJsonSchema))
       else Seq.empty
     val index = synchronized {
-      recorded = recorded :+ RecordedRequest(history, includeTools, toolsOffered, systemPrompt)
+      recorded = recorded :+ RecordedRequest(history, includeTools, toolsOffered, systemPrompt, responseSchema)
       recorded.length - 1
     }
     if (index < script.length) monad.unit(script(index))

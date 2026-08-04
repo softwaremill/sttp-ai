@@ -5,7 +5,7 @@ import io.circe.generic.semiauto.deriveCodec
 import org.scalatest.OptionValues
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
-import sttp.ai.core.agent.{AgentTool, FinishReason}
+import sttp.ai.core.agent.{AgentTool, FinishReason, ResponseSchema}
 import sttp.client4.testing.SyncBackendStub
 import sttp.tapir.Schema
 
@@ -19,6 +19,7 @@ class ScriptedAgentSpec extends AnyFlatSpec with Matchers with OptionValues {
 
   case class Answer(value: Int)
   implicit val answerCodec: Codec[Answer] = deriveCodec
+  implicit val answerSchema: Schema[Answer] = Schema.derived
 
   private val calculatorTool = AgentTool.fromFunction("calculator", "Adds two numbers") { (input: CalculatorInput) =>
     s"Result: ${input.a + input.b}"
@@ -83,6 +84,22 @@ class ScriptedAgentSpec extends AnyFlatSpec with Matchers with OptionValues {
     val result = script.builder.build.runAs[Answer]("compute")(httpBackend)
 
     result.finalAnswer shouldBe Right(Answer(3))
+  }
+
+  it should "record the configured response schema" in {
+    val script = ScriptedAgent.synchronous(ScriptedResponse.text("""{"value": 3}"""))
+
+    script.builder.deriveResponseSchema[Answer].build.runAs[Answer]("compute")(httpBackend)
+
+    script.responseSchemaSent should not be empty
+    script.responseSchemaSent.value.schema shouldBe ResponseSchema.derived[Answer]().schema
+  }
+
+  it should "record no response schema when none is configured" in {
+    val script = calculatorScript()
+    script.builder.tools(calculatorTool).build.run("What is 1 + 2?")(httpBackend)
+
+    script.responseSchemaSent shouldBe empty
   }
 
   it should "give each build a fresh script cursor and accumulate recordings" in {
