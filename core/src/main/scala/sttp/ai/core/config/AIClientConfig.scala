@@ -2,7 +2,7 @@ package sttp.ai.core.config
 
 import sttp.model.Uri
 
-import scala.concurrent.duration.Duration
+import scala.concurrent.duration.{Duration, DurationInt}
 
 /** Base trait for AI client configuration.
   *
@@ -16,10 +16,17 @@ trait AIClientConfig {
   /** Base URL for API requests. */
   def baseUrl: Uri
 
-  /** Request timeout duration. */
+  /** Timeout applied to every request built by the clients (sttp `readTimeout`). Semantics are backend-dependent: on the default Java
+    * HttpClient backends this is the time until response headers arrive (so long-lived SSE streams are not cut off mid-stream); some
+    * backends (e.g. OkHttp) treat it as the maximum time between bytes. Non-finite values (`Duration.Inf`) disable the timeout.
+    */
   def timeout: Duration
 
-  /** Maximum number of retry attempts for failed requests. */
+  /** Maximum number of retry attempts for transient failures (connection errors, HTTP 408/409/429/5xx), applied on top of the initial
+    * attempt; `0` disables retries. Honored by the sync clients (`OpenAISyncClient`, `ClaudeSyncClient`, `GeminiSyncClient`), which wrap
+    * their backend in `sttp.ai.core.http.RetryingBackend` — see it for the exact policy. The async clients return raw sttp requests, so
+    * this setting cannot apply there automatically; wrap your own backend in `RetryingBackend` with your effect's sleep instead.
+    */
   def maxRetries: Int
 
   /** Optional organization identifier. */
@@ -30,4 +37,12 @@ trait AIClientConfig {
     * This method should be implemented by concrete config classes to provide API-specific authentication headers.
     */
   def authHeaders: Map[String, String]
+}
+
+object AIClientConfig {
+
+  /** Matches the default request timeout of the official OpenAI/Anthropic SDKs. */
+  val DefaultTimeout: Duration = 10.minutes
+
+  val DefaultMaxRetries: Int = 3
 }

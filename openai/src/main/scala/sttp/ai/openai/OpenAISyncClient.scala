@@ -5,6 +5,9 @@ import sttp.model.Uri
 import sttp.ai.openai.OpenAIExceptions.OpenAIException
 import sttp.ai.openai.OpenAIExceptions.OpenAIException.DeserializationOpenAIException
 import sttp.ai.openai.config.OpenAIConfig
+import sttp.ai.core.http.RetryingBackend
+
+import scala.concurrent.duration.Duration
 import sttp.ai.openai.requests.admin.{QueryParameters => _, _}
 import sttp.ai.openai.requests.assistants.AssistantsRequestBody.{CreateAssistantBody, ModifyAssistantBody}
 import sttp.ai.openai.requests.assistants.AssistantsResponseData.{AssistantData, DeleteAssistantResponse, ListAssistantsResponse}
@@ -65,10 +68,13 @@ class OpenAISyncClient private (
     baseUri: Uri,
     customizeRequest: CustomizeOpenAIRequest,
     organization: Option[String] = None,
-    authScheme: AuthScheme = AuthScheme.Bearer
+    authScheme: AuthScheme = AuthScheme.Bearer,
+    timeout: Duration = OpenAIConfig.DefaultTimeout,
+    maxRetries: Int = OpenAIConfig.DefaultMaxRetries
 ) {
 
-  private val openAI = new OpenAI(authToken, baseUri, organization, authScheme)
+  private val openAI = new OpenAI(authToken, baseUri, organization, authScheme, timeout)
+  private val sendBackend: SyncBackend = if (maxRetries > 0) RetryingBackend(backend, maxRetries) else backend
 
   /** Lists the currently available models, and provides basic information about each one such as the owner and availability.
     *
@@ -224,7 +230,7 @@ class OpenAISyncClient private (
       else chatBody.copy(responseFormat = Some(JsonSchema.withTapirSchema[T](responseName.getOrElse("response"), None, Some(true))))
 
     val finalRes: Either[OpenAIException, T] = for {
-      res <- customizeRequest.apply(openAI.createChatCompletion(withResponseFormat)).send(backend).body
+      res <- customizeRequest.apply(openAI.createChatCompletion(withResponseFormat)).send(sendBackend).body
       message <- res.choices.headOption
         .map(_.message)
         .toRight(new DeserializationOpenAIException("no choices found in response", null))
@@ -1216,12 +1222,25 @@ class OpenAISyncClient private (
 
   /** Specifies a function, which will be applied to the generated request before sending it. If a function has been specified before, it
     * will be applied before the given one.
+    *
+    * The customization runs once per call, before sending: when retries are enabled (`maxRetries > 0`), the same customized request is
+    * re-sent on every attempt, so per-attempt state (e.g. a signing timestamp or idempotency key) is not recomputed between attempts.
     */
   def customizeRequest(customize: CustomizeOpenAIRequest): OpenAISyncClient =
-    new OpenAISyncClient(authToken, backend, closeClient, baseUri, customizeRequest.andThen(customize), organization, authScheme)
+    new OpenAISyncClient(
+      authToken,
+      backend,
+      closeClient,
+      baseUri,
+      customizeRequest.andThen(customize),
+      organization,
+      authScheme,
+      timeout,
+      maxRetries
+    )
 
   private def sendOrThrow[A](request: Request[Either[OpenAIException, A]]): A =
-    customizeRequest.apply(request).send(backend).body match {
+    customizeRequest.apply(request).send(sendBackend).body match {
       case Right(value)    => value
       case Left(exception) => throw exception
     }
@@ -1250,7 +1269,9 @@ object OpenAISyncClient {
       config.baseUrl,
       CustomizeOpenAIRequest.Identity,
       config.organization,
-      config.authScheme
+      config.authScheme,
+      config.timeout,
+      config.maxRetries
     )
 
   def apply(config: OpenAIConfig, backend: SyncBackend): OpenAISyncClient =
@@ -1261,7 +1282,9 @@ object OpenAISyncClient {
       config.baseUrl,
       CustomizeOpenAIRequest.Identity,
       config.organization,
-      config.authScheme
+      config.authScheme,
+      config.timeout,
+      config.maxRetries
     )
 
   def fromEnv: OpenAISyncClient = apply(OpenAIConfig.fromEnv)

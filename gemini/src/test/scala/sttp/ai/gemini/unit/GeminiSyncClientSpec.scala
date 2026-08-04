@@ -15,7 +15,7 @@ import sttp.client4.{DefaultSyncBackend, GenericRequest, StringBody}
 import sttp.model.StatusCode
 import sttp.tapir.{Schema => TapirSchema}
 
-import java.util.concurrent.atomic.AtomicReference
+import java.util.concurrent.atomic.{AtomicInteger, AtomicReference}
 
 case class WeatherReport(city: String, temperature: Double)
 
@@ -87,5 +87,17 @@ class GeminiSyncClientSpec extends AnyFlatSpec with Matchers with EitherValues {
 
     val bodyJson = parse(captureCreateInteractionAsBody(request)).value
     bodyJson.hcursor.downField("response_format").focus shouldBe Some(customSchema)
+  }
+
+  it should "retry transient failures according to maxRetries" in {
+    val attempts = new AtomicInteger(0)
+    val quotaBody = """{"error":{"code":429,"message":"quota exceeded","status":"RESOURCE_EXHAUSTED"}}"""
+    val backend = DefaultSyncBackend.stub.whenAnyRequest.thenRespondF { _ =>
+      if (attempts.incrementAndGet() == 1) ResponseStub.adjust(quotaBody, StatusCode.TooManyRequests)
+      else ResponseStub.adjust(completedResponse, StatusCode.Ok)
+    }
+    val client = GeminiSyncClient(GeminiConfig(apiKey = "test-key", maxRetries = 1), backend)
+    client.createInteraction(InteractionRequest.simple(testModel, "hi")).id shouldBe Some("int_1")
+    attempts.get() shouldBe 2
   }
 }

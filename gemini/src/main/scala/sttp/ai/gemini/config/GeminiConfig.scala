@@ -3,7 +3,7 @@ package sttp.ai.gemini.config
 import sttp.ai.core.config.AIClientConfig
 import sttp.model.Uri
 
-import scala.concurrent.duration.{Duration, DurationInt}
+import scala.concurrent.duration.Duration
 
 /** Configuration for the Google Gemini (Interactions API) client.
   *
@@ -12,17 +12,17 @@ import scala.concurrent.duration.{Duration, DurationInt}
   * @param baseUrl
   *   Base URL for the Gemini API (defaults to the official endpoint; the `v1beta` version path is appended by the client)
   * @param timeout
-  *   Request timeout duration (defaults to 60 seconds)
+  *   Request timeout duration, applied to every request (defaults to 10 minutes)
   * @param maxRetries
-  *   Maximum number of retry attempts (defaults to 3)
+  *   Maximum number of retry attempts for transient failures, honored by the sync client (defaults to 3)
   * @param organization
   *   Optional organization identifier (unused by the Gemini API, present for [[AIClientConfig]] parity)
   */
 case class GeminiConfig(
     apiKey: String,
     baseUrl: Uri = GeminiConfig.DefaultBaseUrl,
-    timeout: Duration = 60.seconds,
-    maxRetries: Int = 3,
+    timeout: Duration = GeminiConfig.DefaultTimeout,
+    maxRetries: Int = GeminiConfig.DefaultMaxRetries,
     organization: Option[String] = None
 ) extends AIClientConfig {
 
@@ -34,6 +34,10 @@ case class GeminiConfig(
 
 object GeminiConfig {
   val DefaultBaseUrl: Uri = Uri.unsafeParse("https://generativelanguage.googleapis.com")
+
+  /** Matches the default request timeout of the official OpenAI/Anthropic SDKs. */
+  val DefaultTimeout: Duration = AIClientConfig.DefaultTimeout
+  val DefaultMaxRetries: Int = AIClientConfig.DefaultMaxRetries
 
   /** Creates GeminiConfig from environment variables.
     *

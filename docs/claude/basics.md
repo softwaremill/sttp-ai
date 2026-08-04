@@ -114,8 +114,8 @@ case class ClaudeConfig(
   apiKey: String,                                    // Your Anthropic API key
   anthropicVersion: String = "2023-06-01",          // API version header
   baseUrl: Uri = "https://api.anthropic.com",       // API base URL
-  timeout: Duration = 60.seconds,                   // Request timeout
-  maxRetries: Int = 3,                             // Max retry attempts
+  timeout: Duration = 10.minutes,                   // Request timeout
+  maxRetries: Int = 3,                             // Max retry attempts, honored by ClaudeSyncClient
   organization: Option[String] = None               // Optional organization ID
 )
 ```

@@ -33,6 +33,7 @@ class ClaudeClientImpl(config: ClaudeConfig) extends ClaudeClient with ResponseH
 
   private def claudeAuthRequest =
     basicRequest
+      .readTimeout(config.timeout)
       .header("x-api-key", config.apiKey)
       .header("anthropic-version", config.anthropicVersion)
       .header("content-type", "application/json")

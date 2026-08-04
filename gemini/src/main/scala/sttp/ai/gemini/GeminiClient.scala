@@ -33,7 +33,9 @@ private[gemini] class GeminiClientImpl(config: GeminiConfig) extends GeminiClien
   private val geminiUris = new GeminiUris(config.baseUrl)
 
   private def geminiAuthRequest =
-    config.authHeaders.foldLeft(basicRequest) { case (request, (name, value)) => request.header(name, value) }
+    config.authHeaders.foldLeft(basicRequest.readTimeout(config.timeout)) { case (request, (name, value)) =>
+      request.header(name, value)
+    }
 
   override def read[T: Decoder](s: String): T = decode[T](s).fold(throw _, identity)
 

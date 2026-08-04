@@ -6,6 +6,7 @@ import sttp.ai.gemini.config.GeminiConfig
 import sttp.ai.gemini.models.ResponseFormat
 import sttp.ai.gemini.requests.InteractionRequest
 import sttp.ai.gemini.responses.InteractionResponse
+import sttp.ai.core.http.RetryingBackend
 import io.circe.Decoder
 import io.circe.parser.decode
 import sttp.client4.{DefaultSyncBackend, Request, SyncBackend}
@@ -13,9 +14,10 @@ import sttp.tapir.{Schema => TapirSchema}
 
 class GeminiSyncClient(config: GeminiConfig, backend: SyncBackend = DefaultSyncBackend()) {
   private val client = new GeminiClientImpl(config)
+  private val sendBackend: SyncBackend = if (config.maxRetries > 0) RetryingBackend(backend, config.maxRetries) else backend
 
   private def sendOrThrow[A](request: Request[Either[GeminiException, A]]): A =
-    request.send(backend).body match {
+    request.send(sendBackend).body match {
       case Left(exception) => throw exception
       case Right(value)    => value
     }
