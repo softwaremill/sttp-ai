@@ -5,8 +5,9 @@ import io.circe.generic.semiauto.deriveCodec
 import org.scalatest.OptionValues
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
-import sttp.ai.core.agent.{AgentTool, FinishReason, ResponseSchema}
-import sttp.client4.testing.SyncBackendStub
+import sttp.ai.core.agent.{AgentTool, ConversationEntry, FinishReason, ResponseSchema}
+import sttp.client4.testing.{BackendStub, SyncBackendStub}
+import sttp.monad.MonadError
 import sttp.tapir.Schema
 
 class ScriptedAgentSpec extends AnyFlatSpec with Matchers with OptionValues {
@@ -109,5 +110,67 @@ class ScriptedAgentSpec extends AnyFlatSpec with Matchers with OptionValues {
     script.builder.build.run("second")(httpBackend).finalAnswer shouldBe "hi"
 
     script.requests should have size 2
+  }
+
+  it should "stop with TokenLimit when the script returns a max-tokens response" in {
+    val script = ScriptedAgent.synchronous(ScriptedResponse.maxTokens("truncated answer"))
+
+    val result = script.builder.build.run("go")(httpBackend)
+
+    result.finalAnswer shouldBe "truncated answer"
+    result.finishReason shouldBe FinishReason.TokenLimit
+  }
+
+  it should "execute tools from a text-with-tool-calls response and record the assistant text" in {
+    val script = ScriptedAgent.synchronous(
+      ScriptedResponse.textWithToolCalls("thinking...", "calculator" -> """{"a": 1, "b": 2}"""),
+      ScriptedResponse.text("done")
+    )
+
+    val result = script.builder.tools(calculatorTool).build.run("add 1 and 2")(httpBackend)
+
+    result.toolCalls.map(_.output) shouldBe Seq("Result: 3.0")
+    result.finalAnswer shouldBe "done"
+    script.requests.last.history.entries.collect { case ConversationEntry.AssistantResponse(content, _) =>
+      content
+    } should contain("thinking...")
+  }
+
+  it should "feed a tool-not-found result back for scripted calls to unregistered tools" in {
+    val script = ScriptedAgent.synchronous(
+      ScriptedResponse.toolCall("missing", "{}"),
+      ScriptedResponse.text("done")
+    )
+
+    val result = script.builder.tools(calculatorTool).build.run("go")(httpBackend)
+
+    result.toolCalls.map(_.output) shouldBe Seq("Tool not found: missing")
+    script.toolResultsSent shouldBe Seq(("missing", "Tool not found: missing"))
+  }
+
+  private type Thunk[A] = () => A
+
+  /** A minimal lazy effect: nothing runs until the thunk is applied. (Try/Future are eager, so they can't verify suspension.) */
+  private implicit object ThunkMonad extends MonadError[Thunk] {
+    override def unit[T](t: T): Thunk[T] = () => t
+    override def map[T, T2](fa: Thunk[T])(f: T => T2): Thunk[T2] = () => f(fa())
+    override def flatMap[T, T2](fa: Thunk[T])(f: T => Thunk[T2]): Thunk[T2] = () => f(fa())()
+    override def error[T](t: Throwable): Thunk[T] = () => throw t
+    override protected def handleWrappedError[T](rt: Thunk[T])(h: PartialFunction[Throwable, Thunk[T]]): Thunk[T] = () =>
+      try rt()
+      catch { case e: Throwable if h.isDefinedAt(e) => h(e)() }
+    override def ensure[T](f: Thunk[T], e: => Thunk[Unit]): Thunk[T] = () =>
+      try f()
+      finally e()
+  }
+
+  it should "not consume the script until the effect runs" in {
+    val script = ScriptedAgent[Thunk](ScriptedResponse.text("hi"))
+
+    val effect = script.builder.build.run("prompt")(BackendStub[Thunk](ThunkMonad))
+    script.requests shouldBe empty
+
+    effect().finalAnswer shouldBe "hi"
+    script.requests should have size 1
   }
 }

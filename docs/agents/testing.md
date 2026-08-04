@@ -1,19 +1,26 @@
 # Testing agents
 
-The `testkit` module lets you test agent code without hitting a paid LLM API: you script the model's responses, run the real agent loop against them, and assert on what was sent to the "model" and what the agent did.
+The `agent-testkit` module lets you test agent code without hitting a paid LLM API: you script the model's responses, run the real agent loop against them, and assert on what was sent to the "model" and what the agent did.
+
+This serves two use-cases:
+
+- **Testing agent wiring directly** — verifying that your tools execute correctly, that prompts and schemas reach the model as intended, and that the loop behaves (as in the example below).
+- **Integration-testing code that takes an agent as a parameter** — a scripted agent is a stub `Agent`: scripted to invoke given tools and to produce a given final answer, it can stand in for the real thing anywhere a larger process is parameterized by an agent, keeping that process's tests deterministic and offline.
 
 Add the dependency in test scope:
 
 ```sbt
-"com.softwaremill.sttp.ai" %% "testkit" % "@VERSION@" % Test
+"com.softwaremill.sttp.ai" %% "agent-testkit" % "@VERSION@" % Test
 ```
+
+The scalatest dependency is `Provided`: to use the matchers, bring your own scalatest (any 3.2.x) — which a scalatest test suite already has. The plain query API (see below) needs no test-framework dependency at all.
 
 ## Scripting a conversation
 
 `ScriptedAgent` holds a queue of responses — one per model round-trip — and produces a standard agent builder, so swapping a real agent for a scripted one is a one-line change (`OpenAIAgent.builder(...)` becomes `script.builder`). Tools, system prompt, and all other configuration work exactly as with a real backend, and the real agent loop runs: your tools actually execute.
 
 ```scala mdoc:compile-only
-//> using dep com.softwaremill.sttp.ai::testkit:@VERSION@
+//> using dep com.softwaremill.sttp.ai::agent-testkit:@VERSION@
 
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
@@ -68,6 +75,8 @@ Response constructors:
 For anything else (custom stop reasons, explicit call ids), pass a hand-built `AgentResponse`.
 
 If the loop sends more requests than there are scripted responses, the run fails with `ScriptExhaustedException` — a script that's too short signals a loop bug, so there is no silent fallback.
+
+A `ScriptedAgent` handle represents one scripted conversation: create a fresh one per test. A built agent shares one script cursor across its `run` calls (a second `run` continues where the first stopped, usually into exhaustion), while calling `.build` again starts a fresh backend that replays the script from the start and appends its recordings to `script.requests` — so build one agent and run it once per script.
 
 ## Asserting without scalatest matchers
 

@@ -55,7 +55,16 @@ class AgentMatchersSpec extends AnyFlatSpec with Matchers with AgentMatchers {
 
   it should "fail showing both schemas when they differ" in {
     val e = intercept[TestFailedException](script should haveOfferedToolWithSchema("calculator", io.circe.Json.obj()))
-    e.getMessage should include("calculator")
+    e.getMessage should include(calculatorTool.rawJsonSchema.noSpaces) // the actual schema
+    e.getMessage should include("expected {}") // the expected schema
+  }
+
+  it should "point at last-iteration tool withholding when no tools were offered at all" in {
+    val script = ScriptedAgent.synchronous(ScriptedResponse.text("done"))
+    script.builder.tools(calculatorTool).maxIterations(1).build.run("go")(SyncBackendStub)
+
+    val e = intercept[TestFailedException](script should haveOfferedTool("calculator"))
+    e.getMessage should include("withholds tools on the last allowed iteration")
   }
 
   "haveCalledTool" should "pass for a called tool" in {
@@ -83,6 +92,13 @@ class AgentMatchersSpec extends AnyFlatSpec with Matchers with AgentMatchers {
 
   "haveFinishedWith" should "pass for the actual finish reason" in {
     result should haveFinishedWith(FinishReason.NaturalStop)
+  }
+
+  it should "pass for a token-limit stop" in {
+    val script = ScriptedAgent.synchronous(ScriptedResponse.maxTokens("truncated"))
+    val tokenLimited = script.builder.build.run("go")(SyncBackendStub)
+
+    tokenLimited should haveFinishedWith(FinishReason.TokenLimit)
   }
 
   it should "fail showing the actual finish reason" in {

@@ -21,12 +21,12 @@ trait AgentMatchers {
     )
   }
 
-  /** Asserts that a tool named `name` was offered to the model. */
+  /** Asserts that a tool named `name` was offered to the model on any request. */
   def haveOfferedTool(name: String): Matcher[RecordedInteractions] = Matcher { recording =>
     val names = recording.offeredTools.map(_.name)
     MatchResult(
       names.contains(name),
-      s"""tool "$name" was not offered to the model; offered tools: ${describe(names)}""",
+      s"""tool "$name" was not offered to the model; ${describeOffered(names)}""",
       s"""tool "$name" was offered to the model"""
     )
   }
@@ -37,7 +37,7 @@ trait AgentMatchers {
       case None =>
         MatchResult(
           matches = false,
-          s"""tool "$name" was not offered to the model; offered tools: ${describe(recording.offeredTools.map(_.name))}""",
+          s"""tool "$name" was not offered to the model; ${describeOffered(recording.offeredTools.map(_.name))}""",
           s"""tool "$name" was offered to the model"""
         )
       case Some(tool) =>
@@ -91,6 +91,10 @@ trait AgentMatchers {
 
   private def describe(values: Seq[String]): String =
     if (values.isEmpty) "none" else values.mkString("\"", "\", \"", "\"")
+
+  private def describeOffered(names: Seq[String]): String =
+    if (names.isEmpty) "no request offered any tools (note: the agent loop withholds tools on the last allowed iteration)"
+    else s"offered tools: ${describe(names)}"
 }
 
 object AgentMatchers extends AgentMatchers

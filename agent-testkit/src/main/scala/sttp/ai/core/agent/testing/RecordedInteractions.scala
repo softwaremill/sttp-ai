@@ -24,7 +24,7 @@ final case class RecordedRequest(
     includeTools: Boolean,
     toolsOffered: Seq[OfferedTool],
     systemPrompt: Option[String],
-    responseSchema: Option[ResponseSchema[_]] = None
+    responseSchema: Option[ResponseSchema[_]]
 )
 
 /** Framework-agnostic query API over the requests recorded by a scripted backend. Everything the scalatest matchers assert on is reachable
@@ -46,10 +46,10 @@ trait RecordedInteractions {
       case ConversationEntry.IterationMarker(current, maxIterations) => s"[Iteration $current of $maxIterations]"
     })
 
-  /** The tools offered on the first request. Note that the agent loop withholds tools on the last allowed iteration, so with
-    * `maxIterations(1)` no tools are ever offered and this is empty.
+  /** The tools offered on any request, deduplicated by name. Note that the agent loop withholds tools on the last allowed iteration, so
+    * with `maxIterations(1)` no tools are ever offered and this is empty.
     */
-  final def offeredTools: Seq[OfferedTool] = requests.headOption.map(_.toolsOffered).getOrElse(Seq.empty)
+  final def offeredTools: Seq[OfferedTool] = requests.flatMap(_.toolsOffered).distinctBy(_.name)
 
   /** All (toolName, result) pairs fed back to the model, from the final history, in order. */
   final def toolResultsSent: Seq[(String, String)] =

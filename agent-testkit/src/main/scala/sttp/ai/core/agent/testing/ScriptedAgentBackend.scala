@@ -16,7 +16,7 @@ final class ScriptExhaustedException(requestNumber: Int, scriptSize: Int)
   * Usually created via [[ScriptedAgent]], which wires tools and system prompt from the agent configuration; instantiate directly when
   * building an [[sttp.ai.core.agent.AgentBackend]] by hand.
   */
-class ScriptedAgentBackend[F[_]](
+final class ScriptedAgentBackend[F[_]](
     script: Seq[AgentResponse],
     val tools: Seq[AgentTool[F, _]],
     val systemPrompt: Option[String],
