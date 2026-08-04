@@ -42,6 +42,7 @@ lazy val allAgregates = core.projectRefs ++
   akka.projectRefs ++
   ox.projectRefs ++
   mcp.projectRefs ++
+  testkit.projectRefs ++
   examples.projectRefs ++
   docs.projectRefs
 
@@ -114,6 +115,19 @@ lazy val gemini = (projectMatrix in file("gemini"))
     libraryDependencies ++= (if (scalaVersion.value.startsWith("2.")) Seq(Libraries.circeGenericExtras.value) else Seq.empty)
   )
   .dependsOn(core % "compile->compile;test->test")
+
+lazy val testkit = (projectMatrix in file("testkit"))
+  .jvmPlatform(
+    scalaVersions = scala2 ++ scala3
+  )
+  .nativePlatform(
+    scalaVersions = scala3
+  )
+  .settings(commonSettings: _*)
+  .settings(
+    libraryDependencies += Libraries.scalaTestMain.value
+  )
+  .dependsOn(core)
 
 lazy val fs2 = (projectMatrix in file("streaming/fs2"))
   .jvmPlatform(

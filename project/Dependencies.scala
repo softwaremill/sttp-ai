@@ -21,6 +21,9 @@ object Dependencies {
 
     val scalaTest = Def.setting("org.scalatest" %%% "scalatest" % V.scalaTest % Test)
 
+    // scalatest in compile scope — the testkit publishes matcher implementations
+    val scalaTestMain = Def.setting("org.scalatest" %%% "scalatest" % V.scalaTest)
+
     val sttpApispec = Def.setting(
       Seq(
         "com.softwaremill.sttp.apispec" %%% "apispec-model" % V.sttpApispec,
