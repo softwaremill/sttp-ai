@@ -5,7 +5,7 @@
 Tools are defined using type-safe case classes with the `derives` syntax:
 
 ```scala
-//> using dep com.softwaremill.sttp.ai::openai:0.5.6
+//> using dep com.softwaremill.sttp.ai::openai:0.6.0
 
 import sttp.ai.core.agent.*
 import sttp.tapir.Schema
@@ -60,7 +60,7 @@ On failure the iteration trace is preserved: `finalAnswer` is a `Left(AgentFailu
 Note that because `MaxIterations` still parses, `finalAnswer` can be `Right(t)` even though the run hit the iteration cap - check `AgentResult.finishReason` if you need to distinguish a capped run from a natural stop.
 
 ```scala
-//> using dep com.softwaremill.sttp.ai::openai:0.5.6
+//> using dep com.softwaremill.sttp.ai::openai:0.6.0
 
 import sttp.ai.core.agent.*
 import sttp.ai.openai.OpenAI
