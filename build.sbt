@@ -42,6 +42,7 @@ lazy val allAgregates = core.projectRefs ++
   akka.projectRefs ++
   ox.projectRefs ++
   mcp.projectRefs ++
+  agentTestkit.projectRefs ++
   examples.projectRefs ++
   docs.projectRefs
 
@@ -114,6 +115,20 @@ lazy val gemini = (projectMatrix in file("gemini"))
     libraryDependencies ++= (if (scalaVersion.value.startsWith("2.")) Seq(Libraries.circeGenericExtras.value) else Seq.empty)
   )
   .dependsOn(core % "compile->compile;test->test")
+
+lazy val agentTestkit = (projectMatrix in file("agent-testkit"))
+  .jvmPlatform(
+    scalaVersions = scala2 ++ scala3
+  )
+  .nativePlatform(
+    scalaVersions = scala3
+  )
+  .settings(commonSettings: _*)
+  .settings(
+    name := "agent-testkit",
+    libraryDependencies += Libraries.scalaTestProvided.value
+  )
+  .dependsOn(core)
 
 lazy val fs2 = (projectMatrix in file("streaming/fs2"))
   .jvmPlatform(
@@ -255,7 +270,9 @@ lazy val docs = (projectMatrix in file("generated-docs")) // important: it must 
     ),
     publishArtifact := false,
     name := "docs",
-    evictionErrorLevel := Level.Info
+    evictionErrorLevel := Level.Info,
+    // the agent-testkit's scalatest dependency is Provided, so the docs snippets using its matchers need scalatest explicitly
+    libraryDependencies += Libraries.scalaTestProvided.value
   )
-  .dependsOn(openai, claude, gemini, fs2, zio, ox, pekko, mcp)
+  .dependsOn(openai, claude, gemini, fs2, zio, ox, pekko, mcp, agentTestkit)
   .jvmPlatform(scalaVersions = scala3)

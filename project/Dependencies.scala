@@ -21,6 +21,10 @@ object Dependencies {
 
     val scalaTest = Def.setting("org.scalatest" %%% "scalatest" % V.scalaTest % Test)
 
+    // scalatest in provided scope — the agent testkit publishes matcher implementations, but users bring their own scalatest
+    // (and users of only the query API need no scalatest at all)
+    val scalaTestProvided = Def.setting("org.scalatest" %%% "scalatest" % V.scalaTest % Provided)
+
     val sttpApispec = Def.setting(
       Seq(
         "com.softwaremill.sttp.apispec" %%% "apispec-model" % V.sttpApispec,

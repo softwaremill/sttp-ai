@@ -62,7 +62,7 @@ Add the following dependency:
 
 sttp-openai is available for Scala 2.13 and Scala 3
 
-Then head to the [documentation](https://sttp-ai.softwaremill.com) for usage examples: OpenAI, Claude, and Gemini clients, streaming, structured outputs, tool calling, and the agent loop.
+Then head to the [documentation](https://sttp-ai.softwaremill.com) for usage examples: OpenAI, Claude, and Gemini clients, streaming, structured outputs, tool calling, and the agent loop — plus the `agent-testkit` module for testing agents without calling a paid API.
 
 ## Contributing
 
