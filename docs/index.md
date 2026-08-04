@@ -15,7 +15,7 @@ sttp-ai uses [sttp client](https://github.com/softwaremill/sttp) to describe req
 * **Stream responses** — [server-sent events streaming](openai/streaming.md) for fs2, ZIO, Akka Streams, Pekko Streams, and Ox
 * **Get structured outputs** — [JSON-schema-constrained responses](other/json-schemas.md) parsed straight into your case classes ([OpenAI](openai/structured-outputs.md), [Claude](claude/structured-outputs.md), [Gemini](gemini/structured-outputs.md))
 * **Call tools** — let the model invoke functions in your code ([OpenAI](openai/tool-calling.md), [Claude](claude/tool-calling.md), [Gemini](gemini/tool-calling.md))
-* **Run an agent loop** — [autonomous tool-calling agents](agents/quickstart.md) with typed tools and typed results, working across all three providers, with tools loadable from [MCP servers](agents/mcp.md)
+* **Run an agent loop** — [autonomous tool-calling agents](agents/quickstart.md) with typed tools and typed results, working across all three providers, with tools loadable from [MCP servers](agents/mcp.md), testable offline with the [testkit](agents/testing.md)
 
 ## Why sttp-ai?
 
@@ -69,6 +69,7 @@ sttp-ai implements the native APIs of all three major providers — OpenAI, Clau
    agents/tools
    agents/mcp
    agents/custom-backends
+   agents/testing
 
 .. toctree::
    :maxdepth: 2
