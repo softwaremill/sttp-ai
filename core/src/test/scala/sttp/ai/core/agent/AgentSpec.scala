@@ -14,7 +14,8 @@ import sttp.tapir.Schema
 
 class AgentSpec extends AnyFlatSpec with Matchers with OptionValues {
 
-  // Test-only model claiming every capability, so builder methods requiring capability evidence are usable in these tests.
+  // Test-only model claiming ToolCalling and StructuredOutput, so builder methods requiring those capability
+  // evidences are usable in these tests.
   case object TestModel extends AIModel with Capability.ToolCalling with Capability.StructuredOutput {
     val value: String = "test-model"
   }

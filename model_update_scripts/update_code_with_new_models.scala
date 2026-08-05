@@ -32,7 +32,11 @@ def capabilitiesFor(modelId: String, config: Option[CapabilityConfig]): List[Str
   config match {
     case None      => Nil
     case Some(cfg) =>
-      val set = cfg.rules.find(r => globToRegex(r.pattern).matches(modelId)).map(_.capabilities).getOrElse(cfg.defaults)
+      val (set, patternLabel) =
+        cfg.rules.find(r => globToRegex(r.pattern).matches(modelId)).map(r => (r.capabilities, r.pattern)).getOrElse((cfg.defaults, "defaults"))
+      set.find(name => !CanonicalOrder.contains(name)).foreach { unknown =>
+        throw new IllegalArgumentException(s"Unknown capability '$unknown' in $patternLabel (known capabilities: ${CanonicalOrder.mkString(", ")})")
+      }
       CanonicalOrder.filter(set.contains)
   }
 
@@ -360,10 +364,20 @@ object ModelUpdater extends IOApp {
   // `case object Name`, is followed by an `extends ClassName("id")` line, and is then
   // followed by zero or more `with ...` continuation lines - all of which are discarded here
   // (mixins are always re-derived from the capability config, never read back from the file).
-  private def isCaseObjectStart(className: String)(line: String): Boolean = {
+  private def isCaseObjectStart(className: String)(lines: List[String], index: Int): Boolean = {
+    val line = lines(index)
     val fullPattern = s"""^\\s*case object\\s+(\\w+)\\s+extends\\s+$className\\("([^"]+)"\\).*""".r
     val shortStartPattern = """^case object\s+(\w+)$""".r
-    fullPattern.matches(line) || shortStartPattern.matches(line.trim)
+    if (fullPattern.matches(line)) {
+      true
+    } else if (shortStartPattern.matches(line.trim)) {
+      // A bare `case object Name` only starts a block for our className if the following
+      // non-empty line is its `extends ClassName(` continuation - otherwise it may be a
+      // case object of a different class entirely (see finding #3).
+      lines.drop(index + 1).find(_.trim.nonEmpty).exists(_.trim.startsWith(s"extends $className("))
+    } else {
+      false
+    }
   }
 
   private def isContinuationLine(line: String): Boolean = {
@@ -416,7 +430,7 @@ object ModelUpdater extends IOApp {
     if (markerIndex == -1) {
       None
     } else {
-      val startIndex = lines.indexWhere(isCaseObjectStart(className))
+      val startIndex = lines.indices.find(i => isCaseObjectStart(className)(lines, i)).getOrElse(-1)
       val endIndex = boundary {
         lines.take(markerIndex).zipWithIndex.reverse.foldLeft(-1) { case (passedIndex, (line, index)) =>
           if (!isCommentLine(line)) {

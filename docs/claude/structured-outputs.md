@@ -139,7 +139,7 @@ val outputFormat = OutputFormat.JsonSchema(schema)
 See [JSON Schemas: structured outputs & tools](../other/json-schemas.md) for deriving schemas with Tapir instead of writing them by hand.
 
 **Important Notes:**
-- Structured outputs require Claude 4.1+ models (`claude-opus-4-1-*`, the 4.5 family (`claude-sonnet-4-5-*`, `claude-haiku-4-5-*`, `claude-opus-4-5-*`), and the 5 family (`claude-sonnet-5`, `claude-opus-5`) — the `ClaudeModel.WithStructuredOutput` entries)
+- Structured outputs require Claude 4.1+ models (`claude-opus-4-1-*`, the 4.5 family (`claude-sonnet-4-5-*`, `claude-haiku-4-5-*`, `claude-opus-4-5-*`), and the 5 family (`claude-sonnet-5`, `claude-opus-5`) — the constants tagged with `Capability.StructuredOutput`)
 - Legacy models will throw `UnsupportedModelForStructuredOutputException`
 - The beta feature uses `anthropic-beta: structured-outputs-2025-11-13` header automatically
 - Unknown/future models default to supporting structured outputs for forward compatibility

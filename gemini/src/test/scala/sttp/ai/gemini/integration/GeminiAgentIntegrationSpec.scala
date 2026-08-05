@@ -34,7 +34,7 @@ class GeminiAgentIntegrationSpec extends AgentIntegrationSpecBase {
       responseSchema: ResponseSchema[T]
   ): Agent[Identity] =
     GeminiAgent
-      .synchronous(GeminiConfig.fromEnv, GeminiModel.Gemini35FlashLite.value)
+      .synchronous(GeminiConfig.fromEnv, GeminiModel.Gemini35FlashLite)
       .maxIterations(maxIterations)
       .tools(tools)
       .responseSchema(responseSchema)
