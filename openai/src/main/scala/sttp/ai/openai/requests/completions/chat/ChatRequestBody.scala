@@ -3,6 +3,7 @@ package sttp.ai.openai.requests.completions.chat
 import io.circe.Json
 import io.circe.syntax._
 import sttp.apispec.Schema
+import sttp.ai.core.model.{AIModel, Capability}
 import sttp.ai.openai.json.OpenAIDerivedCodecs.chatBodyEncoder
 import sttp.ai.openai.requests.caching.CacheRetentionPolicy
 import sttp.ai.openai.requests.completions.Stop
@@ -244,69 +245,202 @@ object ChatRequestBody {
     case class CustomReasoningEffort(customReasoningEffort: String) extends ReasoningEffort
   }
 
-  sealed abstract class ChatCompletionModel(val value: String)
+  sealed abstract class ChatCompletionModel(val value: String) extends AIModel
 
   object ChatCompletionModel {
-    case object ChatGPT4oLatest extends ChatCompletionModel("chatgpt-4o-latest")
-    case object GPT35Turbo extends ChatCompletionModel("gpt-3.5-turbo")
-    case object GPT35Turbo0125 extends ChatCompletionModel("gpt-3.5-turbo-0125")
+    case object ChatGPT4oLatest extends ChatCompletionModel("chatgpt-4o-latest") with Capability.Vision
+    case object GPT35Turbo extends ChatCompletionModel("gpt-3.5-turbo") with Capability.ToolCalling
+    case object GPT35Turbo0125 extends ChatCompletionModel("gpt-3.5-turbo-0125") with Capability.ToolCalling
     case object GPT35Turbo0301 extends ChatCompletionModel("gpt-3.5-turbo-0301")
-    case object GPT35Turbo1106 extends ChatCompletionModel("gpt-3.5-turbo-1106")
+    case object GPT35Turbo1106 extends ChatCompletionModel("gpt-3.5-turbo-1106") with Capability.ToolCalling
     case object GPT35TurboInstruct extends ChatCompletionModel("gpt-3.5-turbo-instruct")
-    case object GPT4 extends ChatCompletionModel("gpt-4")
-    case object GPT40125Preview extends ChatCompletionModel("gpt-4-0125-preview")
-    case object GPT40314 extends ChatCompletionModel("gpt-4-0314")
-    case object GPT40613 extends ChatCompletionModel("gpt-4-0613")
-    case object GPT41 extends ChatCompletionModel("gpt-4.1")
-    case object GPT41106VisionPreview extends ChatCompletionModel("gpt-4-1106-vision-preview")
-    case object GPT4120250414 extends ChatCompletionModel("gpt-4.1-2025-04-14")
-    case object GPT41Mini extends ChatCompletionModel("gpt-4.1-mini")
-    case object GPT41Mini20250414 extends ChatCompletionModel("gpt-4.1-mini-2025-04-14")
-    case object GPT41Nano extends ChatCompletionModel("gpt-4.1-nano")
-    case object GPT41Nano20250414 extends ChatCompletionModel("gpt-4.1-nano-2025-04-14")
-    case object GPT432k extends ChatCompletionModel("gpt-4-32k")
-    case object GPT432k0314 extends ChatCompletionModel("gpt-4-32k-0314")
-    case object GPT45Preview extends ChatCompletionModel("gpt-4.5-preview")
-    case object GPT45Preview20250227 extends ChatCompletionModel("gpt-4.5-preview-2025-02-27")
-    case object GPT4Turbo extends ChatCompletionModel("gpt-4-1106-preview")
-    case object GPT4Turbo20240409 extends ChatCompletionModel("gpt-4-turbo-2024-04-09")
-    case object GPT4TurboPreview extends ChatCompletionModel("gpt-4-turbo-preview")
-    case object GPT4o extends ChatCompletionModel("gpt-4o")
-    case object GPT4o20240513 extends ChatCompletionModel("gpt-4o-2024-05-13")
-    case object GPT4o20240806 extends ChatCompletionModel("gpt-4o-2024-08-06")
-    case object GPT4o20241120 extends ChatCompletionModel("gpt-4o-2024-11-20")
-    case object GPT4oAudioPreview extends ChatCompletionModel("gpt-4o-audio-preview")
-    case object GPT4oAudioPreview20241001 extends ChatCompletionModel("gpt-4o-audio-preview-2024-10-01")
-    case object GPT4oAudioPreview20241217 extends ChatCompletionModel("gpt-4o-audio-preview-2024-12-17")
-    case object GPT4oAudioPreview20250603 extends ChatCompletionModel("gpt-4o-audio-preview-2025-06-03")
-    case object GPT4oMini extends ChatCompletionModel("gpt-4o-mini")
-    case object GPT4oMini20240718 extends ChatCompletionModel("gpt-4o-mini-2024-07-18")
-    case object GPT4oMiniAudioPreview extends ChatCompletionModel("gpt-4o-mini-audio-preview")
-    case object GPT4oMiniAudioPreview20241217 extends ChatCompletionModel("gpt-4o-mini-audio-preview-2024-12-17")
-    case object GPT4oMiniSearchPreview extends ChatCompletionModel("gpt-4o-mini-search-preview")
-    case object GPT4oMiniSearchPreview20250311 extends ChatCompletionModel("gpt-4o-mini-search-preview-2025-03-11")
-    case object GPT4oSearchPreview extends ChatCompletionModel("gpt-4o-search-preview")
-    case object GPT4oSearchPreview20250311 extends ChatCompletionModel("gpt-4o-search-preview-2025-03-11")
-    case object GPT5 extends ChatCompletionModel("gpt-5")
-    case object GPT520250807 extends ChatCompletionModel("gpt-5-2025-08-07")
-    case object GPT5ChatLatest extends ChatCompletionModel("gpt-5-chat-latest")
-    case object GPT5Mini extends ChatCompletionModel("gpt-5-mini")
-    case object GPT5Mini20250807 extends ChatCompletionModel("gpt-5-mini-2025-08-07")
-    case object GPT5Nano extends ChatCompletionModel("gpt-5-nano")
-    case object GPT5Nano20250807 extends ChatCompletionModel("gpt-5-nano-2025-08-07")
-    case object O1 extends ChatCompletionModel("o1")
-    case object O120241217 extends ChatCompletionModel("o1-2024-12-17")
-    case object O1Mini extends ChatCompletionModel("o1-mini")
-    case object O1Mini20240912 extends ChatCompletionModel("o1-mini-2024-09-12")
-    case object O1Preview extends ChatCompletionModel("o1-preview")
-    case object O1Preview20240912 extends ChatCompletionModel("o1-preview-2024-09-12")
-    case object O3 extends ChatCompletionModel("o3")
-    case object O320250416 extends ChatCompletionModel("o3-2025-04-16")
-    case object O3Mini extends ChatCompletionModel("o3-mini")
-    case object O3Mini20250131 extends ChatCompletionModel("o3-mini-2025-01-31")
-    case object O4Mini extends ChatCompletionModel("o4-mini")
-    case object O4Mini20250416 extends ChatCompletionModel("o4-mini-2025-04-16")
-    case class CustomChatCompletionModel(customChatCompletionModel: String) extends ChatCompletionModel(customChatCompletionModel)
+    case object GPT4 extends ChatCompletionModel("gpt-4") with Capability.ToolCalling
+    case object GPT40125Preview extends ChatCompletionModel("gpt-4-0125-preview") with Capability.ToolCalling
+    case object GPT40314 extends ChatCompletionModel("gpt-4-0314") with Capability.ToolCalling
+    case object GPT40613 extends ChatCompletionModel("gpt-4-0613") with Capability.ToolCalling
+    case object GPT41
+        extends ChatCompletionModel("gpt-4.1")
+        with Capability.Vision
+        with Capability.ToolCalling
+        with Capability.StructuredOutput
+    case object GPT41106VisionPreview extends ChatCompletionModel("gpt-4-1106-vision-preview") with Capability.Vision
+    case object GPT4120250414
+        extends ChatCompletionModel("gpt-4.1-2025-04-14")
+        with Capability.Vision
+        with Capability.ToolCalling
+        with Capability.StructuredOutput
+    case object GPT41Mini
+        extends ChatCompletionModel("gpt-4.1-mini")
+        with Capability.Vision
+        with Capability.ToolCalling
+        with Capability.StructuredOutput
+    case object GPT41Mini20250414
+        extends ChatCompletionModel("gpt-4.1-mini-2025-04-14")
+        with Capability.Vision
+        with Capability.ToolCalling
+        with Capability.StructuredOutput
+    case object GPT41Nano
+        extends ChatCompletionModel("gpt-4.1-nano")
+        with Capability.Vision
+        with Capability.ToolCalling
+        with Capability.StructuredOutput
+    case object GPT41Nano20250414
+        extends ChatCompletionModel("gpt-4.1-nano-2025-04-14")
+        with Capability.Vision
+        with Capability.ToolCalling
+        with Capability.StructuredOutput
+    case object GPT432k extends ChatCompletionModel("gpt-4-32k") with Capability.ToolCalling
+    case object GPT432k0314 extends ChatCompletionModel("gpt-4-32k-0314") with Capability.ToolCalling
+    case object GPT45Preview
+        extends ChatCompletionModel("gpt-4.5-preview")
+        with Capability.Vision
+        with Capability.ToolCalling
+        with Capability.StructuredOutput
+    case object GPT45Preview20250227
+        extends ChatCompletionModel("gpt-4.5-preview-2025-02-27")
+        with Capability.Vision
+        with Capability.ToolCalling
+        with Capability.StructuredOutput
+    case object GPT4Turbo extends ChatCompletionModel("gpt-4-1106-preview") with Capability.ToolCalling
+    case object GPT4Turbo20240409 extends ChatCompletionModel("gpt-4-turbo-2024-04-09") with Capability.Vision with Capability.ToolCalling
+    case object GPT4TurboPreview extends ChatCompletionModel("gpt-4-turbo-preview") with Capability.ToolCalling
+    case object GPT4o
+        extends ChatCompletionModel("gpt-4o")
+        with Capability.Vision
+        with Capability.ToolCalling
+        with Capability.StructuredOutput
+    case object GPT4o20240513
+        extends ChatCompletionModel("gpt-4o-2024-05-13")
+        with Capability.Vision
+        with Capability.ToolCalling
+        with Capability.StructuredOutput
+    case object GPT4o20240806
+        extends ChatCompletionModel("gpt-4o-2024-08-06")
+        with Capability.Vision
+        with Capability.ToolCalling
+        with Capability.StructuredOutput
+    case object GPT4o20241120
+        extends ChatCompletionModel("gpt-4o-2024-11-20")
+        with Capability.Vision
+        with Capability.ToolCalling
+        with Capability.StructuredOutput
+    case object GPT4oAudioPreview extends ChatCompletionModel("gpt-4o-audio-preview") with Capability.ToolCalling
+    case object GPT4oAudioPreview20241001 extends ChatCompletionModel("gpt-4o-audio-preview-2024-10-01") with Capability.ToolCalling
+    case object GPT4oAudioPreview20241217 extends ChatCompletionModel("gpt-4o-audio-preview-2024-12-17") with Capability.ToolCalling
+    case object GPT4oAudioPreview20250603 extends ChatCompletionModel("gpt-4o-audio-preview-2025-06-03") with Capability.ToolCalling
+    case object GPT4oMini
+        extends ChatCompletionModel("gpt-4o-mini")
+        with Capability.Vision
+        with Capability.ToolCalling
+        with Capability.StructuredOutput
+    case object GPT4oMini20240718
+        extends ChatCompletionModel("gpt-4o-mini-2024-07-18")
+        with Capability.Vision
+        with Capability.ToolCalling
+        with Capability.StructuredOutput
+    case object GPT4oMiniAudioPreview extends ChatCompletionModel("gpt-4o-mini-audio-preview") with Capability.ToolCalling
+    case object GPT4oMiniAudioPreview20241217
+        extends ChatCompletionModel("gpt-4o-mini-audio-preview-2024-12-17")
+        with Capability.ToolCalling
+    case object GPT4oMiniSearchPreview extends ChatCompletionModel("gpt-4o-mini-search-preview") with Capability.StructuredOutput
+    case object GPT4oMiniSearchPreview20250311
+        extends ChatCompletionModel("gpt-4o-mini-search-preview-2025-03-11")
+        with Capability.StructuredOutput
+    case object GPT4oSearchPreview extends ChatCompletionModel("gpt-4o-search-preview") with Capability.StructuredOutput
+    case object GPT4oSearchPreview20250311 extends ChatCompletionModel("gpt-4o-search-preview-2025-03-11") with Capability.StructuredOutput
+    case object GPT5
+        extends ChatCompletionModel("gpt-5")
+        with Capability.Vision
+        with Capability.ToolCalling
+        with Capability.StructuredOutput
+        with Capability.Reasoning
+    case object GPT520250807
+        extends ChatCompletionModel("gpt-5-2025-08-07")
+        with Capability.Vision
+        with Capability.ToolCalling
+        with Capability.StructuredOutput
+        with Capability.Reasoning
+    case object GPT5ChatLatest extends ChatCompletionModel("gpt-5-chat-latest") with Capability.Vision with Capability.StructuredOutput
+    case object GPT5Mini
+        extends ChatCompletionModel("gpt-5-mini")
+        with Capability.Vision
+        with Capability.ToolCalling
+        with Capability.StructuredOutput
+        with Capability.Reasoning
+    case object GPT5Mini20250807
+        extends ChatCompletionModel("gpt-5-mini-2025-08-07")
+        with Capability.Vision
+        with Capability.ToolCalling
+        with Capability.StructuredOutput
+        with Capability.Reasoning
+    case object GPT5Nano
+        extends ChatCompletionModel("gpt-5-nano")
+        with Capability.Vision
+        with Capability.ToolCalling
+        with Capability.StructuredOutput
+        with Capability.Reasoning
+    case object GPT5Nano20250807
+        extends ChatCompletionModel("gpt-5-nano-2025-08-07")
+        with Capability.Vision
+        with Capability.ToolCalling
+        with Capability.StructuredOutput
+        with Capability.Reasoning
+    case object O1
+        extends ChatCompletionModel("o1")
+        with Capability.Vision
+        with Capability.ToolCalling
+        with Capability.StructuredOutput
+        with Capability.Reasoning
+    case object O120241217
+        extends ChatCompletionModel("o1-2024-12-17")
+        with Capability.Vision
+        with Capability.ToolCalling
+        with Capability.StructuredOutput
+        with Capability.Reasoning
+    case object O1Mini extends ChatCompletionModel("o1-mini") with Capability.Reasoning
+    case object O1Mini20240912 extends ChatCompletionModel("o1-mini-2024-09-12") with Capability.Reasoning
+    case object O1Preview extends ChatCompletionModel("o1-preview") with Capability.Reasoning
+    case object O1Preview20240912 extends ChatCompletionModel("o1-preview-2024-09-12") with Capability.Reasoning
+    case object O3
+        extends ChatCompletionModel("o3")
+        with Capability.Vision
+        with Capability.ToolCalling
+        with Capability.StructuredOutput
+        with Capability.Reasoning
+    case object O320250416
+        extends ChatCompletionModel("o3-2025-04-16")
+        with Capability.Vision
+        with Capability.ToolCalling
+        with Capability.StructuredOutput
+        with Capability.Reasoning
+    case object O3Mini
+        extends ChatCompletionModel("o3-mini")
+        with Capability.ToolCalling
+        with Capability.StructuredOutput
+        with Capability.Reasoning
+    case object O3Mini20250131
+        extends ChatCompletionModel("o3-mini-2025-01-31")
+        with Capability.ToolCalling
+        with Capability.StructuredOutput
+        with Capability.Reasoning
+    case object O4Mini
+        extends ChatCompletionModel("o4-mini")
+        with Capability.Vision
+        with Capability.ToolCalling
+        with Capability.StructuredOutput
+        with Capability.Reasoning
+    case object O4Mini20250416
+        extends ChatCompletionModel("o4-mini-2025-04-16")
+        with Capability.Vision
+        with Capability.ToolCalling
+        with Capability.StructuredOutput
+        with Capability.Reasoning
+    case class CustomChatCompletionModel(customChatCompletionModel: String)
+        extends ChatCompletionModel(customChatCompletionModel)
+        with Capability.Vision
+        with Capability.ToolCalling
+        with Capability.StructuredOutput
+        with Capability.Reasoning
 
     val values: Set[ChatCompletionModel] =
       Set(
