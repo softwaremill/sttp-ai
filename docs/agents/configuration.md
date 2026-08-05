@@ -27,7 +27,8 @@ properties nullable); when `false`, tools are registered as non-strict with thei
 ## Model capabilities
 
 Model constants are tagged with capability marker traits: `Vision`, `ToolCalling`, `StructuredOutput`, `Reasoning`
-(in `sttp.ai.core.model.Capability`). Agent builder methods that need a capability require it at compile time:
+(in `sttp.ai.core.model.Capability`; models supporting everything mix in the `Capability.All` shorthand, which
+extends all four). Agent builder methods that need a capability require it at compile time:
 `.tools`/`.addTool` need `ToolCalling`, `.responseSchema`/`.deriveResponseSchema` need `StructuredOutput`.
 
 ```scala mdoc:compile-only

@@ -20,50 +20,20 @@ object ClaudeModel {
   case object ClaudeSonnet4_0 extends ClaudeModel("claude-sonnet-4-20250514") with Vision with ToolCalling with Reasoning
   case object ClaudeOpus4_0 extends ClaudeModel("claude-opus-4-20250514") with Vision with ToolCalling with Reasoning
 
-  case object ClaudeOpus4_1
-      extends ClaudeModel("claude-opus-4-1-20250805")
-      with Vision
-      with ToolCalling
-      with StructuredOutput
-      with Reasoning
+  case object ClaudeOpus4_1 extends ClaudeModel("claude-opus-4-1-20250805") with All
 
-  case object ClaudeSonnet4_5
-      extends ClaudeModel("claude-sonnet-4-5-20250929")
-      with Vision
-      with ToolCalling
-      with StructuredOutput
-      with Reasoning
-  case object ClaudeSonnet4_5Latest
-      extends ClaudeModel("claude-sonnet-4-5")
-      with Vision
-      with ToolCalling
-      with StructuredOutput
-      with Reasoning
-  case object ClaudeHaiku4_5
-      extends ClaudeModel("claude-haiku-4-5-20251001")
-      with Vision
-      with ToolCalling
-      with StructuredOutput
-      with Reasoning
-  case object ClaudeHaiku4_5Latest extends ClaudeModel("claude-haiku-4-5") with Vision with ToolCalling with StructuredOutput with Reasoning
-  case object ClaudeOpus4_5
-      extends ClaudeModel("claude-opus-4-5-20251101")
-      with Vision
-      with ToolCalling
-      with StructuredOutput
-      with Reasoning
-  case object ClaudeOpus4_5Latest extends ClaudeModel("claude-opus-4-5") with Vision with ToolCalling with StructuredOutput with Reasoning
+  case object ClaudeSonnet4_5 extends ClaudeModel("claude-sonnet-4-5-20250929") with All
+  case object ClaudeSonnet4_5Latest extends ClaudeModel("claude-sonnet-4-5") with All
+  case object ClaudeHaiku4_5 extends ClaudeModel("claude-haiku-4-5-20251001") with All
+  case object ClaudeHaiku4_5Latest extends ClaudeModel("claude-haiku-4-5") with All
+  case object ClaudeOpus4_5 extends ClaudeModel("claude-opus-4-5-20251101") with All
+  case object ClaudeOpus4_5Latest extends ClaudeModel("claude-opus-4-5") with All
 
-  case object ClaudeSonnet5 extends ClaudeModel("claude-sonnet-5") with Vision with ToolCalling with StructuredOutput with Reasoning
-  case object ClaudeOpus5 extends ClaudeModel("claude-opus-5") with Vision with ToolCalling with StructuredOutput with Reasoning
+  case object ClaudeSonnet5 extends ClaudeModel("claude-sonnet-5") with All
+  case object ClaudeOpus5 extends ClaudeModel("claude-opus-5") with All
 
   /** A model id not in the predefined list. Claims all capabilities — using it asserts your model supports what you use it for. */
-  case class CustomClaudeModel(override val value: String)
-      extends ClaudeModel(value)
-      with Vision
-      with ToolCalling
-      with StructuredOutput
-      with Reasoning
+  case class CustomClaudeModel(override val value: String) extends ClaudeModel(value) with All
 
   val values: Set[ClaudeModel] = Set(
     Claude3_5Sonnet,

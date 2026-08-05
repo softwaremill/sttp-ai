@@ -72,7 +72,8 @@ or inferred from the model listing.
 
 On `--apply`, every constant in an endpoint's managed block - both existing and newly added - is re-rendered
 with `with Capability.X` mixins resolved fresh from this config, in canonical order (`Vision`, `ToolCalling`,
-`StructuredOutput`, `Reasoning`). Any hand-written mixins already in the file are discarded; the yaml config is
+`StructuredOutput`, `Reasoning`); a model with all four capabilities is rendered with the `with Capability.All`
+shorthand instead. Any hand-written mixins already in the file are discarded; the yaml config is
 the source of truth. Endpoints with no `capabilities` entry render with no mixin clause, unchanged from before.
 
 Note: the script only manages the mixin clauses. Before adding a `capabilities` entry for a new endpoint, the

@@ -24,6 +24,17 @@ class CapabilitySpec extends AnyFlatSpec with Matchers {
       "implicitly[sttp.ai.core.model.Supports[sttp.ai.core.model.CapabilitySpecModels.PlainModel.type, sttp.ai.core.model.Capability.ToolCalling]]"
     )
 
+  it should "resolve every capability for a model mixing in Capability.All" in {
+    object AllShorthandModel extends AIModel with Capability.All {
+      val value: String = "all-shorthand"
+    }
+    implicitly[Supports[AllShorthandModel.type, Capability.Vision]]
+    implicitly[Supports[AllShorthandModel.type, Capability.ToolCalling]]
+    implicitly[Supports[AllShorthandModel.type, Capability.StructuredOutput]]
+    implicitly[Supports[AllShorthandModel.type, Capability.Reasoning]]
+    succeed
+  }
+
   it should "resolve for every capability a model mixes in, independently" in {
     object AllModel
         extends AIModel

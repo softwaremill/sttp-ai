@@ -31,6 +31,9 @@ object Capability {
 
   /** The model is a reasoning ("thinking") model. */
   trait Reasoning
+
+  /** Shorthand for a model that supports every capability. Mixing this in is equivalent to mixing in all four marker traits. */
+  trait All extends Vision with ToolCalling with StructuredOutput with Reasoning
 }
 
 /** Evidence that model type `M` declares capability `C`. Resolved automatically for any model constant that mixes in `C`.

@@ -51,7 +51,8 @@ def validateCapabilityNames(capabilities: Map[String, CapabilityConfig]): Unit =
   }
 
 def mixinClause(capabilities: List[String]): String =
-  capabilities.map(c => s" with Capability.$c").mkString
+  if (capabilities == CanonicalOrder) " with Capability.All"
+  else capabilities.map(c => s" with Capability.$c").mkString
 
 opaque type Endpoint = String
 
