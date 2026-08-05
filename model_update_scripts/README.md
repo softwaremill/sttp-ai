@@ -75,6 +75,10 @@ with `with Capability.X` mixins resolved fresh from this config, in canonical or
 `StructuredOutput`, `Reasoning`). Any hand-written mixins already in the file are discarded; the yaml config is
 the source of truth. Endpoints with no `capabilities` entry render with no mixin clause, unchanged from before.
 
+Note: the script only manages the mixin clauses. Before adding a `capabilities` entry for a new endpoint, the
+target file must already import `sttp.ai.core.model.Capability` and its model class must extend
+`sttp.ai.core.model.AIModel` — otherwise the generated `with Capability.X` clauses won't compile.
+
 ## Default Behavior
 
 - **JSON file**: `models.json` is used by default

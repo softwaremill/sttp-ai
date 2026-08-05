@@ -30,8 +30,14 @@ Model constants are tagged with capability marker traits: `Vision`, `ToolCalling
 (in `sttp.ai.core.model.Capability`). Agent builder methods that need a capability require it at compile time:
 `.tools`/`.addTool` need `ToolCalling`, `.responseSchema`/`.deriveResponseSchema` need `StructuredOutput`.
 
-```scala
+```scala mdoc:compile-only
+import sttp.ai.core.agent.AgentTool
+import sttp.ai.openai.OpenAI
+import sttp.ai.openai.agent.OpenAIAgent
 import sttp.ai.openai.requests.completions.chat.ChatRequestBody.ChatCompletionModel
+import sttp.shared.Identity
+
+def myTool: AgentTool[Identity, ?] = ???
 
 val agent = OpenAIAgent
   .synchronous(OpenAI.fromEnv, ChatCompletionModel.GPT4o) // GPT4o mixes in ToolCalling
@@ -44,7 +50,14 @@ val agent = OpenAIAgent
 String model names keep working and skip capability checking — they wrap into the provider's custom model class,
 which claims all capabilities (you assert your model supports what you use it for):
 
-```scala
+```scala mdoc:compile-only
+import sttp.ai.core.agent.AgentTool
+import sttp.ai.openai.OpenAI
+import sttp.ai.openai.agent.OpenAIAgent
+import sttp.shared.Identity
+
+def myTool: AgentTool[Identity, ?] = ???
+
 val ollamaAgent = OpenAIAgent.synchronous(OpenAI.fromEnv, "llama3-70b").tools(myTool).build
 ```
 
@@ -53,8 +66,14 @@ val ollamaAgent = OpenAIAgent.synchronous(OpenAI.fromEnv, "llama3-70b").tools(my
 Agents can use a different model per loop iteration — e.g. a cheap model while the agent calls tools, and a stronger
 model for the forced-final iteration (where tools are withheld and the model must answer):
 
-```scala
-import sttp.ai.core.agent.IterationInfo
+```scala mdoc:compile-only
+import sttp.ai.core.agent.{AgentTool, IterationInfo}
+import sttp.ai.openai.OpenAI
+import sttp.ai.openai.agent.OpenAIAgent
+import sttp.ai.openai.requests.completions.chat.ChatRequestBody.ChatCompletionModel
+import sttp.shared.Identity
+
+def myTool: AgentTool[Identity, ?] = ???
 
 val mixedAgent = OpenAIAgent
   .synchronous(OpenAI.fromEnv, (info: IterationInfo) => if info.isLastIteration then ChatCompletionModel.GPT5 else ChatCompletionModel.GPT4oMini)
@@ -65,7 +84,10 @@ val mixedAgent = OpenAIAgent
 The inferred model type is the least upper bound of every model the function can return, so capability checks require
 the capabilities **all** of them share. If inference produces an unwieldy type, ascribe the function explicitly:
 
-```scala
+```scala mdoc:compile-only
+import sttp.ai.core.agent.IterationInfo
+import sttp.ai.openai.requests.completions.chat.ChatRequestBody.ChatCompletionModel
+
 val pick: IterationInfo => ChatCompletionModel & sttp.ai.core.model.Capability.ToolCalling =
   info => if info.isLastIteration then ChatCompletionModel.GPT5 else ChatCompletionModel.GPT4oMini
 ```

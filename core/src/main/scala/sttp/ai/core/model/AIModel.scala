@@ -33,7 +33,11 @@ object Capability {
   trait Reasoning
 }
 
-/** Evidence that model type `M` declares capability `C`. Resolved automatically for any model constant that mixes in `C`. */
+/** Evidence that model type `M` declares capability `C`. Resolved automatically for any model constant that mixes in `C`.
+  *
+  * Sealed by design: capabilities are declared by mixing the marker trait into the model type, not by providing ad-hoc instances. For
+  * models outside the predefined constants, use the provider's custom model class, which claims all capabilities.
+  */
 @implicitNotFound(
   "Model ${M} is not declared to support ${C}. Pick a model constant that mixes in ${C}, or use the provider's custom model class (which claims all capabilities)."
 )

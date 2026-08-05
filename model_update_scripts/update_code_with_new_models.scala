@@ -32,12 +32,22 @@ def capabilitiesFor(modelId: String, config: Option[CapabilityConfig]): List[Str
   config match {
     case None      => Nil
     case Some(cfg) =>
-      val (set, patternLabel) =
-        cfg.rules.find(r => globToRegex(r.pattern).matches(modelId)).map(r => (r.capabilities, r.pattern)).getOrElse((cfg.defaults, "defaults"))
-      set.find(name => !CanonicalOrder.contains(name)).foreach { unknown =>
-        throw new IllegalArgumentException(s"Unknown capability '$unknown' in $patternLabel (known capabilities: ${CanonicalOrder.mkString(", ")})")
-      }
+      val set = cfg.rules.find(r => globToRegex(r.pattern).matches(modelId)).map(_.capabilities).getOrElse(cfg.defaults)
       CanonicalOrder.filter(set.contains)
+  }
+
+// Validates every rule and defaults list up front (at config load), so a typo in a shadowed or
+// currently-unmatched rule fails loudly instead of lying dormant until a model id first hits it.
+def validateCapabilityNames(capabilities: Map[String, CapabilityConfig]): Unit =
+  capabilities.foreach { case (endpoint, cfg) =>
+    def check(names: List[String], where: String): Unit =
+      names.filterNot(CanonicalOrder.contains).foreach { unknown =>
+        throw new IllegalArgumentException(
+          s"Unknown capability '$unknown' in $where of endpoint '$endpoint' (known capabilities: ${CanonicalOrder.mkString(", ")})"
+        )
+      }
+    check(cfg.defaults, "defaults")
+    cfg.rules.foreach(r => check(r.capabilities, s"rule '${r.pattern}'"))
   }
 
 def mixinClause(capabilities: List[String]): String =
@@ -187,6 +197,7 @@ object ModelUpdater extends IOApp {
           case e: Exception => throw e
         }
       }
+      _ <- IO(config.capabilities.foreach(validateCapabilityNames))
       _ <- logger.debug(s"✅ Loaded config with ${config.endpoints.size} endpoints")
     } yield config
 
@@ -373,7 +384,7 @@ object ModelUpdater extends IOApp {
     } else if (shortStartPattern.matches(line.trim)) {
       // A bare `case object Name` only starts a block for our className if the following
       // non-empty line is its `extends ClassName(` continuation - otherwise it may be a
-      // case object of a different class entirely (see finding #3).
+      // case object of a different class entirely.
       lines.drop(index + 1).find(_.trim.nonEmpty).exists(_.trim.startsWith(s"extends $className("))
     } else {
       false

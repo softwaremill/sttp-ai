@@ -42,6 +42,16 @@ class ScriptedAgentBackendSpec extends AnyFlatSpec with Matchers {
     backend.requests.head.systemPrompt shouldBe Some("be helpful")
   }
 
+  it should "record the IterationInfo of each request" in {
+    val backend = newBackend(ScriptedResponse.text("a"), ScriptedResponse.text("b"))
+
+    backend.sendRequest(history, SyncBackendStub, includeTools = true, IterationInfo(1, 2))
+    backend.sendRequest(history, SyncBackendStub, includeTools = false, IterationInfo(2, 2))
+
+    backend.requests.map(_.iterationInfo) shouldBe Seq(IterationInfo(1, 2), IterationInfo(2, 2))
+    backend.requests.map(_.iterationInfo.isLastIteration) shouldBe Seq(false, true)
+  }
+
   it should "record offered tools with their JSON schemas when includeTools is true" in {
     val backend = newBackend(ScriptedResponse.text("a"))
 
