@@ -144,31 +144,31 @@ object OpenAIAgent {
   def builder[F[_]](
       openAI: OpenAI,
       modelName: String
-  )(implicit monad: sttp.monad.MonadError[F]): AgentBuilder[F] =
+  )(implicit monad: sttp.monad.MonadError[F]): AgentBuilder[F, ChatCompletionModel.CustomChatCompletionModel] =
     builder(openAI, modelName, strictTools = true)
 
   def builder[F[_]](
       apiKey: String,
       modelName: String
-  )(implicit monad: sttp.monad.MonadError[F]): AgentBuilder[F] =
+  )(implicit monad: sttp.monad.MonadError[F]): AgentBuilder[F, ChatCompletionModel.CustomChatCompletionModel] =
     builder(apiKey, modelName, strictTools = true)
 
   def synchronous(
       openAI: OpenAI,
       modelName: String
-  ): AgentBuilder[Identity] = synchronous(openAI, modelName, strictTools = true)
+  ): AgentBuilder[Identity, ChatCompletionModel.CustomChatCompletionModel] = synchronous(openAI, modelName, strictTools = true)
 
   def synchronous(
       apiKey: String,
       modelName: String
-  ): AgentBuilder[Identity] = synchronous(apiKey, modelName, strictTools = true)
+  ): AgentBuilder[Identity, ChatCompletionModel.CustomChatCompletionModel] = synchronous(apiKey, modelName, strictTools = true)
 
   def builder[F[_]](
       openAI: OpenAI,
       modelName: String,
       strictTools: Boolean
-  )(implicit monad: sttp.monad.MonadError[F]): AgentBuilder[F] =
-    AgentBuilder[F](config =>
+  )(implicit monad: sttp.monad.MonadError[F]): AgentBuilder[F, ChatCompletionModel.CustomChatCompletionModel] =
+    AgentBuilder[F, ChatCompletionModel.CustomChatCompletionModel](config =>
       new OpenAIAgentBackend[F](openAI, modelName, config.userTools, config.systemPrompt, config.responseSchema, strictTools)
     )
 
@@ -176,18 +176,20 @@ object OpenAIAgent {
       apiKey: String,
       modelName: String,
       strictTools: Boolean
-  )(implicit monad: sttp.monad.MonadError[F]): AgentBuilder[F] =
+  )(implicit monad: sttp.monad.MonadError[F]): AgentBuilder[F, ChatCompletionModel.CustomChatCompletionModel] =
     builder(new OpenAI(apiKey), modelName, strictTools)
 
   def synchronous(
       openAI: OpenAI,
       modelName: String,
       strictTools: Boolean
-  ): AgentBuilder[Identity] = builder[Identity](openAI, modelName, strictTools)(IdentityMonad)
+  ): AgentBuilder[Identity, ChatCompletionModel.CustomChatCompletionModel] =
+    builder[Identity](openAI, modelName, strictTools)(IdentityMonad)
 
   def synchronous(
       apiKey: String,
       modelName: String,
       strictTools: Boolean
-  ): AgentBuilder[Identity] = builder[Identity](apiKey, modelName, strictTools)(IdentityMonad)
+  ): AgentBuilder[Identity, ChatCompletionModel.CustomChatCompletionModel] =
+    builder[Identity](apiKey, modelName, strictTools)(IdentityMonad)
 }

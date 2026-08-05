@@ -2,7 +2,7 @@ package sttp.ai.gemini.agent
 
 import sttp.ai.gemini.GeminiClient
 import sttp.ai.gemini.config.GeminiConfig
-import sttp.ai.gemini.models.{Content, GenerationConfig, InteractionInput, InteractionStatus, ResponseFormat, Step, Tool}
+import sttp.ai.gemini.models.{Content, GeminiModel, GenerationConfig, InteractionInput, InteractionStatus, ResponseFormat, Step, Tool}
 import sttp.ai.gemini.requests.InteractionRequest
 import sttp.ai.gemini.responses.InteractionResponse
 import sttp.ai.core.agent._
@@ -135,22 +135,24 @@ object GeminiAgent {
   def builder[F[_]](
       geminiConfig: GeminiConfig,
       modelName: String
-  )(implicit monad: sttp.monad.MonadError[F]): AgentBuilder[F] =
+  )(implicit monad: sttp.monad.MonadError[F]): AgentBuilder[F, GeminiModel.CustomModel] =
     builder(GeminiClient(geminiConfig), modelName)
 
   def builder[F[_]](
       client: GeminiClient,
       modelName: String
-  )(implicit monad: sttp.monad.MonadError[F]): AgentBuilder[F] =
-    AgentBuilder[F](config => new GeminiAgentBackend[F](client, modelName, config.userTools, config.systemPrompt, config.responseSchema))
+  )(implicit monad: sttp.monad.MonadError[F]): AgentBuilder[F, GeminiModel.CustomModel] =
+    AgentBuilder[F, GeminiModel.CustomModel](config =>
+      new GeminiAgentBackend[F](client, modelName, config.userTools, config.systemPrompt, config.responseSchema)
+    )
 
   def synchronous(
       geminiConfig: GeminiConfig,
       modelName: String
-  ): AgentBuilder[Identity] = builder[Identity](geminiConfig, modelName)(IdentityMonad)
+  ): AgentBuilder[Identity, GeminiModel.CustomModel] = builder[Identity](geminiConfig, modelName)(IdentityMonad)
 
   def synchronous(
       client: GeminiClient,
       modelName: String
-  ): AgentBuilder[Identity] = builder[Identity](client, modelName)(IdentityMonad)
+  ): AgentBuilder[Identity, GeminiModel.CustomModel] = builder[Identity](client, modelName)(IdentityMonad)
 }

@@ -2,7 +2,7 @@ package sttp.ai.claude.agent
 
 import sttp.ai.claude.ClaudeClient
 import sttp.ai.claude.config.ClaudeConfig
-import sttp.ai.claude.models.{ContentBlock, Message, OutputConfig, OutputFormat, Tool}
+import sttp.ai.claude.models.{ClaudeModel, ContentBlock, Message, OutputConfig, OutputFormat, Tool}
 import sttp.ai.claude.requests.MessageRequest
 import sttp.ai.core.agent._
 import sttp.client4.Backend
@@ -120,22 +120,24 @@ object ClaudeAgent {
   def builder[F[_]](
       claudeConfig: ClaudeConfig,
       modelName: String
-  )(implicit monad: sttp.monad.MonadError[F]): AgentBuilder[F] =
+  )(implicit monad: sttp.monad.MonadError[F]): AgentBuilder[F, ClaudeModel.CustomClaudeModel] =
     builder(ClaudeClient(claudeConfig), modelName)
 
   def builder[F[_]](
       client: ClaudeClient,
       modelName: String
-  )(implicit monad: sttp.monad.MonadError[F]): AgentBuilder[F] =
-    AgentBuilder[F](config => new ClaudeAgentBackend[F](client, modelName, config.userTools, config.systemPrompt, config.responseSchema))
+  )(implicit monad: sttp.monad.MonadError[F]): AgentBuilder[F, ClaudeModel.CustomClaudeModel] =
+    AgentBuilder[F, ClaudeModel.CustomClaudeModel](config =>
+      new ClaudeAgentBackend[F](client, modelName, config.userTools, config.systemPrompt, config.responseSchema)
+    )
 
   def synchronous(
       claudeConfig: ClaudeConfig,
       modelName: String
-  ): AgentBuilder[Identity] = builder[Identity](claudeConfig, modelName)(IdentityMonad)
+  ): AgentBuilder[Identity, ClaudeModel.CustomClaudeModel] = builder[Identity](claudeConfig, modelName)(IdentityMonad)
 
   def synchronous(
       client: ClaudeClient,
       modelName: String
-  ): AgentBuilder[Identity] = builder[Identity](client, modelName)(IdentityMonad)
+  ): AgentBuilder[Identity, ClaudeModel.CustomClaudeModel] = builder[Identity](client, modelName)(IdentityMonad)
 }

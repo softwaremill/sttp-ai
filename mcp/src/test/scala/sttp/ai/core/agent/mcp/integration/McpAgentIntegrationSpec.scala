@@ -13,6 +13,7 @@ import sttp.ai.claude.agent.ClaudeAgent
 import sttp.ai.claude.config.ClaudeConfig
 import sttp.ai.core.agent.mcp.McpTools
 import sttp.ai.core.agent.{AgentBuilder, AgentResult, AgentTool}
+import sttp.ai.core.model.AIModel
 import sttp.ai.openai.OpenAI
 import sttp.ai.openai.agent.OpenAIAgent
 import sttp.client4.DefaultSyncBackend
@@ -33,7 +34,7 @@ class McpAgentIntegrationSpec extends AnyFlatSpec with Matchers {
   case class Location(lat: Double, lng: Double) derives Codec, Schema
   case class CreateEventInput(title: String, location: Option[Location], priority: Option[String]) derives Codec, Schema
 
-  private def withMcpAgentRun(builderFor: Seq[AgentTool[Identity, ?]] => AgentBuilder[Identity])(
+  private def withMcpAgentRun[M <: AIModel](builderFor: Seq[AgentTool[Identity, ?]] => AgentBuilder[Identity, M])(
       check: AgentResult[String] => Assertion
   ): Assertion =
     supervised {

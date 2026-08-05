@@ -6,12 +6,18 @@ import org.scalatest.matchers.should.Matchers
 import io.circe.Codec
 import io.circe.generic.semiauto.deriveCodec
 import io.circe.parser.decode
+import sttp.ai.core.model.{AIModel, Capability}
 import sttp.client4.testing.SyncBackendStub
 import sttp.monad.IdentityMonad
 import sttp.shared.Identity
 import sttp.tapir.Schema
 
 class AgentSpec extends AnyFlatSpec with Matchers with OptionValues {
+
+  // Test-only model claiming every capability, so builder methods requiring capability evidence are usable in these tests.
+  case object TestModel extends AIModel with Capability.ToolCalling with Capability.StructuredOutput {
+    val value: String = "test-model"
+  }
 
   class StubAgentBackend(responses: Seq[AgentResponse]) extends AgentBackend[Identity] {
     private var callCount = 0
@@ -54,10 +60,10 @@ class AgentSpec extends AnyFlatSpec with Matchers with OptionValues {
     s"Result: ${input.a + input.b}"
   }
 
-  private def agentBuilder(responses: AgentResponse*): AgentBuilder[Identity] =
-    AgentBuilder[Identity](_ => new StubAgentBackend(responses))(IdentityMonad)
+  private def agentBuilder(responses: AgentResponse*): AgentBuilder[Identity, TestModel.type] =
+    AgentBuilder[Identity, TestModel.type](_ => new StubAgentBackend(responses))(IdentityMonad)
 
-  private def runLoop(builder: AgentBuilder[Identity]): AgentResult[String] =
+  private def runLoop(builder: AgentBuilder[Identity, TestModel.type]): AgentResult[String] =
     builder.build.run("Test")(backend)
 
   case class DummyInput()
@@ -103,7 +109,7 @@ class AgentSpec extends AnyFlatSpec with Matchers with OptionValues {
       )
     )
 
-    val result = runLoop(AgentBuilder[Identity](_ => stubBackend)(IdentityMonad).maxIterations(3).tools(dummyTool))
+    val result = runLoop(AgentBuilder[Identity, TestModel.type](_ => stubBackend)(IdentityMonad).maxIterations(3).tools(dummyTool))
 
     stubBackend.receivedIncludeTools shouldBe Seq(true, true, false)
     result.toolCalls should have size 2
@@ -232,7 +238,7 @@ class AgentSpec extends AnyFlatSpec with Matchers with OptionValues {
         AgentResponse("Done", Seq.empty, StopReason.EndTurn)
       )
     )
-    runLoop(AgentBuilder[Identity](_ => stubBackend)(IdentityMonad).tools(dummyTool))
+    runLoop(AgentBuilder[Identity, TestModel.type](_ => stubBackend)(IdentityMonad).tools(dummyTool))
 
     stubBackend.receivedHistories should have size 2
     val firstHistory = stubBackend.receivedHistories.head
@@ -255,7 +261,7 @@ class AgentSpec extends AnyFlatSpec with Matchers with OptionValues {
       )
     )
 
-    runLoop(AgentBuilder[Identity](_ => stubBackend)(IdentityMonad).maxIterations(3).tools(dummyTool))
+    runLoop(AgentBuilder[Identity, TestModel.type](_ => stubBackend)(IdentityMonad).maxIterations(3).tools(dummyTool))
 
     stubBackend.iterationInfos.map(_.iteration) shouldBe Vector(1, 2, 3)
     stubBackend.iterationInfos.map(_.maxIterations).distinct shouldBe Vector(3)
