@@ -19,6 +19,7 @@ Framework for building autonomous AI agents that iteratively solve tasks using t
 import sttp.ai.core.agent.*
 import sttp.ai.openai.OpenAI
 import sttp.ai.openai.agent.OpenAIAgent
+import sttp.ai.openai.requests.completions.chat.ChatRequestBody.ChatCompletionModel
 import sttp.client4.DefaultSyncBackend
 import sttp.tapir.Schema
 
@@ -35,7 +36,7 @@ object BasicExample extends App {
   val backend = DefaultSyncBackend()
   try {
     val agent = OpenAIAgent
-      .synchronous(OpenAI.fromEnv, "gpt-4o-mini")
+      .synchronous(OpenAI.fromEnv, ChatCompletionModel.GPT4oMini)
       .maxIterations(5)
       .tools(weatherTool)
       .build

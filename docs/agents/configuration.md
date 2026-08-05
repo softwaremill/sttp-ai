@@ -24,6 +24,55 @@ The OpenAI factories additionally accept a `strictTools` flag (default `true`): 
 normalized for OpenAI's strict function calling (`additionalProperties: false`, all properties required, optional
 properties nullable); when `false`, tools are registered as non-strict with their original schemas.
 
+## Model capabilities
+
+Model constants are tagged with capability marker traits: `Vision`, `ToolCalling`, `StructuredOutput`, `Reasoning`
+(in `sttp.ai.core.model.Capability`). Agent builder methods that need a capability require it at compile time:
+`.tools`/`.addTool` need `ToolCalling`, `.responseSchema`/`.deriveResponseSchema` need `StructuredOutput`.
+
+```scala
+import sttp.ai.openai.requests.completions.chat.ChatRequestBody.ChatCompletionModel
+
+val agent = OpenAIAgent
+  .synchronous(OpenAI.fromEnv, ChatCompletionModel.GPT4o) // GPT4o mixes in ToolCalling
+  .tools(myTool)
+  .build
+
+// OpenAIAgent.synchronous(OpenAI.fromEnv, ChatCompletionModel.O1Mini).tools(myTool) // does not compile: o1-mini has no ToolCalling
+```
+
+String model names keep working and skip capability checking — they wrap into the provider's custom model class,
+which claims all capabilities (you assert your model supports what you use it for):
+
+```scala
+val ollamaAgent = OpenAIAgent.synchronous(OpenAI.fromEnv, "llama3-70b").tools(myTool).build
+```
+
+## Per-iteration model selection
+
+Agents can use a different model per loop iteration — e.g. a cheap model while the agent calls tools, and a stronger
+model for the forced-final iteration (where tools are withheld and the model must answer):
+
+```scala
+import sttp.ai.core.agent.IterationInfo
+
+val mixedAgent = OpenAIAgent
+  .synchronous(OpenAI.fromEnv, (info: IterationInfo) => if info.isLastIteration then ChatCompletionModel.GPT5 else ChatCompletionModel.GPT4oMini)
+  .tools(myTool)
+  .build
+```
+
+The inferred model type is the least upper bound of every model the function can return, so capability checks require
+the capabilities **all** of them share. If inference produces an unwieldy type, ascribe the function explicitly:
+
+```scala
+val pick: IterationInfo => ChatCompletionModel & sttp.ai.core.model.Capability.ToolCalling =
+  info => if info.isLastIteration then ChatCompletionModel.GPT5 else ChatCompletionModel.GPT4oMini
+```
+
+Note: `isLastIteration` flags only the *forced* last iteration (`maxIterations` reached). The loop cannot know in
+advance on which iteration the model will answer naturally.
+
 ## Hooks
 
 The loop can invoke optional effectful hooks around each tool call. Both run inside the agent loop, so an error in either hook interrupts the run.

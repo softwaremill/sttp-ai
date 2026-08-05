@@ -8,16 +8,20 @@ The [agent loop](quickstart.md) talks to a model through the `AgentBackend` inte
 trait AgentBackend[F[_]] {
   def sendRequest(
       history: ConversationHistory,
-      backend: Backend[F]
+      backend: Backend[F],
+      includeTools: Boolean,
+      iterationInfo: IterationInfo
   ): F[AgentResponse]
 }
 
 case class AgentResponse(
     textContent: String,
     toolCalls: Seq[ToolCall],
-    stopReason: Option[String]
+    stopReason: StopReason
 )
 ```
+
+`iterationInfo` tells the backend which loop iteration this request belongs to (1-based) — use it to vary the model per iteration.
 
 Your implementation needs to:
 1. Convert `ConversationHistory` to your API's message format
