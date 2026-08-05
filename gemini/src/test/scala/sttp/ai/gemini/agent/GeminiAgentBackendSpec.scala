@@ -46,7 +46,9 @@ class GeminiAgentBackendSpec extends AnyFlatSpec with Matchers with EitherValues
       responseSchema: Option[ResponseSchema[_]] = None
   ): GeminiAgentBackend[Identity] = {
     val client = GeminiClient(GeminiConfig(apiKey = "test-key"))
-    new GeminiAgentBackend[Identity](client, testModel, tools, systemPrompt, responseSchema)(IdentityMonad)
+    new GeminiAgentBackend[Identity](client, _ => GeminiModel.CustomModel(testModel), tools, systemPrompt, responseSchema)(
+      IdentityMonad
+    )
   }
 
   "GeminiAgentBackend" should "pass the full tool schema through, preserving nested structure" in {
@@ -294,5 +296,42 @@ class GeminiAgentBackendSpec extends AnyFlatSpec with Matchers with EitherValues
 
     input.downN(1).downField("type").as[String] shouldBe Right("user_input")
     input.downN(1).downField("content").downN(0).downField("text").as[String] shouldBe Right("[Iteration 2 of 5]")
+  }
+
+  it should "resolve the model per iteration via modelForIteration" in {
+    val capturedModels = new AtomicReference[Vector[String]](Vector.empty)
+    val httpStub = DefaultSyncBackend.stub.whenAnyRequest.thenRespondF { request =>
+      val body = request.body match {
+        case StringBody(s, _, _) => s
+        case other               => fail(s"expected StringBody, got $other")
+      }
+      val model = parse(body).toOption.flatMap(_.hcursor.get[String]("model").toOption).getOrElse("?")
+      capturedModels.updateAndGet(_ :+ model)
+      ResponseStub.adjust(completedResponse, StatusCode.Ok)
+    }
+
+    val client = GeminiClient(GeminiConfig(apiKey = "test-key"))
+    val backend = new GeminiAgentBackend[Identity](
+      client,
+      info => if (info.isLastIteration) GeminiModel.Gemini25Pro else GeminiModel.Gemini25FlashLite,
+      Seq.empty,
+      None,
+      None
+    )(IdentityMonad)
+
+    backend.sendRequest(ConversationHistory.withInitialPrompt("hello"), httpStub, includeTools = false, IterationInfo(1, 3)): Unit
+    backend.sendRequest(ConversationHistory.withInitialPrompt("hello"), httpStub, includeTools = false, IterationInfo(3, 3)): Unit
+
+    capturedModels.get() shouldBe Vector("gemini-2.5-flash-lite", "gemini-2.5-pro")
+  }
+
+  it should "build typed and mixed-model agents through GeminiAgent" in {
+    GeminiAgent.synchronous(GeminiConfig(apiKey = "test-key"), GeminiModel.Gemini25Flash): Unit
+    GeminiAgent.synchronous(
+      GeminiConfig(apiKey = "test-key"),
+      (info: IterationInfo) => if (info.isLastIteration) GeminiModel.Gemini25Pro else GeminiModel.Gemini25FlashLite
+    ): Unit
+    GeminiAgent.synchronous(GeminiConfig(apiKey = "test-key"), "gemini-experimental"): Unit
+    succeed
   }
 }
