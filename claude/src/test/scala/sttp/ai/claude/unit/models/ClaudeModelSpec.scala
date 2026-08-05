@@ -3,6 +3,7 @@ package sttp.ai.claude.unit.models
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
 import sttp.ai.claude.models.ClaudeModel
+import sttp.ai.core.model.Capability
 
 class ClaudeModelSpec extends AnyFlatSpec with Matchers {
 
@@ -64,37 +65,46 @@ class ClaudeModelSpec extends AnyFlatSpec with Matchers {
     ClaudeModel.values should have size 18
   }
 
-  "Structured output support" should "be false for legacy Claude 3.x models (Default type)" in {
-    ClaudeModel.Claude3_5Sonnet shouldBe a[ClaudeModel.Default]
-    ClaudeModel.Claude3_5SonnetLatest shouldBe a[ClaudeModel.Default]
-    ClaudeModel.Claude3_5Haiku shouldBe a[ClaudeModel.Default]
-    ClaudeModel.Claude3_5HaikuLatest shouldBe a[ClaudeModel.Default]
-    ClaudeModel.Claude3Opus shouldBe a[ClaudeModel.Default]
-    ClaudeModel.Claude3Sonnet shouldBe a[ClaudeModel.Default]
-    ClaudeModel.Claude3Haiku shouldBe a[ClaudeModel.Default]
+  "Capability tags" should "not include StructuredOutput on legacy 3.x and 4.0 models" in {
+    ClaudeModel.Claude3_5Sonnet should not be a[Capability.StructuredOutput]
+    ClaudeModel.Claude3_5SonnetLatest should not be a[Capability.StructuredOutput]
+    ClaudeModel.Claude3_5Haiku should not be a[Capability.StructuredOutput]
+    ClaudeModel.Claude3_5HaikuLatest should not be a[Capability.StructuredOutput]
+    ClaudeModel.Claude3Opus should not be a[Capability.StructuredOutput]
+    ClaudeModel.Claude3Sonnet should not be a[Capability.StructuredOutput]
+    ClaudeModel.Claude3Haiku should not be a[Capability.StructuredOutput]
+    ClaudeModel.ClaudeSonnet4_0 should not be a[Capability.StructuredOutput]
+    ClaudeModel.ClaudeOpus4_0 should not be a[Capability.StructuredOutput]
   }
 
-  it should "be false for Claude 4.0 models (Default type)" in {
-    ClaudeModel.ClaudeSonnet4_0 shouldBe a[ClaudeModel.Default]
-    ClaudeModel.ClaudeOpus4_0 shouldBe a[ClaudeModel.Default]
+  it should "include StructuredOutput on 4.1+, 4.5 and 5 models" in {
+    ClaudeModel.ClaudeOpus4_1 shouldBe a[Capability.StructuredOutput]
+    ClaudeModel.ClaudeSonnet4_5 shouldBe a[Capability.StructuredOutput]
+    ClaudeModel.ClaudeSonnet4_5Latest shouldBe a[Capability.StructuredOutput]
+    ClaudeModel.ClaudeHaiku4_5 shouldBe a[Capability.StructuredOutput]
+    ClaudeModel.ClaudeHaiku4_5Latest shouldBe a[Capability.StructuredOutput]
+    ClaudeModel.ClaudeOpus4_5 shouldBe a[Capability.StructuredOutput]
+    ClaudeModel.ClaudeOpus4_5Latest shouldBe a[Capability.StructuredOutput]
+    ClaudeModel.ClaudeSonnet5 shouldBe a[Capability.StructuredOutput]
+    ClaudeModel.ClaudeOpus5 shouldBe a[Capability.StructuredOutput]
   }
 
-  it should "be true for Claude 4.1 models (WithStructuredOutput type)" in {
-    ClaudeModel.ClaudeOpus4_1 shouldBe a[ClaudeModel.WithStructuredOutput]
+  it should "mark every predefined model as ToolCalling, and 3.5 Haiku as text-only" in {
+    ClaudeModel.values.foreach(m => m shouldBe a[Capability.ToolCalling])
+    ClaudeModel.Claude3_5Haiku should not be a[Capability.Vision]
+    ClaudeModel.Claude3_5HaikuLatest should not be a[Capability.Vision]
+    ClaudeModel.Claude3Haiku shouldBe a[Capability.Vision]
+    ClaudeModel.ClaudeSonnet5 shouldBe a[Capability.Vision]
   }
 
-  it should "be true for Claude 4.5 models (WithStructuredOutput type)" in {
-    ClaudeModel.ClaudeSonnet4_5 shouldBe a[ClaudeModel.WithStructuredOutput]
-    ClaudeModel.ClaudeSonnet4_5Latest shouldBe a[ClaudeModel.WithStructuredOutput]
-    ClaudeModel.ClaudeHaiku4_5 shouldBe a[ClaudeModel.WithStructuredOutput]
-    ClaudeModel.ClaudeHaiku4_5Latest shouldBe a[ClaudeModel.WithStructuredOutput]
-    ClaudeModel.ClaudeOpus4_5 shouldBe a[ClaudeModel.WithStructuredOutput]
-    ClaudeModel.ClaudeOpus4_5Latest shouldBe a[ClaudeModel.WithStructuredOutput]
-  }
-
-  it should "be true for Claude 5 models (WithStructuredOutput type)" in {
-    ClaudeModel.ClaudeSonnet5 shouldBe a[ClaudeModel.WithStructuredOutput]
-    ClaudeModel.ClaudeOpus5 shouldBe a[ClaudeModel.WithStructuredOutput]
+  it should "make CustomClaudeModel claim all capabilities" in {
+    val custom = ClaudeModel.CustomClaudeModel("my-model")
+    custom shouldBe a[Capability.Vision]
+    custom shouldBe a[Capability.ToolCalling]
+    custom shouldBe a[Capability.StructuredOutput]
+    custom shouldBe a[Capability.Reasoning]
+    custom.value shouldBe "my-model"
+    ClaudeModel.values should not contain custom
   }
 
   "modelSupportsStructuredOutput" should "return false for known legacy model IDs" in {

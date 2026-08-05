@@ -1,36 +1,69 @@
 package sttp.ai.claude.models
 
-sealed trait ClaudeModel {
-  val value: String
+import sttp.ai.core.model.{AIModel, Capability}
+import sttp.ai.core.model.Capability._
+
+sealed abstract class ClaudeModel(val value: String) extends AIModel {
   override def toString: String = value
 }
 
 object ClaudeModel {
-  sealed abstract class Default(val value: String) extends ClaudeModel
-  sealed abstract class WithStructuredOutput(val value: String) extends ClaudeModel
 
-  case object Claude3_5Sonnet extends Default("claude-3-5-sonnet-20241022")
-  case object Claude3_5SonnetLatest extends Default("claude-3-5-sonnet-latest")
-  case object Claude3_5Haiku extends Default("claude-3-5-haiku-20241022")
-  case object Claude3_5HaikuLatest extends Default("claude-3-5-haiku-latest")
-  case object Claude3Opus extends Default("claude-3-opus-20240229")
-  case object Claude3Sonnet extends Default("claude-3-sonnet-20240229")
-  case object Claude3Haiku extends Default("claude-3-haiku-20240307")
+  case object Claude3_5Sonnet extends ClaudeModel("claude-3-5-sonnet-20241022") with Vision with ToolCalling
+  case object Claude3_5SonnetLatest extends ClaudeModel("claude-3-5-sonnet-latest") with Vision with ToolCalling
+  case object Claude3_5Haiku extends ClaudeModel("claude-3-5-haiku-20241022") with ToolCalling
+  case object Claude3_5HaikuLatest extends ClaudeModel("claude-3-5-haiku-latest") with ToolCalling
+  case object Claude3Opus extends ClaudeModel("claude-3-opus-20240229") with Vision with ToolCalling
+  case object Claude3Sonnet extends ClaudeModel("claude-3-sonnet-20240229") with Vision with ToolCalling
+  case object Claude3Haiku extends ClaudeModel("claude-3-haiku-20240307") with Vision with ToolCalling
 
-  case object ClaudeSonnet4_0 extends Default("claude-sonnet-4-20250514")
-  case object ClaudeOpus4_0 extends Default("claude-opus-4-20250514")
+  case object ClaudeSonnet4_0 extends ClaudeModel("claude-sonnet-4-20250514") with Vision with ToolCalling with Reasoning
+  case object ClaudeOpus4_0 extends ClaudeModel("claude-opus-4-20250514") with Vision with ToolCalling with Reasoning
 
-  case object ClaudeOpus4_1 extends WithStructuredOutput("claude-opus-4-1-20250805")
+  case object ClaudeOpus4_1
+      extends ClaudeModel("claude-opus-4-1-20250805")
+      with Vision
+      with ToolCalling
+      with StructuredOutput
+      with Reasoning
 
-  case object ClaudeSonnet4_5 extends WithStructuredOutput("claude-sonnet-4-5-20250929")
-  case object ClaudeSonnet4_5Latest extends WithStructuredOutput("claude-sonnet-4-5")
-  case object ClaudeHaiku4_5 extends WithStructuredOutput("claude-haiku-4-5-20251001")
-  case object ClaudeHaiku4_5Latest extends WithStructuredOutput("claude-haiku-4-5")
-  case object ClaudeOpus4_5 extends WithStructuredOutput("claude-opus-4-5-20251101")
-  case object ClaudeOpus4_5Latest extends WithStructuredOutput("claude-opus-4-5")
+  case object ClaudeSonnet4_5
+      extends ClaudeModel("claude-sonnet-4-5-20250929")
+      with Vision
+      with ToolCalling
+      with StructuredOutput
+      with Reasoning
+  case object ClaudeSonnet4_5Latest
+      extends ClaudeModel("claude-sonnet-4-5")
+      with Vision
+      with ToolCalling
+      with StructuredOutput
+      with Reasoning
+  case object ClaudeHaiku4_5
+      extends ClaudeModel("claude-haiku-4-5-20251001")
+      with Vision
+      with ToolCalling
+      with StructuredOutput
+      with Reasoning
+  case object ClaudeHaiku4_5Latest extends ClaudeModel("claude-haiku-4-5") with Vision with ToolCalling with StructuredOutput with Reasoning
+  case object ClaudeOpus4_5
+      extends ClaudeModel("claude-opus-4-5-20251101")
+      with Vision
+      with ToolCalling
+      with StructuredOutput
+      with Reasoning
+  case object ClaudeOpus4_5Latest extends ClaudeModel("claude-opus-4-5") with Vision with ToolCalling with StructuredOutput with Reasoning
 
-  case object ClaudeSonnet5 extends WithStructuredOutput("claude-sonnet-5")
-  case object ClaudeOpus5 extends WithStructuredOutput("claude-opus-5")
+  case object ClaudeSonnet5 extends ClaudeModel("claude-sonnet-5") with Vision with ToolCalling with StructuredOutput with Reasoning
+  case object ClaudeOpus5 extends ClaudeModel("claude-opus-5") with Vision with ToolCalling with StructuredOutput with Reasoning
+
+  /** A model id not in the predefined list. Claims all capabilities — using it asserts your model supports what you use it for. */
+  case class CustomClaudeModel(override val value: String)
+      extends ClaudeModel(value)
+      with Vision
+      with ToolCalling
+      with StructuredOutput
+      with Reasoning
 
   val values: Set[ClaudeModel] = Set(
     Claude3_5Sonnet,
@@ -55,11 +88,7 @@ object ClaudeModel {
 
   def fromString(value: String): Option[ClaudeModel] = values.find(_.value == value)
 
+  /** Whether the model behind `modelId` supports structured output. Unknown/future models default to supported. */
   def modelSupportsStructuredOutput(modelId: String): Boolean =
-    fromString(modelId) match {
-      case Some(_: WithStructuredOutput) => true
-      case Some(_: Default)              => false
-      case None                          => true // Defaults to supported for unknown/future models
-    }
-
+    fromString(modelId).forall(_.isInstanceOf[Capability.StructuredOutput])
 }
