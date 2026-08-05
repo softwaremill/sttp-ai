@@ -19,7 +19,7 @@ class ClaudeAgentIntegrationSpec extends AgentIntegrationSpecBase {
     val agentConfig = AgentConfig[Identity](maxIterations = maxIterations, userTools = tools)
     val agentBackend = new ClaudeAgentBackend[Identity](
       client,
-      "claude-haiku-4-5-20251001",
+      _ => sttp.ai.claude.models.ClaudeModel.ClaudeHaiku4_5,
       agentConfig.userTools,
       agentConfig.systemPrompt,
       agentConfig.responseSchema

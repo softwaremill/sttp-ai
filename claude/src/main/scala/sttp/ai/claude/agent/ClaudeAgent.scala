@@ -13,7 +13,7 @@ import sttp.monad.IdentityMonad
 
 private[claude] class ClaudeAgentBackend[F[_]](
     client: ClaudeClient,
-    modelName: String,
+    modelForIteration: IterationInfo => ClaudeModel,
     val tools: Seq[AgentTool[F, _]],
     val systemPrompt: Option[String],
     responseSchema: Option[ResponseSchema[_]]
@@ -75,7 +75,7 @@ private[claude] class ClaudeAgentBackend[F[_]](
   ): F[AgentResponse] = {
     val messages = buildMessages(history)
     val request = MessageRequest(
-      model = modelName,
+      model = modelForIteration(iterationInfo).value,
       messages = messages.toList,
       maxTokens = 4096,
       system = systemPrompt,
@@ -117,27 +117,58 @@ private[claude] class ClaudeAgentBackend[F[_]](
 
 object ClaudeAgent {
 
-  def builder[F[_]](
-      claudeConfig: ClaudeConfig,
-      modelName: String
-  )(implicit monad: sttp.monad.MonadError[F]): AgentBuilder[F, ClaudeModel.CustomClaudeModel] =
-    builder(ClaudeClient(claudeConfig), modelName)
+  /** Entry point: `ClaudeAgent.builder[F](client, model)`. The indirection lets `M` be inferred while `F` is given explicitly. */
+  def builder[F[_]]: BuilderPartiallyApplied[F] = new BuilderPartiallyApplied[F]
 
-  def builder[F[_]](
-      client: ClaudeClient,
-      modelName: String
-  )(implicit monad: sttp.monad.MonadError[F]): AgentBuilder[F, ClaudeModel.CustomClaudeModel] =
-    AgentBuilder[F, ClaudeModel.CustomClaudeModel](config =>
-      new ClaudeAgentBackend[F](client, modelName, config.userTools, config.systemPrompt, config.responseSchema)
-    )
+  final class BuilderPartiallyApplied[F[_]] private[ClaudeAgent] () {
 
-  def synchronous(
-      claudeConfig: ClaudeConfig,
-      modelName: String
-  ): AgentBuilder[Identity, ClaudeModel.CustomClaudeModel] = builder[Identity](claudeConfig, modelName)(IdentityMonad)
+    def apply[M <: ClaudeModel](client: ClaudeClient, model: M)(implicit monad: sttp.monad.MonadError[F]): AgentBuilder[F, M] =
+      apply(client, (_: IterationInfo) => model)
 
-  def synchronous(
-      client: ClaudeClient,
-      modelName: String
-  ): AgentBuilder[Identity, ClaudeModel.CustomClaudeModel] = builder[Identity](client, modelName)(IdentityMonad)
+    /** Selects the model per loop iteration (e.g. a cheap model for tool iterations, a stronger one for the forced-final synthesis). `M`
+      * infers to the least upper bound of every model the function can return, so capability checks require the shared capabilities.
+      */
+    def apply[M <: ClaudeModel](client: ClaudeClient, modelForIteration: IterationInfo => M)(implicit
+        monad: sttp.monad.MonadError[F]
+    ): AgentBuilder[F, M] =
+      AgentBuilder[F, M](config =>
+        new ClaudeAgentBackend[F](client, modelForIteration, config.userTools, config.systemPrompt, config.responseSchema)
+      )
+
+    def apply(client: ClaudeClient, modelName: String)(implicit
+        monad: sttp.monad.MonadError[F]
+    ): AgentBuilder[F, ClaudeModel.CustomClaudeModel] =
+      apply(client, ClaudeModel.CustomClaudeModel(modelName))
+
+    def apply[M <: ClaudeModel](claudeConfig: ClaudeConfig, model: M)(implicit monad: sttp.monad.MonadError[F]): AgentBuilder[F, M] =
+      apply(ClaudeClient(claudeConfig), model)
+
+    def apply[M <: ClaudeModel](claudeConfig: ClaudeConfig, modelForIteration: IterationInfo => M)(implicit
+        monad: sttp.monad.MonadError[F]
+    ): AgentBuilder[F, M] =
+      apply(ClaudeClient(claudeConfig), modelForIteration)
+
+    def apply(claudeConfig: ClaudeConfig, modelName: String)(implicit
+        monad: sttp.monad.MonadError[F]
+    ): AgentBuilder[F, ClaudeModel.CustomClaudeModel] =
+      apply(ClaudeClient(claudeConfig), modelName)
+  }
+
+  def synchronous[M <: ClaudeModel](client: ClaudeClient, model: M): AgentBuilder[Identity, M] =
+    builder[Identity](client, model)(IdentityMonad)
+
+  def synchronous[M <: ClaudeModel](client: ClaudeClient, modelForIteration: IterationInfo => M): AgentBuilder[Identity, M] =
+    builder[Identity](client, modelForIteration)(IdentityMonad)
+
+  def synchronous(client: ClaudeClient, modelName: String): AgentBuilder[Identity, ClaudeModel.CustomClaudeModel] =
+    builder[Identity](client, modelName)(IdentityMonad)
+
+  def synchronous[M <: ClaudeModel](claudeConfig: ClaudeConfig, model: M): AgentBuilder[Identity, M] =
+    builder[Identity](claudeConfig, model)(IdentityMonad)
+
+  def synchronous[M <: ClaudeModel](claudeConfig: ClaudeConfig, modelForIteration: IterationInfo => M): AgentBuilder[Identity, M] =
+    builder[Identity](claudeConfig, modelForIteration)(IdentityMonad)
+
+  def synchronous(claudeConfig: ClaudeConfig, modelName: String): AgentBuilder[Identity, ClaudeModel.CustomClaudeModel] =
+    builder[Identity](claudeConfig, modelName)(IdentityMonad)
 }
