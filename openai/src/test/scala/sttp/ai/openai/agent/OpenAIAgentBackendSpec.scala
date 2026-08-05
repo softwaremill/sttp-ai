@@ -7,6 +7,7 @@ import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
 import sttp.ai.core.agent.AgentTool
 import sttp.ai.core.agent.ConversationHistory
+import sttp.ai.core.agent.IterationInfo
 import sttp.ai.openai.OpenAI
 import sttp.apispec.Schema
 import sttp.client4._
@@ -57,7 +58,8 @@ class OpenAIAgentBackendSpec extends AnyFlatSpec with Matchers with EitherValues
     backend(strictTools = true).sendRequest(
       ConversationHistory.withInitialPrompt("hello"),
       httpStub,
-      includeTools = includeTools
+      includeTools = includeTools,
+      IterationInfo(1, 10)
     ): Unit
     captured.get().body match {
       case StringBody(s, _, _) => s

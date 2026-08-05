@@ -10,6 +10,7 @@ import sttp.ai.claude.config.ClaudeConfig
 import sttp.ai.claude.models.Tool
 import sttp.ai.core.agent.AgentTool
 import sttp.ai.core.agent.ConversationHistory
+import sttp.ai.core.agent.IterationInfo
 import sttp.apispec.Schema
 import sttp.client4._
 import sttp.client4.testing.ResponseStub
@@ -126,7 +127,7 @@ class ClaudeAgentBackendSpec extends AnyFlatSpec with Matchers with EitherValues
       captured.set(request)
       ResponseStub.adjust(minimalMessageResponse, StatusCode.Ok)
     }
-    backend.sendRequest(ConversationHistory.withInitialPrompt("hello"), httpStub, includeTools = includeTools): Unit
+    backend.sendRequest(ConversationHistory.withInitialPrompt("hello"), httpStub, includeTools = includeTools, IterationInfo(1, 10)): Unit
     captured.get().body match {
       case StringBody(s, _, _) => s
       case other               => fail(s"expected StringBody, got $other")

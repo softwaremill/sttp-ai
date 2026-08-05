@@ -4,7 +4,7 @@ import io.circe.Codec
 import io.circe.generic.semiauto.deriveCodec
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
-import sttp.ai.core.agent.{AgentResponse, AgentTool, ConversationHistory}
+import sttp.ai.core.agent.{AgentResponse, AgentTool, ConversationHistory, IterationInfo}
 import sttp.client4.testing.SyncBackendStub
 import sttp.monad.IdentityMonad
 import sttp.shared.Identity
@@ -26,15 +26,15 @@ class ScriptedAgentBackendSpec extends AnyFlatSpec with Matchers {
   "ScriptedAgentBackend" should "return the scripted responses in order" in {
     val backend = newBackend(ScriptedResponse.text("first"), ScriptedResponse.text("second"))
 
-    backend.sendRequest(history, SyncBackendStub, includeTools = true) shouldBe ScriptedResponse.text("first")
-    backend.sendRequest(history, SyncBackendStub, includeTools = true) shouldBe ScriptedResponse.text("second")
+    backend.sendRequest(history, SyncBackendStub, includeTools = true, IterationInfo(1, 10)) shouldBe ScriptedResponse.text("first")
+    backend.sendRequest(history, SyncBackendStub, includeTools = true, IterationInfo(2, 10)) shouldBe ScriptedResponse.text("second")
   }
 
   it should "record each request with its history, includeTools flag and system prompt" in {
     val backend = newBackend(ScriptedResponse.text("a"), ScriptedResponse.text("b"))
 
-    backend.sendRequest(history, SyncBackendStub, includeTools = true)
-    backend.sendRequest(history, SyncBackendStub, includeTools = false)
+    backend.sendRequest(history, SyncBackendStub, includeTools = true, IterationInfo(1, 10))
+    backend.sendRequest(history, SyncBackendStub, includeTools = false, IterationInfo(2, 10))
 
     backend.requests should have size 2
     backend.requests.map(_.includeTools) shouldBe Seq(true, false)
@@ -45,7 +45,7 @@ class ScriptedAgentBackendSpec extends AnyFlatSpec with Matchers {
   it should "record offered tools with their JSON schemas when includeTools is true" in {
     val backend = newBackend(ScriptedResponse.text("a"))
 
-    backend.sendRequest(history, SyncBackendStub, includeTools = true)
+    backend.sendRequest(history, SyncBackendStub, includeTools = true, IterationInfo(1, 10))
 
     val offered = backend.requests.head.toolsOffered
     offered.map(_.name) shouldBe Seq("echo")
@@ -56,7 +56,7 @@ class ScriptedAgentBackendSpec extends AnyFlatSpec with Matchers {
   it should "record no offered tools when includeTools is false" in {
     val backend = newBackend(ScriptedResponse.text("a"))
 
-    backend.sendRequest(history, SyncBackendStub, includeTools = false)
+    backend.sendRequest(history, SyncBackendStub, includeTools = false, IterationInfo(1, 10))
 
     backend.requests.head.toolsOffered shouldBe empty
   }
@@ -64,9 +64,9 @@ class ScriptedAgentBackendSpec extends AnyFlatSpec with Matchers {
   it should "fail with ScriptExhaustedException when the script runs out" in {
     val backend = newBackend(ScriptedResponse.text("only one"))
 
-    backend.sendRequest(history, SyncBackendStub, includeTools = true)
+    backend.sendRequest(history, SyncBackendStub, includeTools = true, IterationInfo(1, 10))
     val exception = intercept[ScriptExhaustedException] {
-      backend.sendRequest(history, SyncBackendStub, includeTools = true)
+      backend.sendRequest(history, SyncBackendStub, includeTools = true, IterationInfo(2, 10))
     }
     exception.getMessage should include("request 2")
     exception.getMessage should include("1 response(s)")
@@ -75,7 +75,7 @@ class ScriptedAgentBackendSpec extends AnyFlatSpec with Matchers {
   it should "still record the request that exhausted the script" in {
     val backend = newBackend()
 
-    intercept[ScriptExhaustedException](backend.sendRequest(history, SyncBackendStub, includeTools = true))
+    intercept[ScriptExhaustedException](backend.sendRequest(history, SyncBackendStub, includeTools = true, IterationInfo(1, 10)))
 
     backend.requests should have size 1
   }

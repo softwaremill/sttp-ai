@@ -82,7 +82,8 @@ private[openai] class OpenAIAgentBackend[F[_]](
   override def sendRequest(
       history: ConversationHistory,
       backend: Backend[F],
-      includeTools: Boolean
+      includeTools: Boolean,
+      iterationInfo: IterationInfo
   ): F[AgentResponse] = {
     val messages = buildMessages(history)
     val request = ChatBody(

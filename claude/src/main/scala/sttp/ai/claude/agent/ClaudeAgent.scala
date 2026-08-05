@@ -70,7 +70,8 @@ private[claude] class ClaudeAgentBackend[F[_]](
   override def sendRequest(
       history: ConversationHistory,
       backend: Backend[F],
-      includeTools: Boolean
+      includeTools: Boolean,
+      iterationInfo: IterationInfo
   ): F[AgentResponse] = {
     val messages = buildMessages(history)
     val request = MessageRequest(

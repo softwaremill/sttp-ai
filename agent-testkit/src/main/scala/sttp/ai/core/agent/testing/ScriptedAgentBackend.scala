@@ -1,6 +1,6 @@
 package sttp.ai.core.agent.testing
 
-import sttp.ai.core.agent.{AgentBackend, AgentResponse, AgentTool, ConversationHistory, ResponseSchema}
+import sttp.ai.core.agent.{AgentBackend, AgentResponse, AgentTool, ConversationHistory, IterationInfo, ResponseSchema}
 import sttp.client4.Backend
 import sttp.monad.MonadError
 
@@ -32,13 +32,14 @@ final class ScriptedAgentBackend[F[_]](
   override def sendRequest(
       history: ConversationHistory,
       backend: Backend[F],
-      includeTools: Boolean
+      includeTools: Boolean,
+      iterationInfo: IterationInfo
   ): F[AgentResponse] = monad.suspend {
     val toolsOffered =
       if (includeTools) tools.map(tool => OfferedTool(tool.name, tool.description, tool.rawJsonSchema))
       else Seq.empty
     val index = synchronized {
-      recorded = recorded :+ RecordedRequest(history, includeTools, toolsOffered, systemPrompt, responseSchema)
+      recorded = recorded :+ RecordedRequest(history, includeTools, toolsOffered, systemPrompt, responseSchema, iterationInfo)
       recorded.length - 1
     }
     if (index < script.length) monad.unit(script(index))

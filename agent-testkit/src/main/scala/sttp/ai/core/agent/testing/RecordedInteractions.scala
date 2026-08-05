@@ -1,7 +1,7 @@
 package sttp.ai.core.agent.testing
 
 import io.circe.Json
-import sttp.ai.core.agent.{ConversationEntry, ConversationHistory, ResponseSchema}
+import sttp.ai.core.agent.{ConversationEntry, ConversationHistory, IterationInfo, ResponseSchema}
 
 /** A tool as it was offered to the (scripted) model: name, description, and the input JSON schema the model would see. */
 final case class OfferedTool(name: String, description: String, schema: Json)
@@ -18,13 +18,16 @@ final case class OfferedTool(name: String, description: String, schema: Json)
   *   the system prompt configured for the agent, as built from its [[sttp.ai.core.agent.AgentConfig]]
   * @param responseSchema
   *   the structured-output schema configured for the agent (e.g. via `deriveResponseSchema[T]`), if any
+  * @param iterationInfo
+  *   the position of this request within the agent loop (1-based iteration, and the configured maximum)
   */
 final case class RecordedRequest(
     history: ConversationHistory,
     includeTools: Boolean,
     toolsOffered: Seq[OfferedTool],
     systemPrompt: Option[String],
-    responseSchema: Option[ResponseSchema[_]]
+    responseSchema: Option[ResponseSchema[_]],
+    iterationInfo: IterationInfo
 )
 
 /** Framework-agnostic query API over the requests recorded by a scripted backend. Everything the scalatest matchers assert on is reachable

@@ -17,6 +17,7 @@ class AgentSpec extends AnyFlatSpec with Matchers with OptionValues {
     private var callCount = 0
     var receivedHistories: Seq[ConversationHistory] = Seq.empty
     var receivedIncludeTools: Seq[Boolean] = Seq.empty
+    var iterationInfos: Vector[IterationInfo] = Vector.empty
 
     override def tools: Seq[AgentTool[Identity, _]] = Seq.empty
     override def systemPrompt: Option[String] = None
@@ -24,10 +25,12 @@ class AgentSpec extends AnyFlatSpec with Matchers with OptionValues {
     override def sendRequest(
         history: ConversationHistory,
         backend: sttp.client4.Backend[Identity],
-        includeTools: Boolean
+        includeTools: Boolean,
+        iterationInfo: IterationInfo
     ): Identity[AgentResponse] = {
       receivedHistories = receivedHistories :+ history
       receivedIncludeTools = receivedIncludeTools :+ includeTools
+      iterationInfos = iterationInfos :+ iterationInfo
       val response = if (callCount < responses.length) {
         responses(callCount)
       } else {
@@ -236,6 +239,27 @@ class AgentSpec extends AnyFlatSpec with Matchers with OptionValues {
     firstHistory.entries.exists(_.isInstanceOf[ConversationEntry.IterationMarker]) shouldBe false
     val secondHistory = stubBackend.receivedHistories(1)
     secondHistory.entries.exists(_.isInstanceOf[ConversationEntry.IterationMarker]) shouldBe true
+  }
+
+  it should "pass 1-based IterationInfo to the backend and flag the forced-final iteration" in {
+    val dummyTool = AgentTool.fromFunction(
+      "dummy",
+      "Dummy tool"
+    )((_: DummyInput) => "dummy result")
+
+    val stubBackend = new StubAgentBackend(
+      Seq(
+        AgentResponse("", Seq(ToolCall(id = "call_1", toolName = "dummy", input = "{}")), StopReason.ToolUse),
+        AgentResponse("", Seq(ToolCall(id = "call_2", toolName = "dummy", input = "{}")), StopReason.ToolUse),
+        AgentResponse("done", Seq.empty, StopReason.EndTurn)
+      )
+    )
+
+    runLoop(AgentBuilder[Identity](_ => stubBackend)(IdentityMonad).maxIterations(3).tools(dummyTool))
+
+    stubBackend.iterationInfos.map(_.iteration) shouldBe Vector(1, 2, 3)
+    stubBackend.iterationInfos.map(_.maxIterations).distinct shouldBe Vector(3)
+    stubBackend.iterationInfos.map(_.isLastIteration) shouldBe Vector(false, false, true)
   }
 
   it should "accept valid user tools" in {

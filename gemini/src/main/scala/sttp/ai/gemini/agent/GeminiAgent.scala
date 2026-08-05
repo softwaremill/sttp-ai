@@ -78,7 +78,8 @@ private[gemini] class GeminiAgentBackend[F[_]](
   override def sendRequest(
       history: ConversationHistory,
       backend: Backend[F],
-      includeTools: Boolean
+      includeTools: Boolean,
+      iterationInfo: IterationInfo
   ): F[AgentResponse] =
     buildSteps(history) match {
       case Left(e)      => monad.error(e)
