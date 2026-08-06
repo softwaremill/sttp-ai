@@ -7,7 +7,7 @@ package sttp.ai.core.agent
   * @param maxIterations
   *   the configured maximum number of iterations
   */
-case class IterationInfo(iteration: Int, maxIterations: Int) {
+final case class IterationInfo(iteration: Int, maxIterations: Int) {
 
   /** True on the forced-final iteration, where tools are withheld and the model must produce a final answer. Note that the loop cannot know
     * in advance which iteration produces the final answer when the model stops naturally — this flags only the forced last iteration.

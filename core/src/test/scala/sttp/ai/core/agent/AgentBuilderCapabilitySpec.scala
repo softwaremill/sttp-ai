@@ -34,6 +34,11 @@ object AgentBuilderCapabilitySpecFixtures {
 
   def newBuilder[M <: AIModel]: AgentBuilder[Identity, M] =
     AgentBuilder[Identity, M](_ => noopBackend)(IdentityMonad)
+
+  case class Out(answer: String)
+  implicit val outCodec: io.circe.Codec[Out] = io.circe.generic.semiauto.deriveCodec
+  implicit val outSchema: sttp.tapir.Schema[Out] = sttp.tapir.Schema.derived
+  val outResponseSchema: ResponseSchema[Out] = ResponseSchema.derived[Out](None)
 }
 
 class AgentBuilderCapabilitySpec extends AnyFlatSpec with Matchers with EitherValues {
@@ -84,6 +89,19 @@ class AgentBuilderCapabilitySpec extends AnyFlatSpec with Matchers with EitherVa
         sttp.ai.core.agent.AgentBuilderCapabilitySpecFixtures
           .newBuilder[sttp.ai.core.agent.AgentBuilderCapabilitySpecFixtures.FullModel.type]
           .deriveResponseSchema[Out]"""
+    )
+  }
+
+  "AgentBuilder.responseSchema" should "not compile for a model without StructuredOutput" in {
+    assertDoesNotCompile(
+      """sttp.ai.core.agent.AgentBuilderCapabilitySpecFixtures
+        .newBuilder[sttp.ai.core.agent.AgentBuilderCapabilitySpecFixtures.BareModel.type]
+        .responseSchema(sttp.ai.core.agent.AgentBuilderCapabilitySpecFixtures.outResponseSchema)"""
+    )
+    assertCompiles(
+      """sttp.ai.core.agent.AgentBuilderCapabilitySpecFixtures
+        .newBuilder[sttp.ai.core.agent.AgentBuilderCapabilitySpecFixtures.FullModel.type]
+        .responseSchema(sttp.ai.core.agent.AgentBuilderCapabilitySpecFixtures.outResponseSchema)"""
     )
   }
 

@@ -24,6 +24,15 @@ class CapabilitySpec extends AnyFlatSpec with Matchers {
       "implicitly[sttp.ai.core.model.Supports[sttp.ai.core.model.CapabilitySpecModels.PlainModel.type, sttp.ai.core.model.Capability.ToolCalling]]"
     )
 
+  it should "allow an explicit Supports.assume opt-out for a missing or wrong tag" in {
+    implicit val assumed: Supports[PlainModel.type, Capability.ToolCalling] = Supports.assume
+    implicitly[Supports[PlainModel.type, Capability.ToolCalling]] shouldBe assumed
+    // other capabilities of the same model stay unchecked-in:
+    assertDoesNotCompile(
+      "implicitly[sttp.ai.core.model.Supports[sttp.ai.core.model.CapabilitySpecModels.PlainModel.type, sttp.ai.core.model.Capability.Vision]]"
+    )
+  }
+
   it should "resolve every capability for a model mixing in Capability.All" in {
     object AllShorthandModel extends AIModel with Capability.All {
       val value: String = "all-shorthand"

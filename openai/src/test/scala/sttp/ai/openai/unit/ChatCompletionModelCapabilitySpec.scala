@@ -45,6 +45,18 @@ class ChatCompletionModelCapabilitySpec extends AnyFlatSpec with Matchers {
     GPT41106VisionPreview should not be a[Capability.ToolCalling]
   }
 
+  it should "not claim ToolCalling on the pre-function-calling -0314 snapshots" in {
+    GPT40314 should not be a[Capability.ToolCalling]
+    GPT432k0314 should not be a[Capability.ToolCalling]
+  }
+
+  it should "not claim StructuredOutput on gpt-4o-2024-05-13 (json_schema needs 2024-08-06+)" in {
+    GPT4o20240513 shouldBe a[Capability.Vision]
+    GPT4o20240513 shouldBe a[Capability.ToolCalling]
+    GPT4o20240513 should not be a[Capability.StructuredOutput]
+    GPT4o20240806 shouldBe a[Capability.StructuredOutput]
+  }
+
   it should "make CustomChatCompletionModel claim all capabilities" in {
     val custom = CustomChatCompletionModel("llama3")
     custom shouldBe a[Capability.Vision]

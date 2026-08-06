@@ -62,6 +62,26 @@ def myTool: AgentTool[Identity, ?] = ???
 val ollamaAgent = OpenAIAgent.synchronous(OpenAI.fromEnv, "llama3-70b").tools(myTool).build
 ```
 
+### Custom models and wrong tags
+
+The provider model hierarchies are sealed, so you cannot define your own constant with hand-picked capability tags —
+a model outside the predefined constants always goes through the provider's custom model class and claims all
+capabilities. If a *predefined* constant's tags are missing or wrong (capability data is curated and can lag the
+providers), `Supports.assume` opts out of checking for exactly that model/capability pair while keeping every other
+check intact — unlike falling back to a raw model-name string, which disables all checking:
+
+```scala mdoc:compile-only
+import sttp.ai.core.model.{Capability, Supports}
+import sttp.ai.openai.requests.completions.chat.ChatRequestBody.ChatCompletionModel
+
+// you have verified the model really supports this, even though its constant isn't tagged with it
+given Supports[ChatCompletionModel.GPT4o20240513.type, Capability.StructuredOutput] = Supports.assume
+```
+
+Note that capability checks work on the model's singleton type: ascribing a constant to the base type
+(`val m: ChatCompletionModel = ChatCompletionModel.GPT4o`) widens away the tags, and `.tools(...)` on it will not
+compile. Pass constants directly, or keep the precise type (`ChatCompletionModel.GPT4o.type`).
+
 ## Per-iteration model selection
 
 Agents can use a different model per loop iteration — e.g. a cheap model while the agent calls tools, and a stronger
@@ -87,9 +107,10 @@ the capabilities **all** of them share. If inference produces an unwieldy type, 
 
 ```scala mdoc:compile-only
 import sttp.ai.core.agent.IterationInfo
+import sttp.ai.core.model.Capability
 import sttp.ai.openai.requests.completions.chat.ChatRequestBody.ChatCompletionModel
 
-val pick: IterationInfo => ChatCompletionModel & sttp.ai.core.model.Capability.ToolCalling =
+val pick: IterationInfo => ChatCompletionModel & Capability.ToolCalling =
   info => if info.isLastIteration then ChatCompletionModel.GPT5 else ChatCompletionModel.GPT4oMini
 ```
 

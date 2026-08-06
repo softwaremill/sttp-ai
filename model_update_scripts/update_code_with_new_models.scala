@@ -36,18 +36,26 @@ def capabilitiesFor(modelId: String, config: Option[CapabilityConfig]): List[Str
       CanonicalOrder.filter(set.contains)
   }
 
-// Validates every rule and defaults list up front (at config load), so a typo in a shadowed or
-// currently-unmatched rule fails loudly instead of lying dormant until a model id first hits it.
-def validateCapabilityNames(capabilities: Map[String, CapabilityConfig]): Unit =
-  capabilities.foreach { case (endpoint, cfg) =>
-    def check(names: List[String], where: String): Unit =
-      names.filterNot(CanonicalOrder.contains).foreach { unknown =>
-        throw new IllegalArgumentException(
-          s"Unknown capability '$unknown' in $where of endpoint '$endpoint' (known capabilities: ${CanonicalOrder.mkString(", ")})"
-        )
-      }
-    check(cfg.defaults, "defaults")
-    cfg.rules.foreach(r => check(r.capabilities, s"rule '${r.pattern}'"))
+// Validates the whole capabilities section up front (at config load): every capability name in every
+// rule and defaults list (so a typo in a shadowed or currently-unmatched rule fails loudly instead of
+// lying dormant), and every endpoint key (so a typo'd endpoint doesn't silently tag nothing).
+def validateCapabilities(config: ModelUpdateConfig): Unit =
+  config.capabilities.foreach { capabilities =>
+    capabilities.keys.filterNot(config.endpoints.contains).foreach { endpoint =>
+      throw new IllegalArgumentException(
+        s"capabilities section references unknown endpoint '$endpoint' (configured endpoints: ${config.endpoints.keys.mkString(", ")})"
+      )
+    }
+    capabilities.foreach { case (endpoint, cfg) =>
+      def check(names: List[String], where: String): Unit =
+        names.filterNot(CanonicalOrder.contains).foreach { unknown =>
+          throw new IllegalArgumentException(
+            s"Unknown capability '$unknown' in $where of endpoint '$endpoint' (known capabilities: ${CanonicalOrder.mkString(", ")})"
+          )
+        }
+      check(cfg.defaults, "defaults")
+      cfg.rules.foreach(r => check(r.capabilities, s"rule '${r.pattern}'"))
+    }
   }
 
 def mixinClause(capabilities: List[String]): String =
@@ -198,7 +206,7 @@ object ModelUpdater extends IOApp {
           case e: Exception => throw e
         }
       }
-      _ <- IO(config.capabilities.foreach(validateCapabilityNames))
+      _ <- IO(validateCapabilities(config))
       _ <- logger.debug(s"✅ Loaded config with ${config.endpoints.size} endpoints")
     } yield config
 
@@ -386,10 +394,20 @@ object ModelUpdater extends IOApp {
       // A bare `case object Name` only starts a block for our className if the following
       // non-empty line is its `extends ClassName(` continuation - otherwise it may be a
       // case object of a different class entirely.
-      lines.drop(index + 1).find(_.trim.nonEmpty).exists(_.trim.startsWith(s"extends $className("))
+      val next = nextNonEmptyIndex(lines, index + 1)
+      next < lines.length && lines(next).trim.startsWith(s"extends $className(")
     } else {
       false
     }
+  }
+
+  /** Index of the first line at or after `from` whose trimmed content is non-empty; `lines.length` if none. Shared by
+    * [[isCaseObjectStart]] and [[parseCaseObjects]] so both treat blank lines inside a wrapped definition identically.
+    */
+  private def nextNonEmptyIndex(lines: collection.Seq[String], from: Int): Int = {
+    var j = from
+    while (j < lines.length && lines(j).trim.isEmpty) j += 1
+    j
   }
 
   private def isContinuationLine(line: String): Boolean = {
@@ -397,7 +415,8 @@ object ModelUpdater extends IOApp {
     trimmed.startsWith("with ") || trimmed.startsWith("extends ")
   }
 
-  private def parseCaseObjects(blockLines: List[String], className: String): List[CaseObjectInfo] = {
+  // Not private: exercised directly by update_code_with_new_models.test.scala.
+  def parseCaseObjects(blockLines: List[String], className: String): List[CaseObjectInfo] = {
     val fullPattern = s"""^\\s*case object\\s+(\\w+)\\s+extends\\s+$className\\("([^"]+)"\\).*""".r
     val shortStartPattern = """^case object\s+(\w+)$""".r
     val extendsPattern = s"""^extends\\s+$className\\("([^"]+)"\\).*""".r
@@ -414,7 +433,7 @@ object ModelUpdater extends IOApp {
         case line =>
           line.trim match {
             case shortStartPattern(name) =>
-              val extendsLineIndex = i + 1
+              val extendsLineIndex = nextNonEmptyIndex(linesArray, i + 1)
               if (extendsLineIndex < linesArray.length) {
                 linesArray(extendsLineIndex).trim match {
                   case extendsPattern(modelName) =>

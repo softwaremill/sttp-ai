@@ -256,7 +256,7 @@ object ChatRequestBody {
     case object GPT35TurboInstruct extends ChatCompletionModel("gpt-3.5-turbo-instruct")
     case object GPT4 extends ChatCompletionModel("gpt-4") with Capability.ToolCalling
     case object GPT40125Preview extends ChatCompletionModel("gpt-4-0125-preview") with Capability.ToolCalling
-    case object GPT40314 extends ChatCompletionModel("gpt-4-0314") with Capability.ToolCalling
+    case object GPT40314 extends ChatCompletionModel("gpt-4-0314")
     case object GPT40613 extends ChatCompletionModel("gpt-4-0613") with Capability.ToolCalling
     case object GPT41
         extends ChatCompletionModel("gpt-4.1")
@@ -290,7 +290,7 @@ object ChatRequestBody {
         with Capability.ToolCalling
         with Capability.StructuredOutput
     case object GPT432k extends ChatCompletionModel("gpt-4-32k") with Capability.ToolCalling
-    case object GPT432k0314 extends ChatCompletionModel("gpt-4-32k-0314") with Capability.ToolCalling
+    case object GPT432k0314 extends ChatCompletionModel("gpt-4-32k-0314")
     case object GPT45Preview
         extends ChatCompletionModel("gpt-4.5-preview")
         with Capability.Vision
@@ -309,11 +309,7 @@ object ChatRequestBody {
         with Capability.Vision
         with Capability.ToolCalling
         with Capability.StructuredOutput
-    case object GPT4o20240513
-        extends ChatCompletionModel("gpt-4o-2024-05-13")
-        with Capability.Vision
-        with Capability.ToolCalling
-        with Capability.StructuredOutput
+    case object GPT4o20240513 extends ChatCompletionModel("gpt-4o-2024-05-13") with Capability.Vision with Capability.ToolCalling
     case object GPT4o20240806
         extends ChatCompletionModel("gpt-4o-2024-08-06")
         with Capability.Vision

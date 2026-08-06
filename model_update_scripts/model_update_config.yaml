@@ -74,6 +74,7 @@ endpoints:
 # Capability tags applied to generated model constants. First matching rule (top to bottom)
 # gives the model's COMPLETE capability set; models matching no rule get `defaults`.
 # Patterns are globs over the model id ('*' matches any characters). Maintained by hand — never scraped.
+# Curated from OpenAI's per-model documentation (platform.openai.com/docs/models), last reviewed 2026-08-06.
 capabilities:
   "v1/chat/completions":
     defaults: [ToolCalling]
@@ -83,6 +84,9 @@ capabilities:
       - pattern: "gpt-3.5-turbo-instruct"
         capabilities: []
       - pattern: "gpt-3.5-turbo-0301"
+        capabilities: []
+      # the -0314 snapshots predate function calling (introduced with -0613)
+      - pattern: "gpt-4*-0314"
         capabilities: []
       - pattern: "gpt-4-1106-vision-preview"
         capabilities: [Vision]
@@ -96,6 +100,9 @@ capabilities:
         capabilities: [ToolCalling]
       - pattern: "gpt-4o*search-preview*"
         capabilities: [StructuredOutput]
+      # json_schema structured outputs need gpt-4o-2024-08-06 or later
+      - pattern: "gpt-4o-2024-05-13"
+        capabilities: [Vision, ToolCalling]
       - pattern: "gpt-4o*"
         capabilities: [Vision, ToolCalling, StructuredOutput]
       - pattern: "gpt-5-chat-latest"

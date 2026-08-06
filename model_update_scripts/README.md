@@ -80,6 +80,12 @@ Note: the script only manages the mixin clauses. Before adding a `capabilities` 
 target file must already import `sttp.ai.core.model.Capability` and its model class must extend
 `sttp.ai.core.model.AIModel` — otherwise the generated `with Capability.X` clauses won't compile.
 
+The block parser has unit tests; run them with:
+
+```bash
+scala-cli test update_code_with_new_models.scala update_code_with_new_models.test.scala
+```
+
 ## Default Behavior
 
 - **JSON file**: `models.json` is used by default

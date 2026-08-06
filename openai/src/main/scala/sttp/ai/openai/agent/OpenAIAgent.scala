@@ -188,6 +188,24 @@ object OpenAIAgent {
         monad: sttp.monad.MonadError[F]
     ): AgentBuilder[F, ChatCompletionModel.CustomChatCompletionModel] =
       apply(new OpenAI(apiKey), modelName, strictTools)
+
+    def apply[M <: ChatCompletionModel](apiKey: String, model: M)(implicit monad: sttp.monad.MonadError[F]): AgentBuilder[F, M] =
+      apply(new OpenAI(apiKey), model)
+
+    def apply[M <: ChatCompletionModel](apiKey: String, model: M, strictTools: Boolean)(implicit
+        monad: sttp.monad.MonadError[F]
+    ): AgentBuilder[F, M] =
+      apply(new OpenAI(apiKey), model, strictTools)
+
+    def apply[M <: ChatCompletionModel](apiKey: String, modelForIteration: IterationInfo => M)(implicit
+        monad: sttp.monad.MonadError[F]
+    ): AgentBuilder[F, M] =
+      apply(new OpenAI(apiKey), modelForIteration)
+
+    def apply[M <: ChatCompletionModel](apiKey: String, modelForIteration: IterationInfo => M, strictTools: Boolean)(implicit
+        monad: sttp.monad.MonadError[F]
+    ): AgentBuilder[F, M] =
+      apply(new OpenAI(apiKey), modelForIteration, strictTools)
   }
 
   def synchronous[M <: ChatCompletionModel](openAI: OpenAI, model: M): AgentBuilder[Identity, M] =
@@ -225,4 +243,20 @@ object OpenAIAgent {
       strictTools: Boolean
   ): AgentBuilder[Identity, ChatCompletionModel.CustomChatCompletionModel] =
     builder[Identity](apiKey, modelName, strictTools)(IdentityMonad)
+
+  def synchronous[M <: ChatCompletionModel](apiKey: String, model: M): AgentBuilder[Identity, M] =
+    builder[Identity](apiKey, model)(IdentityMonad)
+
+  def synchronous[M <: ChatCompletionModel](apiKey: String, model: M, strictTools: Boolean): AgentBuilder[Identity, M] =
+    builder[Identity](apiKey, model, strictTools)(IdentityMonad)
+
+  def synchronous[M <: ChatCompletionModel](apiKey: String, modelForIteration: IterationInfo => M): AgentBuilder[Identity, M] =
+    builder[Identity](apiKey, modelForIteration)(IdentityMonad)
+
+  def synchronous[M <: ChatCompletionModel](
+      apiKey: String,
+      modelForIteration: IterationInfo => M,
+      strictTools: Boolean
+  ): AgentBuilder[Identity, M] =
+    builder[Identity](apiKey, modelForIteration, strictTools)(IdentityMonad)
 }
