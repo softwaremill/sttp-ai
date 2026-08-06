@@ -8,16 +8,20 @@ The [agent loop](quickstart.md) talks to a model through the `AgentBackend` inte
 trait AgentBackend[F[_]] {
   def sendRequest(
       history: ConversationHistory,
-      backend: Backend[F]
+      backend: Backend[F],
+      includeTools: Boolean,
+      iterationInfo: IterationInfo
   ): F[AgentResponse]
 }
 
 case class AgentResponse(
     textContent: String,
     toolCalls: Seq[ToolCall],
-    stopReason: Option[String]
+    stopReason: StopReason
 )
 ```
+
+`iterationInfo` tells the backend which loop iteration this request belongs to (1-based) — use it to vary the model per iteration.
 
 Your implementation needs to:
 1. Convert `ConversationHistory` to your API's message format
@@ -33,7 +37,7 @@ The agent builder is effect-polymorphic: `OpenAIAgent.builder[F]`, `ClaudeAgent.
 ### Cats Effect
 
 ```scala
-//> using dep com.softwaremill.sttp.ai::openai:0.6.0
+//> using dep com.softwaremill.sttp.ai::openai:0.7.0
 //> using dep com.softwaremill.sttp.client4::cats:4.0.0-M17
 
 import cats.effect.{IO, IOApp}
@@ -65,7 +69,7 @@ object CatsEffectExample extends IOApp.Simple:
 ### ZIO
 
 ```scala
-//> using dep com.softwaremill.sttp.ai::zio:0.6.0
+//> using dep com.softwaremill.sttp.ai::zio:0.7.0
 
 import sttp.ai.core.agent.*
 import sttp.ai.openai.OpenAI

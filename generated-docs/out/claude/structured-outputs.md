@@ -14,7 +14,7 @@ A structured output request needs a JSON Schema. The easiest way is to have it d
 For the shortest path, use `ClaudeSyncClient.createMessageAs[T]` — the response schema is derived from `T` via Tapir, set on the request automatically, and the model's response is parsed back into `T` via circe.
 
 ```scala
-//> using dep com.softwaremill.sttp.ai::claude:0.6.0
+//> using dep com.softwaremill.sttp.ai::claude:0.7.0
 
 import sttp.ai.claude.ClaudeSyncClient
 import sttp.ai.claude.models.{ClaudeModel, Message}
@@ -47,7 +47,7 @@ object Main:
 If you need finer control — a hand-built schema or custom parsing — derive or build the `sttp.apispec.Schema` yourself and set it via `withStructuredOutput`:
 
 ```scala
-//> using dep com.softwaremill.sttp.ai::claude:0.6.0
+//> using dep com.softwaremill.sttp.ai::claude:0.7.0
 //> using dep com.softwaremill.sttp.tapir::tapir-core:1.11.7
 
 import sttp.ai.claude.*
@@ -120,7 +120,7 @@ object StructuredOutputExample:
 If you prefer not to use Tapir, you can define schemas manually:
 
 ```scala
-//> using dep com.softwaremill.sttp.ai::claude:0.6.0
+//> using dep com.softwaremill.sttp.ai::claude:0.7.0
 
 import scala.collection.immutable.ListMap
 import sttp.ai.claude.models.OutputFormat
@@ -139,7 +139,7 @@ val outputFormat = OutputFormat.JsonSchema(schema)
 See [JSON Schemas: structured outputs & tools](../other/json-schemas.md) for deriving schemas with Tapir instead of writing them by hand.
 
 **Important Notes:**
-- Structured outputs require Claude 4.1+ models (`claude-opus-4-1-*`, the 4.5 family (`claude-sonnet-4-5-*`, `claude-haiku-4-5-*`, `claude-opus-4-5-*`), and the 5 family (`claude-sonnet-5`, `claude-opus-5`) — the `ClaudeModel.WithStructuredOutput` entries)
+- Structured outputs require Claude 4.1+ models (`claude-opus-4-1-*`, the 4.5 family (`claude-sonnet-4-5-*`, `claude-haiku-4-5-*`, `claude-opus-4-5-*`), and the 5 family (`claude-sonnet-5`, `claude-opus-5`) — the constants tagged with `Capability.StructuredOutput`)
 - Legacy models will throw `UnsupportedModelForStructuredOutputException`
 - The beta feature uses `anthropic-beta: structured-outputs-2025-11-13` header automatically
 - Unknown/future models default to supporting structured outputs for forward compatibility

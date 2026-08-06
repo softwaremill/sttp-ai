@@ -7,7 +7,7 @@ For choosing between the sync and async client, see [basics](basics.md).
 List the models currently available to your API key:
 
 ```scala
-//> using dep com.softwaremill.sttp.ai::claude:0.6.0
+//> using dep com.softwaremill.sttp.ai::claude:0.7.0
 
 import sttp.ai.claude.ClaudeSyncClient
 
@@ -27,7 +27,7 @@ Well-known model ids are available as constants on `ClaudeModel` (e.g. `ClaudeMo
 `ClaudeSyncClient` throws subclasses of `ClaudeException`; the async `ClaudeClient` returns the same hierarchy in the `Left` branch of `Either[ClaudeException, A]`:
 
 ```scala
-//> using dep com.softwaremill.sttp.ai::claude:0.6.0
+//> using dep com.softwaremill.sttp.ai::claude:0.7.0
 
 import sttp.ai.claude.ClaudeSyncClient
 import sttp.ai.claude.ClaudeExceptions.ClaudeException

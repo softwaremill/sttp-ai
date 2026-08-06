@@ -6,7 +6,7 @@ The Chat Completions API can stream responses as server-sent events. Add the str
 
 ```scala
 // sbt dependency
-"com.softwaremill.sttp.ai" %% "fs2" % "0.6.0"
+"com.softwaremill.sttp.ai" %% "fs2" % "0.7.0"
 
 // import
 import sttp.ai.openai.streaming.fs2.*
@@ -15,7 +15,7 @@ import sttp.ai.openai.streaming.fs2.*
 The example below uses `HttpClientFs2Backend` as a backend:
 
 ```scala
-//> using dep com.softwaremill.sttp.ai::fs2:0.6.0
+//> using dep com.softwaremill.sttp.ai::fs2:0.7.0
 
 import cats.effect.IO
 import cats.effect.unsafe.implicits.global
@@ -96,7 +96,7 @@ object Main:
 
 ```scala
 // sbt dependency
-"com.softwaremill.sttp.ai" %% "zio" % "0.6.0"
+"com.softwaremill.sttp.ai" %% "zio" % "0.7.0"
 
 // import
 import sttp.ai.openai.streaming.zio.*
@@ -105,7 +105,7 @@ import sttp.ai.openai.streaming.zio.*
 The example below uses `HttpClientZioBackend` as a backend:
 
 ```scala
-//> using dep com.softwaremill.sttp.ai::zio:0.6.0
+//> using dep com.softwaremill.sttp.ai::zio:0.7.0
 
 import sttp.ai.openai.OpenAI
 import sttp.ai.openai.requests.completions.chat.ChatRequestBody.{ChatBody, ChatCompletionModel}
@@ -139,7 +139,7 @@ object Main extends ZIOAppDefault:
 
 ```scala
 // sbt dependency
-"com.softwaremill.sttp.ai" %% "pekko" % "0.6.0"
+"com.softwaremill.sttp.ai" %% "pekko" % "0.7.0"
 
 // import
 import sttp.ai.openai.streaming.pekko.*
@@ -148,7 +148,7 @@ import sttp.ai.openai.streaming.pekko.*
 The example below uses `PekkoHttpBackend` as a backend:
 
 ```scala
-//> using dep com.softwaremill.sttp.ai::pekko:0.6.0
+//> using dep com.softwaremill.sttp.ai::pekko:0.7.0
 
 import org.apache.pekko.actor.ActorSystem
 import scala.concurrent.{Await, ExecutionContext, Future}
@@ -197,7 +197,7 @@ object Main:
 
 ```scala
 // sbt dependency (Scala 2.13 only)
-"com.softwaremill.sttp.ai" %% "akka" % "0.6.0"
+"com.softwaremill.sttp.ai" %% "akka" % "0.7.0"
 
 // import
 import sttp.ai.openai.streaming.akka.*
@@ -211,7 +211,7 @@ Direct-style streaming, without an effect system:
 
 ```scala
 // sbt dependency
-"com.softwaremill.sttp.ai" %% "ox" % "0.6.0"
+"com.softwaremill.sttp.ai" %% "ox" % "0.7.0"
 
 // import
 import sttp.ai.openai.streaming.ox.*
@@ -220,7 +220,7 @@ import sttp.ai.openai.streaming.ox.*
 Example code:
 
 ```scala
-//> using dep com.softwaremill.sttp.ai::ox:0.6.0
+//> using dep com.softwaremill.sttp.ai::ox:0.7.0
 
 import ox.*
 import ox.either.orThrow

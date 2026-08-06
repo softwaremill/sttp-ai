@@ -16,7 +16,7 @@ Most schema-accepting APIs in this library take a `sttp.apispec.Schema` — the 
 In Scala 3, a `derives` clause supplies both the Tapir schema and the circe codec:
 
 ```scala
-//> using dep com.softwaremill.sttp.ai::openai:0.6.0
+//> using dep com.softwaremill.sttp.ai::openai:0.7.0
 
 import sttp.tapir.Schema
 
@@ -64,7 +64,7 @@ Note: when OpenAI structured outputs run in strict mode, the schema is additiona
 If you prefer not to use Tapir derivation — or the schema doesn't correspond to any case class — build the `sttp.apispec.Schema` by hand:
 
 ```scala
-//> using dep com.softwaremill.sttp.ai::openai:0.6.0
+//> using dep com.softwaremill.sttp.ai::openai:0.7.0
 
 import scala.collection.immutable.ListMap
 import sttp.apispec.{Schema, SchemaType}

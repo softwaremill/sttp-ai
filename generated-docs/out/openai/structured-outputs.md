@@ -11,7 +11,7 @@ request's `responseFormat` automatically (only when the request doesn't already 
 is parsed back into `T` via circe:
 
 ```scala
-//> using dep com.softwaremill.sttp.ai::openai:0.6.0
+//> using dep com.softwaremill.sttp.ai::openai:0.7.0
 
 import sttp.ai.openai.OpenAISyncClient
 import sttp.ai.openai.requests.completions.chat.ChatRequestBody.{ChatBody, ChatCompletionModel}
@@ -54,7 +54,7 @@ fields as `Option` or list them as required in your schema. Otherwise (`strict =
 If you need finer control — a hand-built schema, custom parsing, or a non-Tapir schema source — use `ResponseFormat.JsonSchema` directly. The example below produces a JSON object:
 
 ```scala
-//> using dep com.softwaremill.sttp.ai::openai:0.6.0
+//> using dep com.softwaremill.sttp.ai::openai:0.7.0
 
 import scala.collection.immutable.ListMap
 import sttp.apispec.{Schema, SchemaType}

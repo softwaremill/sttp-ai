@@ -27,7 +27,7 @@ sttp-ai uses sttp client to describe requests and responses used in OpenAI, Clau
 Add the following dependency:
 
 ```sbt
-"com.softwaremill.sttp.ai" %% "openai" % "0.6.0"
+"com.softwaremill.sttp.ai" %% "openai" % "0.7.0"
 ```
 
 ### For Claude (Anthropic) API
@@ -35,14 +35,14 @@ Add the following dependency:
 Add the following dependency:
 
 ```sbt
-"com.softwaremill.sttp.ai" %% "claude" % "0.6.0"
+"com.softwaremill.sttp.ai" %% "claude" % "0.7.0"
 
 // For streaming support, add one or more (these modules are shared across OpenAI, Claude, and Gemini):
-"com.softwaremill.sttp.ai" %% "fs2" % "0.6.0"    // cats-effect/fs2
-"com.softwaremill.sttp.ai" %% "zio" % "0.6.0"    // ZIO
-"com.softwaremill.sttp.ai" %% "akka" % "0.6.0"   // Akka Streams (Scala 2.13 only)
-"com.softwaremill.sttp.ai" %% "pekko" % "0.6.0"  // Pekko Streams
-"com.softwaremill.sttp.ai" %% "ox" % "0.6.0"    // Ox direct-style (Scala 3 only)
+"com.softwaremill.sttp.ai" %% "fs2" % "0.7.0"    // cats-effect/fs2
+"com.softwaremill.sttp.ai" %% "zio" % "0.7.0"    // ZIO
+"com.softwaremill.sttp.ai" %% "akka" % "0.7.0"   // Akka Streams (Scala 2.13 only)
+"com.softwaremill.sttp.ai" %% "pekko" % "0.7.0"  // Pekko Streams
+"com.softwaremill.sttp.ai" %% "ox" % "0.7.0"    // Ox direct-style (Scala 3 only)
 ```
 
 ### For Gemini (Google) API
@@ -50,14 +50,14 @@ Add the following dependency:
 Add the following dependency:
 
 ```sbt
-"com.softwaremill.sttp.ai" %% "gemini" % "0.6.0"
+"com.softwaremill.sttp.ai" %% "gemini" % "0.7.0"
 
 // For streaming support, add one or more (these modules are shared across OpenAI, Claude, and Gemini):
-"com.softwaremill.sttp.ai" %% "fs2" % "0.6.0"    // cats-effect/fs2
-"com.softwaremill.sttp.ai" %% "zio" % "0.6.0"    // ZIO
-"com.softwaremill.sttp.ai" %% "akka" % "0.6.0"   // Akka Streams (Scala 2.13 only)
-"com.softwaremill.sttp.ai" %% "pekko" % "0.6.0"  // Pekko Streams
-"com.softwaremill.sttp.ai" %% "ox" % "0.6.0"    // Ox direct-style (Scala 3 only)
+"com.softwaremill.sttp.ai" %% "fs2" % "0.7.0"    // cats-effect/fs2
+"com.softwaremill.sttp.ai" %% "zio" % "0.7.0"    // ZIO
+"com.softwaremill.sttp.ai" %% "akka" % "0.7.0"   // Akka Streams (Scala 2.13 only)
+"com.softwaremill.sttp.ai" %% "pekko" % "0.7.0"  // Pekko Streams
+"com.softwaremill.sttp.ai" %% "ox" % "0.7.0"    // Ox direct-style (Scala 3 only)
 ```
 
 sttp-openai is available for Scala 2.13 and Scala 3

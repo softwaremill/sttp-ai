@@ -23,7 +23,7 @@ This module provides **native support for Anthropic's [Claude API](https://docs.
 ## Basic usage
 
 ```scala
-//> using dep com.softwaremill.sttp.ai::claude:0.6.0
+//> using dep com.softwaremill.sttp.ai::claude:0.7.0
 
 import sttp.ai.claude.ClaudeSyncClient
 import sttp.ai.claude.models.{ClaudeModel, ContentBlock, Message}
@@ -55,7 +55,7 @@ object Main:
 For non-blocking code, use `ClaudeClient` with an sttp backend of your choice:
 
 ```scala
-//> using dep com.softwaremill.sttp.ai::claude:0.6.0
+//> using dep com.softwaremill.sttp.ai::claude:0.7.0
 
 import sttp.ai.claude.*
 import sttp.ai.claude.config.ClaudeConfig
