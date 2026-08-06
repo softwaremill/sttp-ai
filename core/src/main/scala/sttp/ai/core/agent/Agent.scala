@@ -104,13 +104,13 @@ class Agent[F[_]](
       val parsed: Either[AgentFailure, T] = res.finishReason match {
         case FinishReason.NaturalStop =>
           decode[T](res.finalAnswer).left.map(e => AgentParseError(res.finalAnswer, e))
-        case FinishReason.MaxIterations =>
-          // The last iteration forces a no-tools, schema-guided answer, so it may still be valid.
+        case FinishReason.MaxIterations | FinishReason.BudgetExceeded =>
+          // A forced final iteration withholds tools and keeps schema guidance, so the answer may still be valid.
           decode[T](res.finalAnswer).left.map(e => AgentIncomplete(res.finalAnswer, res.finishReason, Some(e)))
         case FinishReason.TokenLimit | FinishReason.Error(_) =>
           Left(AgentIncomplete(res.finalAnswer, res.finishReason, parseError = None))
       }
-      AgentResult(parsed, res.iterations, res.toolCalls, res.finishReason)
+      AgentResult(parsed, res.iterations, res.toolCalls, res.finishReason, res.usage, res.llmCalls)
     }
 
   private def runToolCalls(

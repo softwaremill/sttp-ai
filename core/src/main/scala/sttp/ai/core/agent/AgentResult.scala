@@ -6,6 +6,9 @@ object FinishReason {
   case object MaxIterations extends FinishReason
   case object NaturalStop extends FinishReason
   case object TokenLimit extends FinishReason
+
+  /** An [[AgentInterceptor]] budget was exhausted and the loop forced a graceful final answer. */
+  case object BudgetExceeded extends FinishReason
   case class Error(message: String) extends FinishReason
 }
 
@@ -21,7 +24,9 @@ final case class AgentResult[T](
     finalAnswer: T,
     iterations: Int,
     toolCalls: Seq[ToolCallRecord],
-    finishReason: FinishReason
+    finishReason: FinishReason,
+    usage: TokenUsage = TokenUsage.Zero,
+    llmCalls: Seq[LlmCallUsage] = Seq.empty
 )
 
 sealed trait AgentFailure {
