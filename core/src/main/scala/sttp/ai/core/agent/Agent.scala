@@ -13,88 +13,117 @@ class Agent[F[_]](
 
   private val toolMap = config.userTools.map(t => t.name -> t).toMap
 
-  private val beforeToolCall: ToolCall => F[Unit] = config.beforeToolCall.getOrElse((_: ToolCall) => monad.unit(()))
-  private val afterToolCall: ToolCallRecord => F[Unit] = config.afterToolCall.getOrElse((_: ToolCallRecord) => monad.unit(()))
+  // Adapts the deprecated beforeToolCall/afterToolCall hooks into an interceptor, appended AFTER user
+  // interceptors so hooks run innermost (closest to the tool call), preserving pre-interceptor behavior.
+  private val legacyHookInterceptor: Option[AgentInterceptor[F]] =
+    if (config.beforeToolCall.isEmpty && config.afterToolCall.isEmpty) None
+    else
+      Some(new AgentInterceptor[F] {
+        override def aroundToolCall(ctx: ToolCallContext)(next: => F[ToolCallRecord]): F[ToolCallRecord] = {
+          val before = config.beforeToolCall.map(_(ctx.toolCall)).getOrElse(monad.unit(()))
+          before.flatMap { _ =>
+            next.flatMap { record =>
+              config.afterToolCall.map(_(record)).getOrElse(monad.unit(())).map(_ => record)
+            }
+          }
+        }
+      })
+
+  private val interceptor: AgentInterceptor[F] =
+    AgentInterceptor.compose(config.interceptors ++ legacyHookInterceptor.toSeq)
+
+  private sealed trait IterationOutcome
+  private final case class ContinueLoop(
+      history: ConversationHistory,
+      records: Seq[ToolCallRecord],
+      usage: TokenUsage,
+      llmCalls: Seq[LlmCallUsage]
+  ) extends IterationOutcome
+  private final case class Finished(result: AgentResult[String]) extends IterationOutcome
 
   def run(
       initialPrompt: String
   )(backend: Backend[F]): F[AgentResult[String]] = {
     val initialHistory = ConversationHistory.withInitialPrompt(initialPrompt)
 
-    def loop(history: ConversationHistory, iteration: Int, toolCallRecords: Seq[ToolCallRecord]): F[AgentResult[String]] =
-      // Safety net for maxIterations <= 0. For maxIterations >= 1 this is unreachable: the isLastIteration branch below
-      // always returns at iteration == maxIterations - 1, so the loop never recurses to iteration == maxIterations.
+    def loop(
+        history: ConversationHistory,
+        iteration: Int,
+        records: Seq[ToolCallRecord],
+        usage: TokenUsage,
+        llmCalls: Seq[LlmCallUsage]
+    ): F[AgentResult[String]] =
+      // Safety net for maxIterations <= 0. For maxIterations >= 1 this is unreachable: the final-iteration branch
+      // below always returns at iteration == maxIterations - 1, so the loop never recurses past it.
       if (iteration >= config.maxIterations) {
         monad.unit(
-          AgentResult(
-            finalAnswer = extractFinalAnswer(history),
-            iterations = iteration,
-            toolCalls = toolCallRecords,
-            finishReason = FinishReason.MaxIterations
-          )
+          AgentResult(extractFinalAnswer(history), iteration, records, FinishReason.MaxIterations, usage, llmCalls)
         )
       } else {
-        val isLastIteration = iteration == config.maxIterations - 1
+        val decision = interceptor.decide(AgentRunState(iteration, config.maxIterations, usage, llmCalls))
+        val info = IterationInfo(iteration + 1, config.maxIterations)
+        interceptor
+          .aroundIteration(IterationContext(info))(runIteration(history, iteration, records, usage, llmCalls, decision, backend))
+          .flatMap {
+            case ContinueLoop(h, r, u, lc) => loop(h, iteration + 1, r, u, lc)
+            case Finished(result)          => monad.unit(result)
+          }
+      }
 
-        val historyWithMarker = if (iteration > 0) {
-          history.addIterationMarker(iteration + 1, config.maxIterations)
-        } else {
-          history
-        }
+    loop(initialHistory, 0, Seq.empty, TokenUsage.Zero, Seq.empty)
+  }
 
-        val response =
-          agentBackend.sendRequest(
-            historyWithMarker,
-            backend,
-            includeTools = !isLastIteration,
-            IterationInfo(iteration + 1, config.maxIterations)
+  private def runIteration(
+      history: ConversationHistory,
+      iteration: Int,
+      records: Seq[ToolCallRecord],
+      usage: TokenUsage,
+      llmCalls: Seq[LlmCallUsage],
+      decision: LoopDecision,
+      backend: Backend[F]
+  ): F[IterationOutcome] = {
+    val isLastByCount = iteration == config.maxIterations - 1
+    // steering wired in next commit
+    val isFinalIteration = isLastByCount
+
+    val withMarker = if (iteration > 0) history.addIterationMarker(iteration + 1, config.maxIterations) else history
+    val requestHistory = withMarker
+
+    val info = IterationInfo(iteration + 1, config.maxIterations)
+    val includeTools = !isFinalIteration
+
+    interceptor
+      .aroundLlmCall(LlmCallContext(requestHistory, includeTools, info))(
+        agentBackend.sendRequest(requestHistory, backend, includeTools, info)
+      )
+      .flatMap { response =>
+        val callUsage = response.usage.getOrElse(TokenUsage.Zero)
+        val newUsage = usage + callUsage
+        val newLlmCalls = llmCalls :+ LlmCallUsage(response.model, callUsage)
+
+        if (response.stopReason == StopReason.MaxTokens) {
+          monad.unit(
+            Finished(AgentResult(response.textContent, iteration + 1, records, FinishReason.TokenLimit, newUsage, newLlmCalls))
           )
-
-        response.flatMap { response =>
-          if (response.stopReason == StopReason.MaxTokens) {
-            monad.unit(
-              AgentResult(
-                finalAnswer = response.textContent,
-                iterations = iteration + 1,
-                toolCalls = toolCallRecords,
-                finishReason = FinishReason.TokenLimit
-              )
-            )
-          } else if (isLastIteration) {
-            // Tools were not offered on the last allowed iteration, so any tool calls in the response are
-            // spurious and must not be executed. Force the final answer: prefer the model's text, and fall
-            // back to the last tool result / assistant text if the model returned no text.
-            val finalAnswer = if (response.textContent.nonEmpty) response.textContent else extractFinalAnswer(history)
-            monad.unit(
-              AgentResult(
-                finalAnswer = finalAnswer,
-                iterations = iteration + 1,
-                toolCalls = toolCallRecords,
-                finishReason = FinishReason.MaxIterations
-              )
-            )
-          } else if (response.toolCalls.isEmpty) {
-            // No tool calls - the agent has produced its final answer, so complete the loop.
-            monad.unit(
-              AgentResult(
-                finalAnswer = response.textContent,
-                iterations = iteration + 1,
-                toolCalls = toolCallRecords,
-                finishReason = FinishReason.NaturalStop
-              )
-            )
-          } else {
-            val updatedHistory = history.addAssistantResponse(response.textContent, response.toolCalls)
-
-            runToolCalls(response.toolCalls.toList, iteration + 1, updatedHistory, toolCallRecords).flatMap {
-              case (historyWithResults, results) =>
-                loop(historyWithResults, iteration + 1, results)
-            }
+        } else if (isFinalIteration) {
+          // Tools were not offered on the final iteration, so any tool calls in the response are spurious and must not
+          // be executed. Force the final answer: prefer the model's text, fall back to the last tool result / assistant text.
+          val finalAnswer = if (response.textContent.nonEmpty) response.textContent else extractFinalAnswer(history)
+          monad.unit(
+            Finished(AgentResult(finalAnswer, iteration + 1, records, FinishReason.MaxIterations, newUsage, newLlmCalls))
+          )
+        } else if (response.toolCalls.isEmpty) {
+          // No tool calls - the agent has produced its final answer, so complete the loop.
+          monad.unit(
+            Finished(AgentResult(response.textContent, iteration + 1, records, FinishReason.NaturalStop, newUsage, newLlmCalls))
+          )
+        } else {
+          val updatedHistory = history.addAssistantResponse(response.textContent, response.toolCalls)
+          runToolCalls(response.toolCalls.toList, iteration + 1, updatedHistory, records).map { case (h, r) =>
+            ContinueLoop(h, r, newUsage, newLlmCalls)
           }
         }
       }
-
-    loop(initialHistory, 0, Seq.empty)
   }
 
   def runAs[T](
@@ -123,9 +152,7 @@ class Agent[F[_]](
       case Nil              => monad.unit((history, results))
       case toolCall :: rest =>
         for {
-          _ <- beforeToolCall(toolCall)
-          result <- runToolCall(toolCall, iteration)
-          _ <- afterToolCall(result)
+          result <- interceptor.aroundToolCall(ToolCallContext(toolCall, iteration))(runToolCall(toolCall, iteration))
           updatedHistory = history.addToolResult(result)
           acc <- runToolCalls(rest, iteration, updatedHistory, results :+ result)
         } yield acc
