@@ -109,7 +109,23 @@ private[gemini] class GeminiAgentBackend[F[_]](
                 val arguments = if (fc.arguments.isNull) Json.obj() else fc.arguments
                 ToolCall(fc.id, fc.name, arguments.noSpaces)
               }
-              monad.unit(AgentResponse(response.outputText, toolCalls, mapStopReason(response, toolCalls.nonEmpty)))
+              val usage = response.usage.map { u =>
+                TokenUsage(
+                  inputTokens = Tokens(u.totalInputTokens.getOrElse(0L)),
+                  outputTokens = Tokens(u.totalOutputTokens.getOrElse(0L)),
+                  cachedInputTokens = Tokens(u.totalCachedTokens.getOrElse(0L)),
+                  reasoningTokens = Tokens(u.totalThoughtTokens.getOrElse(0L))
+                )
+              }
+              monad.unit(
+                AgentResponse(
+                  response.outputText,
+                  toolCalls,
+                  mapStopReason(response, toolCalls.nonEmpty),
+                  usage = usage,
+                  model = response.model
+                )
+              )
             }
 
           case Left(error) =>
