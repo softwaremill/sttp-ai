@@ -24,7 +24,7 @@ jobs:
         distribution: 'temurin'
         java-version: '21'
         cache: 'sbt'
-    - uses: sbt/setup-sbt@f6db8ab474efba716fc7f04441ab33714e4825af # v1, specifically v1.5.4
+    - uses: sbt/setup-sbt@bfea3c5f48abd221b04a6df4798aa5eb8b6a2baf # v1, specifically v1.5.6
     - name: Install scala-cli
       uses: VirtusLab/scala-cli-setup@42e5f90b7aed2c0478e8074e5c25a030e1db3af6 # main, specifically v1.15.0
       with:
@@ -67,7 +67,7 @@ jobs:
           distribution: 'temurin'
           java-version: '21'
           cache: 'sbt'
-      - uses: sbt/setup-sbt@f6db8ab474efba716fc7f04441ab33714e4825af # v1, specifically v1.5.4
+      - uses: sbt/setup-sbt@bfea3c5f48abd221b04a6df4798aa5eb8b6a2baf # v1, specifically v1.5.6
       - name: Install native dependencies
         run: |
           sudo apt-get update
