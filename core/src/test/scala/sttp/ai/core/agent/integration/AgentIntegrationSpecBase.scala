@@ -110,6 +110,8 @@ abstract class AgentIntegrationSpecBase extends AnyFlatSpec with Matchers {
     assertToolCalled(result, "calculator", minTimes = 3)
     assertContainsAny(result.finalAnswer, "130", "one hundred thirty", "hundred and thirty")
     result.finishReason shouldBe FinishReason.NaturalStop
+    result.usage.totalTokens.value should be > 0L
+    result.llmCalls should not be empty
     ()
   }
 
