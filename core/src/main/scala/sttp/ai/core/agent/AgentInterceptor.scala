@@ -5,7 +5,8 @@ package sttp.ai.core.agent
   *
   * Contracts:
   *   - `next` is by-name: with `F = Identity`, `F[A] = A`, so a strict parameter would run the stage before the interceptor could act.
-  *     Interceptors that skip calling `next` short-circuit the stage.
+  *     Interceptors that skip calling `next` short-circuit the stage. Call `next` at most once: evaluating it again re-executes the stage
+  *     (re-sending the LLM request or re-running the tool under `Identity`, and building a duplicated effect under lazy `F`).
   *   - Exceptions raised by interceptor code propagate in `F` and fail the run. Interceptors are trusted infrastructure; their errors are
   *     never swallowed.
   *   - [[decide]] is pure: it is a judgment over already-accumulated state, consulted before each iteration. Effects belong in the

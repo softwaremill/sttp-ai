@@ -89,6 +89,10 @@ The library ships no prices — supply your own table, keyed by the provider-rep
 is missing from the table contribute zero to the cost check**; prefer `maxTotalTokens` (which needs no table) when
 not every model in play is priced.
 
+Budgets are soft by one LLM call: a breach is detected at the next iteration boundary, and the forced final answer
+itself is one more (tool-free) LLM call whose usage also counts. Size limits with that headroom in mind — a
+`maxTotalTokens` of 200k may end the run at roughly 200k plus one final call.
+
 ## Bridging the logging sink
 
 `LoggingInterceptor` takes a sink `(LogLevel, String) => F[Unit]`, so core needs no logging dependency. It requires
@@ -100,6 +104,10 @@ slf4j via log4cats:
 import cats.effect.IO
 import org.typelevel.log4cats.slf4j.Slf4jLogger
 import sttp.ai.core.agent.interceptor.{LoggingInterceptor, LogLevel}
+import sttp.client4.impl.cats.CatsMonadAsyncError
+import sttp.monad.MonadError
+
+given MonadError[IO] = new CatsMonadAsyncError[IO]()
 
 val logger = Slf4jLogger.getLogger[IO]
 val logging = new LoggingInterceptor[IO]({
@@ -113,7 +121,11 @@ ZIO logging:
 
 ```scala
 import sttp.ai.core.agent.interceptor.{LoggingInterceptor, LogLevel}
+import sttp.client4.impl.zio.RIOMonadAsyncError
+import sttp.monad.MonadError
 import zio.*
+
+given MonadError[Task] = new RIOMonadAsyncError[Any]()
 
 val logging = new LoggingInterceptor[Task]({
   case (LogLevel.Debug, msg) => ZIO.logDebug(msg)

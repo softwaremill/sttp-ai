@@ -117,7 +117,13 @@ val pick: IterationInfo => ChatCompletionModel & Capability.ToolCalling =
 Note: `isLastIteration` flags only the *forced* last iteration (`maxIterations` reached). The loop cannot know in
 advance on which iteration the model will answer naturally.
 
-## Hooks
+## Hooks (deprecated)
+
+```{warning}
+`hookBeforeToolCall` and `hookAfterToolCall` are deprecated since 0.8.0 and will be removed in the following
+release. Use [interceptors](interceptors.md) instead — an `AgentInterceptor` overriding `aroundToolCall` replaces
+both hooks and composes with other middleware. See the [migration section](interceptors.md#migrating-from-the-tool-call-hooks).
+```
 
 The loop can invoke optional effectful hooks around each tool call. Both run inside the agent loop, so an error in either hook interrupts the run.
 
