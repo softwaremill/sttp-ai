@@ -10,6 +10,9 @@ import sttp.monad.IdentityMonad
 import sttp.shared.Identity
 import sttp.tapir.Schema
 
+import scala.annotation.nowarn
+
+@nowarn("cat=deprecation")
 class AgentInterceptorLoopSpec extends AnyFlatSpec with Matchers {
 
   case object TestModel extends AIModel with Capability.ToolCalling {

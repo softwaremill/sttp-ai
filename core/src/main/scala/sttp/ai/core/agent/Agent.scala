@@ -6,6 +6,8 @@ import sttp.client4.Backend
 import sttp.monad.MonadError
 import sttp.monad.syntax.MonadErrorOps
 
+import scala.annotation.nowarn
+
 class Agent[F[_]](
     agentBackend: AgentBackend[F],
     config: AgentConfig[F]
@@ -15,6 +17,7 @@ class Agent[F[_]](
 
   // Adapts the deprecated beforeToolCall/afterToolCall hooks into an interceptor, appended AFTER user
   // interceptors so hooks run innermost (closest to the tool call), preserving pre-interceptor behavior.
+  @nowarn("cat=deprecation")
   private val legacyHookInterceptor: Option[AgentInterceptor[F]] =
     if (config.beforeToolCall.isEmpty && config.afterToolCall.isEmpty) None
     else

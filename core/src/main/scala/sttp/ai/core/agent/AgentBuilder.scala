@@ -53,8 +53,10 @@ final class AgentBuilder[F[_], M <: AIModel] private (
   ): AgentBuilder[F, M] =
     withConfig(config.copy(responseSchema = Some(ResponseSchema.derived[T](Some(description)))))
 
+  @deprecated("Use interceptor(...) with an AgentInterceptor overriding aroundToolCall", "0.8.0")
   def hookBeforeToolCall(hook: ToolCall => F[Unit]): AgentBuilder[F, M] = withConfig(config.copy(beforeToolCall = Some(hook)))
 
+  @deprecated("Use interceptor(...) with an AgentInterceptor overriding aroundToolCall", "0.8.0")
   def hookAfterToolCall(hook: ToolCallRecord => F[Unit]): AgentBuilder[F, M] = withConfig(config.copy(afterToolCall = Some(hook)))
 
   /** Appends an interceptor. Interceptors wrap stages in list order: the first added is outermost. */

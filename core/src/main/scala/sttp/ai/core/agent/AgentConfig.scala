@@ -8,7 +8,9 @@ case class AgentConfig[F[_]](
     userTools: Seq[AgentTool[F, _]] = Seq.empty[AgentTool[F, _]],
     exceptionHandler: ExceptionHandler = ExceptionHandler.default,
     responseSchema: Option[ResponseSchema[_]] = None,
+    @deprecated("Use interceptors instead: an AgentInterceptor overriding aroundToolCall", "0.8.0")
     beforeToolCall: Option[ToolCall => F[Unit]] = None,
+    @deprecated("Use interceptors instead: an AgentInterceptor overriding aroundToolCall", "0.8.0")
     afterToolCall: Option[ToolCallRecord => F[Unit]] = None,
     interceptors: Seq[AgentInterceptor[F]] = Seq.empty[AgentInterceptor[F]]
 ) {
