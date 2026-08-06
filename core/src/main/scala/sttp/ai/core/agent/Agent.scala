@@ -83,11 +83,17 @@ class Agent[F[_]](
       backend: Backend[F]
   ): F[IterationOutcome] = {
     val isLastByCount = iteration == config.maxIterations - 1
-    // steering wired in next commit
-    val isFinalIteration = isLastByCount
+    val forcedCause: Option[FinishReason] = decision match {
+      case LoopDecision.FinishNow(cause, _) => Some(cause)
+      case LoopDecision.Continue            => None
+    }
+    val isFinalIteration = isLastByCount || forcedCause.nonEmpty
 
     val withMarker = if (iteration > 0) history.addIterationMarker(iteration + 1, config.maxIterations) else history
-    val requestHistory = withMarker
+    val requestHistory = decision match {
+      case LoopDecision.FinishNow(_, instruction) => withMarker.addUserPrompt(instruction)
+      case LoopDecision.Continue                  => withMarker
+    }
 
     val info = IterationInfo(iteration + 1, config.maxIterations)
     val includeTools = !isFinalIteration
@@ -109,9 +115,9 @@ class Agent[F[_]](
           // Tools were not offered on the final iteration, so any tool calls in the response are spurious and must not
           // be executed. Force the final answer: prefer the model's text, fall back to the last tool result / assistant text.
           val finalAnswer = if (response.textContent.nonEmpty) response.textContent else extractFinalAnswer(history)
-          monad.unit(
-            Finished(AgentResult(finalAnswer, iteration + 1, records, FinishReason.MaxIterations, newUsage, newLlmCalls))
-          )
+          // MaxIterations takes precedence when the forced last iteration and a FinishNow coincide.
+          val reason = if (isLastByCount) FinishReason.MaxIterations else forcedCause.getOrElse(FinishReason.MaxIterations)
+          monad.unit(Finished(AgentResult(finalAnswer, iteration + 1, records, reason, newUsage, newLlmCalls)))
         } else if (response.toolCalls.isEmpty) {
           // No tool calls - the agent has produced its final answer, so complete the loop.
           monad.unit(

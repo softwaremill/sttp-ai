@@ -153,4 +153,65 @@ class AgentInterceptorLoopSpec extends AnyFlatSpec with Matchers {
     agent.run("Test")(backend).finalAnswer shouldBe "done"
     log.toList shouldBe List("interceptor:in", "hook:before:dummy", "hook:after:dummy", "interceptor:out")
   }
+
+  private def finishAfter(calls: Int, cause: FinishReason, instruction: String): AgentInterceptor[Identity] =
+    new AgentInterceptor[Identity] {
+      override def decide(state: AgentRunState): LoopDecision =
+        if (state.llmCalls.size >= calls) LoopDecision.FinishNow(cause, instruction) else LoopDecision.Continue
+    }
+
+  it should "force a graceful final answer when decide returns FinishNow" in {
+    val stub = new StubAgentBackend(
+      Seq(
+        toolResponse("call_1", Some(usage(100, 20))),
+        finalResponse("budget answer", Some(usage(50, 10)))
+      )
+    )
+    val steer = finishAfter(1, FinishReason.BudgetExceeded, "BUDGET EXHAUSTED - answer now")
+    val result = build(stub, Seq(steer)).run("Test")(backend)
+
+    result.finishReason shouldBe FinishReason.BudgetExceeded
+    result.finalAnswer shouldBe "budget answer"
+    result.iterations shouldBe 2
+    // The forced-final request withheld tools and contained the injected instruction:
+    stub.receivedIncludeTools shouldBe Seq(true, false)
+    stub.receivedHistories.last.entries should contain(ConversationEntry.UserPrompt("BUDGET EXHAUSTED - answer now"))
+    // Usage includes the forced-final call:
+    result.usage shouldBe usage(150, 30)
+  }
+
+  it should "report MaxIterations when FinishNow coincides with the forced last iteration" in {
+    val stub = new StubAgentBackend(
+      Seq(
+        toolResponse("call_1", Some(usage(10, 5))),
+        finalResponse("last answer", Some(usage(10, 5)))
+      )
+    )
+    val steer = finishAfter(1, FinishReason.BudgetExceeded, "answer now")
+    val agent = AgentBuilder[Identity, TestModel.type](_ => stub)(IdentityMonad)
+      .maxIterations(2) // iteration 2 is the forced last iteration AND the FinishNow iteration
+      .tools(dummyTool)
+      .interceptors(Seq(steer))
+      .build
+
+    val result = agent.run("Test")(backend)
+    result.finishReason shouldBe FinishReason.MaxIterations
+    result.finalAnswer shouldBe "last answer"
+  }
+
+  it should "not consult tools nor execute spurious tool calls on a FinishNow iteration" in {
+    val stub = new StubAgentBackend(
+      Seq(
+        toolResponse("call_1", Some(usage(10, 5))),
+        // model misbehaves and still asks for a tool on the forced-final call; it must not be executed
+        toolResponse("call_2", Some(usage(10, 5)))
+      )
+    )
+    val steer = finishAfter(1, FinishReason.BudgetExceeded, "answer now")
+    val result = build(stub, Seq(steer)).run("Test")(backend)
+
+    result.finishReason shouldBe FinishReason.BudgetExceeded
+    result.toolCalls should have size 1 // only the first iteration's tool call
+    result.finalAnswer shouldBe "dummy result" // extractFinalAnswer fallback: last tool result
+  }
 }
