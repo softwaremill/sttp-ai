@@ -109,4 +109,46 @@ class OpenAIAgentBackendSpec extends AnyFlatSpec with Matchers with EitherValues
 
     capturedModels.get() shouldBe Vector("gpt-4o-mini", "gpt-4.1")
   }
+
+  it should "surface provider-reported usage and model on AgentResponse" in {
+    val responseJson =
+      """{
+        |  "id": "chatcmpl-1",
+        |  "object": "chat.completion",
+        |  "created": 1,
+        |  "model": "gpt-4o-mini",
+        |  "choices": [
+        |    {
+        |      "index": 0,
+        |      "message": { "role": "assistant", "content": "hi" },
+        |      "finish_reason": "stop"
+        |    }
+        |  ],
+        |  "usage": {
+        |    "prompt_tokens": 100,
+        |    "completion_tokens": 30,
+        |    "total_tokens": 130,
+        |    "prompt_tokens_details": { "cached_tokens": 40 },
+        |    "completion_tokens_details": { "reasoning_tokens": 10 }
+        |  }
+        |}""".stripMargin
+    val httpStub = DefaultSyncBackend.stub.whenAnyRequest.thenRespondF(_ => ResponseStub.adjust(responseJson, StatusCode.Ok))
+
+    val response = backend(strictTools = true).sendRequest(
+      ConversationHistory.withInitialPrompt("hello"),
+      httpStub,
+      includeTools = false,
+      IterationInfo(1, 10)
+    )
+
+    response.model shouldBe Some("gpt-4o-mini")
+    response.usage shouldBe Some(
+      sttp.ai.core.agent.TokenUsage(
+        inputTokens = sttp.ai.core.agent.Tokens(100L),
+        outputTokens = sttp.ai.core.agent.Tokens(30L),
+        cachedInputTokens = sttp.ai.core.agent.Tokens(40L),
+        reasoningTokens = sttp.ai.core.agent.Tokens(10L)
+      )
+    )
+  }
 }
