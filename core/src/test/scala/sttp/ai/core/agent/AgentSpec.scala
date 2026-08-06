@@ -631,4 +631,16 @@ class AgentSpec extends AnyFlatSpec with Matchers with OptionValues {
     val ok = agent.runAs[Out]("Test")(backend)
     ok.finalAnswer shouldBe Right(Out(5))
   }
+
+  "AgentBuilder" should "append with interceptor() and replace with interceptors()" in {
+    val a = AgentInterceptor.noop[Identity]
+    val b = AgentInterceptor.noop[Identity]
+    val c = AgentInterceptor.noop[Identity]
+
+    val appended = agentBuilder(AgentResponse("done", Seq.empty, StopReason.EndTurn)).interceptor(a).interceptor(b)
+    appended.config.interceptors shouldBe Seq(a, b)
+
+    val replaced = appended.interceptors(Seq(c))
+    replaced.config.interceptors shouldBe Seq(c)
+  }
 }

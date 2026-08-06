@@ -57,6 +57,14 @@ final class AgentBuilder[F[_], M <: AIModel] private (
 
   def hookAfterToolCall(hook: ToolCallRecord => F[Unit]): AgentBuilder[F, M] = withConfig(config.copy(afterToolCall = Some(hook)))
 
+  /** Appends an interceptor. Interceptors wrap stages in list order: the first added is outermost. */
+  def interceptor(value: AgentInterceptor[F]): AgentBuilder[F, M] =
+    withConfig(config.copy(interceptors = config.interceptors :+ value))
+
+  /** Replaces the interceptor list. */
+  def interceptors(values: Seq[AgentInterceptor[F]]): AgentBuilder[F, M] =
+    withConfig(config.copy(interceptors = values))
+
   def build: Agent[F] = Agent(makeBackend(config), config)
 }
 
