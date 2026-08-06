@@ -7,7 +7,9 @@ import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
 import sttp.ai.core.agent.AgentTool
 import sttp.ai.core.agent.ConversationHistory
+import sttp.ai.core.agent.IterationInfo
 import sttp.ai.openai.OpenAI
+import sttp.ai.openai.requests.completions.chat.ChatRequestBody.ChatCompletionModel
 import sttp.apispec.Schema
 import sttp.client4._
 import sttp.client4.testing.ResponseStub
@@ -28,7 +30,14 @@ class OpenAIAgentBackendSpec extends AnyFlatSpec with Matchers with EitherValues
   }
 
   private def backend(strictTools: Boolean): OpenAIAgentBackend[Identity] =
-    new OpenAIAgentBackend[Identity](new OpenAI("test-key"), "gpt-4o-mini", Seq(testTool), None, None, strictTools)(IdentityMonad)
+    new OpenAIAgentBackend[Identity](
+      new OpenAI("test-key"),
+      _ => ChatCompletionModel.GPT4oMini,
+      Seq(testTool),
+      None,
+      None,
+      strictTools
+    )(IdentityMonad)
 
   "OpenAIAgentBackend" should "register tools as strict with normalized schemas when strictTools is true" in {
     val fn = backend(strictTools = true).convertedTools.head
@@ -57,7 +66,8 @@ class OpenAIAgentBackendSpec extends AnyFlatSpec with Matchers with EitherValues
     backend(strictTools = true).sendRequest(
       ConversationHistory.withInitialPrompt("hello"),
       httpStub,
-      includeTools = includeTools
+      includeTools = includeTools,
+      IterationInfo(1, 10)
     ): Unit
     captured.get().body match {
       case StringBody(s, _, _) => s
@@ -71,5 +81,32 @@ class OpenAIAgentBackendSpec extends AnyFlatSpec with Matchers with EitherValues
 
   it should "omit tools from the request body when includeTools is false" in {
     captureRequestBody(includeTools = false) should not include "\"tools\""
+  }
+
+  it should "resolve the model per iteration via modelForIteration" in {
+    val capturedModels = new AtomicReference[Vector[String]](Vector.empty)
+    val httpStub = DefaultSyncBackend.stub.whenAnyRequest.thenRespondF { request =>
+      val body = request.body match {
+        case StringBody(s, _, _) => s
+        case other               => fail(s"expected StringBody, got $other")
+      }
+      val model = io.circe.parser.parse(body).toOption.flatMap(_.hcursor.get[String]("model").toOption).getOrElse("?")
+      capturedModels.updateAndGet(_ :+ model)
+      ResponseStub.adjust(sttp.ai.openai.fixtures.CompletionsFixture.structuredOutputsResponse, StatusCode.Ok)
+    }
+
+    val backend = new OpenAIAgentBackend[Identity](
+      new OpenAI("test-key"),
+      info => if (info.isLastIteration) ChatCompletionModel.GPT41 else ChatCompletionModel.GPT4oMini,
+      Seq.empty,
+      None,
+      None,
+      strictTools = true
+    )(IdentityMonad)
+
+    backend.sendRequest(ConversationHistory.withInitialPrompt("hello"), httpStub, includeTools = false, IterationInfo(1, 3)): Unit
+    backend.sendRequest(ConversationHistory.withInitialPrompt("hello"), httpStub, includeTools = false, IterationInfo(3, 3)): Unit
+
+    capturedModels.get() shouldBe Vector("gpt-4o-mini", "gpt-4.1")
   }
 }

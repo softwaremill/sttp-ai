@@ -7,9 +7,11 @@ import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
 import sttp.ai.claude.ClaudeClient
 import sttp.ai.claude.config.ClaudeConfig
+import sttp.ai.claude.models.ClaudeModel
 import sttp.ai.claude.models.Tool
 import sttp.ai.core.agent.AgentTool
 import sttp.ai.core.agent.ConversationHistory
+import sttp.ai.core.agent.IterationInfo
 import sttp.apispec.Schema
 import sttp.client4._
 import sttp.client4.testing.ResponseStub
@@ -34,7 +36,7 @@ class ClaudeAgentBackendSpec extends AnyFlatSpec with Matchers with EitherValues
     val tool = AgentTool.dynamic("create-event", "Creates an event", schema)(_ => "ok")
 
     val client = ClaudeClient(ClaudeConfig(apiKey = "test-key"))
-    val backend = new ClaudeAgentBackend[Identity](client, "claude-haiku-4-5-20251001", Seq(tool), None, None)(IdentityMonad)
+    val backend = new ClaudeAgentBackend[Identity](client, _ => ClaudeModel.ClaudeHaiku4_5, Seq(tool), None, None)(IdentityMonad)
 
     backend.convertedTools.head match {
       case raw: Tool.CustomRaw =>
@@ -53,7 +55,7 @@ class ClaudeAgentBackendSpec extends AnyFlatSpec with Matchers with EitherValues
     val tool = AgentTool.dynamic("no-arg-tool", "Takes no arguments", schema)(_ => "ok")
 
     val client = ClaudeClient(ClaudeConfig(apiKey = "test-key"))
-    val backend = new ClaudeAgentBackend[Identity](client, "claude-haiku-4-5-20251001", Seq(tool), None, None)(IdentityMonad)
+    val backend = new ClaudeAgentBackend[Identity](client, _ => ClaudeModel.ClaudeHaiku4_5, Seq(tool), None, None)(IdentityMonad)
 
     backend.convertedTools.head match {
       case raw: Tool.CustomRaw =>
@@ -77,7 +79,7 @@ class ClaudeAgentBackendSpec extends AnyFlatSpec with Matchers with EitherValues
     }
 
     val client = ClaudeClient(ClaudeConfig(apiKey = "test-key"))
-    val backend = new ClaudeAgentBackend[Identity](client, "claude-haiku-4-5-20251001", Seq(tool), None, None)(IdentityMonad)
+    val backend = new ClaudeAgentBackend[Identity](client, _ => ClaudeModel.ClaudeHaiku4_5, Seq(tool), None, None)(IdentityMonad)
 
     backend.convertedTools.head match {
       case raw: Tool.CustomRaw => raw.inputSchema shouldBe originalSchema
@@ -96,7 +98,7 @@ class ClaudeAgentBackendSpec extends AnyFlatSpec with Matchers with EitherValues
     }
 
     val client = ClaudeClient(ClaudeConfig(apiKey = "test-key"))
-    val backend = new ClaudeAgentBackend[Identity](client, "claude-haiku-4-5-20251001", Seq(tool), None, None)(IdentityMonad)
+    val backend = new ClaudeAgentBackend[Identity](client, _ => ClaudeModel.ClaudeHaiku4_5, Seq(tool), None, None)(IdentityMonad)
 
     backend.convertedTools.head match {
       case raw: Tool.CustomRaw => raw.inputSchema shouldBe parse("""{"type":"object"}""").value
@@ -119,14 +121,14 @@ class ClaudeAgentBackendSpec extends AnyFlatSpec with Matchers with EitherValues
     val schema = parse(rawSchema).value.as[Schema](sttp.apispec.circe.schemaDecoder).value
     val tool = AgentTool.dynamic("create-event", "Creates an event", schema)(_ => "ok")
     val client = ClaudeClient(ClaudeConfig(apiKey = "test-key"))
-    val backend = new ClaudeAgentBackend[Identity](client, "claude-haiku-4-5-20251001", Seq(tool), None, None)(IdentityMonad)
+    val backend = new ClaudeAgentBackend[Identity](client, _ => ClaudeModel.ClaudeHaiku4_5, Seq(tool), None, None)(IdentityMonad)
 
     val captured = new AtomicReference[GenericRequest[_, _]](null)
     val httpStub = DefaultSyncBackend.stub.whenAnyRequest.thenRespondF { request =>
       captured.set(request)
       ResponseStub.adjust(minimalMessageResponse, StatusCode.Ok)
     }
-    backend.sendRequest(ConversationHistory.withInitialPrompt("hello"), httpStub, includeTools = includeTools): Unit
+    backend.sendRequest(ConversationHistory.withInitialPrompt("hello"), httpStub, includeTools = includeTools, IterationInfo(1, 10)): Unit
     captured.get().body match {
       case StringBody(s, _, _) => s
       case other               => fail(s"expected StringBody, got $other")
@@ -139,5 +141,32 @@ class ClaudeAgentBackendSpec extends AnyFlatSpec with Matchers with EitherValues
 
   it should "omit tools from the request body when includeTools is false" in {
     captureRequestBody(includeTools = false) should not include "\"tools\""
+  }
+
+  it should "resolve the model per iteration via modelForIteration" in {
+    val capturedModels = new AtomicReference[Vector[String]](Vector.empty)
+    val httpStub = DefaultSyncBackend.stub.whenAnyRequest.thenRespondF { request =>
+      val body = request.body match {
+        case StringBody(s, _, _) => s
+        case other               => fail(s"expected StringBody, got $other")
+      }
+      val model = parse(body).toOption.flatMap(_.hcursor.get[String]("model").toOption).getOrElse("?")
+      capturedModels.updateAndGet(_ :+ model)
+      ResponseStub.adjust(minimalMessageResponse, StatusCode.Ok)
+    }
+
+    val client = ClaudeClient(ClaudeConfig(apiKey = "test-key"))
+    val backend = new ClaudeAgentBackend[Identity](
+      client,
+      info => if (info.isLastIteration) ClaudeModel.ClaudeOpus5 else ClaudeModel.ClaudeHaiku4_5,
+      Seq.empty,
+      None,
+      None
+    )(IdentityMonad)
+
+    backend.sendRequest(ConversationHistory.withInitialPrompt("hello"), httpStub, includeTools = false, IterationInfo(1, 3)): Unit
+    backend.sendRequest(ConversationHistory.withInitialPrompt("hello"), httpStub, includeTools = false, IterationInfo(3, 3)): Unit
+
+    capturedModels.get() shouldBe Vector("claude-haiku-4-5-20251001", "claude-opus-5")
   }
 }

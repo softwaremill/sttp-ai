@@ -1,75 +1,126 @@
 endpoints:
   "v1/assistants":
-    file: "openai/src/main/scala/sttp/openai/requests/assistants/AssistantsModel.scala"
+    file: "openai/src/main/scala/sttp/ai/openai/requests/assistants/AssistantsModel.scala"
     className: "AssistantsModel"
     insertBeforeMarker: "case class CustomAssistantsModel"
     valuesSetName: "values"
 
   "v1/chat/completions":
-    file: "openai/src/main/scala/sttp/openai/requests/completions/chat/ChatRequestBody.scala"
+    file: "openai/src/main/scala/sttp/ai/openai/requests/completions/chat/ChatRequestBody.scala"
     className: "ChatCompletionModel"
     insertBeforeMarker: "case class CustomChatCompletionModel"
     valuesSetName: "values"
-    
+
   "v1/completions":
-    file: "openai/src/main/scala/sttp/openai/requests/completions/CompletionsRequestBody.scala"
+    file: "openai/src/main/scala/sttp/ai/openai/requests/completions/CompletionsRequestBody.scala"
     className: "CompletionModel"
     insertBeforeMarker: "case class CustomCompletionModel"
     valuesSetName: "values"
-    
+
   "v1/embeddings":
-    file: "openai/src/main/scala/sttp/openai/requests/embeddings/EmbeddingsRequestBody.scala"
+    file: "openai/src/main/scala/sttp/ai/openai/requests/embeddings/EmbeddingsRequestBody.scala"
     className: "EmbeddingsModel"
     insertBeforeMarker: "case class CustomEmbeddingsModel"
     valuesSetName: "values"
-  
+
   "v1/images/generations":
-    file: "openai/src/main/scala/sttp/openai/requests/images/creation/ImageCreationRequestBody.scala"
+    file: "openai/src/main/scala/sttp/ai/openai/requests/images/creation/ImageCreationRequestBody.scala"
     className: "ImageCreationModel"
     insertBeforeMarker: "case class CustomImageCreationModel"
     valuesSetName: null
-  
+
   "v1/images/edits":
-    file: "openai/src/main/scala/sttp/openai/requests/images/edit/ImageEditsConfig.scala"
+    file: "openai/src/main/scala/sttp/ai/openai/requests/images/edit/ImageEditsConfig.scala"
     className: "ImageEditsModel"
     insertBeforeMarker: "case class CustomImageEditsModel"
     valuesSetName: null
 
   "v1/fine-tuning":
-    file: "openai/src/main/scala/sttp/openai/requests/finetuning/FineTuningModel.scala"
+    file: "openai/src/main/scala/sttp/ai/openai/requests/finetuning/FineTuningModel.scala"
     className: "FineTuningModel"
     insertBeforeMarker: "case class CustomFineTuningModel"
     valuesSetName: "values"
-    
+
   "v1/moderations":
-    file: "openai/src/main/scala/sttp/openai/requests/moderations/ModerationsRequestBody.scala"
+    file: "openai/src/main/scala/sttp/ai/openai/requests/moderations/ModerationsRequestBody.scala"
     className: "ModerationModel"
     insertBeforeMarker: "case class CustomModerationModel"
     valuesSetName: "values"
 
   "v1/responses":
-    file: "openai/src/main/scala/sttp/openai/requests/responses/ResponsesModel.scala"
+    file: "openai/src/main/scala/sttp/ai/openai/requests/responses/ResponsesModel.scala"
     className: "ResponsesModel"
     insertBeforeMarker: "case class CustomResponsesModel"
     valuesSetName: "values"
 
   "v1/audio/speech":
-    file: "openai/src/main/scala/sttp/openai/requests/audio/speech/SpeechRequestBody.scala"
+    file: "openai/src/main/scala/sttp/ai/openai/requests/audio/speech/SpeechRequestBody.scala"
     className: "SpeechModel"
     insertBeforeMarker: "case class CustomSpeechModel"
     valuesSetName: null
-    
+
   "v1/audio/transcriptions":
-    file: "openai/src/main/scala/sttp/openai/requests/audio/transcriptions/TranscriptionModel.scala"
+    file: "openai/src/main/scala/sttp/ai/openai/requests/audio/transcriptions/TranscriptionModel.scala"
     className: "TranscriptionModel"
     insertBeforeMarker: "case class Custom"
     valuesSetName: null
-    
+
   "v1/audio/translations":
-    file: "openai/src/main/scala/sttp/openai/requests/audio/translations/TranslationModel.scala"
+    file: "openai/src/main/scala/sttp/ai/openai/requests/audio/translations/TranslationModel.scala"
     className: "TranslationModel"
     insertBeforeMarker: "case class Custom"
     valuesSetName: null
+
+# Capability tags applied to generated model constants. First matching rule (top to bottom)
+# gives the model's COMPLETE capability set; models matching no rule get `defaults`.
+# Patterns are globs over the model id ('*' matches any characters). Maintained by hand — never scraped.
+# Curated from OpenAI's per-model documentation (platform.openai.com/docs/models), last reviewed 2026-08-06.
+capabilities:
+  "v1/chat/completions":
+    defaults: [ToolCalling]
+    rules:
+      - pattern: "chatgpt-4o-latest"
+        capabilities: [Vision]
+      - pattern: "gpt-3.5-turbo-instruct"
+        capabilities: []
+      - pattern: "gpt-3.5-turbo-0301"
+        capabilities: []
+      # the -0314 snapshots predate function calling (introduced with -0613)
+      - pattern: "gpt-4*-0314"
+        capabilities: []
+      - pattern: "gpt-4-1106-vision-preview"
+        capabilities: [Vision]
+      - pattern: "gpt-4-turbo-2024-04-09"
+        capabilities: [Vision, ToolCalling]
+      - pattern: "gpt-4.5-preview*"
+        capabilities: [Vision, ToolCalling, StructuredOutput]
+      - pattern: "gpt-4.1*"
+        capabilities: [Vision, ToolCalling, StructuredOutput]
+      - pattern: "gpt-4o*audio-preview*"
+        capabilities: [ToolCalling]
+      - pattern: "gpt-4o*search-preview*"
+        capabilities: [StructuredOutput]
+      # json_schema structured outputs need gpt-4o-2024-08-06 or later
+      - pattern: "gpt-4o-2024-05-13"
+        capabilities: [Vision, ToolCalling]
+      - pattern: "gpt-4o*"
+        capabilities: [Vision, ToolCalling, StructuredOutput]
+      - pattern: "gpt-5-chat-latest"
+        capabilities: [Vision, StructuredOutput]
+      - pattern: "gpt-5*"
+        capabilities: [Vision, ToolCalling, StructuredOutput, Reasoning]
+      - pattern: "o1-mini*"
+        capabilities: [Reasoning]
+      - pattern: "o1-preview*"
+        capabilities: [Reasoning]
+      - pattern: "o1*"
+        capabilities: [Vision, ToolCalling, StructuredOutput, Reasoning]
+      - pattern: "o3-mini*"
+        capabilities: [ToolCalling, StructuredOutput, Reasoning]
+      - pattern: "o3*"
+        capabilities: [Vision, ToolCalling, StructuredOutput, Reasoning]
+      - pattern: "o4-mini*"
+        capabilities: [Vision, ToolCalling, StructuredOutput, Reasoning]
 
 # Name conversion rules for model names to Scala identifiers
 nameConversion:

@@ -46,7 +46,9 @@ class GeminiAgentBackendSpec extends AnyFlatSpec with Matchers with EitherValues
       responseSchema: Option[ResponseSchema[_]] = None
   ): GeminiAgentBackend[Identity] = {
     val client = GeminiClient(GeminiConfig(apiKey = "test-key"))
-    new GeminiAgentBackend[Identity](client, testModel, tools, systemPrompt, responseSchema)(IdentityMonad)
+    new GeminiAgentBackend[Identity](client, _ => GeminiModel.CustomModel(testModel), tools, systemPrompt, responseSchema)(
+      IdentityMonad
+    )
   }
 
   "GeminiAgentBackend" should "pass the full tool schema through, preserving nested structure" in {
@@ -101,7 +103,7 @@ class GeminiAgentBackendSpec extends AnyFlatSpec with Matchers with EitherValues
       captured.set(request)
       ResponseStub.adjust(completedResponse, StatusCode.Ok)
     }
-    backend.sendRequest(history, httpStub, includeTools = includeTools): Unit
+    backend.sendRequest(history, httpStub, includeTools = includeTools, IterationInfo(1, 10)): Unit
     captured.get().body match {
       case StringBody(s, _, _) => s
       case other               => fail(s"expected StringBody, got $other")
@@ -147,7 +149,7 @@ class GeminiAgentBackendSpec extends AnyFlatSpec with Matchers with EitherValues
     val backend = newBackend(Seq.empty)
     val httpStub = DefaultSyncBackend.stub.whenAnyRequest.thenRespondF(_ => ResponseStub.adjust(completedResponse, StatusCode.Ok))
 
-    val response = backend.sendRequest(ConversationHistory.withInitialPrompt("hi"), httpStub, includeTools = false)
+    val response = backend.sendRequest(ConversationHistory.withInitialPrompt("hi"), httpStub, includeTools = false, IterationInfo(1, 10))
     response.textContent shouldBe "done"
     response.toolCalls shouldBe empty
     response.stopReason shouldBe StopReason.EndTurn
@@ -163,7 +165,7 @@ class GeminiAgentBackendSpec extends AnyFlatSpec with Matchers with EitherValues
     val backend = newBackend(Seq.empty)
     val httpStub = DefaultSyncBackend.stub.whenAnyRequest.thenRespondF(_ => ResponseStub.adjust(toolCallResponse, StatusCode.Ok))
 
-    val response = backend.sendRequest(ConversationHistory.withInitialPrompt("hi"), httpStub, includeTools = false)
+    val response = backend.sendRequest(ConversationHistory.withInitialPrompt("hi"), httpStub, includeTools = false, IterationInfo(1, 10))
     response.stopReason shouldBe StopReason.ToolUse
     response.toolCalls shouldBe Seq(ToolCall("call_9", "get_weather", """{"city":"Warsaw"}"""))
   }
@@ -174,7 +176,7 @@ class GeminiAgentBackendSpec extends AnyFlatSpec with Matchers with EitherValues
     val httpStub = DefaultSyncBackend.stub.whenAnyRequest.thenRespondF(_ => ResponseStub.adjust(failedResponse, StatusCode.Ok))
 
     a[RuntimeException] should be thrownBy
-      backend.sendRequest(ConversationHistory.withInitialPrompt("hi"), httpStub, includeTools = false)
+      backend.sendRequest(ConversationHistory.withInitialPrompt("hi"), httpStub, includeTools = false, IterationInfo(1, 10))
   }
 
   it should "map completed responses that still contain function calls to ToolUse" in {
@@ -185,7 +187,7 @@ class GeminiAgentBackendSpec extends AnyFlatSpec with Matchers with EitherValues
     val backend = newBackend(Seq.empty)
     val httpStub = DefaultSyncBackend.stub.whenAnyRequest.thenRespondF(_ => ResponseStub.adjust(completedWithCalls, StatusCode.Ok))
 
-    val response = backend.sendRequest(ConversationHistory.withInitialPrompt("hi"), httpStub, includeTools = false)
+    val response = backend.sendRequest(ConversationHistory.withInitialPrompt("hi"), httpStub, includeTools = false, IterationInfo(1, 10))
     response.stopReason shouldBe StopReason.ToolUse
     response.toolCalls.map(_.toolName) shouldBe Seq("get_weather")
   }
@@ -196,7 +198,7 @@ class GeminiAgentBackendSpec extends AnyFlatSpec with Matchers with EitherValues
     val httpStub = DefaultSyncBackend.stub.whenAnyRequest.thenRespondF(_ => ResponseStub.adjust(cancelledResponse, StatusCode.Ok))
 
     val ex = the[RuntimeException] thrownBy
-      backend.sendRequest(ConversationHistory.withInitialPrompt("hi"), httpStub, includeTools = false)
+      backend.sendRequest(ConversationHistory.withInitialPrompt("hi"), httpStub, includeTools = false, IterationInfo(1, 10))
     ex.getMessage should include("cancelled")
   }
 
@@ -207,7 +209,7 @@ class GeminiAgentBackendSpec extends AnyFlatSpec with Matchers with EitherValues
     val backend = newBackend(Seq.empty)
     val httpStub = DefaultSyncBackend.stub.whenAnyRequest.thenRespondF(_ => ResponseStub.adjust(nullArgsResponse, StatusCode.Ok))
 
-    val response = backend.sendRequest(ConversationHistory.withInitialPrompt("hi"), httpStub, includeTools = false)
+    val response = backend.sendRequest(ConversationHistory.withInitialPrompt("hi"), httpStub, includeTools = false, IterationInfo(1, 10))
     response.toolCalls shouldBe Seq(ToolCall("call_9", "now", "{}"))
   }
 
@@ -216,7 +218,7 @@ class GeminiAgentBackendSpec extends AnyFlatSpec with Matchers with EitherValues
     val backend = newBackend(Seq.empty)
     val httpStub = DefaultSyncBackend.stub.whenAnyRequest.thenRespondF(_ => ResponseStub.adjust(completedResponse, StatusCode.Ok))
 
-    a[io.circe.ParsingFailure] should be thrownBy backend.sendRequest(history, httpStub, includeTools = false)
+    a[io.circe.ParsingFailure] should be thrownBy backend.sendRequest(history, httpStub, includeTools = false, IterationInfo(1, 10))
   }
 
   it should "surface the typed GeminiException instead of wrapping it in a generic RuntimeException" in {
@@ -225,7 +227,7 @@ class GeminiAgentBackendSpec extends AnyFlatSpec with Matchers with EitherValues
     val httpStub = DefaultSyncBackend.stub.whenAnyRequest.thenRespondF(_ => ResponseStub.adjust(errorBody, StatusCode.TooManyRequests))
 
     an[GeminiException.RateLimitException] should be thrownBy
-      backend.sendRequest(ConversationHistory.withInitialPrompt("hi"), httpStub, includeTools = false)
+      backend.sendRequest(ConversationHistory.withInitialPrompt("hi"), httpStub, includeTools = false, IterationInfo(1, 10))
   }
 
   it should "send the system prompt as system_instruction" in {
@@ -268,13 +270,13 @@ class GeminiAgentBackendSpec extends AnyFlatSpec with Matchers with EitherValues
     val incompleteStub =
       DefaultSyncBackend.stub.whenAnyRequest.thenRespondF(_ => ResponseStub.adjust("""{"status":"incomplete"}""", StatusCode.Ok))
     backend
-      .sendRequest(ConversationHistory.withInitialPrompt("hi"), incompleteStub, includeTools = false)
+      .sendRequest(ConversationHistory.withInitialPrompt("hi"), incompleteStub, includeTools = false, IterationInfo(1, 10))
       .stopReason shouldBe StopReason.MaxTokens
 
     val budgetStub =
       DefaultSyncBackend.stub.whenAnyRequest.thenRespondF(_ => ResponseStub.adjust("""{"status":"budget_exceeded"}""", StatusCode.Ok))
     backend
-      .sendRequest(ConversationHistory.withInitialPrompt("hi"), budgetStub, includeTools = false)
+      .sendRequest(ConversationHistory.withInitialPrompt("hi"), budgetStub, includeTools = false, IterationInfo(1, 10))
       .stopReason shouldBe StopReason.MaxTokens
   }
 
@@ -283,7 +285,7 @@ class GeminiAgentBackendSpec extends AnyFlatSpec with Matchers with EitherValues
     val httpStub = DefaultSyncBackend.stub.whenAnyRequest.thenRespondF(_ => ResponseStub.adjust("""{"status":"queued"}""", StatusCode.Ok))
 
     backend
-      .sendRequest(ConversationHistory.withInitialPrompt("hi"), httpStub, includeTools = false)
+      .sendRequest(ConversationHistory.withInitialPrompt("hi"), httpStub, includeTools = false, IterationInfo(1, 10))
       .stopReason shouldBe StopReason.Other("queued")
   }
 
@@ -294,5 +296,42 @@ class GeminiAgentBackendSpec extends AnyFlatSpec with Matchers with EitherValues
 
     input.downN(1).downField("type").as[String] shouldBe Right("user_input")
     input.downN(1).downField("content").downN(0).downField("text").as[String] shouldBe Right("[Iteration 2 of 5]")
+  }
+
+  it should "resolve the model per iteration via modelForIteration" in {
+    val capturedModels = new AtomicReference[Vector[String]](Vector.empty)
+    val httpStub = DefaultSyncBackend.stub.whenAnyRequest.thenRespondF { request =>
+      val body = request.body match {
+        case StringBody(s, _, _) => s
+        case other               => fail(s"expected StringBody, got $other")
+      }
+      val model = parse(body).toOption.flatMap(_.hcursor.get[String]("model").toOption).getOrElse("?")
+      capturedModels.updateAndGet(_ :+ model)
+      ResponseStub.adjust(completedResponse, StatusCode.Ok)
+    }
+
+    val client = GeminiClient(GeminiConfig(apiKey = "test-key"))
+    val backend = new GeminiAgentBackend[Identity](
+      client,
+      info => if (info.isLastIteration) GeminiModel.Gemini25Pro else GeminiModel.Gemini25FlashLite,
+      Seq.empty,
+      None,
+      None
+    )(IdentityMonad)
+
+    backend.sendRequest(ConversationHistory.withInitialPrompt("hello"), httpStub, includeTools = false, IterationInfo(1, 3)): Unit
+    backend.sendRequest(ConversationHistory.withInitialPrompt("hello"), httpStub, includeTools = false, IterationInfo(3, 3)): Unit
+
+    capturedModels.get() shouldBe Vector("gemini-2.5-flash-lite", "gemini-2.5-pro")
+  }
+
+  it should "build typed and mixed-model agents through GeminiAgent" in {
+    GeminiAgent.synchronous(GeminiConfig(apiKey = "test-key"), GeminiModel.Gemini25Flash): Unit
+    GeminiAgent.synchronous(
+      GeminiConfig(apiKey = "test-key"),
+      (info: IterationInfo) => if (info.isLastIteration) GeminiModel.Gemini25Pro else GeminiModel.Gemini25FlashLite
+    ): Unit
+    GeminiAgent.synchronous(GeminiConfig(apiKey = "test-key"), "gemini-experimental"): Unit
+    succeed
   }
 }

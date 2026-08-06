@@ -23,6 +23,45 @@ import scala.io.Source
 import scala.util.boundary.break
 import scala.util.{boundary, Using}
 
+val CanonicalOrder = List("Vision", "ToolCalling", "StructuredOutput", "Reasoning")
+
+def globToRegex(glob: String): scala.util.matching.Regex =
+  ("^" + glob.split("\\*", -1).map(java.util.regex.Pattern.quote).mkString(".*") + "$").r
+
+def capabilitiesFor(modelId: String, config: Option[CapabilityConfig]): List[String] =
+  config match {
+    case None      => Nil
+    case Some(cfg) =>
+      val set = cfg.rules.find(r => globToRegex(r.pattern).matches(modelId)).map(_.capabilities).getOrElse(cfg.defaults)
+      CanonicalOrder.filter(set.contains)
+  }
+
+// Validates the whole capabilities section up front (at config load): every capability name in every
+// rule and defaults list (so a typo in a shadowed or currently-unmatched rule fails loudly instead of
+// lying dormant), and every endpoint key (so a typo'd endpoint doesn't silently tag nothing).
+def validateCapabilities(config: ModelUpdateConfig): Unit =
+  config.capabilities.foreach { capabilities =>
+    capabilities.keys.filterNot(config.endpoints.contains).foreach { endpoint =>
+      throw new IllegalArgumentException(
+        s"capabilities section references unknown endpoint '$endpoint' (configured endpoints: ${config.endpoints.keys.mkString(", ")})"
+      )
+    }
+    capabilities.foreach { case (endpoint, cfg) =>
+      def check(names: List[String], where: String): Unit =
+        names.filterNot(CanonicalOrder.contains).foreach { unknown =>
+          throw new IllegalArgumentException(
+            s"Unknown capability '$unknown' in $where of endpoint '$endpoint' (known capabilities: ${CanonicalOrder.mkString(", ")})"
+          )
+        }
+      check(cfg.defaults, "defaults")
+      cfg.rules.foreach(r => check(r.capabilities, s"rule '${r.pattern}'"))
+    }
+  }
+
+def mixinClause(capabilities: List[String]): String =
+  if (capabilities == CanonicalOrder) " with Capability.All"
+  else capabilities.map(c => s" with Capability.$c").mkString
+
 opaque type Endpoint = String
 
 object Endpoint {
@@ -59,9 +98,14 @@ case class NameConversionConfig(
 
 case class ModelWithSnapshots(name: String, snapshots: List[String])
 
+case class CapabilityRule(pattern: String, capabilities: List[String]) derives YamlCodec
+
+case class CapabilityConfig(defaults: List[String], rules: List[CapabilityRule]) derives YamlCodec
+
 case class ModelUpdateConfig(
     endpoints: Map[String, EndpointConfig],
-    nameConversion: NameConversionConfig
+    nameConversion: NameConversionConfig,
+    capabilities: Option[Map[String, CapabilityConfig]] = None
 ) derives YamlCodec
 
 object ModelUpdater extends IOApp {
@@ -162,6 +206,7 @@ object ModelUpdater extends IOApp {
           case e: Exception => throw e
         }
       }
+      _ <- IO(validateCapabilities(config))
       _ <- logger.debug(s"✅ Loaded config with ${config.endpoints.size} endpoints")
     } yield config
 
@@ -203,7 +248,8 @@ object ModelUpdater extends IOApp {
               _ <- modelsWithSnapshots.traverse_ { model =>
                 logger.debug(s"  ${model.name} (${model.snapshots.size} snapshots: ${model.snapshots.mkString(", ")})")
               }
-              result <- updateSingleModelClass(endpointConfig, allModelNames, config.nameConversion, dryRun)
+              capabilityConfig = config.capabilities.flatMap(_.get(endpoint))
+              result <- updateSingleModelClass(endpointConfig, allModelNames, config.nameConversion, capabilityConfig, dryRun)
             } yield Some(result)
           case None =>
             logger.warn(s"⚠️ No config found for endpoint: $endpoint") *>
@@ -234,6 +280,7 @@ object ModelUpdater extends IOApp {
       endpointConfig: EndpointConfig,
       models: List[String],
       nameConversion: NameConversionConfig,
+      capabilityConfig: Option[CapabilityConfig],
       dryRun: Boolean
   ): IO[String] =
     for {
@@ -258,14 +305,20 @@ object ModelUpdater extends IOApp {
         existingModelNames.contains(scalaId)
       }
 
-      newCaseObjects = modelsToAdd.map { case (modelName, scalaId) =>
-        CaseObjectInfo(scalaId, s"  case object $scalaId extends ${endpointConfig.className}(\"$modelName\")", modelName)
+      existingCaseObjectsRendered = caseObjectBlock.caseObjects.map { caseObj =>
+        renderCaseObject(caseObj.name, caseObj.originalModelName, endpointConfig.className, capabilityConfig)
       }
 
-      allCaseObjects = (caseObjectBlock.caseObjects ++ newCaseObjects).sortBy(_.name)
+      newCaseObjects = modelsToAdd.map { case (modelName, scalaId) =>
+        renderCaseObject(scalaId, modelName, endpointConfig.className, capabilityConfig)
+      }
 
+      allCaseObjects = (existingCaseObjectsRendered ++ newCaseObjects).sortBy(_.name)
+
+      // Capability mixins are re-derived from config on every run (config is the source of truth), so any
+      // endpoint with a capability config must always be re-rendered, even when no models were added.
       _ <-
-        if (modelsToAdd.nonEmpty || caseObjectBlock.caseObjects.size != allCaseObjects.size) {
+        if (modelsToAdd.nonEmpty || caseObjectBlock.caseObjects.size != allCaseObjects.size || capabilityConfig.isDefined) {
           for {
             _ <- logger.info(
               s"🔄 Reordering ${allCaseObjects.size} case objects (${modelsToAdd.size} new, ${caseObjectBlock.caseObjects.size} existing)"
@@ -310,15 +363,105 @@ object ModelUpdater extends IOApp {
 
   case class CaseObjectBlock(startIndex: Int, endIndex: Int, caseObjects: List[CaseObjectInfo])
 
+  // Mixins are always re-derived from the capability config (config is the source of truth); any hand-written
+  // mixins found in the file are discarded and replaced by whatever the config resolves for this model id.
+  private def renderCaseObject(
+      scalaId: String,
+      modelName: String,
+      className: String,
+      capabilityConfig: Option[CapabilityConfig]
+  ): CaseObjectInfo = {
+    val caps = capabilitiesFor(modelName, capabilityConfig)
+    CaseObjectInfo(scalaId, s"  case object $scalaId extends $className(\"$modelName\")${mixinClause(caps)}", modelName)
+  }
+
+  // scalafmt wraps long tagged definitions across multiple lines, e.g.:
+  //   case object GPT41
+  //       extends ChatCompletionModel("gpt-4.1")
+  //       with Capability.Vision
+  //       with Capability.ToolCalling
+  // so a case object definition either matches fully on one line, or starts with a bare
+  // `case object Name`, is followed by an `extends ClassName("id")` line, and is then
+  // followed by zero or more `with ...` continuation lines - all of which are discarded here
+  // (mixins are always re-derived from the capability config, never read back from the file).
+  private def isCaseObjectStart(className: String)(lines: List[String], index: Int): Boolean = {
+    val line = lines(index)
+    val fullPattern = s"""^\\s*case object\\s+(\\w+)\\s+extends\\s+$className\\("([^"]+)"\\).*""".r
+    val shortStartPattern = """^case object\s+(\w+)$""".r
+    if (fullPattern.matches(line)) {
+      true
+    } else if (shortStartPattern.matches(line.trim)) {
+      // A bare `case object Name` only starts a block for our className if the following
+      // non-empty line is its `extends ClassName(` continuation - otherwise it may be a
+      // case object of a different class entirely.
+      val next = nextNonEmptyIndex(lines, index + 1)
+      next < lines.length && lines(next).trim.startsWith(s"extends $className(")
+    } else {
+      false
+    }
+  }
+
+  /** Index of the first line at or after `from` whose trimmed content is non-empty; `lines.length` if none. Shared by
+    * [[isCaseObjectStart]] and [[parseCaseObjects]] so both treat blank lines inside a wrapped definition identically.
+    */
+  private def nextNonEmptyIndex(lines: collection.Seq[String], from: Int): Int = {
+    var j = from
+    while (j < lines.length && lines(j).trim.isEmpty) j += 1
+    j
+  }
+
+  private def isContinuationLine(line: String): Boolean = {
+    val trimmed = line.trim
+    trimmed.startsWith("with ") || trimmed.startsWith("extends ")
+  }
+
+  // Not private: exercised directly by update_code_with_new_models.test.scala.
+  def parseCaseObjects(blockLines: List[String], className: String): List[CaseObjectInfo] = {
+    val fullPattern = s"""^\\s*case object\\s+(\\w+)\\s+extends\\s+$className\\("([^"]+)"\\).*""".r
+    val shortStartPattern = """^case object\s+(\w+)$""".r
+    val extendsPattern = s"""^extends\\s+$className\\("([^"]+)"\\).*""".r
+
+    val linesArray = blockLines.toArray
+    val result = scala.collection.mutable.ListBuffer.empty[CaseObjectInfo]
+    var i = 0
+    while (i < linesArray.length) {
+      linesArray(i) match {
+        case fullPattern(name, modelName) =>
+          result += CaseObjectInfo(name, linesArray(i).trim, modelName)
+          i += 1
+          while (i < linesArray.length && isContinuationLine(linesArray(i))) i += 1
+        case line =>
+          line.trim match {
+            case shortStartPattern(name) =>
+              val extendsLineIndex = nextNonEmptyIndex(linesArray, i + 1)
+              if (extendsLineIndex < linesArray.length) {
+                linesArray(extendsLineIndex).trim match {
+                  case extendsPattern(modelName) =>
+                    result += CaseObjectInfo(name, s"case object $name extends $className(\"$modelName\")", modelName)
+                    i = extendsLineIndex + 1
+                    while (i < linesArray.length && isContinuationLine(linesArray(i))) i += 1
+                  case _ =>
+                    i += 1
+                }
+              } else {
+                i += 1
+              }
+            case _ =>
+              i += 1
+          }
+      }
+    }
+    result.toList
+  }
+
   private def findCaseObjectBlock(content: String, className: String, insertBeforeMarker: String): Option[CaseObjectBlock] =
     val lines = content.split("\n").toList
-    val caseObjectPattern = s"""^\\s*case object\\s+(\\w+)\\s+extends\\s+$className\\("([^"]+)"\\).*""".r
     val markerIndex = lines.indexWhere(_.contains(insertBeforeMarker))
 
     if (markerIndex == -1) {
       None
     } else {
-      val startIndex = lines.indexWhere(caseObjectPattern.matches)
+      val startIndex = lines.indices.find(i => isCaseObjectStart(className)(lines, i)).getOrElse(-1)
       val endIndex = boundary {
         lines.take(markerIndex).zipWithIndex.reverse.foldLeft(-1) { case (passedIndex, (line, index)) =>
           if (!isCommentLine(line)) {
@@ -332,17 +475,9 @@ object ModelUpdater extends IOApp {
         // No case objects found before marker
         Some(CaseObjectBlock(markerIndex, markerIndex, List.empty))
       } else {
-        // Extract all case objects in the block that extend our className
-        val caseObjects = lines
-          .slice(startIndex, endIndex)
-          .zipWithIndex
-          .flatMap { case (line, index) =>
-            line match {
-              case caseObjectPattern(name, modelName) =>
-                Some(CaseObjectInfo(name, line.trim, modelName))
-              case _ => None
-            }
-          }
+        // Extract all case objects in the block that extend our className, tolerating definitions
+        // wrapped across multiple lines by scalafmt.
+        val caseObjects = parseCaseObjects(lines.slice(startIndex, endIndex), className)
 
         Some(CaseObjectBlock(startIndex, endIndex, caseObjects))
       }

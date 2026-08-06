@@ -31,13 +31,16 @@ trait AgentBackend[F[_]] {
     * @param includeTools
     *   Whether the agent's tools should be offered on this call. The agent loop sets this to `false` on the last allowed iteration so the
     *   model is forced to produce a final answer instead of making tool calls whose results would be discarded.
+    * @param iterationInfo
+    *   The position of this request within the agent loop (1-based iteration, and the configured maximum).
     * @return
     *   The LLM's response wrapped in the effect type F, containing text content, tool calls, and stop reason
     */
   def sendRequest(
       history: ConversationHistory,
       backend: Backend[F],
-      includeTools: Boolean
+      includeTools: Boolean,
+      iterationInfo: IterationInfo
   ): F[AgentResponse]
 }
 

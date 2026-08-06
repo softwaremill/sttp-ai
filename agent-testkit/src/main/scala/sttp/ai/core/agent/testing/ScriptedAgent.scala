@@ -26,7 +26,7 @@ final class ScriptedAgent[F[_]] private (script: Seq[AgentResponse])(implicit mo
   private var backends: Vector[ScriptedAgentBackend[F]] = Vector.empty
 
   /** A standard [[AgentBuilder]] wired to this script — a drop-in replacement for e.g. `OpenAIAgent.builder(...)`. */
-  def builder: AgentBuilder[F] = AgentBuilder[F] { config =>
+  def builder: AgentBuilder[F, ScriptedModel.type] = AgentBuilder[F, ScriptedModel.type] { config =>
     val backend = new ScriptedAgentBackend[F](script, config.userTools, config.systemPrompt, config.responseSchema)
     synchronized {
       backends = backends :+ backend

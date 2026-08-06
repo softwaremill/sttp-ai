@@ -11,7 +11,7 @@ import sttp.monad.IdentityMonad
 
 private[openai] class OpenAIAgentBackend[F[_]](
     openAI: OpenAI,
-    modelName: String,
+    modelForIteration: IterationInfo => ChatCompletionModel,
     val tools: Seq[AgentTool[F, _]],
     val systemPrompt: Option[String],
     responseSchema: Option[ResponseSchema[_]],
@@ -82,11 +82,12 @@ private[openai] class OpenAIAgentBackend[F[_]](
   override def sendRequest(
       history: ConversationHistory,
       backend: Backend[F],
-      includeTools: Boolean
+      includeTools: Boolean,
+      iterationInfo: IterationInfo
   ): F[AgentResponse] = {
     val messages = buildMessages(history)
     val request = ChatBody(
-      model = ChatCompletionModel.CustomChatCompletionModel(modelName),
+      model = modelForIteration(iterationInfo),
       messages = messages,
       tools = if (includeTools && convertedTools.nonEmpty) Some(convertedTools) else None,
       responseFormat = responseFormat
@@ -140,53 +141,122 @@ private[openai] class OpenAIAgentBackend[F[_]](
 
 object OpenAIAgent {
 
-  def builder[F[_]](
-      openAI: OpenAI,
-      modelName: String
-  )(implicit monad: sttp.monad.MonadError[F]): AgentBuilder[F] =
-    builder(openAI, modelName, strictTools = true)
+  /** Entry point: `OpenAIAgent.builder[F](openAI, model)`. The indirection lets `M` be inferred while `F` is given explicitly. */
+  def builder[F[_]]: BuilderPartiallyApplied[F] = new BuilderPartiallyApplied[F]
 
-  def builder[F[_]](
-      apiKey: String,
-      modelName: String
-  )(implicit monad: sttp.monad.MonadError[F]): AgentBuilder[F] =
-    builder(apiKey, modelName, strictTools = true)
+  final class BuilderPartiallyApplied[F[_]] private[OpenAIAgent] () {
+
+    def apply[M <: ChatCompletionModel](openAI: OpenAI, model: M)(implicit monad: sttp.monad.MonadError[F]): AgentBuilder[F, M] =
+      apply(openAI, model, strictTools = true)
+
+    def apply[M <: ChatCompletionModel](openAI: OpenAI, model: M, strictTools: Boolean)(implicit
+        monad: sttp.monad.MonadError[F]
+    ): AgentBuilder[F, M] =
+      apply(openAI, (_: IterationInfo) => model, strictTools)
+
+    /** Selects the model per loop iteration (e.g. a cheap model for tool iterations, a stronger one for the forced-final synthesis). `M`
+      * infers to the least upper bound of every model the function can return, so capability checks require the shared capabilities.
+      */
+    def apply[M <: ChatCompletionModel](openAI: OpenAI, modelForIteration: IterationInfo => M)(implicit
+        monad: sttp.monad.MonadError[F]
+    ): AgentBuilder[F, M] =
+      apply(openAI, modelForIteration, strictTools = true)
+
+    def apply[M <: ChatCompletionModel](openAI: OpenAI, modelForIteration: IterationInfo => M, strictTools: Boolean)(implicit
+        monad: sttp.monad.MonadError[F]
+    ): AgentBuilder[F, M] =
+      AgentBuilder[F, M](config =>
+        new OpenAIAgentBackend[F](openAI, modelForIteration, config.userTools, config.systemPrompt, config.responseSchema, strictTools)
+      )
+
+    def apply(openAI: OpenAI, modelName: String)(implicit
+        monad: sttp.monad.MonadError[F]
+    ): AgentBuilder[F, ChatCompletionModel.CustomChatCompletionModel] =
+      apply(openAI, ChatCompletionModel.CustomChatCompletionModel(modelName))
+
+    def apply(openAI: OpenAI, modelName: String, strictTools: Boolean)(implicit
+        monad: sttp.monad.MonadError[F]
+    ): AgentBuilder[F, ChatCompletionModel.CustomChatCompletionModel] =
+      apply(openAI, ChatCompletionModel.CustomChatCompletionModel(modelName), strictTools)
+
+    def apply(apiKey: String, modelName: String)(implicit
+        monad: sttp.monad.MonadError[F]
+    ): AgentBuilder[F, ChatCompletionModel.CustomChatCompletionModel] =
+      apply(new OpenAI(apiKey), modelName)
+
+    def apply(apiKey: String, modelName: String, strictTools: Boolean)(implicit
+        monad: sttp.monad.MonadError[F]
+    ): AgentBuilder[F, ChatCompletionModel.CustomChatCompletionModel] =
+      apply(new OpenAI(apiKey), modelName, strictTools)
+
+    def apply[M <: ChatCompletionModel](apiKey: String, model: M)(implicit monad: sttp.monad.MonadError[F]): AgentBuilder[F, M] =
+      apply(new OpenAI(apiKey), model)
+
+    def apply[M <: ChatCompletionModel](apiKey: String, model: M, strictTools: Boolean)(implicit
+        monad: sttp.monad.MonadError[F]
+    ): AgentBuilder[F, M] =
+      apply(new OpenAI(apiKey), model, strictTools)
+
+    def apply[M <: ChatCompletionModel](apiKey: String, modelForIteration: IterationInfo => M)(implicit
+        monad: sttp.monad.MonadError[F]
+    ): AgentBuilder[F, M] =
+      apply(new OpenAI(apiKey), modelForIteration)
+
+    def apply[M <: ChatCompletionModel](apiKey: String, modelForIteration: IterationInfo => M, strictTools: Boolean)(implicit
+        monad: sttp.monad.MonadError[F]
+    ): AgentBuilder[F, M] =
+      apply(new OpenAI(apiKey), modelForIteration, strictTools)
+  }
+
+  def synchronous[M <: ChatCompletionModel](openAI: OpenAI, model: M): AgentBuilder[Identity, M] =
+    builder[Identity](openAI, model)(IdentityMonad)
+
+  def synchronous[M <: ChatCompletionModel](openAI: OpenAI, model: M, strictTools: Boolean): AgentBuilder[Identity, M] =
+    builder[Identity](openAI, model, strictTools)(IdentityMonad)
+
+  def synchronous[M <: ChatCompletionModel](openAI: OpenAI, modelForIteration: IterationInfo => M): AgentBuilder[Identity, M] =
+    builder[Identity](openAI, modelForIteration)(IdentityMonad)
+
+  def synchronous[M <: ChatCompletionModel](
+      openAI: OpenAI,
+      modelForIteration: IterationInfo => M,
+      strictTools: Boolean
+  ): AgentBuilder[Identity, M] =
+    builder[Identity](openAI, modelForIteration, strictTools)(IdentityMonad)
+
+  def synchronous(openAI: OpenAI, modelName: String): AgentBuilder[Identity, ChatCompletionModel.CustomChatCompletionModel] =
+    builder[Identity](openAI, modelName)(IdentityMonad)
 
   def synchronous(
       openAI: OpenAI,
-      modelName: String
-  ): AgentBuilder[Identity] = synchronous(openAI, modelName, strictTools = true)
-
-  def synchronous(
-      apiKey: String,
-      modelName: String
-  ): AgentBuilder[Identity] = synchronous(apiKey, modelName, strictTools = true)
-
-  def builder[F[_]](
-      openAI: OpenAI,
       modelName: String,
       strictTools: Boolean
-  )(implicit monad: sttp.monad.MonadError[F]): AgentBuilder[F] =
-    AgentBuilder[F](config =>
-      new OpenAIAgentBackend[F](openAI, modelName, config.userTools, config.systemPrompt, config.responseSchema, strictTools)
-    )
+  ): AgentBuilder[Identity, ChatCompletionModel.CustomChatCompletionModel] =
+    builder[Identity](openAI, modelName, strictTools)(IdentityMonad)
 
-  def builder[F[_]](
-      apiKey: String,
-      modelName: String,
-      strictTools: Boolean
-  )(implicit monad: sttp.monad.MonadError[F]): AgentBuilder[F] =
-    builder(new OpenAI(apiKey), modelName, strictTools)
-
-  def synchronous(
-      openAI: OpenAI,
-      modelName: String,
-      strictTools: Boolean
-  ): AgentBuilder[Identity] = builder[Identity](openAI, modelName, strictTools)(IdentityMonad)
+  def synchronous(apiKey: String, modelName: String): AgentBuilder[Identity, ChatCompletionModel.CustomChatCompletionModel] =
+    builder[Identity](apiKey, modelName)(IdentityMonad)
 
   def synchronous(
       apiKey: String,
       modelName: String,
       strictTools: Boolean
-  ): AgentBuilder[Identity] = builder[Identity](apiKey, modelName, strictTools)(IdentityMonad)
+  ): AgentBuilder[Identity, ChatCompletionModel.CustomChatCompletionModel] =
+    builder[Identity](apiKey, modelName, strictTools)(IdentityMonad)
+
+  def synchronous[M <: ChatCompletionModel](apiKey: String, model: M): AgentBuilder[Identity, M] =
+    builder[Identity](apiKey, model)(IdentityMonad)
+
+  def synchronous[M <: ChatCompletionModel](apiKey: String, model: M, strictTools: Boolean): AgentBuilder[Identity, M] =
+    builder[Identity](apiKey, model, strictTools)(IdentityMonad)
+
+  def synchronous[M <: ChatCompletionModel](apiKey: String, modelForIteration: IterationInfo => M): AgentBuilder[Identity, M] =
+    builder[Identity](apiKey, modelForIteration)(IdentityMonad)
+
+  def synchronous[M <: ChatCompletionModel](
+      apiKey: String,
+      modelForIteration: IterationInfo => M,
+      strictTools: Boolean
+  ): AgentBuilder[Identity, M] =
+    builder[Identity](apiKey, modelForIteration, strictTools)(IdentityMonad)
 }

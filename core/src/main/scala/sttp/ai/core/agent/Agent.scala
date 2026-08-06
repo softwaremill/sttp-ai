@@ -42,7 +42,13 @@ class Agent[F[_]](
           history
         }
 
-        val response = agentBackend.sendRequest(historyWithMarker, backend, includeTools = !isLastIteration)
+        val response =
+          agentBackend.sendRequest(
+            historyWithMarker,
+            backend,
+            includeTools = !isLastIteration,
+            IterationInfo(iteration + 1, config.maxIterations)
+          )
 
         response.flatMap { response =>
           if (response.stopReason == StopReason.MaxTokens) {

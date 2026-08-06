@@ -60,6 +60,31 @@ The `model_update_config.yaml` file defines:
 - **Name conversion rules**: How to convert model names to Scala identifiers
 - **Insert markers**: Where to place new case objects in each file
 - **Values sets**: Optional companion value sets to maintain
+- **Capability tags**: Optional `Capability` mixins to render on each endpoint's model constants (see below)
+
+### Capability tags
+
+The `capabilities` section maps an endpoint (e.g. `"v1/chat/completions"`) to a list of glob `rules` plus a
+`defaults` fallback. Each rule has a `pattern` (glob over the model id, `*` matches any characters) and a
+`capabilities` list; **the first matching rule (top to bottom) wins** and gives the model's complete capability
+set. A model id matching no rule falls back to `defaults`. This section is hand-curated - it is never scraped
+or inferred from the model listing.
+
+On `--apply`, every constant in an endpoint's managed block - both existing and newly added - is re-rendered
+with `with Capability.X` mixins resolved fresh from this config, in canonical order (`Vision`, `ToolCalling`,
+`StructuredOutput`, `Reasoning`); a model with all four capabilities is rendered with the `with Capability.All`
+shorthand instead. Any hand-written mixins already in the file are discarded; the yaml config is
+the source of truth. Endpoints with no `capabilities` entry render with no mixin clause, unchanged from before.
+
+Note: the script only manages the mixin clauses. Before adding a `capabilities` entry for a new endpoint, the
+target file must already import `sttp.ai.core.model.Capability` and its model class must extend
+`sttp.ai.core.model.AIModel` — otherwise the generated `with Capability.X` clauses won't compile.
+
+The block parser has unit tests; run them with:
+
+```bash
+scala-cli test update_code_with_new_models.scala update_code_with_new_models.test.scala
+```
 
 ## Default Behavior
 

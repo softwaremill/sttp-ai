@@ -6,6 +6,7 @@ import org.scalatest.matchers.should.Matchers
 import io.circe.Codec
 import io.circe.generic.semiauto.deriveCodec
 import io.circe.parser.decode
+import sttp.ai.core.model.{AIModel, Capability}
 import sttp.client4.testing.SyncBackendStub
 import sttp.monad.IdentityMonad
 import sttp.shared.Identity
@@ -13,10 +14,17 @@ import sttp.tapir.Schema
 
 class AgentSpec extends AnyFlatSpec with Matchers with OptionValues {
 
+  // Test-only model claiming ToolCalling and StructuredOutput, so builder methods requiring those capability
+  // evidences are usable in these tests.
+  case object TestModel extends AIModel with Capability.ToolCalling with Capability.StructuredOutput {
+    val value: String = "test-model"
+  }
+
   class StubAgentBackend(responses: Seq[AgentResponse]) extends AgentBackend[Identity] {
     private var callCount = 0
     var receivedHistories: Seq[ConversationHistory] = Seq.empty
     var receivedIncludeTools: Seq[Boolean] = Seq.empty
+    var iterationInfos: Vector[IterationInfo] = Vector.empty
 
     override def tools: Seq[AgentTool[Identity, _]] = Seq.empty
     override def systemPrompt: Option[String] = None
@@ -24,10 +32,12 @@ class AgentSpec extends AnyFlatSpec with Matchers with OptionValues {
     override def sendRequest(
         history: ConversationHistory,
         backend: sttp.client4.Backend[Identity],
-        includeTools: Boolean
+        includeTools: Boolean,
+        iterationInfo: IterationInfo
     ): Identity[AgentResponse] = {
       receivedHistories = receivedHistories :+ history
       receivedIncludeTools = receivedIncludeTools :+ includeTools
+      iterationInfos = iterationInfos :+ iterationInfo
       val response = if (callCount < responses.length) {
         responses(callCount)
       } else {
@@ -51,10 +61,10 @@ class AgentSpec extends AnyFlatSpec with Matchers with OptionValues {
     s"Result: ${input.a + input.b}"
   }
 
-  private def agentBuilder(responses: AgentResponse*): AgentBuilder[Identity] =
-    AgentBuilder[Identity](_ => new StubAgentBackend(responses))(IdentityMonad)
+  private def agentBuilder(responses: AgentResponse*): AgentBuilder[Identity, TestModel.type] =
+    AgentBuilder[Identity, TestModel.type](_ => new StubAgentBackend(responses))(IdentityMonad)
 
-  private def runLoop(builder: AgentBuilder[Identity]): AgentResult[String] =
+  private def runLoop(builder: AgentBuilder[Identity, TestModel.type]): AgentResult[String] =
     builder.build.run("Test")(backend)
 
   case class DummyInput()
@@ -100,7 +110,7 @@ class AgentSpec extends AnyFlatSpec with Matchers with OptionValues {
       )
     )
 
-    val result = runLoop(AgentBuilder[Identity](_ => stubBackend)(IdentityMonad).maxIterations(3).tools(dummyTool))
+    val result = runLoop(AgentBuilder[Identity, TestModel.type](_ => stubBackend)(IdentityMonad).maxIterations(3).tools(dummyTool))
 
     stubBackend.receivedIncludeTools shouldBe Seq(true, true, false)
     result.toolCalls should have size 2
@@ -229,13 +239,34 @@ class AgentSpec extends AnyFlatSpec with Matchers with OptionValues {
         AgentResponse("Done", Seq.empty, StopReason.EndTurn)
       )
     )
-    runLoop(AgentBuilder[Identity](_ => stubBackend)(IdentityMonad).tools(dummyTool))
+    runLoop(AgentBuilder[Identity, TestModel.type](_ => stubBackend)(IdentityMonad).tools(dummyTool))
 
     stubBackend.receivedHistories should have size 2
     val firstHistory = stubBackend.receivedHistories.head
     firstHistory.entries.exists(_.isInstanceOf[ConversationEntry.IterationMarker]) shouldBe false
     val secondHistory = stubBackend.receivedHistories(1)
     secondHistory.entries.exists(_.isInstanceOf[ConversationEntry.IterationMarker]) shouldBe true
+  }
+
+  it should "pass 1-based IterationInfo to the backend and flag the forced-final iteration" in {
+    val dummyTool = AgentTool.fromFunction(
+      "dummy",
+      "Dummy tool"
+    )((_: DummyInput) => "dummy result")
+
+    val stubBackend = new StubAgentBackend(
+      Seq(
+        AgentResponse("", Seq(ToolCall(id = "call_1", toolName = "dummy", input = "{}")), StopReason.ToolUse),
+        AgentResponse("", Seq(ToolCall(id = "call_2", toolName = "dummy", input = "{}")), StopReason.ToolUse),
+        AgentResponse("done", Seq.empty, StopReason.EndTurn)
+      )
+    )
+
+    runLoop(AgentBuilder[Identity, TestModel.type](_ => stubBackend)(IdentityMonad).maxIterations(3).tools(dummyTool))
+
+    stubBackend.iterationInfos.map(_.iteration) shouldBe Vector(1, 2, 3)
+    stubBackend.iterationInfos.map(_.maxIterations).distinct shouldBe Vector(3)
+    stubBackend.iterationInfos.map(_.isLastIteration) shouldBe Vector(false, false, true)
   }
 
   it should "accept valid user tools" in {

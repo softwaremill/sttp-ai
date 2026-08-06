@@ -4,6 +4,7 @@ import sttp.ai.core.agent.integration.AgentIntegrationSpecBase
 import sttp.ai.core.agent._
 import sttp.ai.openai.OpenAI
 import sttp.ai.openai.agent._
+import sttp.ai.openai.requests.completions.chat.ChatRequestBody.ChatCompletionModel
 import sttp.monad.IdentityMonad
 import sttp.shared.Identity
 
@@ -17,7 +18,7 @@ class OpenAIAgentIntegrationSpec extends AgentIntegrationSpecBase {
     val agentConfig = AgentConfig[Identity](maxIterations = maxIterations, userTools = tools)
     val agentBackend = new OpenAIAgentBackend[Identity](
       openai,
-      "gpt-4o-mini",
+      _ => ChatCompletionModel.GPT4oMini,
       agentConfig.userTools,
       agentConfig.systemPrompt,
       agentConfig.responseSchema,

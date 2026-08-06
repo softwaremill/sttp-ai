@@ -11,8 +11,6 @@ import sttp.shared.Identity
 
 class GeminiAgentIntegrationSpec extends AgentIntegrationSpecBase {
 
-  private val testModel = GeminiModel.Gemini35FlashLite.value
-
   override def providerName: String = "Gemini"
   override def apiKeyEnvVar: String = "GEMINI_API_KEY"
 
@@ -22,7 +20,7 @@ class GeminiAgentIntegrationSpec extends AgentIntegrationSpecBase {
     val agentConfig = AgentConfig[Identity](maxIterations = maxIterations, userTools = tools)
     val agentBackend = new GeminiAgentBackend[Identity](
       client,
-      testModel,
+      _ => GeminiModel.Gemini35FlashLite,
       agentConfig.userTools,
       agentConfig.systemPrompt,
       agentConfig.responseSchema
@@ -36,7 +34,7 @@ class GeminiAgentIntegrationSpec extends AgentIntegrationSpecBase {
       responseSchema: ResponseSchema[T]
   ): Agent[Identity] =
     GeminiAgent
-      .synchronous(GeminiConfig.fromEnv, testModel)
+      .synchronous(GeminiConfig.fromEnv, GeminiModel.Gemini35FlashLite)
       .maxIterations(maxIterations)
       .tools(tools)
       .responseSchema(responseSchema)

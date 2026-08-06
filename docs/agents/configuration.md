@@ -24,6 +24,99 @@ The OpenAI factories additionally accept a `strictTools` flag (default `true`): 
 normalized for OpenAI's strict function calling (`additionalProperties: false`, all properties required, optional
 properties nullable); when `false`, tools are registered as non-strict with their original schemas.
 
+## Model capabilities
+
+Model constants are tagged with capability marker traits: `Vision`, `ToolCalling`, `StructuredOutput`, `Reasoning`
+(in `sttp.ai.core.model.Capability`; models supporting everything mix in the `Capability.All` shorthand, which
+extends all four). Agent builder methods that need a capability require it at compile time:
+`.tools`/`.addTool` need `ToolCalling`, `.responseSchema`/`.deriveResponseSchema` need `StructuredOutput`.
+
+```scala mdoc:compile-only
+import sttp.ai.core.agent.AgentTool
+import sttp.ai.openai.OpenAI
+import sttp.ai.openai.agent.OpenAIAgent
+import sttp.ai.openai.requests.completions.chat.ChatRequestBody.ChatCompletionModel
+import sttp.shared.Identity
+
+def myTool: AgentTool[Identity, ?] = ???
+
+val agent = OpenAIAgent
+  .synchronous(OpenAI.fromEnv, ChatCompletionModel.GPT4o) // GPT4o mixes in ToolCalling
+  .tools(myTool)
+  .build
+
+// OpenAIAgent.synchronous(OpenAI.fromEnv, ChatCompletionModel.O1Mini).tools(myTool) // does not compile: o1-mini has no ToolCalling
+```
+
+String model names keep working and skip capability checking — they wrap into the provider's custom model class,
+which claims all capabilities (you assert your model supports what you use it for):
+
+```scala mdoc:compile-only
+import sttp.ai.core.agent.AgentTool
+import sttp.ai.openai.OpenAI
+import sttp.ai.openai.agent.OpenAIAgent
+import sttp.shared.Identity
+
+def myTool: AgentTool[Identity, ?] = ???
+
+val ollamaAgent = OpenAIAgent.synchronous(OpenAI.fromEnv, "llama3-70b").tools(myTool).build
+```
+
+### Custom models and wrong tags
+
+The provider model hierarchies are sealed, so you cannot define your own constant with hand-picked capability tags —
+a model outside the predefined constants always goes through the provider's custom model class and claims all
+capabilities. If a *predefined* constant's tags are missing or wrong (capability data is curated and can lag the
+providers), `Supports.assume` opts out of checking for exactly that model/capability pair while keeping every other
+check intact — unlike falling back to a raw model-name string, which disables all checking:
+
+```scala mdoc:compile-only
+import sttp.ai.core.model.{Capability, Supports}
+import sttp.ai.openai.requests.completions.chat.ChatRequestBody.ChatCompletionModel
+
+// you have verified the model really supports this, even though its constant isn't tagged with it
+given Supports[ChatCompletionModel.GPT4o20240513.type, Capability.StructuredOutput] = Supports.assume
+```
+
+Note that capability checks work on the model's singleton type: ascribing a constant to the base type
+(`val m: ChatCompletionModel = ChatCompletionModel.GPT4o`) widens away the tags, and `.tools(...)` on it will not
+compile. Pass constants directly, or keep the precise type (`ChatCompletionModel.GPT4o.type`).
+
+## Per-iteration model selection
+
+Agents can use a different model per loop iteration — e.g. a cheap model while the agent calls tools, and a stronger
+model for the forced-final iteration (where tools are withheld and the model must answer):
+
+```scala mdoc:compile-only
+import sttp.ai.core.agent.{AgentTool, IterationInfo}
+import sttp.ai.openai.OpenAI
+import sttp.ai.openai.agent.OpenAIAgent
+import sttp.ai.openai.requests.completions.chat.ChatRequestBody.ChatCompletionModel
+import sttp.shared.Identity
+
+def myTool: AgentTool[Identity, ?] = ???
+
+val mixedAgent = OpenAIAgent
+  .synchronous(OpenAI.fromEnv, (info: IterationInfo) => if info.isLastIteration then ChatCompletionModel.GPT5 else ChatCompletionModel.GPT4oMini)
+  .tools(myTool)
+  .build
+```
+
+The inferred model type is the least upper bound of every model the function can return, so capability checks require
+the capabilities **all** of them share. If inference produces an unwieldy type, ascribe the function explicitly:
+
+```scala mdoc:compile-only
+import sttp.ai.core.agent.IterationInfo
+import sttp.ai.core.model.Capability
+import sttp.ai.openai.requests.completions.chat.ChatRequestBody.ChatCompletionModel
+
+val pick: IterationInfo => ChatCompletionModel & Capability.ToolCalling =
+  info => if info.isLastIteration then ChatCompletionModel.GPT5 else ChatCompletionModel.GPT4oMini
+```
+
+Note: `isLastIteration` flags only the *forced* last iteration (`maxIterations` reached). The loop cannot know in
+advance on which iteration the model will answer naturally.
+
 ## Hooks
 
 The loop can invoke optional effectful hooks around each tool call. Both run inside the agent loop, so an error in either hook interrupts the run.
