@@ -95,7 +95,14 @@ private[claude] class ClaudeAgentBackend[F[_]](
         }
 
         val stopReason = mapClaudeStopReason(response.stopReason)
-        monad.unit(AgentResponse(textContent, toolCalls, stopReason))
+        val u = response.usage
+        val usage = TokenUsage(
+          inputTokens = Tokens((u.inputTokens + u.cacheReadInputTokens.getOrElse(0) + u.cacheCreationInputTokens.getOrElse(0)).toLong),
+          outputTokens = Tokens(u.outputTokens.toLong),
+          cachedInputTokens = Tokens(u.cacheReadInputTokens.getOrElse(0).toLong),
+          reasoningTokens = Tokens.Zero
+        )
+        monad.unit(AgentResponse(textContent, toolCalls, stopReason, usage = Some(usage), model = Some(response.model)))
 
       case Left(error) =>
         monad.error(

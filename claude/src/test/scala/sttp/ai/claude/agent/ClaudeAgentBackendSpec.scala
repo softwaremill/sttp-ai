@@ -169,4 +169,43 @@ class ClaudeAgentBackendSpec extends AnyFlatSpec with Matchers with EitherValues
 
     capturedModels.get() shouldBe Vector("claude-haiku-4-5-20251001", "claude-opus-5")
   }
+
+  it should "surface provider-reported usage and model on AgentResponse" in {
+    val responseJson =
+      """{
+        |  "id": "msg_1",
+        |  "type": "message",
+        |  "role": "assistant",
+        |  "content": [ { "type": "text", "text": "hi" } ],
+        |  "model": "claude-haiku-4-5",
+        |  "stop_reason": "end_turn",
+        |  "usage": {
+        |    "input_tokens": 100,
+        |    "output_tokens": 30,
+        |    "cache_read_input_tokens": 40,
+        |    "cache_creation_input_tokens": 7
+        |  }
+        |}""".stripMargin
+    val httpStub = DefaultSyncBackend.stub.whenAnyRequest.thenRespondF(_ => ResponseStub.adjust(responseJson, StatusCode.Ok))
+
+    val client = ClaudeClient(ClaudeConfig(apiKey = "test-key"))
+    val backend = new ClaudeAgentBackend[Identity](client, _ => ClaudeModel.ClaudeHaiku4_5, Seq.empty, None, None)(IdentityMonad)
+
+    val response = backend.sendRequest(
+      ConversationHistory.withInitialPrompt("hello"),
+      httpStub,
+      includeTools = false,
+      IterationInfo(1, 10)
+    )
+
+    response.model shouldBe Some("claude-haiku-4-5")
+    response.usage shouldBe Some(
+      sttp.ai.core.agent.TokenUsage(
+        inputTokens = sttp.ai.core.agent.Tokens(147L), // 100 + 40 cache-read + 7 cache-creation
+        outputTokens = sttp.ai.core.agent.Tokens(30L),
+        cachedInputTokens = sttp.ai.core.agent.Tokens(40L),
+        reasoningTokens = sttp.ai.core.agent.Tokens.Zero
+      )
+    )
+  }
 }
