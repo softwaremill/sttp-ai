@@ -217,4 +217,42 @@ class AgentInterceptorLoopSpec extends AnyFlatSpec with Matchers {
     result.toolCalls should have size 1 // only the first iteration's tool call
     result.finalAnswer shouldBe "dummy result" // extractFinalAnswer fallback: last tool result
   }
+
+  it should "enforce a token budget end-to-end via BudgetInterceptor" in {
+    import sttp.ai.core.agent.interceptor.BudgetInterceptor
+    val stub = new StubAgentBackend(
+      Seq(
+        toolResponse("call_1", Some(usage(100, 20))),
+        toolResponse("call_2", Some(usage(100, 20))),
+        finalResponse("partial answer", Some(usage(50, 10)))
+      )
+    )
+    val budget = new BudgetInterceptor[Identity](maxTotalTokens = Some(Tokens(200L)))
+    val result = build(stub, Seq(budget)).run("Test")(backend)
+
+    result.finishReason shouldBe FinishReason.BudgetExceeded
+    result.finalAnswer shouldBe "partial answer"
+    result.iterations shouldBe 3 // breach detected after call 2 (240 >= 200), forced final on iteration 3
+    stub.receivedIncludeTools shouldBe Seq(true, true, false)
+    stub.receivedHistories.last.entries should contain(ConversationEntry.UserPrompt(BudgetInterceptor.defaultInstruction))
+  }
+
+  it should "let runAs parse a budget-forced final answer like a max-iterations one" in {
+    import sttp.ai.core.agent.interceptor.BudgetInterceptor
+    case class Out(x: Int)
+    implicit val outCodec: Codec[Out] = deriveCodec
+
+    val stub = new StubAgentBackend(
+      Seq(
+        toolResponse("call_1", Some(usage(100, 20))),
+        finalResponse("""{"x": 5}""", Some(usage(50, 10)))
+      )
+    )
+    val budget = new BudgetInterceptor[Identity](maxTotalTokens = Some(Tokens(100L)))
+    val result = build(stub, Seq(budget)).runAs[Out]("Test")(backend)
+
+    result.finishReason shouldBe FinishReason.BudgetExceeded
+    result.finalAnswer shouldBe Right(Out(5)) // BudgetExceeded is parse-attempted, not rejected outright
+    result.usage shouldBe usage(150, 30)
+  }
 }
