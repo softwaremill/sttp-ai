@@ -45,6 +45,23 @@ class BudgetInterceptorSpec extends AnyFlatSpec with Matchers {
     cost shouldBe Cost(BigDecimal(2)) // whole input priced at 2/M
   }
 
+  it should "price each call against its own model's rates when calls span multiple models" in {
+    val table = PriceTable(
+      Map(
+        "a" -> ModelPrice(inputPerMTok = BigDecimal(2), outputPerMTok = BigDecimal(10)),
+        "b" -> ModelPrice(inputPerMTok = BigDecimal(4), outputPerMTok = BigDecimal(20))
+      )
+    )
+    val cost = table.costOf(
+      Seq(
+        LlmCallUsage(Some("a"), usage(1000000L, 100000L)), // 2 + 1 = 3
+        LlmCallUsage(Some("b"), usage(500000L, 100000L)), // 2 + 2 = 4
+        LlmCallUsage(Some("unknown"), usage(1000000L, 1000000L)) // 0
+      )
+    )
+    cost shouldBe Cost(BigDecimal(7))
+  }
+
   it should "contribute zero for calls with unknown or absent model ids" in {
     val table = PriceTable(Map("known" -> ModelPrice(BigDecimal(2), BigDecimal(10))))
     table.costOf(Seq(LlmCallUsage(Some("unknown"), usage(1000000L, 1000000L)))) shouldBe Cost(BigDecimal(0))

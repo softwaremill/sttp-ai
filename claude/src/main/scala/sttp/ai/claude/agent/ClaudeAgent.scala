@@ -97,7 +97,7 @@ private[claude] class ClaudeAgentBackend[F[_]](
         val stopReason = mapClaudeStopReason(response.stopReason)
         val u = response.usage
         val usage = TokenUsage(
-          inputTokens = Tokens((u.inputTokens + u.cacheReadInputTokens.getOrElse(0) + u.cacheCreationInputTokens.getOrElse(0)).toLong),
+          inputTokens = Tokens(u.totalInputTokens.toLong),
           outputTokens = Tokens(u.outputTokens.toLong),
           cachedInputTokens = Tokens(u.cacheReadInputTokens.getOrElse(0).toLong),
           reasoningTokens = Tokens.Zero

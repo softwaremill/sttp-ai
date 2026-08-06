@@ -621,17 +621,6 @@ class AgentSpec extends AnyFlatSpec with Matchers with OptionValues {
     budgetResult.finishReason shouldBe FinishReason.BudgetExceeded
   }
 
-  "runAs" should "attempt to parse a budget-forced final answer like a max-iterations one" in {
-    case class Out(x: Int)
-    implicit val outCodec: Codec[Out] = deriveCodec
-
-    // Directly exercise the runAs classification: build a result with BudgetExceeded and valid JSON.
-    // (The loop-level budget path is covered in Task 9; here we only pin the FinishReason classification.)
-    val agent = agentBuilder(AgentResponse("""{"x": 5}""", Seq.empty, StopReason.EndTurn)).build
-    val ok = agent.runAs[Out]("Test")(backend)
-    ok.finalAnswer shouldBe Right(Out(5))
-  }
-
   "AgentBuilder" should "append with interceptor() and replace with interceptors()" in {
     val a = AgentInterceptor.noop[Identity]
     val b = AgentInterceptor.noop[Identity]

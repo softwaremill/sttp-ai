@@ -237,6 +237,18 @@ class AgentInterceptorLoopSpec extends AnyFlatSpec with Matchers {
     stub.receivedHistories.last.entries should contain(ConversationEntry.UserPrompt(BudgetInterceptor.defaultInstruction))
   }
 
+  it should "force a graceful final answer via FinishNow before the first LLM call" in {
+    val stub = new StubAgentBackend(Seq(finalResponse("immediate answer", Some(usage(10, 5)))))
+    val steer = finishAfter(0, FinishReason.BudgetExceeded, "answer immediately")
+    val result = build(stub, Seq(steer)).run("Test")(backend)
+
+    result.finishReason shouldBe FinishReason.BudgetExceeded
+    result.finalAnswer shouldBe "immediate answer"
+    result.iterations shouldBe 1
+    stub.receivedIncludeTools shouldBe Seq(false)
+    stub.receivedHistories.last.entries should contain(ConversationEntry.UserPrompt("answer immediately"))
+  }
+
   it should "let runAs parse a budget-forced final answer like a max-iterations one" in {
     import sttp.ai.core.agent.interceptor.BudgetInterceptor
     case class Out(x: Int)

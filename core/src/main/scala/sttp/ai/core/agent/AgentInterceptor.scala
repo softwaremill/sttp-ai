@@ -87,7 +87,8 @@ object LoopDecision {
 
   /** Force a graceful final answer: `instruction` is injected as a user message, tools are withheld (the existing last-iteration
     * mechanism), and the run finishes with `finishReason = cause`. If the loop is simultaneously at its forced last iteration,
-    * `MaxIterations` takes precedence as the reported reason.
+    * `MaxIterations` takes precedence as the reported reason. If the forced-final LLM response itself stops with `StopReason.MaxTokens`,
+    * that check precedes the `FinishNow` cause and the run reports `FinishReason.TokenLimit` instead.
     */
   final case class FinishNow(cause: FinishReason, instruction: String) extends LoopDecision
 }
