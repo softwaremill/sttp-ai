@@ -77,8 +77,7 @@ class BudgetInterceptorSpec extends AnyFlatSpec with Matchers {
       LoopDecision.FinishNow(FinishReason.BudgetExceeded, BudgetInterceptor.defaultInstruction)
   }
 
-  it should "skip the cost check when no price table is configured" in {
-    val budget = new BudgetInterceptor[Identity](maxCost = Some(Cost(BigDecimal(0))))
-    budget.decide(state(LlmCallUsage(Some("m"), usage(1000000L, 1000000L)))) shouldBe LoopDecision.Continue
+  it should "reject maxCost without a priceTable at construction" in {
+    an[IllegalArgumentException] should be thrownBy new BudgetInterceptor[Identity](maxCost = Some(Cost(BigDecimal(0))))
   }
 }

@@ -49,8 +49,8 @@ final case class PriceTable(prices: Map[String, ModelPrice]) {
   * `state.llmCalls` reaches `maxCost`, the loop injects `instruction` as a user message, withholds tools, and finishes with
   * [[FinishReason.BudgetExceeded]] — mirroring the existing last-iteration behavior instead of failing abruptly.
   *
-  * The cost check requires BOTH `maxCost` and `priceTable`; otherwise it is skipped. See [[PriceTable.costOf]] for the unknown-model
-  * caveat.
+  * The cost check requires BOTH `maxCost` and `priceTable`: setting `maxCost` without a `priceTable` fails at construction with an
+  * `IllegalArgumentException`, since such a budget could never trigger. See [[PriceTable.costOf]] for the unknown-model caveat.
   */
 final class BudgetInterceptor[F[_]](
     maxTotalTokens: Option[Tokens] = None,
@@ -58,6 +58,11 @@ final class BudgetInterceptor[F[_]](
     priceTable: Option[PriceTable] = None,
     instruction: String = BudgetInterceptor.defaultInstruction
 ) extends AgentInterceptor[F] {
+
+  require(
+    maxCost.isEmpty || priceTable.nonEmpty,
+    "maxCost requires a priceTable; without one the cost budget can never trigger"
+  )
 
   override def decide(state: AgentRunState): LoopDecision = {
     val tokensExceeded = maxTotalTokens.exists(limit => state.usage.totalTokens >= limit)
