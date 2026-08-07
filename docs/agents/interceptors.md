@@ -22,10 +22,14 @@ val timing = new AgentInterceptor[Identity]:
 
 Rules of the trade:
 
-- `next` is by-name — don't force it before you mean to run the stage.
+- `next` is by-name — don't force it before you mean to run the stage, and call it at most once. Skipping it
+  short-circuits the stage.
 - Exceptions thrown by interceptor code fail the whole run; they are never swallowed.
 - `decide` is pure: it judges the accumulated `AgentRunState` before each iteration and can return
-  `LoopDecision.FinishNow(cause, instruction)` to force a graceful final answer.
+  `LoopDecision.FinishNow(cause, instruction)` to force a graceful final answer. The cause is a
+  `FinishReason.ForcedStop` — `BudgetExceeded` or `Custom("your reason")` — so interceptors cannot misreport
+  loop-owned reasons like `NaturalStop`. On a forced-final iteration the backend's `IterationInfo.isLastIteration`
+  is true, so per-iteration model selection picks the same (usually stronger) model as for a regular last iteration.
 
 ## Composition and ordering
 
@@ -40,10 +44,12 @@ import sttp.ai.openai.requests.completions.chat.ChatRequestBody.ChatCompletionMo
 import sttp.monad.IdentityMonad
 import sttp.shared.Identity
 
+given sttp.monad.MonadError[Identity] = IdentityMonad
+
 val agent = OpenAIAgent
   .synchronous("api-key", ChatCompletionModel.GPT4oMini)
-  .interceptor(new LoggingInterceptor[Identity]((level, msg) => println(s"[$level] $msg"))(IdentityMonad))
-  .interceptor(new BudgetInterceptor[Identity](maxTotalTokens = Some(Tokens(200_000L))))
+  .addInterceptor(LoggingInterceptor[Identity]((level, msg) => println(s"[$level] $msg")))
+  .addInterceptor(BudgetInterceptor[Identity](maxTotalTokens = Some(Tokens(200_000L))))
   .build
 ```
 
@@ -61,8 +67,13 @@ def report(result: AgentResult[String]): Unit =
   }
 ```
 
-`AgentResult.finishReason` reports why the loop stopped: `NaturalStop`, `MaxIterations`, `TokenLimit`,
-`BudgetExceeded`, or `Error`.
+`AgentResult.finishReason` reports why the loop stopped: `NaturalStop`, `MaxIterations`, `TokenLimit`, `Error`, or
+an interceptor-forced stop (`BudgetExceeded`, or `Custom(reason)` from your own steering interceptor).
+
+Provider notes: cached input tokens are reported in `cachedInputTokens` (reads) and `cacheWriteInputTokens`
+(writes, e.g. Claude's `cache_creation_input_tokens`) — both are subsets of `inputTokens`. Gemini reports thought
+tokens separately from output; the mapping folds them into `outputTokens` (with `reasoningTokens` as the subset),
+so `totalTokens` matches the provider-reported total.
 
 ## Budgets
 
@@ -78,16 +89,19 @@ val prices = PriceTable(Map(
   "gpt-4o-mini" -> ModelPrice(inputPerMTok = BigDecimal("0.15"), outputPerMTok = BigDecimal("0.60"))
 ))
 
-val budget = new BudgetInterceptor[Identity](
+val budget = BudgetInterceptor[Identity](
   maxTotalTokens = Some(Tokens(200_000L)),
   maxCost = Some(Cost(BigDecimal("2.50"))),
   priceTable = Some(prices)
 )
 ```
 
-The library ships no prices — supply your own table, keyed by the provider-reported model id. **Calls whose model id
-is missing from the table contribute zero to the cost check**; prefer `maxTotalTokens` (which needs no table) when
-not every model in play is priced.
+The library ships no prices — supply your own table, keyed by the provider-reported model id. `ModelPrice` takes
+optional dedicated rates for cache reads (`cachedInputPerMTok`) and cache writes (`cacheWriteInputPerMTok`, which
+some providers bill at a premium); both default to the plain input rate. **Calls whose model id is missing from the
+table contribute zero to the cost check**; prefer `maxTotalTokens` (which needs no table) when not every model in
+play is priced. A `BudgetInterceptor` with no limit at all, or `maxCost` without a `priceTable`, fails fast at
+construction.
 
 Budgets are soft by one LLM call: a breach is detected at the next iteration boundary, and the forced final answer
 itself is one more (tool-free) LLM call whose usage also counts. Size limits with that headroom in mind — a
@@ -147,8 +161,8 @@ class TracingInterceptor[F[_]: Tracer] extends AgentInterceptor[F]:
 
 ## Migrating from the tool-call hooks
 
-`hookBeforeToolCall` / `hookAfterToolCall` are deprecated (since 0.8.0) and will be removed in the following release.
-They keep working for now and run innermost (closest to the tool call). The equivalent interceptor:
+The 0.5.x–0.7.x `hookBeforeToolCall` / `hookAfterToolCall` builder methods (and the corresponding `AgentConfig`
+fields) were removed in 0.8.0. The equivalent interceptor:
 
 ```scala mdoc:compile-only
 import sttp.ai.core.agent.*

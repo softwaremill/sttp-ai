@@ -538,8 +538,16 @@ class AgentSpec extends AnyFlatSpec with Matchers with OptionValues {
     result.iterations shouldBe 1
   }
 
-  "Agent with hooks" should "invoke afterToolCall once per tool call" in {
+  "Agent with a tool-call interceptor" should "see every tool call, including failing and unknown ones" in {
     val results = scala.collection.mutable.ListBuffer.empty[Any]
+    val recording = new AgentInterceptor[Identity] {
+      override def aroundToolCall(ctx: ToolCallContext)(next: => Identity[ToolCallRecord]): Identity[ToolCallRecord] = {
+        results += ctx.toolCall
+        val record = next
+        results += record
+        record
+      }
+    }
 
     runLoop(
       agentBuilder(
@@ -555,12 +563,7 @@ class AgentSpec extends AnyFlatSpec with Matchers with OptionValues {
         AgentResponse("Done", Seq.empty, StopReason.EndTurn)
       ).tools(calculatorTool)
         .exceptionHandler(ExceptionHandler.sendAllToLLM)
-        .hookBeforeToolCall { (c: ToolCall) =>
-          results += c; ()
-        }
-        .hookAfterToolCall { (r: ToolCallRecord) =>
-          results += r; ()
-        }
+        .addInterceptor(recording)
     )
 
     results should contain inOrderOnly (
@@ -580,24 +583,17 @@ class AgentSpec extends AnyFlatSpec with Matchers with OptionValues {
   }
 
   "AgentBuilder" should "accumulate configuration into the built config" in {
-    val before: ToolCall => Identity[Unit] = _ => ()
-    val after: ToolCallRecord => Identity[Unit] = _ => ()
-
     val config = agentBuilder()
       .maxIterations(7)
       .systemPrompt("custom")
       .tools(calculatorTool)
       .exceptionHandler(ExceptionHandler.sendAllToLLM)
-      .hookBeforeToolCall(before)
-      .hookAfterToolCall(after)
       .config
 
     config.maxIterations shouldBe 7
     config.systemPrompt.value shouldBe "custom"
     config.userTools should contain only calculatorTool
     config.exceptionHandler shouldBe ExceptionHandler.sendAllToLLM
-    config.beforeToolCall.value shouldBe before
-    config.afterToolCall.value shouldBe after
   }
 
   it should "derive the default system prompt from the final maxIterations" in {
@@ -621,12 +617,12 @@ class AgentSpec extends AnyFlatSpec with Matchers with OptionValues {
     budgetResult.finishReason shouldBe FinishReason.BudgetExceeded
   }
 
-  "AgentBuilder" should "append with interceptor() and replace with interceptors()" in {
+  "AgentBuilder" should "append with addInterceptor() and replace with interceptors()" in {
     val a = AgentInterceptor.noop[Identity]
     val b = AgentInterceptor.noop[Identity]
     val c = AgentInterceptor.noop[Identity]
 
-    val appended = agentBuilder(AgentResponse("done", Seq.empty, StopReason.EndTurn)).interceptor(a).interceptor(b)
+    val appended = agentBuilder(AgentResponse("done", Seq.empty, StopReason.EndTurn)).addInterceptor(a).addInterceptor(b)
     appended.config.interceptors shouldBe Seq(a, b)
 
     val replaced = appended.interceptors(Seq(c))

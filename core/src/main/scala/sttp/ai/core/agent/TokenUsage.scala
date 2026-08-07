@@ -16,19 +16,23 @@ object Tokens {
 /** Provider-normalized token usage of one or more LLM calls.
   *
   * @param inputTokens
-  *   ALL prompt-side tokens, cached tokens included
+  *   ALL prompt-side tokens — cached reads and cache writes included
   * @param outputTokens
   *   ALL completion-side tokens, reasoning tokens included
   * @param cachedInputTokens
-  *   informational subset of [[inputTokens]] served from a provider cache
+  *   informational subset of [[inputTokens]] served from a provider cache (cache reads)
   * @param reasoningTokens
   *   informational subset of [[outputTokens]] spent on reasoning/thinking, where the provider reports it
+  * @param cacheWriteInputTokens
+  *   informational subset of [[inputTokens]] written to a provider cache (cache writes, e.g. Claude's `cache_creation_input_tokens`); often
+  *   billed at a premium over the plain input rate
   */
 final case class TokenUsage(
     inputTokens: Tokens,
     outputTokens: Tokens,
     cachedInputTokens: Tokens,
-    reasoningTokens: Tokens
+    reasoningTokens: Tokens,
+    cacheWriteInputTokens: Tokens = Tokens.Zero
 ) {
   def totalTokens: Tokens = inputTokens + outputTokens
 
@@ -36,12 +40,13 @@ final case class TokenUsage(
     inputTokens = inputTokens + other.inputTokens,
     outputTokens = outputTokens + other.outputTokens,
     cachedInputTokens = cachedInputTokens + other.cachedInputTokens,
-    reasoningTokens = reasoningTokens + other.reasoningTokens
+    reasoningTokens = reasoningTokens + other.reasoningTokens,
+    cacheWriteInputTokens = cacheWriteInputTokens + other.cacheWriteInputTokens
   )
 }
 
 object TokenUsage {
-  val Zero: TokenUsage = TokenUsage(Tokens.Zero, Tokens.Zero, Tokens.Zero, Tokens.Zero)
+  val Zero: TokenUsage = TokenUsage(Tokens.Zero, Tokens.Zero, Tokens.Zero, Tokens.Zero, Tokens.Zero)
 }
 
 /** Usage of a single LLM call, with the model that served it (as reported by the provider) for per-model cost calculation. */

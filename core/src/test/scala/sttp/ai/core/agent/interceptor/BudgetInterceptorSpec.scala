@@ -80,4 +80,30 @@ class BudgetInterceptorSpec extends AnyFlatSpec with Matchers {
   it should "reject maxCost without a priceTable at construction" in {
     an[IllegalArgumentException] should be thrownBy new BudgetInterceptor[Identity](maxCost = Some(Cost(BigDecimal(0))))
   }
+
+  it should "reject a configuration with no limit at all at construction" in {
+    an[IllegalArgumentException] should be thrownBy new BudgetInterceptor[Identity]()
+  }
+
+  "PriceTable cache-write pricing" should "price cache-write tokens at the dedicated rate when set" in {
+    val table = PriceTable(
+      Map("m" -> ModelPrice(inputPerMTok = BigDecimal(2), outputPerMTok = BigDecimal(10), cacheWriteInputPerMTok = Some(BigDecimal(5))))
+    )
+    // 1M input of which 400k cache-write, no output:
+    // plain 600k * 2/M = 1.2, cache-write 400k * 5/M = 2.0 => 3.2
+    val call = LlmCallUsage(
+      Some("m"),
+      TokenUsage(Tokens(1000000L), Tokens.Zero, Tokens.Zero, Tokens.Zero, cacheWriteInputTokens = Tokens(400000L))
+    )
+    table.costOf(Seq(call)) shouldBe Cost(BigDecimal("3.2"))
+  }
+
+  it should "fall back to the input rate for cache-write tokens when no dedicated rate is set" in {
+    val table = PriceTable(Map("m" -> ModelPrice(inputPerMTok = BigDecimal(2), outputPerMTok = BigDecimal(10))))
+    val call = LlmCallUsage(
+      Some("m"),
+      TokenUsage(Tokens(1000000L), Tokens.Zero, Tokens.Zero, Tokens.Zero, cacheWriteInputTokens = Tokens(400000L))
+    )
+    table.costOf(Seq(call)) shouldBe Cost(BigDecimal(2)) // whole input priced at 2/M
+  }
 }

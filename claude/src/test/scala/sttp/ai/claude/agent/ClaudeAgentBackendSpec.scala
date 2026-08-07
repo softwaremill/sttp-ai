@@ -204,7 +204,8 @@ class ClaudeAgentBackendSpec extends AnyFlatSpec with Matchers with EitherValues
         inputTokens = sttp.ai.core.agent.Tokens(147L), // 100 + 40 cache-read + 7 cache-creation
         outputTokens = sttp.ai.core.agent.Tokens(30L),
         cachedInputTokens = sttp.ai.core.agent.Tokens(40L),
-        reasoningTokens = sttp.ai.core.agent.Tokens.Zero
+        reasoningTokens = sttp.ai.core.agent.Tokens.Zero,
+        cacheWriteInputTokens = sttp.ai.core.agent.Tokens(7L)
       )
     )
   }

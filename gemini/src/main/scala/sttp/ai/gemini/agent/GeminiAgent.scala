@@ -110,11 +110,16 @@ private[gemini] class GeminiAgentBackend[F[_]](
                 ToolCall(fc.id, fc.name, arguments.noSpaces)
               }
               val usage = response.usage.map { u =>
+                // Gemini reports thought tokens SEPARATELY from total_output_tokens (verified live: total_tokens =
+                // input + output + thought), so they are added here to honor TokenUsage's "output includes reasoning"
+                // invariant. total_tool_use_tokens (server-side tool execution) is not folded in; when present, the
+                // provider's total_tokens may exceed the normalized totalTokens.
+                val thoughtTokens = Tokens(u.totalThoughtTokens.getOrElse(0L))
                 TokenUsage(
                   inputTokens = Tokens(u.totalInputTokens.getOrElse(0L)),
-                  outputTokens = Tokens(u.totalOutputTokens.getOrElse(0L)),
+                  outputTokens = Tokens(u.totalOutputTokens.getOrElse(0L)) + thoughtTokens,
                   cachedInputTokens = Tokens(u.totalCachedTokens.getOrElse(0L)),
-                  reasoningTokens = Tokens(u.totalThoughtTokens.getOrElse(0L))
+                  reasoningTokens = thoughtTokens
                 )
               }
               monad.unit(

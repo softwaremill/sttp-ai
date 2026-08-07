@@ -353,7 +353,9 @@ class GeminiAgentBackendSpec extends AnyFlatSpec with Matchers with EitherValues
     response.usage shouldBe Some(
       TokenUsage(
         inputTokens = Tokens(100L),
-        outputTokens = Tokens(30L),
+        // total_output_tokens (30) + total_thought_tokens (10): Gemini reports thought tokens separately,
+        // and TokenUsage.outputTokens includes reasoning.
+        outputTokens = Tokens(40L),
         cachedInputTokens = Tokens(40L),
         reasoningTokens = Tokens(10L)
       )

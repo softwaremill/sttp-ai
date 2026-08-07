@@ -6,43 +6,15 @@ import sttp.client4.Backend
 import sttp.monad.MonadError
 import sttp.monad.syntax.MonadErrorOps
 
-import scala.annotation.nowarn
-
 class Agent[F[_]](
     agentBackend: AgentBackend[F],
     config: AgentConfig[F]
 )(implicit monad: MonadError[F]) {
+  import Agent.{ContinueLoop, Finished, IterationOutcome}
 
   private val toolMap = config.userTools.map(t => t.name -> t).toMap
 
-  // Adapts the deprecated beforeToolCall/afterToolCall hooks into an interceptor, appended AFTER user
-  // interceptors so hooks run innermost (closest to the tool call), preserving pre-interceptor behavior.
-  @nowarn("cat=deprecation")
-  private val legacyHookInterceptor: Option[AgentInterceptor[F]] =
-    if (config.beforeToolCall.isEmpty && config.afterToolCall.isEmpty) None
-    else
-      Some(new AgentInterceptor[F] {
-        override def aroundToolCall(ctx: ToolCallContext)(next: => F[ToolCallRecord]): F[ToolCallRecord] = {
-          val before = config.beforeToolCall.map(_(ctx.toolCall)).getOrElse(monad.unit(()))
-          before.flatMap { _ =>
-            next.flatMap { record =>
-              config.afterToolCall.map(_(record)).getOrElse(monad.unit(())).map(_ => record)
-            }
-          }
-        }
-      })
-
-  private val interceptor: AgentInterceptor[F] =
-    AgentInterceptor.compose(config.interceptors ++ legacyHookInterceptor.toSeq)
-
-  private sealed trait IterationOutcome
-  private final case class ContinueLoop(
-      history: ConversationHistory,
-      records: Seq[ToolCallRecord],
-      usage: TokenUsage,
-      llmCalls: Seq[LlmCallUsage]
-  ) extends IterationOutcome
-  private final case class Finished(result: AgentResult[String]) extends IterationOutcome
+  private val interceptor: AgentInterceptor[F] = AgentInterceptor.compose(config.interceptors)
 
   def run(
       initialPrompt: String
@@ -64,7 +36,7 @@ class Agent[F[_]](
         )
       } else {
         val decision = interceptor.decide(AgentRunState(iteration, config.maxIterations, usage, llmCalls))
-        val info = IterationInfo(iteration + 1, config.maxIterations)
+        val info = IterationInfo(iteration + 1, config.maxIterations, forcedFinal = decision != LoopDecision.Continue)
         interceptor
           .aroundIteration(IterationContext(info))(runIteration(history, iteration, records, usage, llmCalls, decision, backend))
           .flatMap {
@@ -86,19 +58,21 @@ class Agent[F[_]](
       backend: Backend[F]
   ): F[IterationOutcome] = {
     val isLastByCount = iteration == config.maxIterations - 1
-    val forcedCause: Option[FinishReason] = decision match {
+    val forcedCause: Option[FinishReason.ForcedStop] = decision match {
       case LoopDecision.FinishNow(cause, _) => Some(cause)
       case LoopDecision.Continue            => None
     }
     val isFinalIteration = isLastByCount || forcedCause.nonEmpty
 
-    val withMarker = if (iteration > 0) history.addIterationMarker(iteration + 1, config.maxIterations) else history
     val requestHistory = decision match {
-      case LoopDecision.FinishNow(_, instruction) => withMarker.addUserPrompt(instruction)
-      case LoopDecision.Continue                  => withMarker
+      case LoopDecision.FinishNow(_, instruction) =>
+        // No iteration marker on a forced-final request: "[Iteration 3 of 10]" would contradict the injected instruction.
+        history.addUserPrompt(instruction)
+      case LoopDecision.Continue =>
+        if (iteration > 0) history.addIterationMarker(iteration + 1, config.maxIterations) else history
     }
 
-    val info = IterationInfo(iteration + 1, config.maxIterations)
+    val info = IterationInfo(iteration + 1, config.maxIterations, forcedFinal = forcedCause.nonEmpty)
     val includeTools = !isFinalIteration
 
     interceptor
@@ -142,7 +116,7 @@ class Agent[F[_]](
       val parsed: Either[AgentFailure, T] = res.finishReason match {
         case FinishReason.NaturalStop =>
           decode[T](res.finalAnswer).left.map(e => AgentParseError(res.finalAnswer, e))
-        case FinishReason.MaxIterations | FinishReason.BudgetExceeded =>
+        case FinishReason.MaxIterations | _: FinishReason.ForcedStop =>
           // A forced final iteration withholds tools and keeps schema guidance, so the answer may still be valid.
           decode[T](res.finalAnswer).left.map(e => AgentIncomplete(res.finalAnswer, res.finishReason, Some(e)))
         case FinishReason.TokenLimit | FinishReason.Error(_) =>
@@ -223,4 +197,15 @@ object Agent {
       config: AgentConfig[F]
   )(implicit monad: MonadError[F]): Agent[F] =
     new Agent[F](agentBackend, config)(monad)
+
+  // Top-level (not inner) classes so matches on them are runtime-checkable — inner classes trigger
+  // "outer reference cannot be checked" warnings on Scala 2.13.
+  private[agent] sealed trait IterationOutcome
+  private[agent] final case class ContinueLoop(
+      history: ConversationHistory,
+      records: Seq[ToolCallRecord],
+      usage: TokenUsage,
+      llmCalls: Seq[LlmCallUsage]
+  ) extends IterationOutcome
+  private[agent] final case class Finished(result: AgentResult[String]) extends IterationOutcome
 }

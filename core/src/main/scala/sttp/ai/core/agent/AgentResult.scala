@@ -7,8 +7,18 @@ object FinishReason {
   case object NaturalStop extends FinishReason
   case object TokenLimit extends FinishReason
 
+  /** Reasons an [[AgentInterceptor]] may force a graceful final answer via [[LoopDecision.FinishNow]]. Narrowing the `FinishNow` cause to
+    * this subtype keeps interceptors from misreporting loop-owned reasons (`NaturalStop`, `TokenLimit`, ...), which would silently change
+    * how `runAs` parses the answer.
+    */
+  sealed trait ForcedStop extends FinishReason
+
   /** An [[AgentInterceptor]] budget was exhausted and the loop forced a graceful final answer. */
-  case object BudgetExceeded extends FinishReason
+  case object BudgetExceeded extends ForcedStop
+
+  /** A custom [[AgentInterceptor]] forced a graceful final answer for a reason of its own (e.g. a wall-clock deadline). */
+  final case class Custom(reason: String) extends ForcedStop
+
   case class Error(message: String) extends FinishReason
 }
 

@@ -10,9 +10,6 @@ import sttp.monad.IdentityMonad
 import sttp.shared.Identity
 import sttp.tapir.Schema
 
-import scala.annotation.nowarn
-
-@nowarn("cat=deprecation")
 class AgentInterceptorLoopSpec extends AnyFlatSpec with Matchers {
 
   case object TestModel extends AIModel with Capability.ToolCalling {
@@ -23,6 +20,7 @@ class AgentInterceptorLoopSpec extends AnyFlatSpec with Matchers {
     private var callCount = 0
     var receivedHistories: Seq[ConversationHistory] = Seq.empty
     var receivedIncludeTools: Seq[Boolean] = Seq.empty
+    var receivedIterationInfos: Seq[IterationInfo] = Seq.empty
 
     override def tools: Seq[AgentTool[Identity, _]] = Seq.empty
     override def systemPrompt: Option[String] = None
@@ -35,6 +33,7 @@ class AgentInterceptorLoopSpec extends AnyFlatSpec with Matchers {
     ): Identity[AgentResponse] = {
       receivedHistories = receivedHistories :+ history
       receivedIncludeTools = receivedIncludeTools :+ includeTools
+      receivedIterationInfos = receivedIterationInfos :+ iterationInfo
       val response = if (callCount < responses.length) responses(callCount) else responses.last
       callCount += 1
       response
@@ -135,29 +134,20 @@ class AgentInterceptorLoopSpec extends AnyFlatSpec with Matchers {
     an[IllegalStateException] should be thrownBy build(stub, Seq(boom)).run("Test")(backend)
   }
 
-  it should "still run legacy hooks, innermost relative to interceptors" in {
-    val log = collection.mutable.Buffer.empty[String]
-    val outer = new AgentInterceptor[Identity] {
-      override def aroundToolCall(ctx: ToolCallContext)(next: => Identity[ToolCallRecord]): Identity[ToolCallRecord] = {
-        log += "interceptor:in"; val r = next; log += "interceptor:out"; r
-      }
+  it should "let an interceptor short-circuit the LLM call by not evaluating next" in {
+    val cached = finalResponse("cached answer", Some(usage(1, 1)))
+    val shortCircuit = new AgentInterceptor[Identity] {
+      override def aroundLlmCall(ctx: LlmCallContext)(next: => Identity[AgentResponse]): Identity[AgentResponse] = cached
     }
-    val stub = new StubAgentBackend(
-      Seq(toolResponse("call_1", None), finalResponse("done", None))
-    )
-    val agent = AgentBuilder[Identity, TestModel.type](_ => stub)(IdentityMonad)
-      .maxIterations(5)
-      .tools(dummyTool)
-      .interceptors(Seq(outer))
-      .hookBeforeToolCall { tc => log += s"hook:before:${tc.toolName}"; () }
-      .hookAfterToolCall { rec => log += s"hook:after:${rec.toolName}"; () }
-      .build
+    val stub = new StubAgentBackend(Seq(finalResponse("real answer", None)))
+    val result = build(stub, Seq(shortCircuit)).run("Test")(backend)
 
-    agent.run("Test")(backend).finalAnswer shouldBe "done"
-    log.toList shouldBe List("interceptor:in", "hook:before:dummy", "hook:after:dummy", "interceptor:out")
+    result.finalAnswer shouldBe "cached answer"
+    result.usage shouldBe usage(1, 1)
+    stub.receivedHistories shouldBe empty // the backend was never reached
   }
 
-  private def finishAfter(calls: Int, cause: FinishReason, instruction: String): AgentInterceptor[Identity] =
+  private def finishAfter(calls: Int, cause: FinishReason.ForcedStop, instruction: String): AgentInterceptor[Identity] =
     new AgentInterceptor[Identity] {
       override def decide(state: AgentRunState): LoopDecision =
         if (state.llmCalls.size >= calls) LoopDecision.FinishNow(cause, instruction) else LoopDecision.Continue
@@ -179,6 +169,10 @@ class AgentInterceptorLoopSpec extends AnyFlatSpec with Matchers {
     // The forced-final request withheld tools and contained the injected instruction:
     stub.receivedIncludeTools shouldBe Seq(true, false)
     stub.receivedHistories.last.entries should contain(ConversationEntry.UserPrompt("BUDGET EXHAUSTED - answer now"))
+    // No iteration marker on the forced-final request — it would contradict the injected instruction:
+    stub.receivedHistories.last.entries.collect { case m: ConversationEntry.IterationMarker => m } shouldBe empty
+    // The backend sees the forced final via IterationInfo, so modelForIteration can pick the stronger model:
+    stub.receivedIterationInfos.map(_.isLastIteration) shouldBe Seq(false, true)
     // Usage includes the forced-final call:
     result.usage shouldBe usage(150, 30)
   }
@@ -266,5 +260,59 @@ class AgentInterceptorLoopSpec extends AnyFlatSpec with Matchers {
     result.finishReason shouldBe FinishReason.BudgetExceeded
     result.finalAnswer shouldBe Right(Out(5)) // BudgetExceeded is parse-attempted, not rejected outright
     result.usage shouldBe usage(150, 30)
+  }
+
+  it should "wrap stages and accumulate usage under a lazy effect type (Future)" in {
+    import scala.concurrent.duration.DurationInt
+    import scala.concurrent.{Await, ExecutionContext, Future}
+    implicit val ec: ExecutionContext = ExecutionContext.global
+    implicit val futureMonad: sttp.monad.MonadError[Future] = new sttp.monad.FutureMonad()
+
+    class FutureStubBackend(responses: Seq[AgentResponse]) extends AgentBackend[Future] {
+      private var callCount = 0
+      override def tools: Seq[AgentTool[Future, _]] = Seq.empty
+      override def systemPrompt: Option[String] = None
+      override def sendRequest(
+          history: ConversationHistory,
+          backend: sttp.client4.Backend[Future],
+          includeTools: Boolean,
+          iterationInfo: IterationInfo
+      ): Future[AgentResponse] = {
+        val response = if (callCount < responses.length) responses(callCount) else responses.last
+        callCount += 1
+        Future.successful(response)
+      }
+    }
+
+    val log = collection.mutable.Buffer.empty[String]
+    val recording = new AgentInterceptor[Future] {
+      override def aroundLlmCall(ctx: LlmCallContext)(next: => Future[AgentResponse]): Future[AgentResponse] = {
+        log += "llm:in"
+        next.map { r => log += "llm:out"; r }
+      }
+      override def aroundToolCall(ctx: ToolCallContext)(next: => Future[ToolCallRecord]): Future[ToolCallRecord] = {
+        log += "tool:in"
+        next.map { r => log += "tool:out"; r }
+      }
+    }
+
+    val futureTool = AgentTool.fromFunctionF[Future, DummyInput]("dummy", "Dummy tool")(_ => Future.successful("dummy result"))
+    val stub = new FutureStubBackend(
+      Seq(
+        toolResponse("call_1", Some(usage(100, 20))),
+        finalResponse("done", Some(usage(50, 10)))
+      )
+    )
+    val agent = AgentBuilder[Future, TestModel.type](_ => stub)
+      .maxIterations(5)
+      .tools(futureTool)
+      .interceptors(Seq(recording))
+      .build
+
+    val result = Await.result(agent.run("Test")(sttp.client4.testing.BackendStub[Future](futureMonad)), 10.seconds)
+
+    result.finalAnswer shouldBe "done"
+    result.usage shouldBe usage(150, 30)
+    log.toList shouldBe List("llm:in", "llm:out", "tool:in", "tool:out", "llm:in", "llm:out")
   }
 }

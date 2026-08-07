@@ -100,7 +100,8 @@ private[claude] class ClaudeAgentBackend[F[_]](
           inputTokens = Tokens(u.totalInputTokens.toLong),
           outputTokens = Tokens(u.outputTokens.toLong),
           cachedInputTokens = Tokens(u.cacheReadInputTokens.getOrElse(0).toLong),
-          reasoningTokens = Tokens.Zero
+          reasoningTokens = Tokens.Zero,
+          cacheWriteInputTokens = Tokens(u.cacheCreationInputTokens.getOrElse(0).toLong)
         )
         monad.unit(AgentResponse(textContent, toolCalls, stopReason, usage = Some(usage), model = Some(response.model)))
 

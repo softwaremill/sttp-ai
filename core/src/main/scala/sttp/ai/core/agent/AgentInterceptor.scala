@@ -1,5 +1,7 @@
 package sttp.ai.core.agent
 
+import scala.annotation.unused
+
 /** Middleware for the agent loop. Interceptors wrap iterations, LLM calls, and tool executions (onion-style, like sttp backend wrappers),
   * and can steer the loop via [[decide]].
   *
@@ -15,13 +17,13 @@ package sttp.ai.core.agent
 trait AgentInterceptor[F[_]] {
 
   /** Wraps one full loop iteration (LLM call + any tool executions). `A` is the loop's internal outcome type, opaque on purpose. */
-  def aroundIteration[A](ctx: IterationContext)(next: => F[A]): F[A] = next
+  def aroundIteration[A](@unused ctx: IterationContext)(next: => F[A]): F[A] = next
 
   /** Wraps a single LLM request. The returned [[AgentResponse]] carries provider-reported `usage` and `model` when available. */
-  def aroundLlmCall(ctx: LlmCallContext)(next: => F[AgentResponse]): F[AgentResponse] = next
+  def aroundLlmCall(@unused ctx: LlmCallContext)(next: => F[AgentResponse]): F[AgentResponse] = next
 
   /** Wraps a single tool execution (input decoding, tool body, error handling). */
-  def aroundToolCall(ctx: ToolCallContext)(next: => F[ToolCallRecord]): F[ToolCallRecord] = next
+  def aroundToolCall(@unused ctx: ToolCallContext)(next: => F[ToolCallRecord]): F[ToolCallRecord] = next
 
   /** Consulted by the loop before each iteration. Return [[LoopDecision.FinishNow]] to force a graceful final answer. */
   def decide(state: AgentRunState): LoopDecision = LoopDecision.Continue
@@ -70,6 +72,9 @@ final case class ToolCallContext(toolCall: ToolCall, iteration: Int)
   *
   * @param iterationsCompleted
   *   number of fully completed iterations (0 before the first)
+  * @param maxIterations
+  *   the run's configured iteration cap ([[AgentConfig.maxIterations]]), so steering logic can act relative to the remaining allowance
+  *   (e.g. finish early once 80% of iterations are used) without holding a reference to the config
   * @param llmCalls
   *   per-call usage breakdown; enables per-model cost budgets when the run mixes models
   */
@@ -91,5 +96,5 @@ object LoopDecision {
     * `MaxIterations` takes precedence as the reported reason. If the forced-final LLM response itself stops with `StopReason.MaxTokens`,
     * that check precedes the `FinishNow` cause and the run reports `FinishReason.TokenLimit` instead.
     */
-  final case class FinishNow(cause: FinishReason, instruction: String) extends LoopDecision
+  final case class FinishNow(cause: FinishReason.ForcedStop, instruction: String) extends LoopDecision
 }

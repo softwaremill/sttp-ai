@@ -49,4 +49,30 @@ class LoggingInterceptorSpec extends AnyFlatSpec with Matchers {
     log(0)._2 should include("calculator")
     log(1)._2 should include("calculator")
   }
+
+  it should "log a failed tool call at Warn and propagate the error" in {
+    val log = collection.mutable.Buffer.empty[(LogLevel, String)]
+    val ctx = ToolCallContext(ToolCall("id1", "calculator", "{}"), 1)
+
+    an[IllegalStateException] should be thrownBy {
+      newLogger(log).aroundToolCall(ctx)(throw new IllegalStateException("tool blew up")): Unit
+    }
+
+    log.map(_._1).toList shouldBe List(LogLevel.Info, LogLevel.Warn)
+    log(1)._2 should include("calculator")
+    log(1)._2 should include("tool blew up")
+  }
+
+  it should "log a failed LLM call at Warn and propagate the error" in {
+    val log = collection.mutable.Buffer.empty[(LogLevel, String)]
+    val ctx = LlmCallContext(ConversationHistory.empty, includeTools = true, IterationInfo(3, 5))
+
+    an[IllegalStateException] should be thrownBy {
+      newLogger(log).aroundLlmCall(ctx)(throw new IllegalStateException("api down")): Unit
+    }
+
+    log.map(_._1).toList shouldBe List(LogLevel.Warn)
+    log(0)._2 should include("iteration 3")
+    log(0)._2 should include("api down")
+  }
 }

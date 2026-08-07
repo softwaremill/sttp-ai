@@ -49,16 +49,14 @@ class AgentInterceptorComposeSpec extends AnyFlatSpec with Matchers {
   }
 
   it should "return the first FinishNow in list order" in {
-    // Uses NaturalStop as the cause because FinishReason.BudgetExceeded is only added in Task 6;
-    // FinishNow accepts any FinishReason.
     val first = new AgentInterceptor[Identity] {
-      override def decide(s: AgentRunState): LoopDecision = LoopDecision.FinishNow(FinishReason.NaturalStop, "first")
+      override def decide(s: AgentRunState): LoopDecision = LoopDecision.FinishNow(FinishReason.Custom("deadline"), "first")
     }
     val second = new AgentInterceptor[Identity] {
-      override def decide(s: AgentRunState): LoopDecision = LoopDecision.FinishNow(FinishReason.NaturalStop, "second")
+      override def decide(s: AgentRunState): LoopDecision = LoopDecision.FinishNow(FinishReason.BudgetExceeded, "second")
     }
     val composed = AgentInterceptor.compose(Seq(AgentInterceptor.noop[Identity], first, second))
-    composed.decide(state()) shouldBe LoopDecision.FinishNow(FinishReason.NaturalStop, "first")
+    composed.decide(state()) shouldBe LoopDecision.FinishNow(FinishReason.Custom("deadline"), "first")
   }
 
   it should "not evaluate next when an interceptor short-circuits" in {
