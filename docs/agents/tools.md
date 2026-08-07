@@ -58,9 +58,9 @@ final answer; the answer is then parsed back into `T` via circe.
 On failure the iteration trace is preserved: `finalAnswer` is a `Left(AgentFailure)` rather than a thrown exception. There are two failure cases:
 
 - `AgentParseError` - the loop stopped naturally but the answer couldn't be parsed as `T`.
-- `AgentIncomplete` - the loop was cut short (`FinishReason.MaxIterations` or `FinishReason.TokenLimit`). On `MaxIterations` a parse is still attempted (the final iteration forces a schema-guided answer without tools), and `parseError` carries the cause if it failed; on `TokenLimit` the answer is truncated, so no parse is attempted and `parseError` is `None`.
+- `AgentIncomplete` - the loop was cut short (`FinishReason.MaxIterations`, an interceptor-forced `FinishReason.ForcedStop` such as `BudgetExceeded`/`Custom`, or `FinishReason.TokenLimit`). On `MaxIterations` and on a forced stop, a parse is still attempted (the final iteration forces a schema-guided answer without tools), and `parseError` carries the cause if it failed; on `TokenLimit` the answer is truncated, so no parse is attempted and `parseError` is `None`.
 
-Note that because `MaxIterations` still parses, `finalAnswer` can be `Right(t)` even though the run hit the iteration cap - check `AgentResult.finishReason` if you need to distinguish a capped run from a natural stop.
+Note that because `MaxIterations` and forced stops still parse, `finalAnswer` can be `Right(t)` even though the run was capped or cut short by an interceptor — check `AgentResult.finishReason` if you need to distinguish that from a natural stop.
 
 ```scala mdoc:compile-only
 //> using dep com.softwaremill.sttp.ai::openai:@VERSION@
