@@ -12,7 +12,7 @@ import ox.supervised
 import sttp.ai.claude.agent.ClaudeAgent
 import sttp.ai.claude.config.ClaudeConfig
 import sttp.ai.core.agent.mcp.McpTools
-import sttp.ai.core.agent.{AgentBuilder, AgentResult, AgentTool}
+import sttp.ai.core.agent.{AgentBuilder, AgentFailure, AgentResult, AgentTool}
 import sttp.ai.core.model.AIModel
 import sttp.ai.openai.OpenAI
 import sttp.ai.openai.agent.OpenAIAgent
@@ -34,8 +34,8 @@ class McpAgentIntegrationSpec extends AnyFlatSpec with Matchers {
   case class Location(lat: Double, lng: Double) derives Codec, Schema
   case class CreateEventInput(title: String, location: Option[Location], priority: Option[String]) derives Codec, Schema
 
-  private def withMcpAgentRun[M <: AIModel](builderFor: Seq[AgentTool[Identity, ?]] => AgentBuilder[Identity, M])(
-      check: AgentResult[String] => Assertion
+  private def withMcpAgentRun[M <: AIModel](builderFor: Seq[AgentTool[Identity, ?]] => AgentBuilder[Identity, M, String, String])(
+      check: AgentResult[Either[AgentFailure, String]] => Assertion
   ): Assertion =
     supervised {
       val createEvent = tool("create-event")
@@ -65,7 +65,7 @@ class McpAgentIntegrationSpec extends AnyFlatSpec with Matchers {
       } finally binding.stop()
     }
 
-  private def assertToolExecuted(result: AgentResult[String]): Assertion = {
+  private def assertToolExecuted(result: AgentResult[Either[AgentFailure, String]]): Assertion = {
     result.toolCalls.map(_.toolName) should contain("create-event")
     val output = result.toolCalls.filter(_.toolName == "create-event").map(_.output).mkString("\n")
     output should include("Standup")
