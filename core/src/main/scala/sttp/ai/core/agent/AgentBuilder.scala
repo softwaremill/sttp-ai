@@ -48,7 +48,10 @@ final class AgentBuilder[F[_], M <: AIModel, In, Out] private (
     new AgentBuilder[F, M, In2, Out](makeBackend, config, render, parseOutput)
 
   /** Types the agent's input: `In2` is rendered into the initial user message as compact JSON via its circe `Encoder`, wrapped in a small
-    * fixed envelope. Use [[inputRenderer]] to control the rendering explicitly.
+    * fixed envelope — the message is exactly `"Process the following input data (JSON):"`, a blank line, and the `noSpaces` JSON (useful
+    * when asserting on prompts in tests). Use [[inputRenderer]] to control the rendering explicitly. Note that `input[String]` would
+    * JSON-quote the value (`"..."`) inside the envelope — for plain string prompts keep the default `String` input, which renders identity,
+    * or use [[inputRenderer]].
     */
   def input[In2](implicit enc: Encoder[In2]): AgentBuilder[F, M, In2, Out] =
     inputRenderer[In2](in => AgentBuilder.renderJsonInput(enc(in)))

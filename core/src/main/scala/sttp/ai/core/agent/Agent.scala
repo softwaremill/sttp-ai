@@ -19,7 +19,8 @@ trait Agent[F[_], In, Out] { self =>
     * only when this agent's output type is `next`'s input type. If `this` fails (`Left`), `next` never runs. Metadata is aggregated:
     * iterations and usage summed, tool and LLM calls concatenated in stage order, `finishReason` taken from the last stage that ran.
     * `ToolCallRecord.iteration` stays stage-local. If `next` raises an error in `F`'s error channel, it propagates as a plain error and
-    * `this` stage's accumulated metadata (usage, tool calls) is not reported in that case.
+    * `this` stage's accumulated metadata (usage, tool calls) is not reported in that case. Interceptors are also stage-local: each agent
+    * runs with its own configured interceptors, so e.g. a budget interceptor on `next` does not observe this stage's token spend.
     */
   def andThen[Out2](next: Agent[F, Out, Out2]): Agent[F, In, Out2] = {
     val m = monad
