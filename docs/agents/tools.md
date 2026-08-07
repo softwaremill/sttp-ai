@@ -42,7 +42,7 @@ case class AgentResult[T](
   finalAnswer: T,
   iterations: Int,
   toolCalls: Seq[ToolCallRecord],
-  finishReason: FinishReason  // MaxIterations | NaturalStop | TokenLimit | Error(message)
+  finishReason: FinishReason  // MaxIterations | NaturalStop | TokenLimit | ForcedStop (BudgetExceeded / Custom) | Error(message)
 )
 ```
 

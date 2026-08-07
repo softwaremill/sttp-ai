@@ -188,7 +188,7 @@ abstract class AgentIntegrationSpecBase extends AnyFlatSpec with Matchers {
   implicit val tripSummaryCodec: Codec[TripSummary] = deriveCodec
   implicit val tripSummarySchema: Schema[TripSummary] = Schema.derived
 
-  it should "return a typed structured answer via runAs[T]" in {
+  it should "return a typed structured answer via a typed run" in {
     if (maybeApiKey.isEmpty) cancel(s"$apiKeyEnvVar not defined - skipping integration test")
     val backend = DefaultSyncBackend()
     try {

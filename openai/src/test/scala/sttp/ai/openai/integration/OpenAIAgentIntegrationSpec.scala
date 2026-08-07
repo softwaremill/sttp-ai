@@ -72,7 +72,7 @@ class OpenAIAgentIntegrationSpec extends AgentIntegrationSpecBase {
         .andThen(summarizer)
         .run("What's the weather in Paris? Reply with the city and a temperature summary.")(backend)
 
-      result.finalAnswer.isRight shouldBe true: Unit
+      result.finalAnswer.fold(f => fail(s"handoff failed: $f"), _ => succeed): Unit
       result.llmCalls.size should be >= 2
     } finally backend.close()
   }

@@ -9,7 +9,7 @@ object FinishReason {
 
   /** Reasons an [[AgentInterceptor]] may force a graceful final answer via [[LoopDecision.FinishNow]]. Narrowing the `FinishNow` cause to
     * this subtype keeps interceptors from misreporting loop-owned reasons (`NaturalStop`, `TokenLimit`, ...), which would silently change
-    * how `runAs` parses the answer.
+    * how the typed `run` parses the answer.
     */
   sealed trait ForcedStop extends FinishReason
 
