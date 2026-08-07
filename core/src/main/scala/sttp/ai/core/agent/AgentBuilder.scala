@@ -1,71 +1,90 @@
 package sttp.ai.core.agent
 
 import io.circe.Codec
+import io.circe.parser.decode
 import sttp.ai.core.agent.AgentConfig.SystemPromptParameters
 import sttp.ai.core.model.{AIModel, Capability, Supports}
 import sttp.monad.MonadError
 import sttp.tapir.Schema
 
 /** Fluent agent configuration. `M` is the model (or family of models) the agent was created with; builder methods that need a model
-  * capability require `Supports[M, C]` evidence, so e.g. adding tools to an agent whose model cannot call tools fails at compile time.
+  * capability require `Supports[M, C]` evidence, so e.g. adding tools to an agent whose model cannot call tools fails at compile time. `In`
+  * and `Out` are the built agent's input and output types: a fresh builder starts at `String`/`String`; `inputRenderer` (and `input`, see
+  * Task 2) transition `In`, `responseSchema`/`deriveResponseSchema` transition `Out`.
   */
-final class AgentBuilder[F[_], M <: AIModel] private (
+final class AgentBuilder[F[_], M <: AIModel, In, Out] private (
     makeBackend: AgentConfig[F] => AgentBackend[F],
-    val config: AgentConfig[F]
+    val config: AgentConfig[F],
+    renderInput: In => String,
+    parseOutput: String => Either[io.circe.Error, Out]
 )(implicit monad: MonadError[F]) {
 
-  private def withConfig(next: AgentConfig[F]): AgentBuilder[F, M] =
-    new AgentBuilder[F, M](makeBackend, next)
+  private def withConfig(next: AgentConfig[F]): AgentBuilder[F, M, In, Out] =
+    new AgentBuilder[F, M, In, Out](makeBackend, next, renderInput, parseOutput)
 
-  def maxIterations(value: Int): AgentBuilder[F, M] = withConfig(config.copy(maxIterations = value))
+  def maxIterations(value: Int): AgentBuilder[F, M, In, Out] = withConfig(config.copy(maxIterations = value))
 
-  def systemPrompt(buildSystemPrompt: SystemPromptParameters => String): AgentBuilder[F, M] =
+  def systemPrompt(buildSystemPrompt: SystemPromptParameters => String): AgentBuilder[F, M, In, Out] =
     withConfig(config.copy(systemPromptBuilder = Some(buildSystemPrompt)))
 
-  def systemPrompt(prompt: String): AgentBuilder[F, M] = systemPrompt(_ => prompt)
+  def systemPrompt(prompt: String): AgentBuilder[F, M, In, Out] = systemPrompt(_ => prompt)
 
-  def tools(values: Seq[AgentTool[F, _]])(implicit ev: Supports[M, Capability.ToolCalling]): AgentBuilder[F, M] =
+  def tools(values: Seq[AgentTool[F, _]])(implicit ev: Supports[M, Capability.ToolCalling]): AgentBuilder[F, M, In, Out] =
     withConfig(config.copy(userTools = values))
 
-  def tools(first: AgentTool[F, _], rest: AgentTool[F, _]*)(implicit ev: Supports[M, Capability.ToolCalling]): AgentBuilder[F, M] =
+  def tools(first: AgentTool[F, _], rest: AgentTool[F, _]*)(implicit
+      ev: Supports[M, Capability.ToolCalling]
+  ): AgentBuilder[F, M, In, Out] =
     tools(first +: rest)
 
-  def addTool(tool: AgentTool[F, _])(implicit ev: Supports[M, Capability.ToolCalling]): AgentBuilder[F, M] =
+  def addTool(tool: AgentTool[F, _])(implicit ev: Supports[M, Capability.ToolCalling]): AgentBuilder[F, M, In, Out] =
     withConfig(config.copy(userTools = config.userTools :+ tool))
 
-  def exceptionHandler(handler: ExceptionHandler): AgentBuilder[F, M] = withConfig(config.copy(exceptionHandler = handler))
+  def exceptionHandler(handler: ExceptionHandler): AgentBuilder[F, M, In, Out] = withConfig(config.copy(exceptionHandler = handler))
 
-  def responseSchema(schema: ResponseSchema[_])(implicit ev: Supports[M, Capability.StructuredOutput]): AgentBuilder[F, M] =
-    withConfig(config.copy(responseSchema = Some(schema)))
+  /** Types the agent's input: `In2` is rendered into the initial user message with the given function. */
+  def inputRenderer[In2](render: In2 => String): AgentBuilder[F, M, In2, Out] =
+    new AgentBuilder[F, M, In2, Out](makeBackend, config, render, parseOutput)
+
+  /** Types the agent's output: the final answer is requested as structured output matching the schema and parsed with its codec. */
+  def responseSchema[T](schema: ResponseSchema[T])(implicit ev: Supports[M, Capability.StructuredOutput]): AgentBuilder[F, M, In, T] =
+    new AgentBuilder[F, M, In, T](
+      makeBackend,
+      config.copy(responseSchema = Some(schema)),
+      renderInput,
+      answer => decode[T](answer)(schema.codec)
+    )
 
   def deriveResponseSchema[T](implicit
       schema: Schema[T],
       codec: Codec[T],
       ev: Supports[M, Capability.StructuredOutput]
-  ): AgentBuilder[F, M] =
-    withConfig(config.copy(responseSchema = Some(ResponseSchema.derived[T](None))))
+  ): AgentBuilder[F, M, In, T] =
+    responseSchema(ResponseSchema.derived[T](None))
 
   // NOTE: the description field is only forwarded to OpenAI. Claude's structured-output `output_config` has no description field.
   def deriveResponseSchema[T](description: String)(implicit
       schema: Schema[T],
       codec: Codec[T],
       ev: Supports[M, Capability.StructuredOutput]
-  ): AgentBuilder[F, M] =
-    withConfig(config.copy(responseSchema = Some(ResponseSchema.derived[T](Some(description)))))
+  ): AgentBuilder[F, M, In, T] =
+    responseSchema(ResponseSchema.derived[T](Some(description)))
 
   /** Appends an interceptor. Interceptors wrap stages in list order: the first added is outermost. */
-  def addInterceptor(value: AgentInterceptor[F]): AgentBuilder[F, M] =
+  def addInterceptor(value: AgentInterceptor[F]): AgentBuilder[F, M, In, Out] =
     withConfig(config.copy(interceptors = config.interceptors :+ value))
 
   /** Replaces the interceptor list. */
-  def interceptors(values: Seq[AgentInterceptor[F]]): AgentBuilder[F, M] =
+  def interceptors(values: Seq[AgentInterceptor[F]]): AgentBuilder[F, M, In, Out] =
     withConfig(config.copy(interceptors = values))
 
-  def build: Agent[F] = Agent(makeBackend(config), config)
+  def build: Agent[F, In, Out] = new LoopAgent[F, In, Out](makeBackend(config), config, renderInput, parseOutput)
 }
 
 object AgentBuilder {
 
-  def apply[F[_], M <: AIModel](makeBackend: AgentConfig[F] => AgentBackend[F])(implicit monad: MonadError[F]): AgentBuilder[F, M] =
-    new AgentBuilder[F, M](makeBackend, AgentConfig[F]())
+  def apply[F[_], M <: AIModel](
+      makeBackend: AgentConfig[F] => AgentBackend[F]
+  )(implicit monad: MonadError[F]): AgentBuilder[F, M, String, String] =
+    new AgentBuilder[F, M, String, String](makeBackend, AgentConfig[F](), identity, answer => Right(answer))
 }
