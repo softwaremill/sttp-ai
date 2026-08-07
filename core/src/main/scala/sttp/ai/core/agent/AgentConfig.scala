@@ -8,8 +8,7 @@ case class AgentConfig[F[_]](
     userTools: Seq[AgentTool[F, _]] = Seq.empty[AgentTool[F, _]],
     exceptionHandler: ExceptionHandler = ExceptionHandler.default,
     responseSchema: Option[ResponseSchema[_]] = None,
-    beforeToolCall: Option[ToolCall => F[Unit]] = None,
-    afterToolCall: Option[ToolCallRecord => F[Unit]] = None
+    interceptors: Seq[AgentInterceptor[F]] = Seq.empty[AgentInterceptor[F]]
 ) {
   val systemPrompt: Option[String] = systemPromptBuilder.map(_.apply(SystemPromptParameters(maxIterations)))
 }

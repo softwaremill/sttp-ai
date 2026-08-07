@@ -47,7 +47,9 @@ trait AgentBackend[F[_]] {
 case class AgentResponse(
     textContent: String,
     toolCalls: Seq[ToolCall],
-    stopReason: StopReason
+    stopReason: StopReason,
+    usage: Option[TokenUsage] = None,
+    model: Option[String] = None
 )
 
 /** Represents why the LLM stopped generating.

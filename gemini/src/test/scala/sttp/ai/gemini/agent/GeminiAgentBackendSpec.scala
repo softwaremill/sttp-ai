@@ -325,6 +325,43 @@ class GeminiAgentBackendSpec extends AnyFlatSpec with Matchers with EitherValues
     capturedModels.get() shouldBe Vector("gemini-2.5-flash-lite", "gemini-2.5-pro")
   }
 
+  it should "surface provider-reported usage and model on AgentResponse" in {
+    val responseJson =
+      """{
+        |  "id": "int_1",
+        |  "status": "completed",
+        |  "model": "gemini-2.5-flash",
+        |  "steps": [],
+        |  "usage": {
+        |    "total_input_tokens": 100,
+        |    "total_output_tokens": 30,
+        |    "total_tokens": 130,
+        |    "total_cached_tokens": 40,
+        |    "total_thought_tokens": 10
+        |  }
+        |}""".stripMargin
+    val httpStub = DefaultSyncBackend.stub.whenAnyRequest.thenRespondF(_ => ResponseStub.adjust(responseJson, StatusCode.Ok))
+
+    val response = newBackend(Seq.empty).sendRequest(
+      ConversationHistory.withInitialPrompt("hello"),
+      httpStub,
+      includeTools = false,
+      IterationInfo(1, 10)
+    )
+
+    response.model shouldBe Some("gemini-2.5-flash")
+    response.usage shouldBe Some(
+      TokenUsage(
+        inputTokens = Tokens(100L),
+        // total_output_tokens (30) + total_thought_tokens (10): Gemini reports thought tokens separately,
+        // and TokenUsage.outputTokens includes reasoning.
+        outputTokens = Tokens(40L),
+        cachedInputTokens = Tokens(40L),
+        reasoningTokens = Tokens(10L)
+      )
+    )
+  }
+
   it should "build typed and mixed-model agents through GeminiAgent" in {
     GeminiAgent.synchronous(GeminiConfig(apiKey = "test-key"), GeminiModel.Gemini25Flash): Unit
     GeminiAgent.synchronous(

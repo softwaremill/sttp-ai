@@ -119,7 +119,14 @@ private[openai] class OpenAIAgentBackend[F[_]](
           .map(mapOpenAIStopReason)
           .getOrElse(StopReason.EndTurn)
 
-        monad.unit(AgentResponse(textContent, toolCalls, stopReason))
+        val usage = TokenUsage(
+          inputTokens = Tokens(response.usage.promptTokens.toLong),
+          outputTokens = Tokens(response.usage.completionTokens.toLong),
+          cachedInputTokens = Tokens(response.usage.promptTokensDetails.flatMap(_.cachedTokens).getOrElse(0).toLong),
+          reasoningTokens = Tokens(response.usage.completionTokensDetails.flatMap(_.reasoningTokens).getOrElse(0).toLong)
+        )
+
+        monad.unit(AgentResponse(textContent, toolCalls, stopReason, usage = Some(usage), model = Some(response.model)))
 
       case Left(error) =>
         monad.error(
