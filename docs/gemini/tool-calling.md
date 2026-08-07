@@ -168,7 +168,10 @@ object AgentExample:
 
       val result = agent.run("What's the weather in Paris?")(backend)
 
-      println(s"Answer: ${result.finalAnswer}")
+      result.finalAnswer match {
+        case Right(answer) => println(s"Answer: $answer")
+        case Left(failure) => println(s"Agent did not finish cleanly: $failure")
+      }
       println(s"Iterations: ${result.iterations}")
     } finally backend.close()
 ```

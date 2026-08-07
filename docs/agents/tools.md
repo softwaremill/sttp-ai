@@ -46,11 +46,14 @@ case class AgentResult[T](
 )
 ```
 
-`agent.run(prompt)(backend)` returns `AgentResult[String]`. For typed results, see `runAs[T]` below.
+`agent.run(prompt)(backend)` returns `AgentResult[Either[AgentFailure, String]]` by default. See below for typed input and output.
 
-## Typed responses with `runAs[T]`
+## Typed input and output
 
-Set `responseSchema` on `AgentConfig` and use `runAs[T]` to receive a parsed Scala value as the agent's final answer. The response schema, derived from `T`, is sent to the model to define the structured output of the agent's final answer. The answer is then parsed back into `T` via circe.
+A fresh builder starts at `Agent[F, String, String]`: plain-text prompt in, plain-text answer out. `deriveResponseSchema[T]`
+transitions the builder's `Out` type to `T`, so the built agent's `run` returns `AgentResult[Either[AgentFailure, T]]`
+instead. The response schema, derived from `T`, is sent to the model to define the structured output of the agent's
+final answer; the answer is then parsed back into `T` via circe.
 
 On failure the iteration trace is preserved: `finalAnswer` is a `Left(AgentFailure)` rather than a thrown exception. There are two failure cases:
 
@@ -84,7 +87,7 @@ object TypedAgentExample extends App {
       .tools(weatherTool)
       .deriveResponseSchema[TripSummary]
       .build
-    agent.runAs[TripSummary]("What's the weather in Paris?")(backend).finalAnswer match {
+    agent.run("What's the weather in Paris?")(backend).finalAnswer match {
       case Right(summary)                              => println(s"Weather: ${summary.weather}")
       case Left(AgentParseError(raw, cause))           => println(s"Parse failed: ${cause.getMessage}; raw=$raw")
       case Left(AgentIncomplete(raw, finishReason, _)) => println(s"Run incomplete ($finishReason); raw=$raw")
@@ -93,4 +96,46 @@ object TypedAgentExample extends App {
 }
 ```
 
-The same `runAs[T]` works against `ClaudeAgent.synchronous(...)`.
+The same `deriveResponseSchema[T]` works with `ClaudeAgent.synchronous(...)`.
+
+Input can be typed the same way. `input[In]` transitions the builder's `In` type, rendering the value into the first
+user message as compact JSON (via its circe `Encoder`) wrapped in a small fixed envelope; `inputRenderer[In]` takes
+an explicit `In => String` function when you want control over how the value is rendered.
+
+## Composing agents
+
+`andThen` chains two agents so the second starts a fresh conversation from the first's typed output: it only
+compiles when the first agent's `Out` matches the second's `In`, so a mismatched handoff is a compile error, not a
+runtime surprise.
+
+```scala mdoc:compile-only
+//> using dep com.softwaremill.sttp.ai::openai:@VERSION@
+
+import sttp.ai.openai.OpenAI
+import sttp.ai.openai.agent.OpenAIAgent
+import sttp.ai.openai.requests.completions.chat.ChatRequestBody.ChatCompletionModel
+import sttp.tapir.Schema
+
+val openai = OpenAI.fromEnv
+
+case class Location(city: String) derives io.circe.Codec.AsObject, Schema
+
+val planner = OpenAIAgent
+  .synchronous(openai, ChatCompletionModel.GPT4oMini)
+  .deriveResponseSchema[Location]
+  .build // Agent[Identity, String, Location]
+
+val guide = OpenAIAgent
+  .synchronous(openai, ChatCompletionModel.GPT4oMini)
+  .input[Location] // rendered into the first user message as JSON
+  .build // Agent[Identity, Location, String]
+
+val trip = planner.andThen(guide) // Agent[Identity, String, String] — compile-checked handoff
+```
+
+Each stage runs its own complete loop from scratch, seeded only with the previous stage's rendered output — no
+conversation history carries over. If a stage fails (`Left`), the chain short-circuits and later stages never run;
+on success, `iterations`, `toolCalls`, `usage`, and `llmCalls` aggregate across every stage that ran.
+
+When two agents are almost but not quite compatible, reach for `map` (adapt the output) or `contramap` (adapt the
+input) instead of rebuilding either agent.

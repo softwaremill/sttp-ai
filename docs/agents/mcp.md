@@ -44,7 +44,10 @@ try
     .build
 
   val result = agent.run("Add 2 and 3 using the available tools")(backend)
-  println(result.finalAnswer)
+  result.finalAnswer match {
+    case Right(answer) => println(s"Answer: $answer")
+    case Left(failure) => println(s"Agent did not finish cleanly: $failure")
+  }
 finally
   backend.close()
   client.close()
@@ -81,7 +84,10 @@ try
     .build
 
   val result = agent.run("Add 2 and 3 using the available tools")(claudeBackend)
-  println(result.finalAnswer)
+  result.finalAnswer match {
+    case Right(answer) => println(s"Answer: $answer")
+    case Left(failure) => println(s"Agent did not finish cleanly: $failure")
+  }
 finally
   claudeBackend.close()
   claudeClient.close()

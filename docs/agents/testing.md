@@ -56,7 +56,7 @@ class CalculatorAgentSpec extends AnyFlatSpec with Matchers with AgentMatchers {
     result should haveCalledTool("calculator")
     result should haveCalledToolWith("calculator", """{"a": 1, "b": 2}""")
     result should haveFinishedWith(FinishReason.NaturalStop)
-    result.finalAnswer shouldBe "The answer is 3"
+    result.finalAnswer shouldBe Right("The answer is 3")
 
     // assert on what was sent to the "model"
     script should haveReceivedPrompt("What is 1 + 2?")
