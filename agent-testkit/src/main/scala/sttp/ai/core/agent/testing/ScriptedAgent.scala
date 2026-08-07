@@ -13,6 +13,7 @@ import sttp.shared.Identity
   * )
   * val agent = script.builder.tools(calculatorTool).build
   * val result = agent.run("What is 1 + 2?")(SyncBackendStub)
+  * // result.finalAnswer: Either[AgentFailure, String]
   * script.requests // one RecordedRequest per model round-trip
   * }}}
   *
@@ -26,7 +27,7 @@ final class ScriptedAgent[F[_]] private (script: Seq[AgentResponse])(implicit mo
   private var backends: Vector[ScriptedAgentBackend[F]] = Vector.empty
 
   /** A standard [[AgentBuilder]] wired to this script — a drop-in replacement for e.g. `OpenAIAgent.builder(...)`. */
-  def builder: AgentBuilder[F, ScriptedModel.type] = AgentBuilder[F, ScriptedModel.type] { config =>
+  def builder: AgentBuilder[F, ScriptedModel.type, String, String] = AgentBuilder[F, ScriptedModel.type] { config =>
     val backend = new ScriptedAgentBackend[F](script, config.userTools, config.systemPrompt, config.responseSchema)
     synchronized {
       backends = backends :+ backend

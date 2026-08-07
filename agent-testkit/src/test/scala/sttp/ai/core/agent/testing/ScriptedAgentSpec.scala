@@ -5,7 +5,7 @@ import io.circe.generic.semiauto.deriveCodec
 import org.scalatest.OptionValues
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
-import sttp.ai.core.agent.{AgentTool, ConversationEntry, FinishReason, ResponseSchema}
+import sttp.ai.core.agent.{AgentIncomplete, AgentTool, ConversationEntry, FinishReason, ResponseSchema}
 import sttp.client4.testing.{BackendStub, SyncBackendStub}
 import sttp.monad.MonadError
 import sttp.tapir.Schema
@@ -37,7 +37,7 @@ class ScriptedAgentSpec extends AnyFlatSpec with Matchers with OptionValues {
 
     val result = agent.run("What is 1 + 2?")(httpBackend)
 
-    result.finalAnswer shouldBe "The answer is 3"
+    result.finalAnswer shouldBe Right("The answer is 3")
     result.finishReason shouldBe FinishReason.NaturalStop
     result.iterations shouldBe 2
     result.toolCalls should have size 1
@@ -66,7 +66,7 @@ class ScriptedAgentSpec extends AnyFlatSpec with Matchers with OptionValues {
     val result = script.builder.tools(calculatorTool).maxIterations(2).build.run("add 1 and 2")(httpBackend)
 
     script.requests.map(_.includeTools) shouldBe Seq(true, false)
-    result.finalAnswer shouldBe "partial answer"
+    result.finalAnswer shouldBe Right("partial answer")
     result.finishReason shouldBe FinishReason.MaxIterations
   }
 
@@ -79,10 +79,10 @@ class ScriptedAgentSpec extends AnyFlatSpec with Matchers with OptionValues {
     intercept[ScriptExhaustedException](agent.run("add 1 and 2")(httpBackend))
   }
 
-  it should "support runAs with a decoded final answer" in {
+  it should "support a typed run with a decoded final answer" in {
     val script = ScriptedAgent.synchronous(ScriptedResponse.text("""{"value": 3}"""))
 
-    val result = script.builder.build.runAs[Answer]("compute")(httpBackend)
+    val result = script.builder.deriveResponseSchema[Answer].build.run("compute")(httpBackend)
 
     result.finalAnswer shouldBe Right(Answer(3))
   }
@@ -90,7 +90,7 @@ class ScriptedAgentSpec extends AnyFlatSpec with Matchers with OptionValues {
   it should "record the configured response schema" in {
     val script = ScriptedAgent.synchronous(ScriptedResponse.text("""{"value": 3}"""))
 
-    script.builder.deriveResponseSchema[Answer].build.runAs[Answer]("compute")(httpBackend)
+    script.builder.deriveResponseSchema[Answer].build.run("compute")(httpBackend)
 
     script.responseSchemaSent should not be empty
     script.responseSchemaSent.value.schema shouldBe ResponseSchema.derived[Answer]().schema
@@ -106,8 +106,8 @@ class ScriptedAgentSpec extends AnyFlatSpec with Matchers with OptionValues {
   it should "give each build a fresh script cursor and accumulate recordings" in {
     val script = ScriptedAgent.synchronous(ScriptedResponse.text("hi"))
 
-    script.builder.build.run("first")(httpBackend).finalAnswer shouldBe "hi"
-    script.builder.build.run("second")(httpBackend).finalAnswer shouldBe "hi"
+    script.builder.build.run("first")(httpBackend).finalAnswer shouldBe Right("hi")
+    script.builder.build.run("second")(httpBackend).finalAnswer shouldBe Right("hi")
 
     script.requests should have size 2
   }
@@ -117,7 +117,7 @@ class ScriptedAgentSpec extends AnyFlatSpec with Matchers with OptionValues {
 
     val result = script.builder.build.run("go")(httpBackend)
 
-    result.finalAnswer shouldBe "truncated answer"
+    result.finalAnswer shouldBe Left(AgentIncomplete("truncated answer", FinishReason.TokenLimit, parseError = None))
     result.finishReason shouldBe FinishReason.TokenLimit
   }
 
@@ -130,7 +130,7 @@ class ScriptedAgentSpec extends AnyFlatSpec with Matchers with OptionValues {
     val result = script.builder.tools(calculatorTool).build.run("add 1 and 2")(httpBackend)
 
     result.toolCalls.map(_.output) shouldBe Seq("Result: 3.0")
-    result.finalAnswer shouldBe "done"
+    result.finalAnswer shouldBe Right("done")
     script.requests.last.history.entries.collect { case ConversationEntry.AssistantResponse(content, _) =>
       content
     } should contain("thinking...")
@@ -170,7 +170,7 @@ class ScriptedAgentSpec extends AnyFlatSpec with Matchers with OptionValues {
     val effect = script.builder.build.run("prompt")(BackendStub[Thunk](ThunkMonad))
     script.requests shouldBe empty
 
-    effect().finalAnswer shouldBe "hi"
+    effect().finalAnswer shouldBe Right("hi")
     script.requests should have size 1
   }
 }
