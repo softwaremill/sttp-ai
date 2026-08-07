@@ -1,6 +1,7 @@
 package sttp.ai.core.agent
 
 import io.circe.Codec
+import io.circe.Encoder
 import io.circe.parser.decode
 import sttp.ai.core.agent.AgentConfig.SystemPromptParameters
 import sttp.ai.core.model.{AIModel, Capability, Supports}
@@ -46,6 +47,12 @@ final class AgentBuilder[F[_], M <: AIModel, In, Out] private (
   def inputRenderer[In2](render: In2 => String): AgentBuilder[F, M, In2, Out] =
     new AgentBuilder[F, M, In2, Out](makeBackend, config, render, parseOutput)
 
+  /** Types the agent's input: `In2` is rendered into the initial user message as compact JSON via its circe `Encoder`, wrapped in a small
+    * fixed envelope. Use [[inputRenderer]] to control the rendering explicitly.
+    */
+  def input[In2](implicit enc: Encoder[In2]): AgentBuilder[F, M, In2, Out] =
+    inputRenderer[In2](in => AgentBuilder.renderJsonInput(enc(in)))
+
   /** Types the agent's output: the final answer is requested as structured output matching the schema and parsed with its codec. */
   def responseSchema[T](schema: ResponseSchema[T])(implicit ev: Supports[M, Capability.StructuredOutput]): AgentBuilder[F, M, In, T] =
     new AgentBuilder[F, M, In, T](
@@ -87,4 +94,9 @@ object AgentBuilder {
       makeBackend: AgentConfig[F] => AgentBackend[F]
   )(implicit monad: MonadError[F]): AgentBuilder[F, M, String, String] =
     new AgentBuilder[F, M, String, String](makeBackend, AgentConfig[F](), identity, answer => Right(answer))
+
+  private[agent] def renderJsonInput(json: io.circe.Json): String =
+    s"""Process the following input data (JSON):
+       |
+       |${json.noSpaces}""".stripMargin
 }
