@@ -114,40 +114,9 @@ val pick: IterationInfo => ChatCompletionModel & Capability.ToolCalling =
   info => if info.isLastIteration then ChatCompletionModel.GPT5 else ChatCompletionModel.GPT4oMini
 ```
 
-Note: `isLastIteration` flags only the *forced* last iteration (`maxIterations` reached). The loop cannot know in
+Note: `isLastIteration` is true on the *forced* last iteration (`maxIterations` reached) and on an
+interceptor-forced final iteration (e.g. a [budget](interceptors.md) breach). The loop cannot know in
 advance on which iteration the model will answer naturally.
-
-## Hooks
-
-The loop can invoke optional effectful hooks around each tool call. Both run inside the agent loop, so an error in either hook interrupts the run.
-
-### beforeToolCall
-
-If defined, the loop invokes `beforeToolCall` once before each tool call is executed, passing the pending `ToolCall`.
-
-```scala
-val agent = OpenAIAgent.builder[IO](OpenAI.fromEnv, "gpt-4o-mini")
-  .maxIterations(10)
-  .tools(tool1, tool2)
-  .hookBeforeToolCall(call => IO.println(s"calling ${call.toolName}(${call.input})"))
-  .build
-```
-
-`ToolCall` carries `id`, `toolName`, and `input`.
-
-### afterToolCall
-
-If defined, the loop invokes `afterToolCall` once after each tool call, passing the `ToolCallRecord`.
-
-```scala
-val agent = OpenAIAgent.builder[IO](OpenAI.fromEnv, "gpt-4o-mini")
-  .maxIterations(10)
-  .tools(tool1, tool2)
-  .hookAfterToolCall(call => IO.println(s"[step ${call.iteration}] ${call.toolName} -> ${call.output}"))
-  .build
-```
-
-`ToolCallRecord` carries `id`, `toolName`, `input`, `output` (the successful output, or the error message fed back to the LLM on failure), and `iteration`.
 
 ## Exception Handling
 

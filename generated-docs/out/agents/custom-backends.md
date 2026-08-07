@@ -37,7 +37,7 @@ The agent builder is effect-polymorphic: `OpenAIAgent.builder[F]`, `ClaudeAgent.
 ### Cats Effect
 
 ```scala
-//> using dep com.softwaremill.sttp.ai::openai:0.7.0
+//> using dep com.softwaremill.sttp.ai::openai:0.8.0
 //> using dep com.softwaremill.sttp.client4::cats:4.0.0-M17
 
 import cats.effect.{IO, IOApp}
@@ -69,7 +69,7 @@ object CatsEffectExample extends IOApp.Simple:
 ### ZIO
 
 ```scala
-//> using dep com.softwaremill.sttp.ai::zio:0.7.0
+//> using dep com.softwaremill.sttp.ai::zio:0.8.0
 
 import sttp.ai.core.agent.*
 import sttp.ai.openai.OpenAI

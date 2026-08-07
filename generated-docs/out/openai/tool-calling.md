@@ -16,7 +16,7 @@ The key point is `Tool.Function.withSchema[T]`: the JSON Schema for the argument
 Note that the arguments sent back by the assistant still need to be deserialized manually before calling the function.
 
 ```scala
-//> using dep com.softwaremill.sttp.ai::openai:0.7.0
+//> using dep com.softwaremill.sttp.ai::openai:0.8.0
 
 import sttp.ai.openai.OpenAISyncClient
 import sttp.ai.openai.requests.completions.chat.ChatRequestBody.ChatBody

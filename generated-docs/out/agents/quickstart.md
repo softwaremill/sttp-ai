@@ -14,7 +14,7 @@ Framework for building autonomous AI agents that iteratively solve tasks using t
 ## Quick Start
 
 ```scala
-//> using dep com.softwaremill.sttp.ai::openai:0.7.0
+//> using dep com.softwaremill.sttp.ai::openai:0.8.0
 
 import sttp.ai.core.agent.*
 import sttp.ai.openai.OpenAI
