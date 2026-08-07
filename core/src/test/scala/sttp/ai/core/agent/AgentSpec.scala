@@ -5,7 +5,6 @@ import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
 import io.circe.Codec
 import io.circe.generic.semiauto.deriveCodec
-import io.circe.parser.decode
 import sttp.ai.core.model.{AIModel, Capability}
 import sttp.client4.testing.SyncBackendStub
 import sttp.monad.IdentityMonad
@@ -61,10 +60,10 @@ class AgentSpec extends AnyFlatSpec with Matchers with OptionValues {
     s"Result: ${input.a + input.b}"
   }
 
-  private def agentBuilder(responses: AgentResponse*): AgentBuilder[Identity, TestModel.type] =
+  private def agentBuilder(responses: AgentResponse*): AgentBuilder[Identity, TestModel.type, String, String] =
     AgentBuilder[Identity, TestModel.type](_ => new StubAgentBackend(responses))(IdentityMonad)
 
-  private def runLoop(builder: AgentBuilder[Identity, TestModel.type]): AgentResult[String] =
+  private def runLoop(builder: AgentBuilder[Identity, TestModel.type, String, String]): AgentResult[Either[AgentFailure, String]] =
     builder.build.run("Test")(backend)
 
   case class DummyInput()
@@ -116,14 +115,14 @@ class AgentSpec extends AnyFlatSpec with Matchers with OptionValues {
     result.toolCalls should have size 2
     result.iterations shouldBe 3
     result.finishReason shouldBe FinishReason.MaxIterations
-    result.finalAnswer shouldBe "final answer"
+    result.finalAnswer shouldBe Right("final answer")
   }
 
   it should "complete the loop when the response has no tool calls and empty text" in {
     val result = runLoop(agentBuilder(AgentResponse("", Seq.empty, StopReason.EndTurn)))
 
     result.finishReason shouldBe FinishReason.NaturalStop
-    result.finalAnswer shouldBe ""
+    result.finalAnswer shouldBe Right("")
     result.iterations shouldBe 1
     result.toolCalls shouldBe empty
   }
@@ -296,7 +295,7 @@ class AgentSpec extends AnyFlatSpec with Matchers with OptionValues {
     )
 
     result.finishReason shouldBe FinishReason.MaxIterations
-    result.finalAnswer shouldBe "Third response"
+    result.finalAnswer shouldBe Right("Third response")
     result.iterations shouldBe 3
   }
 
@@ -447,13 +446,13 @@ class AgentSpec extends AnyFlatSpec with Matchers with OptionValues {
     ).deriveResponseSchema[WeatherSummary].build.run("What's the weather?")(backend)
 
     result.finishReason shouldBe FinishReason.NaturalStop: Unit
-    decode[WeatherSummary](result.finalAnswer) shouldBe Right(WeatherSummary("Krakow", 12.0, "sunny"))
+    result.finalAnswer shouldBe Right(WeatherSummary("Krakow", 12.0, "sunny"))
   }
 
-  "Agent.runAs[T]" should "return Right(T) when the model emits a well-formed structured payload" in {
+  "Agent typed run" should "return Right(T) when the model emits a well-formed structured payload" in {
     val result = agentBuilder(
       AgentResponse("""{"city":"Krakow","temp_c":12.0,"conditions":"sunny"}""", Seq.empty, StopReason.EndTurn)
-    ).deriveResponseSchema[WeatherSummary].build.runAs[WeatherSummary]("What's the weather?")(backend)
+    ).deriveResponseSchema[WeatherSummary].build.run("What's the weather?")(backend)
 
     result.finishReason shouldBe FinishReason.NaturalStop: Unit
     result.iterations shouldBe 1: Unit
@@ -463,7 +462,7 @@ class AgentSpec extends AnyFlatSpec with Matchers with OptionValues {
   it should "return Left(AgentParseError) preserving the trace when the answer can't be parsed as T" in {
     val result = agentBuilder(
       AgentResponse("""{"wrong":"shape"}""", Seq.empty, StopReason.EndTurn)
-    ).deriveResponseSchema[WeatherSummary].build.runAs[WeatherSummary]("What's the weather?")(backend)
+    ).deriveResponseSchema[WeatherSummary].build.run("What's the weather?")(backend)
 
     result.iterations shouldBe 1: Unit
     result.finishReason shouldBe FinishReason.NaturalStop: Unit
@@ -489,7 +488,7 @@ class AgentSpec extends AnyFlatSpec with Matchers with OptionValues {
       .tools(dummyTool)
       .deriveResponseSchema[WeatherSummary]
       .build
-      .runAs[WeatherSummary]("What's the weather?")(backend)
+      .run("What's the weather?")(backend)
 
     result.finishReason shouldBe FinishReason.MaxIterations: Unit
     result.finalAnswer shouldBe Right(WeatherSummary("Krakow", 12.0, "sunny"))
@@ -506,7 +505,7 @@ class AgentSpec extends AnyFlatSpec with Matchers with OptionValues {
     ).tools(dummyTool)
       .deriveResponseSchema[WeatherSummary]
       .build
-      .runAs[WeatherSummary]("What's the weather?")(backend)
+      .run("What's the weather?")(backend)
 
     result.finishReason shouldBe FinishReason.MaxIterations: Unit
     result.finalAnswer.isLeft shouldBe true: Unit
@@ -522,7 +521,7 @@ class AgentSpec extends AnyFlatSpec with Matchers with OptionValues {
   it should "return Left(AgentIncomplete) without attempting a parse when the token limit is hit" in {
     val result = agentBuilder(
       AgentResponse("""{"city":"Krakow","temp_c":12.0,"conditions":"sunny"}""", Seq.empty, StopReason.MaxTokens)
-    ).deriveResponseSchema[WeatherSummary].build.runAs[WeatherSummary]("What's the weather?")(backend)
+    ).deriveResponseSchema[WeatherSummary].build.run("What's the weather?")(backend)
 
     result.finishReason shouldBe FinishReason.TokenLimit: Unit
     result.finalAnswer shouldBe Left(
@@ -534,7 +533,7 @@ class AgentSpec extends AnyFlatSpec with Matchers with OptionValues {
     val result = runLoop(agentBuilder(AgentResponse("partial answer", Seq.empty, StopReason.MaxTokens)))
 
     result.finishReason shouldBe FinishReason.TokenLimit
-    result.finalAnswer shouldBe "partial answer"
+    result.finalAnswer shouldBe Left(AgentIncomplete("partial answer", FinishReason.TokenLimit, parseError = None))
     result.iterations shouldBe 1
   }
 

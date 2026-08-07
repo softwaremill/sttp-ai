@@ -62,7 +62,12 @@ object CatsEffectExample extends IOApp.Simple:
     val agent = OpenAIAgent.builder[IO](OpenAI.fromEnv, "gpt-4o-mini").maxIterations(5).tools(weatherTool).build
     HttpClientCatsBackend.resource[IO]().use { backend =>
       agent.run("What's the weather in London?")(backend)
-        .flatMap(r => IO.println(s"Answer: ${r.finalAnswer}"))
+        .flatMap { r =>
+          r.finalAnswer match {
+            case Right(answer) => IO.println(s"Answer: $answer")
+            case Left(failure) => IO.println(s"Agent did not finish cleanly: $failure")
+          }
+        }
     }
 ```
 
@@ -98,7 +103,10 @@ object ZIOExample extends ZIOAppDefault:
       for {
         backend <- HttpClientZioBackend.scoped()
         result <- agent.run("What's the weather in London?")(backend)
-        _ <- Console.printLine(s"Answer: ${result.finalAnswer}")
+        _ <- result.finalAnswer match {
+          case Right(answer) => Console.printLine(s"Answer: $answer")
+          case Left(failure) => Console.printLine(s"Agent did not finish cleanly: $failure")
+        }
       } yield ()
     }
 ```

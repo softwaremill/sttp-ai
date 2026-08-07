@@ -5,7 +5,7 @@ import io.circe.generic.semiauto.deriveCodec
 import org.scalatest.exceptions.TestFailedException
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
-import sttp.ai.core.agent.{AgentResult, AgentTool, FinishReason}
+import sttp.ai.core.agent.{AgentFailure, AgentResult, AgentTool, FinishReason}
 import sttp.client4.testing.SyncBackendStub
 import sttp.shared.Identity
 import sttp.tapir.Schema
@@ -20,7 +20,7 @@ class AgentMatchersSpec extends AnyFlatSpec with Matchers with AgentMatchers {
     s"Result: ${input.a + input.b}"
   }
 
-  private val (script, result): (ScriptedAgent[Identity], AgentResult[String]) = {
+  private val (script, result): (ScriptedAgent[Identity], AgentResult[Either[AgentFailure, String]]) = {
     val s = ScriptedAgent.synchronous(
       ScriptedResponse.toolCall("calculator", """{"a": 1, "b": 2}"""),
       ScriptedResponse.text("The answer is 3")

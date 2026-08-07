@@ -130,7 +130,9 @@ object ClaudeAgent {
 
   final class BuilderPartiallyApplied[F[_]] private[ClaudeAgent] () {
 
-    def apply[M <: ClaudeModel](client: ClaudeClient, model: M)(implicit monad: sttp.monad.MonadError[F]): AgentBuilder[F, M] =
+    def apply[M <: ClaudeModel](client: ClaudeClient, model: M)(implicit
+        monad: sttp.monad.MonadError[F]
+    ): AgentBuilder[F, M, String, String] =
       apply(client, (_: IterationInfo) => model)
 
     /** Selects the model per loop iteration (e.g. a cheap model for tool iterations, a stronger one for the forced-final synthesis). `M`
@@ -138,45 +140,53 @@ object ClaudeAgent {
       */
     def apply[M <: ClaudeModel](client: ClaudeClient, modelForIteration: IterationInfo => M)(implicit
         monad: sttp.monad.MonadError[F]
-    ): AgentBuilder[F, M] =
+    ): AgentBuilder[F, M, String, String] =
       AgentBuilder[F, M](config =>
         new ClaudeAgentBackend[F](client, modelForIteration, config.userTools, config.systemPrompt, config.responseSchema)
       )
 
     def apply(client: ClaudeClient, modelName: String)(implicit
         monad: sttp.monad.MonadError[F]
-    ): AgentBuilder[F, ClaudeModel.CustomClaudeModel] =
+    ): AgentBuilder[F, ClaudeModel.CustomClaudeModel, String, String] =
       apply(client, ClaudeModel.CustomClaudeModel(modelName))
 
-    def apply[M <: ClaudeModel](claudeConfig: ClaudeConfig, model: M)(implicit monad: sttp.monad.MonadError[F]): AgentBuilder[F, M] =
+    def apply[M <: ClaudeModel](claudeConfig: ClaudeConfig, model: M)(implicit
+        monad: sttp.monad.MonadError[F]
+    ): AgentBuilder[F, M, String, String] =
       apply(ClaudeClient(claudeConfig), model)
 
     def apply[M <: ClaudeModel](claudeConfig: ClaudeConfig, modelForIteration: IterationInfo => M)(implicit
         monad: sttp.monad.MonadError[F]
-    ): AgentBuilder[F, M] =
+    ): AgentBuilder[F, M, String, String] =
       apply(ClaudeClient(claudeConfig), modelForIteration)
 
     def apply(claudeConfig: ClaudeConfig, modelName: String)(implicit
         monad: sttp.monad.MonadError[F]
-    ): AgentBuilder[F, ClaudeModel.CustomClaudeModel] =
+    ): AgentBuilder[F, ClaudeModel.CustomClaudeModel, String, String] =
       apply(ClaudeClient(claudeConfig), modelName)
   }
 
-  def synchronous[M <: ClaudeModel](client: ClaudeClient, model: M): AgentBuilder[Identity, M] =
+  def synchronous[M <: ClaudeModel](client: ClaudeClient, model: M): AgentBuilder[Identity, M, String, String] =
     builder[Identity](client, model)(IdentityMonad)
 
-  def synchronous[M <: ClaudeModel](client: ClaudeClient, modelForIteration: IterationInfo => M): AgentBuilder[Identity, M] =
+  def synchronous[M <: ClaudeModel](
+      client: ClaudeClient,
+      modelForIteration: IterationInfo => M
+  ): AgentBuilder[Identity, M, String, String] =
     builder[Identity](client, modelForIteration)(IdentityMonad)
 
-  def synchronous(client: ClaudeClient, modelName: String): AgentBuilder[Identity, ClaudeModel.CustomClaudeModel] =
+  def synchronous(client: ClaudeClient, modelName: String): AgentBuilder[Identity, ClaudeModel.CustomClaudeModel, String, String] =
     builder[Identity](client, modelName)(IdentityMonad)
 
-  def synchronous[M <: ClaudeModel](claudeConfig: ClaudeConfig, model: M): AgentBuilder[Identity, M] =
+  def synchronous[M <: ClaudeModel](claudeConfig: ClaudeConfig, model: M): AgentBuilder[Identity, M, String, String] =
     builder[Identity](claudeConfig, model)(IdentityMonad)
 
-  def synchronous[M <: ClaudeModel](claudeConfig: ClaudeConfig, modelForIteration: IterationInfo => M): AgentBuilder[Identity, M] =
+  def synchronous[M <: ClaudeModel](
+      claudeConfig: ClaudeConfig,
+      modelForIteration: IterationInfo => M
+  ): AgentBuilder[Identity, M, String, String] =
     builder[Identity](claudeConfig, modelForIteration)(IdentityMonad)
 
-  def synchronous(claudeConfig: ClaudeConfig, modelName: String): AgentBuilder[Identity, ClaudeModel.CustomClaudeModel] =
+  def synchronous(claudeConfig: ClaudeConfig, modelName: String): AgentBuilder[Identity, ClaudeModel.CustomClaudeModel, String, String] =
     builder[Identity](claudeConfig, modelName)(IdentityMonad)
 }

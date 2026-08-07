@@ -44,16 +44,22 @@ object TypedAgentLoopExample extends App {
       .build
     val prompt = "What's the weather in Paris? Also, what is 15 multiplied by 23? Provide a complete answer."
 
-    agent.runAs[TripSummary](prompt)(backend).finalAnswer match {
-      case Right(summary) =>
-        println(s"weather:     ${summary.weatherSummary}")
-        println(s"calculation: ${summary.calculation}")
-        println(s"conclusion:  ${summary.conclusion}")
-      case Left(AgentParseError(rawAnswer, cause)) =>
-        println(s"Failed to parse structured answer: ${cause.getMessage}")
-        println(s"Raw answer was: $rawAnswer")
-      case Left(AgentIncomplete(rawAnswer, finishReason, _)) =>
-        println(s"Agent did not finish cleanly ($finishReason), raw answer was: $rawAnswer")
-    }
+    val result = agent.run(prompt)(backend)
+    println(s"Result: ${result.finalAnswer}")
+    println(s"Finish reason: ${result.finishReason}")
+
+    // TODO after 0.9.0 release: switch to the typed run result, e.g.:
+    // agent.run(prompt)(backend).finalAnswer match {
+    //   case Right(summary) =>
+    //     println(s"weather:     ${summary.weatherSummary}")
+    //     println(s"calculation: ${summary.calculation}")
+    //     println(s"conclusion:  ${summary.conclusion}")
+    //   case Left(AgentParseError(rawAnswer, cause)) =>
+    //     println(s"Failed to parse structured answer: ${cause.getMessage}")
+    //     println(s"Raw answer was: $rawAnswer")
+    //   case Left(AgentIncomplete(rawAnswer, finishReason, _)) =>
+    //     println(s"Agent did not finish cleanly ($finishReason), raw answer was: $rawAnswer")
+    // }
+    // Also bump the `//> using dep com.softwaremill.sttp.ai::openai:...` directive at the top of this file to 0.9.0+.
   } finally backend.close()
 }

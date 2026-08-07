@@ -12,7 +12,7 @@ import sttp.tapir.Schema
 
 class AgentInterceptorLoopSpec extends AnyFlatSpec with Matchers {
 
-  case object TestModel extends AIModel with Capability.ToolCalling {
+  case object TestModel extends AIModel with Capability.ToolCalling with Capability.StructuredOutput {
     val value: String = "test-model"
   }
 
@@ -57,7 +57,7 @@ class AgentInterceptorLoopSpec extends AnyFlatSpec with Matchers {
   private def finalResponse(text: String, u: Option[TokenUsage]): AgentResponse =
     AgentResponse(text, Seq.empty, StopReason.EndTurn, usage = u, model = Some("test-model"))
 
-  private def build(stub: StubAgentBackend, interceptors: Seq[AgentInterceptor[Identity]]): Agent[Identity] =
+  private def build(stub: StubAgentBackend, interceptors: Seq[AgentInterceptor[Identity]]): Agent[Identity, String, String] =
     AgentBuilder[Identity, TestModel.type](_ => stub)(IdentityMonad)
       .maxIterations(5)
       .tools(dummyTool)
@@ -74,7 +74,7 @@ class AgentInterceptorLoopSpec extends AnyFlatSpec with Matchers {
     )
     val result = build(stub, Seq.empty).run("Test")(backend)
 
-    result.finalAnswer shouldBe "done"
+    result.finalAnswer shouldBe Right("done")
     result.usage shouldBe usage(150, 30)
     result.llmCalls shouldBe Seq(
       LlmCallUsage(Some("test-model"), usage(100, 20)),
@@ -99,7 +99,7 @@ class AgentInterceptorLoopSpec extends AnyFlatSpec with Matchers {
     val stub = new StubAgentBackend(
       Seq(toolResponse("call_1", Some(usage(1, 1))), finalResponse("done", Some(usage(1, 1))))
     )
-    build(stub, Seq(new Rec("a"), new Rec("b"))).run("Test")(backend).finalAnswer shouldBe "done"
+    build(stub, Seq(new Rec("a"), new Rec("b"))).run("Test")(backend).finalAnswer shouldBe Right("done")
 
     log.toList shouldBe List(
       "a:iter(1):in",
@@ -142,7 +142,7 @@ class AgentInterceptorLoopSpec extends AnyFlatSpec with Matchers {
     val stub = new StubAgentBackend(Seq(finalResponse("real answer", None)))
     val result = build(stub, Seq(shortCircuit)).run("Test")(backend)
 
-    result.finalAnswer shouldBe "cached answer"
+    result.finalAnswer shouldBe Right("cached answer")
     result.usage shouldBe usage(1, 1)
     stub.receivedHistories shouldBe empty // the backend was never reached
   }
@@ -164,7 +164,7 @@ class AgentInterceptorLoopSpec extends AnyFlatSpec with Matchers {
     val result = build(stub, Seq(steer)).run("Test")(backend)
 
     result.finishReason shouldBe FinishReason.BudgetExceeded
-    result.finalAnswer shouldBe "budget answer"
+    result.finalAnswer shouldBe Right("budget answer")
     result.iterations shouldBe 2
     // The forced-final request withheld tools and contained the injected instruction:
     stub.receivedIncludeTools shouldBe Seq(true, false)
@@ -193,7 +193,7 @@ class AgentInterceptorLoopSpec extends AnyFlatSpec with Matchers {
 
     val result = agent.run("Test")(backend)
     result.finishReason shouldBe FinishReason.MaxIterations
-    result.finalAnswer shouldBe "last answer"
+    result.finalAnswer shouldBe Right("last answer")
   }
 
   it should "not consult tools nor execute spurious tool calls on a FinishNow iteration" in {
@@ -209,7 +209,7 @@ class AgentInterceptorLoopSpec extends AnyFlatSpec with Matchers {
 
     result.finishReason shouldBe FinishReason.BudgetExceeded
     result.toolCalls should have size 1 // only the first iteration's tool call
-    result.finalAnswer shouldBe "dummy result" // extractFinalAnswer fallback: last tool result
+    result.finalAnswer shouldBe Right("dummy result") // extractFinalAnswer fallback: last tool result
   }
 
   it should "enforce a token budget end-to-end via BudgetInterceptor" in {
@@ -225,7 +225,7 @@ class AgentInterceptorLoopSpec extends AnyFlatSpec with Matchers {
     val result = build(stub, Seq(budget)).run("Test")(backend)
 
     result.finishReason shouldBe FinishReason.BudgetExceeded
-    result.finalAnswer shouldBe "partial answer"
+    result.finalAnswer shouldBe Right("partial answer")
     result.iterations shouldBe 3 // breach detected after call 2 (240 >= 200), forced final on iteration 3
     stub.receivedIncludeTools shouldBe Seq(true, true, false)
     stub.receivedHistories.last.entries should contain(ConversationEntry.UserPrompt(BudgetInterceptor.defaultInstruction))
@@ -237,16 +237,17 @@ class AgentInterceptorLoopSpec extends AnyFlatSpec with Matchers {
     val result = build(stub, Seq(steer)).run("Test")(backend)
 
     result.finishReason shouldBe FinishReason.BudgetExceeded
-    result.finalAnswer shouldBe "immediate answer"
+    result.finalAnswer shouldBe Right("immediate answer")
     result.iterations shouldBe 1
     stub.receivedIncludeTools shouldBe Seq(false)
     stub.receivedHistories.last.entries should contain(ConversationEntry.UserPrompt("answer immediately"))
   }
 
-  it should "let runAs parse a budget-forced final answer like a max-iterations one" in {
+  it should "parse a budget-forced final answer like a max-iterations one" in {
     import sttp.ai.core.agent.interceptor.BudgetInterceptor
     case class Out(x: Int)
     implicit val outCodec: Codec[Out] = deriveCodec
+    implicit val outSchema: Schema[Out] = Schema.derived
 
     val stub = new StubAgentBackend(
       Seq(
@@ -255,7 +256,13 @@ class AgentInterceptorLoopSpec extends AnyFlatSpec with Matchers {
       )
     )
     val budget = new BudgetInterceptor[Identity](maxTotalTokens = Some(Tokens(100L)))
-    val result = build(stub, Seq(budget)).runAs[Out]("Test")(backend)
+    val result = AgentBuilder[Identity, TestModel.type](_ => stub)(IdentityMonad)
+      .maxIterations(5)
+      .tools(dummyTool)
+      .interceptors(Seq(budget))
+      .deriveResponseSchema[Out]
+      .build
+      .run("Test")(backend)
 
     result.finishReason shouldBe FinishReason.BudgetExceeded
     result.finalAnswer shouldBe Right(Out(5)) // BudgetExceeded is parse-attempted, not rejected outright
@@ -311,7 +318,7 @@ class AgentInterceptorLoopSpec extends AnyFlatSpec with Matchers {
 
     val result = Await.result(agent.run("Test")(sttp.client4.testing.BackendStub[Future](futureMonad)), 10.seconds)
 
-    result.finalAnswer shouldBe "done"
+    result.finalAnswer shouldBe Right("done")
     result.usage shouldBe usage(150, 30)
     log.toList shouldBe List("llm:in", "llm:out", "tool:in", "tool:out", "llm:in", "llm:out")
   }

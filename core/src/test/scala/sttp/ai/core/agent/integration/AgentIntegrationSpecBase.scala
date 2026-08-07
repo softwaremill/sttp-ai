@@ -14,13 +14,13 @@ abstract class AgentIntegrationSpecBase extends AnyFlatSpec with Matchers {
 
   def providerName: String
   def apiKeyEnvVar: String
-  def createAgent(maxIterations: Int, tools: Seq[AgentTool[Identity, _]]): Agent[Identity]
+  def createAgent(maxIterations: Int, tools: Seq[AgentTool[Identity, _]]): Agent[Identity, String, String]
 
   def createTypedAgent[T](
       maxIterations: Int,
       tools: Seq[AgentTool[Identity, _]],
       responseSchema: ResponseSchema[T]
-  ): Agent[Identity] =
+  ): Agent[Identity, String, T] =
     cancel(s"$providerName typed agent factory not implemented for this spec")
 
   protected val maybeApiKey: Option[String] = sys.env.get(apiKeyEnvVar)
@@ -67,7 +67,10 @@ abstract class AgentIntegrationSpecBase extends AnyFlatSpec with Matchers {
     }
   }
 
-  protected def assertToolCalled(result: AgentResult[String], toolName: String, minTimes: Int = 1)(implicit
+  protected def answerOrFail(result: AgentResult[Either[AgentFailure, String]]): String =
+    result.finalAnswer.fold(f => fail(s"agent did not produce a final answer: $f"), identity)
+
+  protected def assertToolCalled(result: AgentResult[_], toolName: String, minTimes: Int = 1)(implicit
       prettifier: Prettifier,
       pos: source.Position
   ): Unit = {
@@ -78,13 +81,15 @@ abstract class AgentIntegrationSpecBase extends AnyFlatSpec with Matchers {
     )
   }
 
-  protected def assertMinIterations(result: AgentResult[String], min: Int)(implicit prettifier: Prettifier, pos: source.Position): Unit =
+  protected def assertMinIterations(result: AgentResult[_], min: Int)(implicit prettifier: Prettifier, pos: source.Position): Unit =
     assert(
       result.iterations >= min,
       s"Should have at least $min iterations, but had ${result.iterations}"
     )
 
-  def withAgent[T](maxIter: Int, tools: Seq[AgentTool[Identity, _]])(test: (Agent[Identity], Backend[Identity]) => T): T = {
+  def withAgent[T](maxIter: Int, tools: Seq[AgentTool[Identity, _]])(
+      test: (Agent[Identity, String, String], Backend[Identity]) => T
+  ): T = {
     if (maybeApiKey.isEmpty) {
       cancel(s"$apiKeyEnvVar not defined - skipping integration test")
     }
@@ -108,7 +113,7 @@ abstract class AgentIntegrationSpecBase extends AnyFlatSpec with Matchers {
 
     assertMinIterations(result, 3)
     assertToolCalled(result, "calculator", minTimes = 3)
-    assertContainsAny(result.finalAnswer, "130", "one hundred thirty", "hundred and thirty")
+    assertContainsAny(answerOrFail(result), "130", "one hundred thirty", "hundred and thirty")
     result.finishReason shouldBe FinishReason.NaturalStop
     result.usage.totalTokens.value should be > 0L
     result.llmCalls should not be empty
@@ -122,8 +127,8 @@ abstract class AgentIntegrationSpecBase extends AnyFlatSpec with Matchers {
 
     assertToolCalled(result, "get_weather", minTimes = 3)
     assertToolCalled(result, "calculator")
-    assertContainsAll(result.finalAnswer, "london", "paris", "berlin")
-    assertContainsAny(result.finalAnswer, "100", "one hundred")
+    assertContainsAll(answerOrFail(result), "london", "paris", "berlin")
+    assertContainsAny(answerOrFail(result), "100", "one hundred")
     ()
   }
 
@@ -138,8 +143,8 @@ abstract class AgentIntegrationSpecBase extends AnyFlatSpec with Matchers {
     assertMinIterations(result, 2)
     assertToolCalled(result, "calculator", minTimes = 2)
     assertToolCalled(result, "get_weather")
-    assertContainsAny(result.finalAnswer, "50", "fifty")
-    assertContainsAny(result.finalAnswer, "tokyo")
+    assertContainsAny(answerOrFail(result), "50", "fifty")
+    assertContainsAny(answerOrFail(result), "tokyo")
     ()
   }
 
@@ -152,7 +157,7 @@ abstract class AgentIntegrationSpecBase extends AnyFlatSpec with Matchers {
 
     assertMinIterations(result, 3)
     assertToolCalled(result, "calculator", minTimes = 3)
-    assertContainsAny(result.finalAnswer, "75", "seventy")
+    assertContainsAny(answerOrFail(result), "75", "seventy")
     ()
   }
 
@@ -175,7 +180,7 @@ abstract class AgentIntegrationSpecBase extends AnyFlatSpec with Matchers {
       assertToolCalled(result, "calculator", minTimes = 1)
       result.iterations shouldBe 2
       result.finishReason shouldBe FinishReason.MaxIterations
-      result.finalAnswer should not be empty
+      answerOrFail(result) should not be empty
       ()
     }
 
@@ -183,14 +188,14 @@ abstract class AgentIntegrationSpecBase extends AnyFlatSpec with Matchers {
   implicit val tripSummaryCodec: Codec[TripSummary] = deriveCodec
   implicit val tripSummarySchema: Schema[TripSummary] = Schema.derived
 
-  it should "return a typed structured answer via runAs[T]" in {
+  it should "return a typed structured answer via a typed run" in {
     if (maybeApiKey.isEmpty) cancel(s"$apiKeyEnvVar not defined - skipping integration test")
     val backend = DefaultSyncBackend()
     try {
       val rs = ResponseSchema.derived[TripSummary]()
       val agent = createTypedAgent(maxIterations = 6, tools = Seq(weatherTool, calculatorTool), responseSchema = rs)
 
-      val result = agent.runAs[TripSummary](
+      val result = agent.run(
         "What's the weather in Paris? Also, what is 15 multiplied by 3? Then summarise both into the structured response."
       )(backend)
 

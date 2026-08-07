@@ -32,7 +32,7 @@ object AgentBuilderCapabilitySpecFixtures {
     ): Identity[AgentResponse] = AgentResponse("done", Seq.empty, StopReason.EndTurn)
   }
 
-  def newBuilder[M <: AIModel]: AgentBuilder[Identity, M] =
+  def newBuilder[M <: AIModel]: AgentBuilder[Identity, M, String, String] =
     AgentBuilder[Identity, M](_ => noopBackend)(IdentityMonad)
 
   case class Out(answer: String)

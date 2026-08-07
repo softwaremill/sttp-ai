@@ -13,7 +13,7 @@ class ClaudeAgentIntegrationSpec extends AgentIntegrationSpecBase {
   override def providerName: String = "Claude"
   override def apiKeyEnvVar: String = "ANTHROPIC_API_KEY"
 
-  override def createAgent(maxIterations: Int, tools: Seq[AgentTool[Identity, _]]): Agent[Identity] = {
+  override def createAgent(maxIterations: Int, tools: Seq[AgentTool[Identity, _]]): Agent[Identity, String, String] = {
     val config = ClaudeConfig.fromEnv
     val client = ClaudeClient(config)
     val agentConfig = AgentConfig[Identity](maxIterations = maxIterations, userTools = tools)
@@ -31,7 +31,7 @@ class ClaudeAgentIntegrationSpec extends AgentIntegrationSpecBase {
       maxIterations: Int,
       tools: Seq[AgentTool[Identity, _]],
       responseSchema: ResponseSchema[T]
-  ): Agent[Identity] =
+  ): Agent[Identity, String, T] =
     ClaudeAgent
       .synchronous(ClaudeConfig.fromEnv, "claude-haiku-4-5-20251001")
       .maxIterations(maxIterations)

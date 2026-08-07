@@ -158,7 +158,9 @@ object GeminiAgent {
 
   final class BuilderPartiallyApplied[F[_]] private[GeminiAgent] () {
 
-    def apply[M <: GeminiModel](client: GeminiClient, model: M)(implicit monad: sttp.monad.MonadError[F]): AgentBuilder[F, M] =
+    def apply[M <: GeminiModel](client: GeminiClient, model: M)(implicit
+        monad: sttp.monad.MonadError[F]
+    ): AgentBuilder[F, M, String, String] =
       apply(client, (_: IterationInfo) => model)
 
     /** Selects the model per loop iteration (e.g. a cheap model for tool iterations, a stronger one for the forced-final synthesis). `M`
@@ -166,45 +168,53 @@ object GeminiAgent {
       */
     def apply[M <: GeminiModel](client: GeminiClient, modelForIteration: IterationInfo => M)(implicit
         monad: sttp.monad.MonadError[F]
-    ): AgentBuilder[F, M] =
+    ): AgentBuilder[F, M, String, String] =
       AgentBuilder[F, M](config =>
         new GeminiAgentBackend[F](client, modelForIteration, config.userTools, config.systemPrompt, config.responseSchema)
       )
 
     def apply(client: GeminiClient, modelName: String)(implicit
         monad: sttp.monad.MonadError[F]
-    ): AgentBuilder[F, GeminiModel.CustomModel] =
+    ): AgentBuilder[F, GeminiModel.CustomModel, String, String] =
       apply(client, GeminiModel.CustomModel(modelName))
 
-    def apply[M <: GeminiModel](geminiConfig: GeminiConfig, model: M)(implicit monad: sttp.monad.MonadError[F]): AgentBuilder[F, M] =
+    def apply[M <: GeminiModel](geminiConfig: GeminiConfig, model: M)(implicit
+        monad: sttp.monad.MonadError[F]
+    ): AgentBuilder[F, M, String, String] =
       apply(GeminiClient(geminiConfig), model)
 
     def apply[M <: GeminiModel](geminiConfig: GeminiConfig, modelForIteration: IterationInfo => M)(implicit
         monad: sttp.monad.MonadError[F]
-    ): AgentBuilder[F, M] =
+    ): AgentBuilder[F, M, String, String] =
       apply(GeminiClient(geminiConfig), modelForIteration)
 
     def apply(geminiConfig: GeminiConfig, modelName: String)(implicit
         monad: sttp.monad.MonadError[F]
-    ): AgentBuilder[F, GeminiModel.CustomModel] =
+    ): AgentBuilder[F, GeminiModel.CustomModel, String, String] =
       apply(GeminiClient(geminiConfig), modelName)
   }
 
-  def synchronous[M <: GeminiModel](client: GeminiClient, model: M): AgentBuilder[Identity, M] =
+  def synchronous[M <: GeminiModel](client: GeminiClient, model: M): AgentBuilder[Identity, M, String, String] =
     builder[Identity](client, model)(IdentityMonad)
 
-  def synchronous[M <: GeminiModel](client: GeminiClient, modelForIteration: IterationInfo => M): AgentBuilder[Identity, M] =
+  def synchronous[M <: GeminiModel](
+      client: GeminiClient,
+      modelForIteration: IterationInfo => M
+  ): AgentBuilder[Identity, M, String, String] =
     builder[Identity](client, modelForIteration)(IdentityMonad)
 
-  def synchronous(client: GeminiClient, modelName: String): AgentBuilder[Identity, GeminiModel.CustomModel] =
+  def synchronous(client: GeminiClient, modelName: String): AgentBuilder[Identity, GeminiModel.CustomModel, String, String] =
     builder[Identity](client, modelName)(IdentityMonad)
 
-  def synchronous[M <: GeminiModel](geminiConfig: GeminiConfig, model: M): AgentBuilder[Identity, M] =
+  def synchronous[M <: GeminiModel](geminiConfig: GeminiConfig, model: M): AgentBuilder[Identity, M, String, String] =
     builder[Identity](geminiConfig, model)(IdentityMonad)
 
-  def synchronous[M <: GeminiModel](geminiConfig: GeminiConfig, modelForIteration: IterationInfo => M): AgentBuilder[Identity, M] =
+  def synchronous[M <: GeminiModel](
+      geminiConfig: GeminiConfig,
+      modelForIteration: IterationInfo => M
+  ): AgentBuilder[Identity, M, String, String] =
     builder[Identity](geminiConfig, modelForIteration)(IdentityMonad)
 
-  def synchronous(geminiConfig: GeminiConfig, modelName: String): AgentBuilder[Identity, GeminiModel.CustomModel] =
+  def synchronous(geminiConfig: GeminiConfig, modelName: String): AgentBuilder[Identity, GeminiModel.CustomModel, String, String] =
     builder[Identity](geminiConfig, modelName)(IdentityMonad)
 }

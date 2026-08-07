@@ -14,7 +14,7 @@ class GeminiAgentIntegrationSpec extends AgentIntegrationSpecBase {
   override def providerName: String = "Gemini"
   override def apiKeyEnvVar: String = "GEMINI_API_KEY"
 
-  override def createAgent(maxIterations: Int, tools: Seq[AgentTool[Identity, _]]): Agent[Identity] = {
+  override def createAgent(maxIterations: Int, tools: Seq[AgentTool[Identity, _]]): Agent[Identity, String, String] = {
     val config = GeminiConfig.fromEnv
     val client = GeminiClient(config)
     val agentConfig = AgentConfig[Identity](maxIterations = maxIterations, userTools = tools)
@@ -32,7 +32,7 @@ class GeminiAgentIntegrationSpec extends AgentIntegrationSpecBase {
       maxIterations: Int,
       tools: Seq[AgentTool[Identity, _]],
       responseSchema: ResponseSchema[T]
-  ): Agent[Identity] =
+  ): Agent[Identity, String, T] =
     GeminiAgent
       .synchronous(GeminiConfig.fromEnv, GeminiModel.Gemini35FlashLite)
       .maxIterations(maxIterations)
