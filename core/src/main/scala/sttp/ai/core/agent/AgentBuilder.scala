@@ -10,8 +10,8 @@ import sttp.tapir.Schema
 
 /** Fluent agent configuration. `M` is the model (or family of models) the agent was created with; builder methods that need a model
   * capability require `Supports[M, C]` evidence, so e.g. adding tools to an agent whose model cannot call tools fails at compile time. `In`
-  * and `Out` are the built agent's input and output types: a fresh builder starts at `String`/`String`; `inputRenderer` (and `input`, see
-  * Task 2) transition `In`, `responseSchema`/`deriveResponseSchema` transition `Out`.
+  * and `Out` are the built agent's input and output types: a fresh builder starts at `String`/`String`; `inputRenderer` and `input`
+  * transition `In`, `responseSchema`/`deriveResponseSchema` transition `Out`.
   */
 final class AgentBuilder[F[_], M <: AIModel, In, Out] private (
     makeBackend: AgentConfig[F] => AgentBackend[F],
