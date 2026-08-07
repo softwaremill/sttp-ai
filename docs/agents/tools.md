@@ -135,7 +135,9 @@ val trip = planner.andThen(guide) // Agent[Identity, String, String] — compile
 
 Each stage runs its own complete loop from scratch, seeded only with the previous stage's rendered output — no
 conversation history carries over. If a stage fails (`Left`), the chain short-circuits and later stages never run;
-on success, `iterations`, `toolCalls`, `usage`, and `llmCalls` aggregate across every stage that ran.
+on success, `iterations`, `toolCalls`, `usage`, and `llmCalls` aggregate across every stage that ran. Interceptors
+are stage-local too: each agent keeps the interceptors it was built with, so a budget interceptor bounds its own
+stage's spend, not the whole chain's.
 
 When two agents are almost but not quite compatible, reach for `map` (adapt the output) or `contramap` (adapt the
 input) instead of rebuilding either agent.
