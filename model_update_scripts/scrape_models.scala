@@ -1,5 +1,5 @@
 //> using scala 3.7.2
-//> using dep com.microsoft.playwright:playwright:1.61.0
+//> using dep com.microsoft.playwright:playwright:1.62.0
 //> using dep org.typelevel::cats-effect::3.7.0
 //> using dep org.typelevel::log4cats-slf4j::2.8.0
 //> using dep ch.qos.logback:logback-classic:1.5.19
