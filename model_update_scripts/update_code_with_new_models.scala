@@ -3,8 +3,8 @@
 //> using dep org.typelevel::log4cats-slf4j::2.8.0
 //> using dep ch.qos.logback:logback-classic:1.5.19
 //> using dep com.github.scopt::scopt::4.1.0
-//> using dep com.github.plokhotnyuk.jsoniter-scala::jsoniter-scala-core::2.39.1
-//> using dep com.github.plokhotnyuk.jsoniter-scala::jsoniter-scala-macros::2.39.1
+//> using dep com.github.plokhotnyuk.jsoniter-scala::jsoniter-scala-core::2.40.1
+//> using dep com.github.plokhotnyuk.jsoniter-scala::jsoniter-scala-macros::2.40.1
 //> using dep org.virtuslab::scala-yaml::0.3.3
 
 import cats.effect.{ExitCode, IO, IOApp}
@@ -401,8 +401,8 @@ object ModelUpdater extends IOApp {
     }
   }
 
-  /** Index of the first line at or after `from` whose trimmed content is non-empty; `lines.length` if none. Shared by
-    * [[isCaseObjectStart]] and [[parseCaseObjects]] so both treat blank lines inside a wrapped definition identically.
+  /** Index of the first line at or after `from` whose trimmed content is non-empty; `lines.length` if none. Shared by [[isCaseObjectStart]]
+    * and [[parseCaseObjects]] so both treat blank lines inside a wrapped definition identically.
     */
   private def nextNonEmptyIndex(lines: collection.Seq[String], from: Int): Int = {
     var j = from
@@ -424,7 +424,7 @@ object ModelUpdater extends IOApp {
     val linesArray = blockLines.toArray
     val result = scala.collection.mutable.ListBuffer.empty[CaseObjectInfo]
     var i = 0
-    while (i < linesArray.length) {
+    while (i < linesArray.length)
       linesArray(i) match {
         case fullPattern(name, modelName) =>
           result += CaseObjectInfo(name, linesArray(i).trim, modelName)
@@ -450,7 +450,6 @@ object ModelUpdater extends IOApp {
               i += 1
           }
       }
-    }
     result.toList
   }
 

@@ -4,8 +4,8 @@
 //> using dep org.typelevel::log4cats-slf4j::2.8.0
 //> using dep ch.qos.logback:logback-classic:1.5.19
 //> using dep com.github.scopt::scopt::4.1.0
-//> using dep com.github.plokhotnyuk.jsoniter-scala::jsoniter-scala-core::2.39.1
-//> using dep com.github.plokhotnyuk.jsoniter-scala::jsoniter-scala-macros::2.39.1
+//> using dep com.github.plokhotnyuk.jsoniter-scala::jsoniter-scala-core::2.40.1
+//> using dep com.github.plokhotnyuk.jsoniter-scala::jsoniter-scala-macros::2.40.1
 
 import cats.effect.{IO, IOApp, Resource}
 import cats.syntax.all.*
