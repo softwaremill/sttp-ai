@@ -52,7 +52,10 @@ trait RecordedInteractions {
   /** The tools offered on any request, deduplicated by name. Note that the agent loop withholds tools on the last allowed iteration, so
     * with `maxIterations(1)` no tools are ever offered and this is empty.
     */
-  final def offeredTools: Seq[OfferedTool] = requests.flatMap(_.toolsOffered).distinctBy(_.name)
+  final def offeredTools: Seq[OfferedTool] = {
+    val seen = scala.collection.mutable.Set.empty[String]
+    requests.flatMap(_.toolsOffered).filter(t => seen.add(t.name))
+  }
 
   /** All (toolName, result) pairs fed back to the model, from the final history, in order. */
   final def toolResultsSent: Seq[(String, String)] =

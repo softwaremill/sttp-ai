@@ -121,7 +121,7 @@ object RetryingBackend {
   private def retryAfter(response: Response[_]): Option[FiniteDuration] =
     response
       .header(HeaderNames.RetryAfter)
-      .flatMap(_.trim.toLongOption)
+      .flatMap(s => scala.util.Try(s.trim.toLong).toOption)
       .filter(seconds => seconds >= 0 && seconds <= MaxRetryAfter.toSeconds)
       .map(_.seconds)
 
