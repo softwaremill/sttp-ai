@@ -99,7 +99,7 @@ object ClaudeManualCodecs {
         // (e.g. a property-less object, since `properties` is a required field; or union types) falls back to `CustomRaw`. Caveat:
         // a decode -> re-encode round trip through this codec is therefore lossy whenever the original schema had structure `Custom`
         // can't express, even though the decode step itself reports no error.
-        case _ => c.as[Tool.Custom].orElse(decodeCustomRaw(c))
+        case _ => c.as[Tool.Custom].left.flatMap(_ => decodeCustomRaw(c))
       }
     ),
     Encoder.instance {

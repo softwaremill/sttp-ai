@@ -19,7 +19,7 @@ class RetryingBackendSpec extends AnyFlatSpec with Matchers {
     DefaultSyncBackend.stub.whenAnyRequest.thenRespondF { _ =>
       val i = attempts.getAndIncrement()
       val (code, headers) = responses(math.min(i, responses.size - 1))
-      ResponseStub.adjust("body", code, headers)
+      ResponseStub.adjust("body", code, headers.toList)
     }
 
   private def noHeaders(codes: StatusCode*): Seq[(StatusCode, Seq[Header])] = codes.map(_ -> Seq.empty[Header])

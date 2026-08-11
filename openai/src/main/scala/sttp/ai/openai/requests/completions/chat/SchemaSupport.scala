@@ -63,7 +63,7 @@ object SchemaSupport {
         .map(_.flatMap(_.asString).toSet)
         .getOrElse(Set.empty)
 
-      val state = value.toList.foldRight(FolderState(Nil, addAdditionalProperties = false, Nil)) { case ((k, v), acc) =>
+      val state: FolderState = value.toList.foldRight(FolderState(Nil, addAdditionalProperties = false, Nil)) { case ((k, v), acc) =>
         if (k == "properties") {
           // The container map's own entries are parameter NAMES (which may themselves be "properties", "type", "required", ...), not
           // schema keywords: fold each entry's schema VALUE, but never fold the container object itself through `onObject` (F6 - doing so

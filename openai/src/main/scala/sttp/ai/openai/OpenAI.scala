@@ -194,8 +194,8 @@ class OpenAI(
       .multipartBody {
         import imageEditsConfig._
         val imageParts = image match {
-          case singleImage :: Nil => Seq(multipartFile("image", singleImage))
-          case _                  => image.map(img => multipartFile("image[]", img))
+          case singleImage :: Nil => List(multipartFile("image", singleImage))
+          case _                  => image.map(img => multipartFile("image[]", img)).toList
         }
         imageParts ++ Seq(
           Some(multipart("prompt", prompt)),
@@ -212,7 +212,7 @@ class OpenAI(
           responseFormat.map(format => multipart("response_format", ResponseFormat.asString(format))),
           stream.map(s => multipart("stream", s.toString)),
           user.map(u => multipart("user", u))
-        ).flatten
+        ).flatten.toList
       }
       .response(asJson_parseErrors[ImageResponse])
 
@@ -274,7 +274,7 @@ class OpenAI(
           size.map(s => multipart("size", s.value)),
           responseFormat.map(format => multipart("response_format", ResponseFormat.asString(format))),
           user.map(multipart("user", _))
-        ).flatten
+        ).flatten.toList
       }
       .response(asJson_parseErrors[ImageResponse])
 
@@ -821,7 +821,7 @@ class OpenAI(
           responseFormat.map(format => multipart("response_format", asJson(format))),
           temperature.map(i => multipart("temperature", i.toString)),
           language.map(multipart("language", _))
-        ).flatten
+        ).flatten.toList
       }
       .response(asJson_parseErrors[AudioResponse])
 
@@ -896,7 +896,7 @@ class OpenAI(
           responseFormat.map(format => multipart("response_format", ResponseFormat.asString(format))),
           temperature.map(t => multipart("temperature", t.toString)),
           language.map(lang => multipart("language", lang.value))
-        ).flatten
+        ).flatten.toList
       }
       .response(asJson_parseErrors[AudioResponse])
 

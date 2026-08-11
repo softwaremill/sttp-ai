@@ -117,7 +117,7 @@ class AkkaClientSpec extends AsyncFlatSpec with Matchers with EitherValues {
     val events = (eventsToProcess :+ emptyEvent) :+ DoneEvent
 
     val delimiter = "\n\n"
-    val streamedResponse = Source(events)
+    val streamedResponse = Source(events.toList)
       .map(_.toString + delimiter)
       .map(ByteString(_))
 
@@ -133,7 +133,7 @@ class AkkaClientSpec extends AsyncFlatSpec with Matchers with EitherValues {
     val events = (eventsToProcess :+ DoneEvent) ++ eventsToProcess
 
     val delimiter = "\n\n"
-    val streamedResponse = Source(events)
+    val streamedResponse = Source(events.toList)
       .map(_.toString + delimiter)
       .map(ByteString(_))
 

@@ -14,7 +14,7 @@ private[agent] class LoopAgent[F[_], In, Out](
     extends Agent[F, In, Out] {
   import LoopAgent.{ContinueLoop, Finished, IterationOutcome}
 
-  private val toolMap = config.userTools.map(t => t.name -> t).toMap
+  private val toolMap: Map[String, AgentTool[F, _]] = config.userTools.map(t => (t.name, t: AgentTool[F, _])).toMap
 
   private val interceptor: AgentInterceptor[F] = AgentInterceptor.compose(config.interceptors)
 
