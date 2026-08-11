@@ -1,4 +1,4 @@
-//> using dep com.softwaremill.sttp.ai::openai:0.6.0
+//> using dep com.softwaremill.sttp.ai::openai:0.8.0
 //> using dep ch.qos.logback:logback-classic:1.5.38
 
 package examples
