@@ -1,4 +1,4 @@
-//> using test.dep org.scalameta::munit::1.3.4
+//> using test.dep org.scalameta::munit::1.3.5
 
 // Run with: scala-cli test update_code_with_new_models.scala update_code_with_new_models.test.scala
 class ParseCaseObjectsTest extends munit.FunSuite {
