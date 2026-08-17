@@ -35,6 +35,41 @@ The `derives io.circe.Codec.AsObject, Schema` clause automatically generates the
 
 See [JSON Schemas: structured outputs & tools](../other/json-schemas.md) for how schema derivation works and how to customise it.
 
+## Deriving tool sets from a service trait
+
+On Scala 3, a whole tool set can be derived from a service trait's methods with `AgentTools.derive` — one tool per public method, without defining an input case class per tool:
+
+```scala mdoc:compile-only
+//> using dep com.softwaremill.sttp.ai::openai:@VERSION@
+
+import sttp.ai.core.agent.*
+import sttp.tapir.Schema.annotations.description
+
+trait WeatherService:
+  @description("Get the current weather for a city")
+  def currentWeather(@description("City name") city: String): String
+
+  @description("Get a multi-day forecast")
+  def forecast(city: String, days: Int): String
+
+class WeatherServiceImpl extends WeatherService:
+  def currentWeather(city: String): String = s"Sunny in $city"
+  def forecast(city: String, days: Int): String = s"$days days of sun in $city"
+
+val tools = AgentTools.derive[WeatherService](WeatherServiceImpl())
+// two AgentTools: "currentWeather" and "forecast"
+```
+
+The rules:
+
+- Every public method with a single (possibly empty) parameter list becomes a tool; methods inherited from parent traits are included. Parameterless accessors (`def foo: String`, `val`s) are skipped.
+- The tool name is the method name; JSON schema properties are the parameter names, with types taken from each parameter's tapir `Schema`. `Option` parameters become optional properties.
+- Each method must carry a `@description` annotation (`sttp.tapir.Schema.annotations.description`) — it becomes the tool description. Parameter-level `@description` annotations become property descriptions.
+- Methods must return `String`. For effectful services use `AgentTools.deriveF[F, MyService]` with methods returning `F[String]`.
+- Invalid shapes — a missing `@description`, overloads, default parameter values, multiple/`using` parameter lists, type parameters, or a parameter type without given `Schema`/`Decoder`/`Encoder` instances — are compile-time errors.
+
+Derivation is **Scala 3 only**: on Scala 2.13, define tools individually with `AgentTool.fromFunction` as shown above.
+
 ## Agent Result
 
 ```scala
