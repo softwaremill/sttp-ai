@@ -45,11 +45,23 @@ object AgentTools {
 
     def fail(msg: String): Nothing = report.errorAndAbort(s"AgentTools.derive[${renderType(sTpe)}]: $msg")
 
+    // Accepts a string literal or any compile-time constant string (e.g. a `final val`), whose value lives in the
+    // argument's ConstantType rather than in a Literal tree.
+    def constText(t: Term): Option[String] = t match {
+      case Literal(StringConstant(text)) => Some(text)
+      case NamedArg(_, inner)            => constText(inner)
+      case _                             =>
+        t.tpe.widenTermRefByName.dealias match {
+          case ConstantType(StringConstant(text)) => Some(text)
+          case _                                  => None
+        }
+    }
+
     def annotationTextOf(sym: Symbol): Option[String] =
       sym.getAnnotation(descriptionSym).map {
-        case Apply(_, List(Literal(StringConstant(text))))              => text
-        case Apply(_, List(NamedArg(_, Literal(StringConstant(text))))) => text
-        case _ => fail(s"the @description annotation on '${sym.name}' must be given a string literal")
+        case Apply(_, List(arg)) =>
+          constText(arg).getOrElse(fail(s"the @description annotation on '${sym.name}' must be given a constant string"))
+        case _ => fail(s"the @description annotation on '${sym.name}' must be given a constant string")
       }
 
     // Annotations are not inherited onto overriding symbols in Scala 3, so when `S` is inferred as an implementation
@@ -67,16 +79,31 @@ object AgentTools {
     }
 
     val excludedOwners = Set(defn.AnyClass, defn.AnyRefClass, defn.ObjectClass)
-    val methods = sTpe.typeSymbol.methodMembers
+    val visibleMembers = sTpe.typeSymbol.methodMembers
       .filterNot(_.isClassConstructor)
       .filterNot(m => m.flags.is(Flags.Synthetic) || m.flags.is(Flags.Artifact))
       .filterNot(m => m.flags.is(Flags.Private) || m.flags.is(Flags.Protected) || m.privateWithin.isDefined)
       .filterNot(m => excludedOwners.contains(m.owner))
       .filterNot(m => m.allOverriddenSymbols.exists(o => excludedOwners.contains(o.owner)))
       .filterNot(_.name.contains("$"))
+
+    val methods = visibleMembers
       .filterNot(m => m.flags.is(Flags.FieldAccessor)) // getters/setters are properties, not tools
       .filter(_.paramSymss.nonEmpty) // parameterless accessors are properties, not tools
       .sortBy(_.name)
+
+    // A parameterless def is skipped as a property, but one that carries @description signals clear intent to expose
+    // a tool — fail loudly instead of silently dropping it.
+    visibleMembers
+      .filterNot(m => m.flags.is(Flags.FieldAccessor))
+      .filter(_.paramSymss.isEmpty)
+      .find(m => descriptionOf(m).isDefined)
+      .foreach { m =>
+        fail(
+          s"method '${m.name}' has a @description annotation but no parameter list; parameterless members are treated as " +
+            "properties, not tools - add an empty parameter list () to expose it as a tool"
+        )
+      }
 
     methods.groupBy(_.name).collect { case (n, ms) if ms.sizeIs > 1 => n }.toList.sorted match {
       case Nil        => ()
@@ -92,6 +119,14 @@ object AgentTools {
         paramTypes: List[TypeRepr]
     ): Expr[AgentTool[F, Tup]] = {
       val arity = params.size
+
+      val optionClass = Symbol.requiredClass("scala.Option")
+      val optionalFlags: List[Boolean] = paramTypes.map { tpe =>
+        tpe.dealias match {
+          case AppliedType(base, _) => base.typeSymbol == optionClass
+          case _                    => false
+        }
+      }
 
       val fieldInstances = params.zip(paramTypes).zipWithIndex.map { case ((p, tpe), i) =>
         tpe.asType match {
@@ -121,35 +156,48 @@ object AgentTools {
       val fieldsExpr = Expr.ofList(fieldInstances.map(_._2))
       val decodersExpr = Expr.ofList(fieldInstances.map(_._3))
       val encodersExpr = Expr.ofList(fieldInstances.map(_._4))
+      val optionalsExpr = Expr(optionalFlags)
 
-      val schemaExpr: Expr[TapirSchema[Tup]] = '{ TapirSchema(SProduct[Tup]($fieldsExpr)) }
+      // The root schema must be named: TapirSchemaToJsonSchema only collects nested named schemas (e.g. case-class
+      // parameters) into $defs when the root itself has a name - an unnamed root leaves dangling $refs that providers
+      // reject.
+      val schemaExpr: Expr[TapirSchema[Tup]] =
+        '{ TapirSchema(SProduct[Tup]($fieldsExpr), name = Some(TapirSchema.SName(${ Expr(m.name) } + "Input"))) }
 
       val codecExpr: Expr[Codec[Tup]] = '{
         new Codec[Tup] {
-          private val names = $namesExpr
-          private val decoders = $decodersExpr
-          private val encoders = $encodersExpr
+          private val names = $namesExpr.toIndexedSeq
+          private val decoders = $decodersExpr.toIndexedSeq
+          private val encoders = $encodersExpr.toIndexedSeq
+          private val optionals = $optionalsExpr.toIndexedSeq
 
-          override def apply(c: io.circe.HCursor): Decoder.Result[Tup] = {
-            val values = new Array[Any](${ Expr(arity) })
-            var i = 0
-            var failure: DecodingFailure = null
-            while (i < values.length && (failure eq null)) {
-              decoders(i).tryDecode(c.downField(names(i))) match {
-                case Right(v) => values(i) = v
-                case Left(f)  => failure = f
+          override def apply(c: io.circe.HCursor): Decoder.Result[Tup] =
+            if (!c.value.isObject) Left(DecodingFailure("Tool arguments must be a JSON object", c.history))
+            else {
+              val values = new Array[Any](${ Expr(arity) })
+              var i = 0
+              var failure: DecodingFailure = null
+              while (i < values.length && (failure eq null)) {
+                decoders(i).tryDecode(c.downField(names(i))) match {
+                  case Right(v) => values(i) = v
+                  case Left(f)  => failure = f
+                }
+                i += 1
               }
-              i += 1
+              if (failure ne null) Left(failure) else Right(Tuple.fromArray(values).asInstanceOf[Tup])
             }
-            if (failure ne null) Left(failure) else Right(Tuple.fromArray(values).asInstanceOf[Tup])
-          }
 
           override def apply(t: Tup): Json = {
+            // Only Option-typed fields drop an encoded Json.Null (absent = None); a null produced by any other
+            // field's encoder is real data and must survive the round-trip.
             val fields = names.iterator
               .zip(t.asInstanceOf[Product].productIterator)
               .zip(encoders.iterator)
-              .map { case ((name, value), enc) => name -> enc.asInstanceOf[Encoder[Any]](value) }
-              .filterNot(_._2.isNull)
+              .zipWithIndex
+              .flatMap { case (((name, value), enc), i) =>
+                val encoded = enc.asInstanceOf[Encoder[Any]](value)
+                if (encoded.isNull && optionals(i)) None else Some(name -> encoded)
+              }
             Json.fromJsonObject(JsonObject.fromIterable(fields.toList))
           }
         }
@@ -189,11 +237,21 @@ object AgentTools {
 
       val (paramTypes, resultType) = sTpe.memberType(m) match {
         case MethodType(_, tps, res) => (tps, res)
-        case other                   => fail(s"method '${m.name}' has an unsupported shape: ${other.show}")
+        case other                   => fail(s"method '${m.name}' has an unsupported shape: ${renderType(other)}")
       }
 
-      if (!(resultType =:= TypeRepr.of[F[String]]))
-        fail(s"method '${m.name}' must return ${TypeRepr.of[F[String]].show}, but returns ${resultType.show}")
+      params.zip(paramTypes).foreach { case (p, tpe) =>
+        tpe match {
+          case ByNameType(_) => fail(s"parameter '${p.name}' of method '${m.name}' is by-name, which is not supported")
+          case _ if tpe.typeSymbol == defn.RepeatedParamClass =>
+            fail(s"parameter '${p.name}' of method '${m.name}' is a vararg, which is not supported")
+          case _ => ()
+        }
+      }
+
+      // <:< (not =:=) so covariant overrides conform, e.g. an impl narrowing Option[String] to Some[String].
+      if (!(resultType <:< TypeRepr.of[F[String]]))
+        fail(s"method '${m.name}' must return ${renderType(TypeRepr.of[F[String]])}, but returns ${renderType(resultType)}")
 
       val tupleTpe = paramTypes.foldRight(TypeRepr.of[EmptyTuple])((t, acc) => TypeRepr.of[*:].appliedTo(List(t, acc)))
       tupleTpe.asType match {

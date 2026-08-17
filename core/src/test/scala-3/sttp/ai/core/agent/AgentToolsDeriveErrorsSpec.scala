@@ -103,4 +103,35 @@ class AgentToolsDeriveErrorsSpec extends AnyFlatSpec with Matchers {
     """)
     messagesOf(errors) should include("List[")
   }
+
+  it should "reject by-name parameters with a targeted error" in {
+    val errors = typeCheckErrors("""
+      trait ByName {
+        @sttp.tapir.Schema.annotations.description("d") def a(x: => Int): String
+      }
+      sttp.ai.core.agent.AgentTools.derive[ByName](null.asInstanceOf[ByName])
+    """)
+    messagesOf(errors) should include("is by-name")
+  }
+
+  it should "reject vararg parameters with a targeted error" in {
+    val errors = typeCheckErrors("""
+      trait Vararg {
+        @sttp.tapir.Schema.annotations.description("d") def a(xs: Int*): String
+      }
+      sttp.ai.core.agent.AgentTools.derive[Vararg](null.asInstanceOf[Vararg])
+    """)
+    messagesOf(errors) should include("is a vararg")
+  }
+
+  it should "reject a parameterless method that carries @description instead of silently skipping it" in {
+    val errors = typeCheckErrors("""
+      trait Acc {
+        @sttp.tapir.Schema.annotations.description("annotated accessor") def status: String
+        @sttp.tapir.Schema.annotations.description("real tool") def go(x: Int): String
+      }
+      sttp.ai.core.agent.AgentTools.derive[Acc](null.asInstanceOf[Acc])
+    """)
+    messagesOf(errors) should include("no parameter list")
+  }
 }

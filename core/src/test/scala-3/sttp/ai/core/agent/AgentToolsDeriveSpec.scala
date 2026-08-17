@@ -6,6 +6,7 @@ import org.scalatest.OptionValues
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
 import sttp.shared.Identity
+import sttp.tapir.Schema
 import sttp.tapir.Schema.annotations.description
 
 class AgentToolsDeriveSpec extends AnyFlatSpec with Matchers with OptionValues {
@@ -168,6 +169,71 @@ class AgentToolsDeriveSpec extends AnyFlatSpec with Matchers with OptionValues {
     tools.map(_.name) shouldBe Seq("doThing")
   }
 
+  case class Address(street: String, zip: String) derives io.circe.Codec.AsObject, Schema
+
+  trait AddressService {
+    @description("Locate an address")
+    def locate(addr: Address): String
+  }
+
+  class AddressImpl extends AddressService {
+    override def locate(addr: Address): String = s"${addr.street}/${addr.zip}"
+  }
+
+  it should "reference case-class parameter schemas through $defs with no dangling refs" in {
+    val tools = AgentTools.derive[AddressService](new AddressImpl)
+    val raw = tools.find(_.name == "locate").value.rawJsonSchema
+    val ref = raw.hcursor.downField("properties").downField("addr").get[String]("$ref").toOption.value
+    ref should startWith("#/$defs/")
+    val defName = ref.stripPrefix("#/$defs/")
+    raw.hcursor.downField("$defs").downField(defName).downField("properties").keys.value.toSet shouldBe Set("street", "zip")
+  }
+
+  it should "decode case-class arguments and invoke the implementation" in {
+    val tools = AgentTools.derive[AddressService](new AddressImpl)
+    val args = Json.obj("addr" -> Json.obj("street" -> "Main".asJson, "zip" -> "30-001".asJson))
+    run(tools.find(_.name == "locate").value, args) shouldBe "Main/30-001"
+  }
+
+  it should "reject non-object arguments, including for no-arg tools" in {
+    val tools = AgentTools.derive[RichService](new RichImpl)
+    tools.find(_.name == "now").value.codec.decodeJson(Json.fromString("junk")).isLeft shouldBe true
+    tools.find(_.name == "search").value.codec.decodeJson(Json.fromInt(3)).isLeft shouldBe true
+  }
+
+  object DescriptionConstants {
+    final val AddDescription = "Add via constant"
+  }
+
+  trait ConstDescService {
+    @description(DescriptionConstants.AddDescription)
+    def add(a: Int, b: Int): String
+  }
+
+  it should "accept compile-time constant strings as @description arguments" in {
+    val tools = AgentTools.derive[ConstDescService](new ConstDescService {
+      override def add(a: Int, b: Int): String = s"${a + b}"
+    })
+    tools.head.description shouldBe "Add via constant"
+  }
+
+  class Nully
+  given io.circe.Encoder[Nully] = _ => Json.Null
+  given io.circe.Decoder[Nully] = _ => Right(new Nully)
+  given Schema[Nully] = Schema.string.as[Nully]
+
+  trait NullService {
+    @description("Null probe")
+    def probe(marker: Nully, note: Option[String]): String
+  }
+
+  it should "keep a legitimately null-encoded non-Option field while dropping absent Options" in {
+    val tools = AgentTools.derive[NullService](new NullService {
+      override def probe(marker: Nully, note: Option[String]): String = "ok"
+    })
+    codecRoundTrip(tools.head, Json.obj("marker" -> Json.Null)) shouldBe Json.obj("marker" -> Json.Null)
+  }
+
   behavior of "AgentTools.deriveF"
 
   it should "derive tools whose execute returns F[String]" in {
@@ -175,5 +241,19 @@ class AgentToolsDeriveSpec extends AnyFlatSpec with Matchers with OptionValues {
     tools.map(_.name) shouldBe Seq("fetch", "listAll")
     runF(tools.find(_.name == "fetch").value, Json.obj("id" -> 7.asJson)) shouldBe Some("fetched:7")
     runF(tools.find(_.name == "listAll").value, Json.obj()) shouldBe None
+  }
+
+  trait CovariantService {
+    @description("Fetch by id")
+    def fetch(id: Int): Option[String]
+  }
+
+  class CovariantImpl extends CovariantService {
+    override def fetch(id: Int): Some[String] = Some(s"got:$id")
+  }
+
+  it should "accept covariantly narrowed return types when deriving from an implementation class" in {
+    val tools = AgentTools.deriveF[Option, CovariantImpl](new CovariantImpl)
+    runF(tools.head, Json.obj("id" -> 5.asJson)) shouldBe Some("got:5")
   }
 }
