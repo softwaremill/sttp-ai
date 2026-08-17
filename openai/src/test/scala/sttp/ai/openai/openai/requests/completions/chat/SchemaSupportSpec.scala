@@ -113,6 +113,12 @@ class SchemaSupportSpec extends AnyFlatSpec with Matchers with EitherValues {
     result shouldBe expected
   }
 
+  it should "add empty properties to an object root that has a type but no properties" in {
+    val result = normalize("""{"type":"object"}""")
+    val expected = parse("""{"type":"object","properties":{},"additionalProperties":false}""").value
+    result shouldBe expected
+  }
+
   it should "still skip additionalProperties on discriminated unions" in {
     val result = normalize(
       """{"type":"object",
