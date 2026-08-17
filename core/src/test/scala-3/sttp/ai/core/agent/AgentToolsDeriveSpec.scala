@@ -127,4 +127,29 @@ class AgentToolsDeriveSpec extends AnyFlatSpec with Matchers with OptionValues {
     tools.map(_.name) shouldBe Seq("baseOp", "extendedOp")
     run(tools.head, Json.obj("x" -> 42.asJson)) shouldBe "base:42"
   }
+
+  trait EffectfulService {
+    @description("Fetch by id")
+    def fetch(id: Int): Option[String]
+
+    @description("List all")
+    def listAll(): Option[String]
+  }
+
+  class EffectfulImpl extends EffectfulService {
+    override def fetch(id: Int): Option[String] = Some(s"fetched:$id")
+    override def listAll(): Option[String] = None
+  }
+
+  private def runF[F[_], T](tool: AgentTool[F, T], args: Json): F[String] =
+    tool.execute(tool.codec.decodeJson(args).fold(e => fail(s"decode failed: $e"), identity))
+
+  behavior of "AgentTools.deriveF"
+
+  it should "derive tools whose execute returns F[String]" in {
+    val tools: Seq[AgentTool[Option, ?]] = AgentTools.deriveF[Option, EffectfulService](new EffectfulImpl)
+    tools.map(_.name) shouldBe Seq("fetch", "listAll")
+    runF(tools.find(_.name == "fetch").value, Json.obj("id" -> 7.asJson)) shouldBe Some("fetched:7")
+    runF(tools.find(_.name == "listAll").value, Json.obj()) shouldBe None
+  }
 }
