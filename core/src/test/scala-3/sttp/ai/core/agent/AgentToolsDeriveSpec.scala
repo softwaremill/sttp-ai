@@ -144,6 +144,30 @@ class AgentToolsDeriveSpec extends AnyFlatSpec with Matchers with OptionValues {
   private def runF[F[_], T](tool: AgentTool[F, T], args: Json): F[String] =
     tool.execute(tool.codec.decodeJson(args).fold(e => fail(s"decode failed: $e"), identity))
 
+  it should "read @description annotations from the trait when S is inferred from an implementation class" in {
+    val tools = AgentTools.derive(new WeatherImpl)
+    tools.map(_.name) shouldBe Seq("currentWeather", "forecast")
+    tools.map(_.description) shouldBe Seq("Get current weather", "Get a forecast")
+    val raw = tools.find(_.name == "currentWeather").value.rawJsonSchema
+    raw.hcursor.downField("properties").downField("city").get[String]("description") shouldBe Right("IATA city code")
+  }
+
+  trait TraitWithVar {
+    var counter: Int = 0
+
+    @description("Do the thing")
+    def doThing(x: Int): String
+  }
+
+  class TraitWithVarImpl extends TraitWithVar {
+    override def doThing(x: Int): String = s"did:$x"
+  }
+
+  it should "skip var accessors (getter and setter) and derive only the annotated method" in {
+    val tools = AgentTools.derive[TraitWithVar](new TraitWithVarImpl)
+    tools.map(_.name) shouldBe Seq("doThing")
+  }
+
   behavior of "AgentTools.deriveF"
 
   it should "derive tools whose execute returns F[String]" in {

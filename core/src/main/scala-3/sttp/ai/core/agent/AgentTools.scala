@@ -45,12 +45,26 @@ object AgentTools {
 
     def fail(msg: String): Nothing = report.errorAndAbort(s"AgentTools.derive[${renderType(sTpe)}]: $msg")
 
-    def descriptionOf(sym: Symbol): Option[String] =
+    def annotationTextOf(sym: Symbol): Option[String] =
       sym.getAnnotation(descriptionSym).map {
         case Apply(_, List(Literal(StringConstant(text))))              => text
         case Apply(_, List(NamedArg(_, Literal(StringConstant(text))))) => text
         case _ => fail(s"the @description annotation on '${sym.name}' must be given a string literal")
       }
+
+    // Annotations are not inherited onto overriding symbols in Scala 3, so when `S` is inferred as an implementation
+    // class (e.g. `AgentTools.derive(new WeatherImpl)`), `m` is the impl's method and carries no annotations of its
+    // own even though the trait method it overrides does. Fall back through `allOverriddenSymbols`, first hit wins.
+    def descriptionOf(sym: Symbol): Option[String] =
+      (sym :: sym.allOverriddenSymbols.toList).view.flatMap(annotationTextOf).headOption
+
+    // Same fallback for parameter descriptions: if the method's own parameter symbol has no annotation, check the
+    // corresponding parameter (by position in the single term parameter list) of each overridden method.
+    def paramDescriptionOf(m: Symbol, paramIndex: Int, p: Symbol): Option[String] = {
+      def paramOfOverride(o: Symbol): Option[Symbol] =
+        o.paramSymss.filterNot(_.exists(_.isTypeParam)).flatten.lift(paramIndex)
+      (p :: m.allOverriddenSymbols.toList.flatMap(paramOfOverride)).view.flatMap(annotationTextOf).headOption
+    }
 
     val excludedOwners = Set(defn.AnyClass, defn.AnyRefClass, defn.ObjectClass)
     val methods = sTpe.typeSymbol.methodMembers
@@ -60,6 +74,7 @@ object AgentTools {
       .filterNot(m => excludedOwners.contains(m.owner))
       .filterNot(m => m.allOverriddenSymbols.exists(o => excludedOwners.contains(o.owner)))
       .filterNot(_.name.contains("$"))
+      .filterNot(m => m.flags.is(Flags.FieldAccessor)) // getters/setters are properties, not tools
       .filter(_.paramSymss.nonEmpty) // parameterless accessors are properties, not tools
       .sortBy(_.name)
 
@@ -89,7 +104,7 @@ object AgentTools {
             val decoder = Expr.summon[Decoder[ft]].getOrElse(missing(s"io.circe.Decoder[$tpeName]"))
             val encoder = Expr.summon[Encoder[ft]].getOrElse(missing(s"io.circe.Encoder[$tpeName]"))
             val described: Expr[TapirSchema[ft]] =
-              descriptionOf(p).fold(schema)(d => '{ $schema.description(${ Expr(d) }) })
+              paramDescriptionOf(m, i, p).fold(schema)(d => '{ $schema.description(${ Expr(d) }) })
             val idx = Expr(i)
             val field: Expr[SProductField[Tup]] = '{
               SProductField[Tup, ft](
