@@ -33,11 +33,17 @@ object AgentTools {
     val sTpe = TypeRepr.of[S]
     val descriptionSym = TypeRepr.of[TapirSchema.annotations.description].typeSymbol
 
-    // Note: uses the bare symbol name rather than `sTpe.show`. When this macro is exercised via
-    // scala.compiletime.testing.typeCheckErrors (see AgentToolsDeriveErrorsSpec), `S` is a type declared inside the
-    // typechecked snippet; `.show`ing such a type after other symbol lookups (methodMembers, getAnnotation, ...)
-    // have run triggers a dotty CyclicReference in that harness. The plain symbol name avoids forcing that printing.
-    def fail(msg: String): Nothing = report.errorAndAbort(s"AgentTools.derive[${sTpe.typeSymbol.name}]: $msg")
+    // Renders a type from bare symbol names (recursing into type arguments) rather than via `tpe.show`. When this
+    // macro is exercised via scala.compiletime.testing.typeCheckErrors (see AgentToolsDeriveErrorsSpec), types can be
+    // declared inside the typechecked snippet; `.show`ing such a type after other symbol lookups (methodMembers,
+    // getAnnotation, ...) have run triggers a dotty CyclicReference in that harness. Recursing through symbol names
+    // avoids forcing that printing while still preserving type arguments (e.g. `List[Foo]`, not just `List`).
+    def renderType(t: TypeRepr): String = t.dealias match {
+      case AppliedType(base, args) => s"${base.typeSymbol.name}[${args.map(renderType).mkString(", ")}]"
+      case other                   => other.typeSymbol.name
+    }
+
+    def fail(msg: String): Nothing = report.errorAndAbort(s"AgentTools.derive[${renderType(sTpe)}]: $msg")
 
     def descriptionOf(sym: Symbol): Option[String] =
       sym.getAnnotation(descriptionSym).map {
@@ -77,8 +83,8 @@ object AgentTools {
           case '[ft] =>
             def missing(what: String): Nothing =
               fail(s"no given $what for parameter '${p.name}' of method '${m.name}'")
-            // `.typeSymbol.name` rather than `.show`, for the same CyclicReference reason as in `fail` above.
-            val tpeName = tpe.typeSymbol.name
+            // `renderType` rather than `.show`, for the same CyclicReference reason as in `fail` above.
+            val tpeName = renderType(tpe)
             val schema = Expr.summon[TapirSchema[ft]].getOrElse(missing(s"sttp.tapir.Schema[$tpeName]"))
             val decoder = Expr.summon[Decoder[ft]].getOrElse(missing(s"io.circe.Decoder[$tpeName]"))
             val encoder = Expr.summon[Encoder[ft]].getOrElse(missing(s"io.circe.Encoder[$tpeName]"))
