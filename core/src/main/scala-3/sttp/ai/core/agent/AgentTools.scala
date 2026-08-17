@@ -33,7 +33,11 @@ object AgentTools {
     val sTpe = TypeRepr.of[S]
     val descriptionSym = TypeRepr.of[TapirSchema.annotations.description].typeSymbol
 
-    def fail(msg: String): Nothing = report.errorAndAbort(s"AgentTools.derive[${sTpe.show}]: $msg")
+    // Note: uses the bare symbol name rather than `sTpe.show`. When this macro is exercised via
+    // scala.compiletime.testing.typeCheckErrors (see AgentToolsDeriveErrorsSpec), `S` is a type declared inside the
+    // typechecked snippet; `.show`ing such a type after other symbol lookups (methodMembers, getAnnotation, ...)
+    // have run triggers a dotty CyclicReference in that harness. The plain symbol name avoids forcing that printing.
+    def fail(msg: String): Nothing = report.errorAndAbort(s"AgentTools.derive[${sTpe.typeSymbol.name}]: $msg")
 
     def descriptionOf(sym: Symbol): Option[String] =
       sym.getAnnotation(descriptionSym).map {
@@ -73,9 +77,11 @@ object AgentTools {
           case '[ft] =>
             def missing(what: String): Nothing =
               fail(s"no given $what for parameter '${p.name}' of method '${m.name}'")
-            val schema = Expr.summon[TapirSchema[ft]].getOrElse(missing(s"sttp.tapir.Schema[${tpe.show}]"))
-            val decoder = Expr.summon[Decoder[ft]].getOrElse(missing(s"io.circe.Decoder[${tpe.show}]"))
-            val encoder = Expr.summon[Encoder[ft]].getOrElse(missing(s"io.circe.Encoder[${tpe.show}]"))
+            // `.typeSymbol.name` rather than `.show`, for the same CyclicReference reason as in `fail` above.
+            val tpeName = tpe.typeSymbol.name
+            val schema = Expr.summon[TapirSchema[ft]].getOrElse(missing(s"sttp.tapir.Schema[$tpeName]"))
+            val decoder = Expr.summon[Decoder[ft]].getOrElse(missing(s"io.circe.Decoder[$tpeName]"))
+            val encoder = Expr.summon[Encoder[ft]].getOrElse(missing(s"io.circe.Encoder[$tpeName]"))
             val described: Expr[TapirSchema[ft]] =
               descriptionOf(p).fold(schema)(d => '{ $schema.description(${ Expr(d) }) })
             val idx = Expr(i)
