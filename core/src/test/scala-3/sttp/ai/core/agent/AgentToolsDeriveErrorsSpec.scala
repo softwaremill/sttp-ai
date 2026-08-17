@@ -92,4 +92,15 @@ class AgentToolsDeriveErrorsSpec extends AnyFlatSpec with Matchers {
     """)
     messagesOf(errors) should include("no given sttp.tapir.Schema")
   }
+
+  it should "preserve type arguments in the error message for a generic parameter type without a given Schema" in {
+    val errors = typeCheckErrors("""
+      class Opaque(val x: Int)
+      trait NoSchema {
+        @sttp.tapir.Schema.annotations.description("d") def a(o: List[Opaque]): String
+      }
+      sttp.ai.core.agent.AgentTools.derive[NoSchema](null.asInstanceOf[NoSchema])
+    """)
+    messagesOf(errors) should include("List[")
+  }
 }

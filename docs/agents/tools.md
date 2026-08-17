@@ -67,6 +67,7 @@ The rules:
 - Each method must carry a `@description` annotation (`sttp.tapir.Schema.annotations.description`) — it becomes the tool description. Parameter-level `@description` annotations become property descriptions.
 - Methods must return `String`. For effectful services use `AgentTools.deriveF[F, MyService]` with methods returning `F[String]`.
 - Invalid shapes — a missing `@description`, overloads, default parameter values, multiple/`using` parameter lists, type parameters, or a parameter type without given `Schema`/`Decoder`/`Encoder` instances — are compile-time errors.
+- All inherited public methods must conform to these rules — there is no per-method exclusion mechanism — so a service trait should not mix tool methods with unrelated public methods (e.g. extending `AutoCloseable` won't work).
 
 Derivation is **Scala 3 only**: on Scala 2.13, define tools individually with `AgentTool.fromFunction` as shown above.
 
