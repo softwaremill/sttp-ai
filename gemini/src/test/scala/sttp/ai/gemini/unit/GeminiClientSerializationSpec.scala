@@ -69,7 +69,7 @@ class GeminiClientSerializationSpec extends AnyFlatSpec with Matchers with Eithe
   it should "preserve replayed function_call arguments and function_result results verbatim" in {
     val arguments = parse("""{"city":"Paris","unit":null}""").value
     val result = parse("""{"temp":20,"error":null}""").value
-    val request = InteractionRequest(
+    val request: InteractionRequest = InteractionRequest(
       model = testModel,
       input = InteractionInput.StepsInput(
         List(Step.FunctionCall("c1", "get_weather", arguments), Step.FunctionResult("c1", "get_weather", result))

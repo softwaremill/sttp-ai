@@ -40,7 +40,7 @@ Add the following dependency:
 // For streaming support, add one or more (these modules are shared across OpenAI, Claude, and Gemini):
 "com.softwaremill.sttp.ai" %% "fs2" % "0.8.0"    // cats-effect/fs2
 "com.softwaremill.sttp.ai" %% "zio" % "0.8.0"    // ZIO
-"com.softwaremill.sttp.ai" %% "akka" % "0.8.0"   // Akka Streams (Scala 2.13 only)
+"com.softwaremill.sttp.ai" %% "akka" % "0.8.0"   // Akka Streams (Scala 2.12/2.13 only)
 "com.softwaremill.sttp.ai" %% "pekko" % "0.8.0"  // Pekko Streams
 "com.softwaremill.sttp.ai" %% "ox" % "0.8.0"    // Ox direct-style (Scala 3 only)
 ```
@@ -55,12 +55,12 @@ Add the following dependency:
 // For streaming support, add one or more (these modules are shared across OpenAI, Claude, and Gemini):
 "com.softwaremill.sttp.ai" %% "fs2" % "0.8.0"    // cats-effect/fs2
 "com.softwaremill.sttp.ai" %% "zio" % "0.8.0"    // ZIO
-"com.softwaremill.sttp.ai" %% "akka" % "0.8.0"   // Akka Streams (Scala 2.13 only)
+"com.softwaremill.sttp.ai" %% "akka" % "0.8.0"   // Akka Streams (Scala 2.12/2.13 only)
 "com.softwaremill.sttp.ai" %% "pekko" % "0.8.0"  // Pekko Streams
 "com.softwaremill.sttp.ai" %% "ox" % "0.8.0"    // Ox direct-style (Scala 3 only)
 ```
 
-sttp-openai is available for Scala 2.13 and Scala 3
+sttp-openai is available for Scala 2.12, 2.13 and Scala 3
 
 Then head to the [documentation](https://sttp-ai.softwaremill.com) for usage examples: OpenAI, Claude, and Gemini clients, streaming, structured outputs, tool calling, and the agent loop — plus the `agent-testkit` module for testing agents without calling a paid API.
 

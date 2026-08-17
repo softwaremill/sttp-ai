@@ -12,7 +12,7 @@ sttp-ai is a Scala library providing a non-official client wrapper for OpenAI, C
 - Native Gemini (Google) API support via the Interactions API with dedicated module
 - OpenAI-compatible API support (Ollama, Grok, OpenRouter, etc.)
 - Streaming support for all major effect systems
-- Cross-platform: Scala 2.13.18 and Scala 3.3.8
+- Cross-platform: Scala 2.12.20, 2.13.18 and Scala 3.3.8
 - Agent loop tools loadable from [MCP](https://modelcontextprotocol.io) servers (`mcp` module, Scala 3 only, via [chimp](https://github.com/softwaremill/chimp)), in addition to manually defined `AgentTool`s
 
 ## Development Commands
@@ -137,7 +137,7 @@ Each streaming module (`streaming/{effect-system}/`) provides extensions for **a
   - Claude: Requires `ANTHROPIC_API_KEY`, minimal token usage
   - Gemini: Requires `GEMINI_API_KEY`, minimal token usage
   - Auto-skip if API key not set
-- **Cross-building**: sbt-projectmatrix for Scala 2.13.18 & 3.3.8
+- **Cross-building**: sbt-projectmatrix for Scala 2.12.20, 2.13.18 & 3.3.8
 
 ## Client Implementation Patterns
 

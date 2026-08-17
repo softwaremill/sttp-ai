@@ -19,7 +19,7 @@ sttp-ai uses [sttp client](https://github.com/softwaremill/sttp) to describe req
 
 ## Why sttp-ai?
 
-sttp-ai implements the native APIs of all three major providers — OpenAI, Claude, and Gemini — in one library, rather than funnelling everything through an OpenAI-compatibility shim. You bring your own effect system: cats-effect, ZIO, Akka/Pekko Streams, direct-style [Ox](https://github.com/softwaremill/ox), or plain blocking calls. Structured-output schemas and tool definitions are derived from case classes instead of written by hand, and the built-in agent loop gives you typed tools and typed results, with tools loadable from MCP servers. Cross-built for Scala 2.13 and Scala 3, with Scala Native support (Scala 3) for the core and provider modules.
+sttp-ai implements the native APIs of all three major providers — OpenAI, Claude, and Gemini — in one library, rather than funnelling everything through an OpenAI-compatibility shim. You bring your own effect system: cats-effect, ZIO, Akka/Pekko Streams, direct-style [Ox](https://github.com/softwaremill/ox), or plain blocking calls. Structured-output schemas and tool definitions are derived from case classes instead of written by hand, and the built-in agent loop gives you typed tools and typed results, with tools loadable from MCP servers. Cross-built for Scala 2.12, 2.13 and Scala 3, with Scala Native support (Scala 3) for the core and provider modules.
 
 ```{eval-rst}
 .. toctree::
