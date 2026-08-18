@@ -228,6 +228,24 @@ class SchemaSupportSpec extends AnyFlatSpec with Matchers with EitherValues {
     result shouldBe expected
   }
 
+  it should "give a union variant additionalProperties:false while keeping the root's own required list" in {
+    val rawSchema =
+      """{"type":"object",
+        |"required":["result"],
+        |"properties":{"result":{"anyOf":[
+        |  {"type":"object",
+        |   "properties":{"kind":{"type":"string","enum":["Refund"]},"orderId":{"type":"string"}},
+        |   "required":["kind","orderId"]}
+        |]}}}""".stripMargin
+    val result = normalize(rawSchema)
+
+    result.hcursor.downField("required").as[List[String]] shouldBe Right(List("result"))
+
+    val variant = result.hcursor.downField("properties").downField("result").downField("anyOf").downArray
+    variant.get[Boolean]("additionalProperties") shouldBe Right(false)
+    variant.downField("required").as[Set[String]] shouldBe Right(Set("kind", "orderId"))
+  }
+
   "the faithful codec" should "no longer inject additionalProperties or rewrite required" in {
     val rawSchema = """{"type":"object","properties":{"a":{"type":"string"},"b":{"type":"integer"}},"required":["a"]}"""
     val schema = parse(rawSchema).value.as[Schema](sttp.apispec.circe.schemaDecoder).value

@@ -123,7 +123,8 @@ case-class-like object schema. The variant name defaults to the class's simple n
 explicit API below to customise it.
 
 On Scala 2.13 — or for sealed traits on either version — list the variants explicitly; the wire shape and codec
-are identical:
+are identical (instances shown with Scala 3 `derives` syntax; on Scala 2.13 define the same instances with
+`deriveCodec` and `Schema.derived` implicit vals):
 
 ```scala mdoc:compile-only
 //> using dep com.softwaremill.sttp.ai::openai:@VERSION@
