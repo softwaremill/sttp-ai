@@ -351,6 +351,14 @@ object ChatRequestBody {
     case object GPT5Mini20250807 extends ChatCompletionModel("gpt-5-mini-2025-08-07") with Capability.All
     case object GPT5Nano extends ChatCompletionModel("gpt-5-nano") with Capability.All
     case object GPT5Nano20250807 extends ChatCompletionModel("gpt-5-nano-2025-08-07") with Capability.All
+    case object GPT52 extends ChatCompletionModel("gpt-5.2") with Capability.All
+    case object GPT54Mini extends ChatCompletionModel("gpt-5.4-mini") with Capability.All
+    case object GPT54Nano extends ChatCompletionModel("gpt-5.4-nano") with Capability.All
+    case object GPT54 extends ChatCompletionModel("gpt-5.4") with Capability.All
+    case object GPT55 extends ChatCompletionModel("gpt-5.5") with Capability.All
+    case object GPT56Luna extends ChatCompletionModel("gpt-5.6-luna") with Capability.All
+    case object GPT56Terra extends ChatCompletionModel("gpt-5.4-terra") with Capability.All
+    case object GPT56Sol extends ChatCompletionModel("gpt-5-6-sol") with Capability.All
     case object O1 extends ChatCompletionModel("o1") with Capability.All
     case object O120241217 extends ChatCompletionModel("o1-2024-12-17") with Capability.All
     case object O1Mini extends ChatCompletionModel("o1-mini") with Capability.Reasoning
