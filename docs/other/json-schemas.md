@@ -89,3 +89,53 @@ val jsonSchema: Schema =
 ```
 
 Where raw JSON is expected instead (Gemini's `Tool.Function` parameters, Claude's `Tool.CustomRaw`), build the `io.circe.Json` value directly — see the [Gemini structured-outputs page](../gemini/structured-outputs.md) for an example.
+
+## Union types: structured intent classification
+
+On Scala 3, a response schema can be derived for a union type, so a classifier agent returns one of several
+intents and the caller dispatches with an exhaustive `match`:
+
+```scala mdoc:compile-only
+//> using dep com.softwaremill.sttp.ai::openai:@VERSION@
+
+import io.circe.Codec
+import sttp.ai.core.agent.*
+import sttp.tapir.Schema
+
+final case class Refund(orderId: String) derives Codec.AsObject, Schema
+final case class Complaint(topic: String) derives Codec.AsObject, Schema
+final case class GeneralQuery() derives Codec.AsObject, Schema
+
+val intentSchema: ResponseSchema[Refund | Complaint | GeneralQuery] =
+  UnionResponseSchema.derive[Refund | Complaint | GeneralQuery]("Classify the user's intent")
+```
+
+The model sees a uniform wire shape that works across OpenAI (including strict mode, which forbids `anyOf` at the
+schema root), Claude, and Gemini: a root object with a single required `result` property holding an `anyOf` of the
+variants, each variant carrying a required `kind` discriminator pinned to the variant's name:
+
+```json
+{"result": {"kind": "Refund", "orderId": "o-1"}}
+```
+
+Each union member needs given tapir `Schema`, circe `Encoder`/`Decoder`, and `ClassTag` instances, and must be a
+case-class-like object schema. The variant name defaults to the class's simple name; use `Variant.named` with the
+explicit API below to customise it.
+
+On Scala 2.13 — or for sealed traits on either version — list the variants explicitly; the wire shape and codec
+are identical:
+
+```scala mdoc:compile-only
+//> using dep com.softwaremill.sttp.ai::openai:@VERSION@
+
+import io.circe.Codec
+import sttp.ai.core.agent.*
+import sttp.tapir.Schema
+
+sealed trait Intent
+final case class Refund(orderId: String) extends Intent derives Codec.AsObject, Schema
+final case class Complaint(topic: String) extends Intent derives Codec.AsObject, Schema
+
+val intentSchema: ResponseSchema[Intent] =
+  ResponseSchema.oneOf[Intent](Variant.named[Refund]("refund_request"), Variant[Complaint])
+```
