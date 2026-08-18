@@ -60,6 +60,9 @@ class ResponseSchemaOneOfSpec extends AnyFlatSpec with Matchers with OptionValue
     variants.foreach { v =>
       v.hcursor.downField("required").as[Vector[String]].toOption.value should contain("kind")
       v.hcursor.downField("properties").downField("kind").get[String]("type") shouldBe Right("string")
+      // kind must be the FIRST property: structured-output grammars constrain generation to property order, and a
+      // trailing discriminator forces models into the empty variant (verified live on OpenAI strict and Claude).
+      v.hcursor.downField("properties").keys.value.head shouldBe "kind"
     }
   }
 
