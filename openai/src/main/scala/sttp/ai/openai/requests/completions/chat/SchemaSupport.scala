@@ -75,6 +75,15 @@ object SchemaSupport {
             addAdditionalProperties = true,
             requiredProperties = v.asObject.fold(List.empty[String])(_.keys.toList)
           )
+        } else if (k == "$defs" || k == "definitions") {
+          // Same container rule as "properties": the entries are definition NAMES, not schema keywords. Fold each
+          // definition's schema VALUE, but never fold the container itself through `onObject` - a definition literally
+          // named "properties"/"type" must not be mistaken for a keyword of the container.
+          val foldedDefs = v.asObject match {
+            case Some(defs) => Json.fromJsonObject(JsonObject.fromIterable(defs.toList.map { case (n, s) => n -> s.foldWith(this) }))
+            case None       => v.foldWith(this)
+          }
+          acc.copy(fields = (k, foldedDefs) :: acc.fields)
         } else if (k == "type")
           acc.copy(
             fields = (k, v.foldWith(this)) :: acc.fields,
