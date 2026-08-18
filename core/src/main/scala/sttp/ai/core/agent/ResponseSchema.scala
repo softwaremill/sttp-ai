@@ -61,14 +61,17 @@ object ResponseSchema {
       require(!props.contains("kind"), s"variant '${v.name}' already defines a 'kind' property, which is reserved for the discriminator")
       val nestedDefs = obj("$defs").flatMap(_.asObject).map(_.toMap).getOrElse(Map.empty[String, Json])
       val required = obj("required").flatMap(_.asArray).getOrElse(Vector.empty)
+      // The discriminator must be the FIRST property: structured-output grammars (OpenAI strict mode, Claude) constrain
+      // generation to the schema's property order, and models lead with the discriminator - if `kind` were last, emitting
+      // it first would eliminate every variant except those whose only property is `kind` (verified live: all non-empty
+      // variants became undecodable and the model was forced into the empty variant).
+      val kindSchema = Json.obj("type" -> Json.fromString("string"), "enum" -> Json.arr(Json.fromString(v.name)))
       val withKind = obj
         .remove("$defs")
         .remove("$schema")
         .add(
           "properties",
-          Json.fromJsonObject(
-            props.add("kind", Json.obj("type" -> Json.fromString("string"), "enum" -> Json.arr(Json.fromString(v.name))))
-          )
+          Json.fromJsonObject(JsonObject.fromIterable(("kind" -> kindSchema) +: props.toList))
         )
         .add("required", Json.fromValues(Json.fromString("kind") +: required))
       (withKind, nestedDefs)
