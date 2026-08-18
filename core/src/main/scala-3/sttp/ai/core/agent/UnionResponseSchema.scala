@@ -31,6 +31,7 @@ object UnionResponseSchema {
     // it crashes dotty with a CyclicReference in that harness. Render from symbol names instead.
     def renderType(t: TypeRepr): String = t.dealias match {
       case AppliedType(base, args) => s"${base.typeSymbol.name}[${args.map(renderType).mkString(", ")}]"
+      case OrType(left, right)     => s"${renderType(left)} | ${renderType(right)}"
       case other                   => other.typeSymbol.name
     }
 
@@ -45,7 +46,7 @@ object UnionResponseSchema {
     if (members.sizeIs < 2)
       fail("the type argument must be a union type with at least two members; for a single type use ResponseSchema.derived")
 
-    members.foldLeft(List.empty[TypeRepr]) { (seen, t) =>
+    val _ = members.foldLeft(List.empty[TypeRepr]) { (seen, t) =>
       if (seen.exists(_ =:= t)) fail(s"duplicate union member ${renderType(t)}")
       t :: seen
     }

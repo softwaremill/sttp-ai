@@ -27,7 +27,12 @@ object ResponseSchema {
     *
     * Wire shape (uniform across providers; OpenAI strict mode forbids anyOf at the schema root, hence the wrapper object): a root object
     * with a single required `result` property whose schema is the anyOf of the variants, each variant carrying a required
-    * `kind: {"enum": ["<name>"]}` discriminator. The model answers e.g. `{"result": {"kind": "Refund", "orderId": "o-1"}}`.
+    * `kind: {"type": "string", "enum": ["<name>"]}` discriminator. The model answers e.g. `{"result": {"kind": "Refund", "orderId":
+    * "o-1"}}`.
+    *
+    * Encoding dispatches on the runtime class of the value, first match by declaration order: list subtypes before their supertypes, or a
+    * variant whose class is a supertype of a later variant's class will shadow it (not reachable with plain case-class variants, whose
+    * classes are unrelated).
     */
   def oneOf[U](first: Variant[_ <: U], rest: Variant[_ <: U]*): ResponseSchema[U] =
     oneOfImpl(first +: rest, None)
@@ -59,7 +64,12 @@ object ResponseSchema {
       val withKind = obj
         .remove("$defs")
         .remove("$schema")
-        .add("properties", Json.fromJsonObject(props.add("kind", Json.obj("enum" -> Json.arr(Json.fromString(v.name))))))
+        .add(
+          "properties",
+          Json.fromJsonObject(
+            props.add("kind", Json.obj("type" -> Json.fromString("string"), "enum" -> Json.arr(Json.fromString(v.name))))
+          )
+        )
         .add("required", Json.fromValues(Json.fromString("kind") +: required))
       (withKind, nestedDefs)
     }
@@ -77,6 +87,7 @@ object ResponseSchema {
     }
 
     val root = JsonObject(
+      "$schema" -> Json.fromString("https://json-schema.org/draft/2020-12/schema"),
       "type" -> Json.fromString("object"),
       "required" -> Json.arr(Json.fromString("result")),
       "properties" -> Json.obj("result" -> Json.obj("anyOf" -> Json.fromValues(prepared.map(p => Json.fromJsonObject(p._1)))))
