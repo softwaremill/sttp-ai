@@ -33,15 +33,7 @@ object AgentTools {
     val sTpe = TypeRepr.of[S]
     val descriptionSym = TypeRepr.of[TapirSchema.annotations.description].typeSymbol
 
-    // Renders a type from bare symbol names (recursing into type arguments) rather than via `tpe.show`. When this
-    // macro is exercised via scala.compiletime.testing.typeCheckErrors (see AgentToolsDeriveErrorsSpec), types can be
-    // declared inside the typechecked snippet; `.show`ing such a type after other symbol lookups (methodMembers,
-    // getAnnotation, ...) have run triggers a dotty CyclicReference in that harness. Recursing through symbol names
-    // avoids forcing that printing while still preserving type arguments (e.g. `List[Foo]`, not just `List`).
-    def renderType(t: TypeRepr): String = t.dealias match {
-      case AppliedType(base, args) => s"${base.typeSymbol.name}[${args.map(renderType).mkString(", ")}]"
-      case other                   => other.typeSymbol.name
-    }
+    def renderType(t: TypeRepr): String = MacroSupport.renderType(t)
 
     def fail(msg: String): Nothing = report.errorAndAbort(s"AgentTools.derive[${renderType(sTpe)}]: $msg")
 

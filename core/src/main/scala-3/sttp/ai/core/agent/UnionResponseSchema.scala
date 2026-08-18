@@ -27,13 +27,7 @@ object UnionResponseSchema {
   private def deriveImpl[T: Type](description: Option[Expr[String]])(using Quotes): Expr[ResponseSchema[T]] = {
     import quotes.reflect.*
 
-    // Same rationale as in AgentTools: never `.show` a type that may be declared inside a typeCheckErrors snippet —
-    // it crashes dotty with a CyclicReference in that harness. Render from symbol names instead.
-    def renderType(t: TypeRepr): String = t.dealias match {
-      case AppliedType(base, args) => s"${base.typeSymbol.name}[${args.map(renderType).mkString(", ")}]"
-      case OrType(left, right)     => s"${renderType(left)} | ${renderType(right)}"
-      case other                   => other.typeSymbol.name
-    }
+    def renderType(t: TypeRepr): String = MacroSupport.renderType(t)
 
     def fail(msg: String): Nothing = report.errorAndAbort(s"UnionResponseSchema.derive[${renderType(TypeRepr.of[T])}]: $msg")
 
@@ -49,6 +43,18 @@ object UnionResponseSchema {
     val _ = members.foldLeft(List.empty[TypeRepr]) { (seen, t) =>
       if (seen.exists(_ =:= t)) fail(s"duplicate union member ${renderType(t)}")
       t :: seen
+    }
+
+    // Distinct types sharing a simple name (e.g. billing.Refund | shipping.Refund) would collide at runtime on the kind
+    // discriminator (and often on the erased class); the macro knows the names, so fail at compile time instead.
+    members.groupBy(_.typeSymbol.name).collect { case (n, ts) if ts.sizeIs > 1 => (n, ts) }.toList match {
+      case Nil        => ()
+      case collisions =>
+        val detail = collisions.map { case (n, ts) => s"'$n' (${ts.map(_.typeSymbol.fullName).mkString(", ")})" }.mkString("; ")
+        fail(
+          s"duplicate variant names across union members: $detail; distinct types sharing a simple name cannot be told apart " +
+            "by the kind discriminator - use ResponseSchema.oneOf with Variant.named to label them explicitly"
+        )
     }
 
     val variantExprs: List[Expr[Variant[? <: T]]] = members.map { tpe =>
