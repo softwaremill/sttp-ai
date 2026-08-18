@@ -190,6 +190,49 @@ class SchemaSupportSpec extends AnyFlatSpec with Matchers with EitherValues {
     result shouldBe expected
   }
 
+  it should "give a union variant additionalProperties:false while keeping the root's own required list" in {
+    val rawSchema =
+      """{"type":"object",
+        |"required":["result"],
+        |"properties":{"result":{"anyOf":[
+        |  {"type":"object",
+        |   "properties":{"kind":{"type":"string","enum":["Refund"]},"orderId":{"type":"string"}},
+        |   "required":["kind","orderId"]}
+        |]}}}""".stripMargin
+    val result = normalize(rawSchema)
+
+    result.hcursor.downField("required").as[List[String]] shouldBe Right(List("result"))
+
+    val variant = result.hcursor.downField("properties").downField("result").downField("anyOf").downArray
+    variant.get[Boolean]("additionalProperties") shouldBe Right(false)
+    variant.downField("required").as[Set[String]] shouldBe Right(Set("kind", "orderId"))
+    // kind must stay the FIRST property through normalization: structured-output grammars constrain generation to
+    // property order, and a demoted discriminator locks models into the empty union variant (verified live).
+    variant.downField("properties").keys.map(_.head) shouldBe Some("kind")
+  }
+
+  it should "not corrupt a $defs entry literally named properties or type" in {
+    val rawSchema =
+      """{"type":"object",
+        |"properties":{"a":{"$ref":"#/$defs/properties"}},
+        |"required":["a"],
+        |"$defs":{
+        |  "properties":{"type":"object","properties":{"x":{"type":"string"}},"required":["x"]},
+        |  "type":{"type":"object","properties":{"y":{"type":"integer"}},"required":["y"]}
+        |}}""".stripMargin
+    val result = normalize(rawSchema)
+
+    val defs = result.hcursor.downField("$defs")
+    // the container itself must gain NO schema keywords
+    defs.downField("additionalProperties").focus shouldBe None
+    defs.downField("required").focus shouldBe None
+    // each definition is normalized as a schema of its own
+    defs.downField("properties").get[Boolean]("additionalProperties") shouldBe Right(false)
+    defs.downField("properties").downField("required").as[Set[String]] shouldBe Right(Set("x"))
+    defs.downField("type").get[Boolean]("additionalProperties") shouldBe Right(false)
+    defs.downField("type").downField("required").as[Set[String]] shouldBe Right(Set("y"))
+  }
+
   "the faithful codec" should "no longer inject additionalProperties or rewrite required" in {
     val rawSchema = """{"type":"object","properties":{"a":{"type":"string"},"b":{"type":"integer"}},"required":["a"]}"""
     val schema = parse(rawSchema).value.as[Schema](sttp.apispec.circe.schemaDecoder).value
