@@ -151,9 +151,10 @@ object SchemaSupport {
     * bare `{}`) would otherwise reach OpenAI missing fields strict mode always requires (`type`, `properties`, `additionalProperties`), and
     * be rejected at request time.
     *
-    * The guard mirrors the folder's own trigger condition exactly: a schema that already has `"properties"` or `"type"` is left alone even
-    * if `additionalProperties` ended up absent, since that can be a deliberate choice (e.g. the folder's discriminated-union skip) rather
-    * than the degenerate case this handles.
+    * A root that already has `"type": "object"` but no `"properties"` (e.g. an argument-less tool whose schema is exactly
+    * `{"type": "object"}`) gets an empty `"properties"` added too: strict mode requires the key to be present on every object. Roots with
+    * `"properties"` are left alone even if `additionalProperties` ended up absent, since that can be a deliberate choice (e.g. the folder's
+    * discriminated-union skip) rather than the degenerate case this handles.
     */
   private def ensureStrictObjectRoot(json: Json): Json =
     json.asObject match {
@@ -161,6 +162,12 @@ object SchemaSupport {
         Json.fromJsonObject(
           obj
             .add("type", Json.fromString("object"))
+            .add("properties", Json.obj())
+            .add("additionalProperties", Json.fromBoolean(false))
+        )
+      case Some(obj) if !obj.contains("properties") && obj("type").contains(Json.fromString("object")) =>
+        Json.fromJsonObject(
+          obj
             .add("properties", Json.obj())
             .add("additionalProperties", Json.fromBoolean(false))
         )
