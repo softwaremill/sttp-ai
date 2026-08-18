@@ -25,5 +25,8 @@ object Variant {
   def named[A](name: String)(implicit s: TapirSchema[A], e: Encoder[A], d: Decoder[A], ct: ClassTag[A]): Variant[A] =
     new Variant[A](name, s, e, d, ct.runtimeClass)
 
-  private def defaultName(cls: Class[_]): String = cls.getSimpleName.stripSuffix("$")
+  // strips the module suffix ("Refund$" for objects) and the local-class counter Scala 2.13 leaves in simple names
+  // ("Strict$1" for a method-local class, where Scala 3 reports plain "Strict"), so defaults are version-consistent
+  private def defaultName(cls: Class[_]): String =
+    cls.getSimpleName.stripSuffix("$").replaceAll("\\$\\d+$", "")
 }

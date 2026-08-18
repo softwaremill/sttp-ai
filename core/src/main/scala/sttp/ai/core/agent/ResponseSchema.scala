@@ -17,10 +17,16 @@ object ResponseSchema {
       description: Option[String] = None
   )(implicit ts: TapirSchema[T], codec: Codec[T]): ResponseSchema[T] =
     new ResponseSchema[T](
-      schema = TapirSchemaToJsonSchema(ts, markOptionsAsNullable = true),
+      schema = renderTapirSchema(ts),
       codec = codec,
       description = description
     )
+
+  /** The one rendering convention for turning tapir schemas into apispec JSON schemas across the agent layer: `Option` fields are marked
+    * nullable, matching what providers expect for non-required properties.
+    */
+  private[agent] def renderTapirSchema[A](ts: TapirSchema[A]): Schema =
+    TapirSchemaToJsonSchema(ts, markOptionsAsNullable = true)
 
   /** Builds a discriminated-union response schema from explicitly listed variants. Works on Scala 2.13 and 3; `U` is typically a sealed
     * trait (on Scala 3, [[UnionResponseSchema.derive]] assembles the variants from a union type and delegates here).
@@ -47,11 +53,14 @@ object ResponseSchema {
     require(duplicateClasses.isEmpty, s"duplicate variant classes: ${duplicateClasses.mkString(", ")}")
 
     val prepared: Seq[(JsonObject, Map[String, Json])] = variants.map { v =>
-      val rendered = sttp.apispec.circe
-        .encoderSchema(TapirSchemaToJsonSchema(v.tapirSchema, markOptionsAsNullable = true))
-        .deepDropNullValues
+      val rendered = sttp.apispec.circe.encoderSchema(renderTapirSchema(v.tapirSchema)).deepDropNullValues
       val obj = rendered.asObject.getOrElse(
         throw new IllegalArgumentException(s"variant '${v.name}': variant schemas must be object schemas (case classes)")
+      )
+      require(
+        !obj.contains("$ref"),
+        s"variant '${v.name}': reference-rooted schemas (e.g. hand-built recursive schemas rendering to a root $$ref) are not " +
+          "supported as union variants; use a non-recursive case class, or ResponseSchema.derived for a single recursive type"
       )
       require(
         obj("type").contains(Json.fromString("object")),
@@ -109,8 +118,15 @@ object ResponseSchema {
         val result = c.downField("result")
         result.downField("kind").as[String].flatMap { kind =>
           byName.get(kind) match {
-            case Some(v) => v.decoder.tryDecode(result)
-            case None    => Left(DecodingFailure(s"unknown kind '$kind'; expected one of: $validKinds", result.history))
+            case Some(v) =>
+              // The discriminator is synthetic (injected by oneOf, forbidden as a variant field), so strip it before
+              // handing the object to the variant decoder - a decoder that rejects unknown fields must not see it.
+              val withoutKind = result.focus.flatMap(_.asObject) match {
+                case Some(o) => Json.fromJsonObject(o.remove("kind"))
+                case None    => result.focus.getOrElse(Json.Null)
+              }
+              v.decoder.decodeJson(withoutKind)
+            case None => Left(DecodingFailure(s"unknown kind '$kind'; expected one of: $validKinds", result.history))
           }
         }
       }
@@ -122,6 +138,10 @@ object ResponseSchema {
         val encoded = v.encoder.asInstanceOf[Encoder[Any]](u)
         val obj = encoded.asObject.getOrElse(
           throw new IllegalArgumentException(s"variant '${v.name}': encoder must produce a JSON object, got ${encoded.noSpaces}")
+        )
+        require(
+          !obj.contains("kind"),
+          s"variant '${v.name}': encoder emitted a 'kind' field, which is reserved for the discriminator"
         )
         Json.obj("result" -> Json.fromJsonObject(obj.add("kind", Json.fromString(v.name))))
       }

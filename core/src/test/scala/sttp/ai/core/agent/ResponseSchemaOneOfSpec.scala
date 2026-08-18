@@ -7,6 +7,7 @@ import org.scalatest.OptionValues
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
 import sttp.tapir.Schema
+import sttp.tapir.SchemaType.SRef
 
 object ResponseSchemaOneOfSpec {
   sealed trait Intent
@@ -172,5 +173,46 @@ class ResponseSchemaOneOfSpec extends AnyFlatSpec with Matchers with OptionValue
       ResponseSchema.oneOf[Intent](Variant[Refund], Variant.named[Refund]("RefundAgain"))
     }
     ex.getMessage should include("duplicate variant classes")
+  }
+
+  it should "reject a reference-rooted (recursive) variant schema with a targeted error" in {
+    final class Recursive
+    implicit val recursiveSchema: Schema[Recursive] = Schema(SRef[Recursive](Schema.SName("Recursive")))
+    implicit val recursiveCodec: Codec[Recursive] = Codec.from(
+      io.circe.Decoder.const(new Recursive),
+      io.circe.Encoder.instance(_ => Json.obj())
+    )
+    val ex = intercept[IllegalArgumentException] {
+      ResponseSchema.oneOf[Any](Variant[Recursive], Variant[Refund])
+    }
+    ex.getMessage should include("reference-rooted")
+  }
+
+  it should "strip the synthetic kind before invoking the variant decoder" in {
+    // self-contained fixture: on 2.13, implicit specificity would prefer an imported Codec over a local Decoder,
+    // so the strict decoder must be the ONLY candidate for its type
+    final case class Strict(orderId: String)
+    implicit val strictSchema: Schema[Strict] = Schema.derived
+    implicit val strictEncoder: io.circe.Encoder[Strict] = io.circe.Encoder.instance(s => Json.obj("orderId" -> s.orderId.asJson))
+    implicit val strictDecoder: io.circe.Decoder[Strict] = io.circe.Decoder.instance { c =>
+      c.keys.map(_.toSet) match {
+        case Some(ks) if ks == Set("orderId") => c.get[String]("orderId").map(Strict(_))
+        case ks                               => Left(io.circe.DecodingFailure(s"unexpected keys: $ks", c.history))
+      }
+    }
+    val rs = ResponseSchema.oneOf[Any](Variant[Strict], Variant[Refund])
+    rs.codec.decodeJson(Json.obj("result" -> Json.obj("kind" -> "Strict".asJson, "orderId" -> "o-3".asJson))) shouldBe
+      Right(Strict("o-3"))
+  }
+
+  it should "reject an encoder that emits its own kind field instead of silently clobbering it" in {
+    final case class Sneaky(orderId: String)
+    implicit val sneakySchema: Schema[Sneaky] = Schema.derived
+    implicit val sneakyDecoder: io.circe.Decoder[Sneaky] = io.circe.Decoder.instance(_.get[String]("orderId").map(Sneaky(_)))
+    implicit val sneakyEncoder: io.circe.Encoder[Sneaky] =
+      io.circe.Encoder.instance(s => Json.obj("kind" -> "Impostor".asJson, "orderId" -> s.orderId.asJson))
+    val rs = ResponseSchema.oneOf[Any](Variant[Sneaky], Variant[Refund])
+    val ex = intercept[IllegalArgumentException](rs.codec(Sneaky("o-4")))
+    ex.getMessage should include("reserved for the discriminator")
   }
 }

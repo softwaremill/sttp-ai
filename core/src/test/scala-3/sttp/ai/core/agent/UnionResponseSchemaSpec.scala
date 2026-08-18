@@ -74,6 +74,15 @@ class UnionResponseSchemaSpec extends AnyFlatSpec with Matchers with OptionValue
     errors.map(_.message).mkString should include("duplicate union member")
   }
 
+  it should "reject distinct union members sharing a simple name at compile time" in {
+    val errors = typeCheckErrors("""
+      object Billing { case class Refund(amount: Int) }
+      object Shipping { case class Refund(orderId: String) }
+      sttp.ai.core.agent.UnionResponseSchema.derive[Billing.Refund | Shipping.Refund]
+    """)
+    errors.map(_.message).mkString should include("duplicate variant names across union members")
+  }
+
   it should "reject a member without a given Schema, naming the member" in {
     val errors = typeCheckErrors("""
       class Opaque(val x: Int)

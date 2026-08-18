@@ -119,7 +119,8 @@ variants, each variant carrying a required `kind` discriminator pinned to the va
 ```
 
 Each union member needs given tapir `Schema`, circe `Encoder`/`Decoder`, and `ClassTag` instances, and must be a
-case-class-like object schema. The variant name defaults to the class's simple name; use `Variant.named` with the
+case-class-like object schema. Distinct types sharing a simple name (e.g. `billing.Refund | shipping.Refund`) are
+rejected at compile time - label them explicitly with `ResponseSchema.oneOf` and `Variant.named` instead. The variant name defaults to the class's simple name; use `Variant.named` with the
 explicit API below to customise it.
 
 On Scala 2.13 — or for sealed traits on either version — list the variants explicitly; the wire shape and codec
