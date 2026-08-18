@@ -437,6 +437,88 @@ class OpenAI(
       .body(asJson(requestBody))
       .response(asJson_parseErrors[ResponsesResponseBody])
 
+  /** Creates a model response.
+    *
+    * The response is streamed as server-sent events, which are returned unparsed as a binary stream, using the given streams
+    * implementation. Use the extension method provided by one of the streaming modules to get a stream of parsed
+    * [[sttp.ai.openai.requests.responses.ResponsesStreamEvent]]s instead.
+    *
+    * [[https://platform.openai.com/docs/api-reference/responses-streaming]]
+    *
+    * @param s
+    *   The streams implementation to use.
+    * @param requestBody
+    *   Model response request body. `stream` is always sent as `true`, regardless of the value it carries in `requestBody`.
+    */
+  def createModelResponseAsBinaryStream[S](
+      s: Streams[S],
+      requestBody: ResponsesRequestBody
+  ): StreamRequest[Either[OpenAIException, s.BinaryStream], S] =
+    openAIAuthRequest
+      .post(openAIUris.Responses)
+      .body(asJson(requestBody.copy(stream = Some(true))))
+      .response(asStreamUnsafe_parseErrors(s))
+
+  /** Creates a model response.
+    *
+    * The response is streamed as server-sent events, which are returned unparsed as an [[InputStream]].
+    *
+    * [[https://platform.openai.com/docs/api-reference/responses-streaming]]
+    *
+    * @param requestBody
+    *   Model response request body. `stream` is always sent as `true`, regardless of the value it carries in `requestBody`.
+    */
+  def createModelResponseAsInputStream(requestBody: ResponsesRequestBody): Request[Either[OpenAIException, InputStream]] =
+    openAIAuthRequest
+      .post(openAIUris.Responses)
+      .body(asJson(requestBody.copy(stream = Some(true))))
+      .response(asInputStreamUnsafe_parseErrors)
+
+  /** Streams the events of an existing model response, optionally resuming after a given sequence number.
+    *
+    * Only meaningful for a response created with `background = true`: the events are replayed from the stored response, so a stream that
+    * was interrupted can be picked up again by passing the sequence number of the last event received as
+    * [[sttp.ai.openai.requests.responses.GetResponseQueryParameters.startingAfter]].
+    *
+    * The events are returned unparsed as a binary stream, using the given streams implementation.
+    *
+    * [[https://platform.openai.com/docs/api-reference/responses/get]]
+    *
+    * @param s
+    *   The streams implementation to use.
+    * @param responseId
+    *   The ID of the response to stream.
+    * @param queryParameters
+    *   Query parameters. `stream` is always sent as `true`, regardless of the value it carries in `queryParameters`.
+    */
+  def getModelResponseAsBinaryStream[S](
+      s: Streams[S],
+      responseId: String,
+      queryParameters: GetResponseQueryParameters = GetResponseQueryParameters.empty
+  ): StreamRequest[Either[OpenAIException, s.BinaryStream], S] =
+    openAIAuthRequest
+      .get(openAIUris.response(responseId).withParams(queryParameters.copy(stream = Some(true)).toMap))
+      .response(asStreamUnsafe_parseErrors(s))
+
+  /** Streams the events of an existing model response, optionally resuming after a given sequence number.
+    *
+    * The events are returned unparsed as an [[InputStream]]. See [[getModelResponseAsBinaryStream]] for when this is useful.
+    *
+    * [[https://platform.openai.com/docs/api-reference/responses/get]]
+    *
+    * @param responseId
+    *   The ID of the response to stream.
+    * @param queryParameters
+    *   Query parameters. `stream` is always sent as `true`, regardless of the value it carries in `queryParameters`.
+    */
+  def getModelResponseAsInputStream(
+      responseId: String,
+      queryParameters: GetResponseQueryParameters = GetResponseQueryParameters.empty
+  ): Request[Either[OpenAIException, InputStream]] =
+    openAIAuthRequest
+      .get(openAIUris.response(responseId).withParams(queryParameters.copy(stream = Some(true)).toMap))
+      .response(asInputStreamUnsafe_parseErrors)
+
   /** Retrieves a model response with the given ID.
     *
     * [[https://platform.openai.com/docs/api-reference/responses/get]]

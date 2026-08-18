@@ -22,7 +22,13 @@ import sttp.ai.openai.requests.images.Size
 import sttp.ai.openai.requests.images.creation.ImageCreationRequestBody.ImageCreationModel
 import sttp.ai.openai.requests.images.edit.ImageEditsModel
 import sttp.ai.openai.requests.moderations.ModerationsRequestBody.ModerationModel
-import sttp.ai.openai.requests.responses.{InputItemsListResponseBody, ResponsesModel, ResponsesRequestBody, ResponsesResponseBody}
+import sttp.ai.openai.requests.responses.{
+  InputItemsListResponseBody,
+  ResponsesModel,
+  ResponsesRequestBody,
+  ResponsesResponseBody,
+  ResponsesStreamEvent
+}
 import sttp.ai.openai.requests.responses.ResponsesModel.CustomResponsesModel
 import sttp.ai.openai.requests.responses.{Tool => RespTool, ToolChoice => RespToolChoice}
 import OpenAIDerivedCodecs._
@@ -275,6 +281,63 @@ object OpenAIManualCodecs {
 
   implicit val rrespInstructionsDecoder: Decoder[Either[String, List[ResponsesResponseBody.InputItem]]] =
     Decoder.instance(c => Decoder[String].either(Decoder[List[ResponsesResponseBody.InputItem]]).apply(c))
+
+  // --- responses/ResponsesStreamEvent ---
+  /** Decodes a streaming event by looking its wire `type` up in `byWireType` and running the leaf decoder registered for it.
+    *
+    * OpenAI sends dotted discriminators (`"type": "response.output_text.delta"`, plus the unprefixed `"error"`) that no configured sum
+    * derivation matches, so dispatch is a plain map lookup: no discriminator rewriting, and one decode per event rather than a rewrite
+    * followed by a second dispatch through the sum decoder - which matters because this runs on every `output_text.delta`.
+    *
+    * A `type` with no entry decodes to [[ResponsesStreamEvent.Unknown]], so an event type introduced by OpenAI after this release cannot
+    * fail an in-flight stream. Every other failure - a missing or ill-typed field on a *registered* event - is still reported, so the
+    * fallback cannot mask a modelling bug.
+    *
+    * Takes the decoder map as an argument rather than reading it from [[OpenAIDerivedCodecs]], so this object gains no reference to it at
+    * all (see this file's initialization-order note).
+    */
+  def responsesStreamEventDispatch(byWireType: Map[String, Decoder[ResponsesStreamEvent]]): Decoder[ResponsesStreamEvent] =
+    Decoder.instance { c =>
+      c.get[String]("type").flatMap { wireType =>
+        byWireType.get(wireType) match {
+          case Some(leafDecoder) => leafDecoder.tryDecode(c)
+          case None              => Right(ResponsesStreamEvent.Unknown(wireType, c.value))
+        }
+      }
+    }
+
+  /** Decodes an output item, falling back to [[ResponsesResponseBody.OutputItem.Unknown]] for item `type`s that are not modelled.
+    *
+    * The Responses API emits more output-item types than are modelled (`shell_call`, `apply_patch_call`, `program`, `tool_search_call`, ...
+    * and their `*_output` counterparts). Without this fallback a single unmodelled item fails the whole response - and, worse, fails
+    * `response.output_item.added` mid-stream, which the event-type registry cannot guard because the *event* type is known while its *item*
+    * is not. Gated on the item `type` rather than on any decode failure, so a malformed modelled item still errors.
+    */
+  def responsesOutputItemDispatch(
+      sumDecoder: Decoder[ResponsesResponseBody.OutputItem]
+  ): Decoder[ResponsesResponseBody.OutputItem] =
+    Decoder.instance { c =>
+      c.get[String]("type").flatMap { itemType =>
+        if (ResponsesResponseBody.OutputItem.KnownTypes.contains(itemType)) sumDecoder.tryDecode(c)
+        else Right(ResponsesResponseBody.OutputItem.Unknown(itemType, c.value))
+      }
+    }
+
+  /** Decodes a content part, falling back to [[ResponsesResponseBody.OutputContent.Unknown]] for part `type`s that are not modelled.
+    *
+    * The same forward-compatibility hole as [[responsesOutputItemDispatch]], one level down: `response.content_part.added` / `.done` are
+    * modelled *event* types, so an unmodelled *part* type inside one would fail the whole stream. Gated on the part `type` rather than on
+    * any decode failure, so a malformed modelled part still errors.
+    */
+  def responsesOutputContentDispatch(
+      sumDecoder: Decoder[ResponsesResponseBody.OutputContent]
+  ): Decoder[ResponsesResponseBody.OutputContent] =
+    Decoder.instance { c =>
+      c.get[String]("type").flatMap { partType =>
+        if (ResponsesResponseBody.OutputContent.KnownTypes.contains(partType)) sumDecoder.tryDecode(c)
+        else Right(ResponsesResponseBody.OutputContent.Unknown(partType, c.value))
+      }
+    }
 
   // --- responses/Tool ---
   implicit val respWebSearchPreviewCodec: Codec[RespTool.WebSearchPreview] = Codec.from(
