@@ -59,7 +59,13 @@ class ResponseSchemaOneOfSpec extends AnyFlatSpec with Matchers with OptionValue
     kinds shouldBe Vector(Vector("Refund"), Vector("Complaint"), Vector("GeneralQuery"))
     variants.foreach { v =>
       v.hcursor.downField("required").as[Vector[String]].toOption.value should contain("kind")
+      v.hcursor.downField("properties").downField("kind").get[String]("type") shouldBe Right("string")
     }
+  }
+
+  it should "keep a single $schema key on the assembled root, matching ResponseSchema.derived" in {
+    val json = schemaJson(rs)
+    json.hcursor.get[String]("$schema") shouldBe Right("https://json-schema.org/draft/2020-12/schema")
   }
 
   it should "keep each variant's own fields required alongside kind" in {
@@ -78,6 +84,14 @@ class ResponseSchemaOneOfSpec extends AnyFlatSpec with Matchers with OptionValue
       Json.obj("result" -> Json.obj("kind" -> "Complaint".asJson, "topic" -> "slow".asJson, "severity" -> 2.asJson))
     ) shouldBe Right(Complaint("slow", 2))
     rs.codec.decodeJson(Json.obj("result" -> Json.obj("kind" -> "GeneralQuery".asJson))) shouldBe Right(GeneralQuery())
+  }
+
+  it should "fail decoding when the result property is missing" in {
+    rs.codec.decodeJson(Json.obj()).isLeft shouldBe true
+  }
+
+  it should "fail decoding when the kind property is missing" in {
+    rs.codec.decodeJson(Json.obj("result" -> Json.obj())).isLeft shouldBe true
   }
 
   it should "fail decoding with the list of valid kinds for an unknown kind" in {
