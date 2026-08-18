@@ -15,7 +15,13 @@ import sttp.ai.openai.requests.audio.speech.{SpeechRequestBody, Voice}
 import sttp.ai.openai.requests.completions.chat.ChatChunkRequestResponseData.ChatChunkResponse
 import sttp.ai.openai.requests.completions.chat.ChatChunkRequestResponseData.ChatChunkResponse.DoneEvent
 import sttp.ai.openai.requests.completions.chat.ChatRequestBody.{ChatBody, ChatCompletionModel}
+import sttp.ai.openai.fixtures.ResponsesStreamEventFixture
+import sttp.ai.openai.requests.responses.ResponsesModel.GPT4oMini
+import sttp.ai.openai.requests.responses.{GetResponseQueryParameters, ResponsesRequestBody, ResponsesStreamEvent}
+import sttp.client4.{GenericRequest, StringBody}
 import io.circe.parser.parse
+
+import java.util.concurrent.atomic.AtomicReference
 import sttp.ai.openai.{OpenAI, OpenAIExceptions}
 import zio._
 import zio.stream._
@@ -153,6 +159,143 @@ class ZioClientSpec extends AnyFlatSpec with Matchers with EitherValues {
       .map(_.body.value)
       .flatMap(_.runCollect)
     val response = unsafeRun(responseEffect)
+
+    // then
+    response.toList shouldBe expectedResponse
+  }
+
+  private val givenResponsesRequest = ResponsesRequestBody(model = Some(GPT4oMini), input = Some(Left("Hello!")))
+
+  /** The Responses API sets an `event:` line on every frame, unlike chat completions - so the specs below populate `eventType`. */
+  private def responsesEvents(payloads: Seq[String]): Seq[ServerSentEvent] =
+    payloads.map(data => ServerSentEvent(Some(data), parse(data).value.hcursor.get[String]("type").toOption))
+
+  private val doneEvent = ServerSentEvent(Some(ResponsesStreamEvent.DoneEventMessage))
+
+  private def sseBytes(events: Seq[ServerSentEvent]): Stream[Throwable, Byte] =
+    ZStream.from(events).map(_.toString + "\n\n").via(ZPipeline.utf8Encode)
+
+  for ((statusCode, expectedError) <- ErrorFixture.testData)
+    s"Streamed model response with status code: $statusCode" should
+      s"return properly deserialized ${expectedError.getClass.getSimpleName}" in {
+        // given
+        val zioBackendStub = HttpClientZioBackend.stub.whenAnyRequest.thenRespondAdjust(ErrorFixture.errorResponse, statusCode)
+        val client = new OpenAI("test-token")
+
+        // when
+        val caught = unsafeRun(
+          client
+            .createStreamedModelResponse(givenResponsesRequest)
+            .send(zioBackendStub)
+            .map(_.body.left.value)
+        )
+
+        // then
+        caught.getClass shouldBe expectedError.getClass
+        caught.message shouldBe expectedError.message
+        caught.cause.getClass shouldBe expectedError.cause.getClass
+        caught.code shouldBe expectedError.code
+        caught.param shouldBe expectedError.param
+        caught.`type` shouldBe expectedError.`type`
+      }
+
+  "Creating a streamed model response with failed stream due to invalid deserialization" should "return properly deserialized error" in {
+    // given
+    val streamedResponse = sseBytes(Seq(ServerSentEvent(Some("invalid json"))))
+    val zioBackendStub = HttpClientZioBackend.stub.whenAnyRequest.thenRespond(ResponseStub.adjust(streamedResponse))
+    val client = new OpenAI(authToken = "test-token")
+
+    // when
+    val responseEffect = client
+      .createStreamedModelResponse(givenResponsesRequest)
+      .send(zioBackendStub)
+      .flatMap(_.body.value.runDrain)
+
+    // then
+    unsafeRun(responseEffect.either) shouldBe a[Left[DeserializationOpenAIException, _]]
+  }
+
+  "Creating a streamed model response" should "ignore empty events and return properly deserialized events" in {
+    // given
+    val payloads = ResponsesStreamEventFixture.sseSequence.map(s => parse(s).value.noSpaces)
+    val events = (responsesEvents(payloads) :+ ServerSentEvent()) :+ doneEvent
+
+    // when & then
+    assertStreamedModelResponse(sseBytes(events), payloads.map(decode[ResponsesStreamEvent](_).fold(throw _, identity)))
+  }
+
+  // Unlike the chat modules, the [DONE] sentinel is *skipped* rather than treated as end-of-stream: the Responses API terminates with
+  // `response.completed` and then closes the connection, so a sentinel from an OpenAI-compatible provider must not truncate the stream.
+  it should "skip the [DONE] sentinel without truncating the stream" in {
+    // given
+    val payloads = ResponsesStreamEventFixture.sseSequence.map(s => parse(s).value.noSpaces)
+    val (before, after) = responsesEvents(payloads).splitAt(2)
+    val events = (before :+ doneEvent) ++ after
+
+    // when & then
+    assertStreamedModelResponse(sseBytes(events), payloads.map(decode[ResponsesStreamEvent](_).fold(throw _, identity)))
+  }
+
+  "createStreamedModelResponse" should "send stream = true in the request body" in {
+    // given
+    val capturedRequest = new AtomicReference[GenericRequest[_, _]](null)
+    val zioBackendStub = HttpClientZioBackend.stub.whenAnyRequest.thenRespondF { request =>
+      capturedRequest.set(request)
+      ZIO.succeed(ResponseStub.adjust(sseBytes(Seq(doneEvent))))
+    }
+    val client = new OpenAI(authToken = "test-token")
+
+    // when
+    val events = unsafeRun(
+      client
+        .createStreamedModelResponse(givenResponsesRequest.copy(stream = Some(false)))
+        .send(zioBackendStub)
+        .map(_.body.value)
+        .flatMap(_.runCollect)
+    )
+
+    // then
+    events.toList shouldBe empty
+    val requestBody = capturedRequest.get().body.asInstanceOf[StringBody].s
+    parse(requestBody).value.hcursor.get[Boolean]("stream").value shouldBe true
+  }
+
+  "resumeStreamedModelResponse" should "request the stored response with stream = true and starting_after" in {
+    // given
+    val capturedRequest = new AtomicReference[GenericRequest[_, _]](null)
+    val zioBackendStub = HttpClientZioBackend.stub.whenAnyRequest.thenRespondF { request =>
+      capturedRequest.set(request)
+      ZIO.succeed(ResponseStub.adjust(sseBytes(Seq(doneEvent))))
+    }
+    val client = new OpenAI(authToken = "test-token")
+
+    // when
+    unsafeRun(
+      client
+        .resumeStreamedModelResponse("resp_123", GetResponseQueryParameters(startingAfter = Some(7)))
+        .send(zioBackendStub)
+        .flatMap(_.body.value.runDrain)
+    )
+
+    // then
+    val uri = capturedRequest.get().uri
+    uri.path should contain("resp_123")
+    uri.params.get("stream") shouldBe Some("true")
+    uri.params.get("starting_after") shouldBe Some("7")
+  }
+
+  private def assertStreamedModelResponse(givenResponse: Stream[Throwable, Byte], expectedResponse: Seq[ResponsesStreamEvent]) = {
+    val zioBackendStub = HttpClientZioBackend.stub.whenAnyRequest.thenRespond(ResponseStub.adjust(givenResponse))
+    val client = new OpenAI(authToken = "test-token")
+
+    // when
+    val response = unsafeRun(
+      client
+        .createStreamedModelResponse(givenResponsesRequest)
+        .send(zioBackendStub)
+        .map(_.body.value)
+        .flatMap(_.runCollect)
+    )
 
     // then
     response.toList shouldBe expectedResponse

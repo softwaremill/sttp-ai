@@ -22,7 +22,13 @@ import sttp.ai.openai.requests.images.Size
 import sttp.ai.openai.requests.images.creation.ImageCreationRequestBody.ImageCreationModel
 import sttp.ai.openai.requests.images.edit.ImageEditsModel
 import sttp.ai.openai.requests.moderations.ModerationsRequestBody.ModerationModel
-import sttp.ai.openai.requests.responses.{InputItemsListResponseBody, ResponsesModel, ResponsesRequestBody, ResponsesResponseBody}
+import sttp.ai.openai.requests.responses.{
+  InputItemsListResponseBody,
+  ResponsesModel,
+  ResponsesRequestBody,
+  ResponsesResponseBody,
+  ResponsesStreamEvent
+}
 import sttp.ai.openai.requests.responses.ResponsesModel.CustomResponsesModel
 import sttp.ai.openai.requests.responses.{Tool => RespTool, ToolChoice => RespToolChoice}
 import OpenAIDerivedCodecs._
@@ -275,6 +281,51 @@ object OpenAIManualCodecs {
 
   implicit val rrespInstructionsDecoder: Decoder[Either[String, List[ResponsesResponseBody.InputItem]]] =
     Decoder.instance(c => Decoder[String].either(Decoder[List[ResponsesResponseBody.InputItem]]).apply(c))
+
+  // --- responses/ResponsesStreamEvent ---
+  /** Rewrites a dotted streaming-event discriminator into the snake_cased constructor name the configured derivation dispatches on, then
+    * delegates to `sumDecoder`.
+    *
+    * OpenAI sends `"type": "response.output_text.delta"` (and the unprefixed `"error"`), while the configured derivation matches
+    * snake_cased constructor names (`output_text_delta`, `error`). The rewrite is total: every case of [[ResponsesStreamEvent]] is named
+    * after its wire type with the `response.` prefix dropped and the remaining dots turned into camel-case boundaries. Decode-side mirror
+    * of the `rrbInputEncoder` rewrite in [[OpenAIDerivedCodecs]].
+    *
+    * A `type` outside [[ResponsesStreamEvent.KnownTypes]] decodes to [[ResponsesStreamEvent.Unknown]], so an event type introduced by
+    * OpenAI after this release cannot fail an in-flight stream. Every other failure - a missing or ill-typed field on a *known* event - is
+    * still reported, so the fallback cannot mask a modelling bug.
+    *
+    * Takes the derived sum decoder as an argument rather than reading it from [[OpenAIDerivedCodecs]], so this object gains no reference to
+    * it at all (see this file's initialization-order note).
+    */
+  def responsesStreamEventDispatch(sumDecoder: Decoder[ResponsesStreamEvent]): Decoder[ResponsesStreamEvent] =
+    Decoder.instance { c =>
+      c.get[String]("type").flatMap { wireType =>
+        if (!ResponsesStreamEvent.KnownTypes.contains(wireType)) Right(ResponsesStreamEvent.Unknown(wireType, c.value))
+        else {
+          val constructorName =
+            (if (wireType.startsWith("response.")) wireType.substring("response.".length) else wireType).replace('.', '_')
+          c.withFocus(_.mapObject(_.add("type", Json.fromString(constructorName)))).as[ResponsesStreamEvent](sumDecoder)
+        }
+      }
+    }
+
+  /** Decodes an output item, falling back to [[ResponsesResponseBody.OutputItem.Unknown]] for item `type`s that are not modelled.
+    *
+    * The Responses API emits more output-item types than are modelled (`shell_call`, `apply_patch_call`, `program`, `tool_search_call`, ...
+    * and their `*_output` counterparts). Without this fallback a single unmodelled item fails the whole response - and, worse, fails
+    * `response.output_item.added` mid-stream, which [[ResponsesStreamEvent.KnownTypes]] cannot guard because the *event* type is known
+    * while its *item* is not. Gated on the item `type` rather than on any decode failure, so a malformed modelled item still errors.
+    */
+  def responsesOutputItemDispatch(
+      sumDecoder: Decoder[ResponsesResponseBody.OutputItem]
+  ): Decoder[ResponsesResponseBody.OutputItem] =
+    Decoder.instance { c =>
+      c.get[String]("type").flatMap { itemType =>
+        if (ResponsesResponseBody.OutputItem.KnownTypes.contains(itemType)) sumDecoder.tryDecode(c)
+        else Right(ResponsesResponseBody.OutputItem.Unknown(itemType, c.value))
+      }
+    }
 
   // --- responses/Tool ---
   implicit val respWebSearchPreviewCodec: Codec[RespTool.WebSearchPreview] = Codec.from(

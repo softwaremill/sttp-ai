@@ -82,6 +82,7 @@ import sttp.ai.openai.requests.responses.{ToolChoice => RespTC}
 import sttp.ai.openai.requests.responses.{InputItemsListResponseBody => IIL}
 import sttp.ai.openai.requests.responses.{ResponsesRequestBody => RRB}
 import sttp.ai.openai.requests.responses.{ResponsesResponseBody => RRESP}
+import sttp.ai.openai.requests.responses.{ResponsesStreamEvent => RSE}
 import sttp.ai.openai.requests.responses.DeleteModelResponseResponse
 import sttp.ai.openai.requests.completions.chat.SchemaSupport.schemaCodec
 import OpenAIManualCodecs._
@@ -668,11 +669,82 @@ object OpenAIDerivedCodecs {
   // flat `"type"` discriminator matches the snake_case constructor names; the `message` branch delegates to `rrespMessageDecoder`
   // (OpenAIManualCodecs), which distinguishes input/output messages structurally.
   implicit val rrespInputItemDecoder: Decoder[RRESP.InputItem] = deriveConfiguredDecoder
-  implicit val rrespOutputItemDecoder: Decoder[RRESP.OutputItem] = deriveConfiguredDecoder
+  // Unmodelled item `type`s decode to `OutputItem.Unknown` instead of failing; see responsesOutputItemDispatch.
+  implicit val rrespOutputItemDecoder: Decoder[RRESP.OutputItem] =
+    OpenAIManualCodecs.responsesOutputItemDispatch(deriveConfiguredDecoder[RRESP.OutputItem])
   implicit val rrespTextConfigDecoder: Decoder[RRESP.TextConfig] = deriveConfiguredDecoder
   implicit val responsesResponseBodyDecoder: Decoder[RRESP] = {
     import sttp.ai.core.json.CirceHelpers.emptyMapAsNone // local: empty `metadata` object -> None
     deriveConfiguredDecoder
   }
+  // responses ResponsesStreamEvent (streaming events, decode-only). `Decoder`s for *field* types are mandatory (circe recurses
+  // into sum children but not into product fields); the per-event leaves bound the derivation blast radius of a 59-child sum.
+  // The dotted wire discriminators are rewritten to snake_cased constructor names by the dispatch helper.
+  implicit val rseTopLogProbDecoder: Decoder[RSE.TopLogProb] = deriveConfiguredDecoder
+  implicit val rseLogProbDecoder: Decoder[RSE.LogProb] = deriveConfiguredDecoder
+  implicit val rseShellOutputDeltaDecoder: Decoder[RSE.ShellOutputDelta] = deriveConfiguredDecoder
+  implicit val rseShellOutcomeDecoder: Decoder[RSE.ShellOutcome] = deriveConfiguredDecoder
+  implicit val rseShellOutputDecoder: Decoder[RSE.ShellOutput] = deriveConfiguredDecoder
+  implicit val rseCreatedDecoder: Decoder[RSE.Created] = deriveConfiguredDecoder
+  implicit val rseInProgressDecoder: Decoder[RSE.InProgress] = deriveConfiguredDecoder
+  implicit val rseCompletedDecoder: Decoder[RSE.Completed] = deriveConfiguredDecoder
+  implicit val rseFailedDecoder: Decoder[RSE.Failed] = deriveConfiguredDecoder
+  implicit val rseIncompleteDecoder: Decoder[RSE.Incomplete] = deriveConfiguredDecoder
+  implicit val rseQueuedDecoder: Decoder[RSE.Queued] = deriveConfiguredDecoder
+  implicit val rseOutputItemAddedDecoder: Decoder[RSE.OutputItemAdded] = deriveConfiguredDecoder
+  implicit val rseOutputItemDoneDecoder: Decoder[RSE.OutputItemDone] = deriveConfiguredDecoder
+  implicit val rseContentPartAddedDecoder: Decoder[RSE.ContentPartAdded] = deriveConfiguredDecoder
+  implicit val rseContentPartDoneDecoder: Decoder[RSE.ContentPartDone] = deriveConfiguredDecoder
+  implicit val rseOutputTextDeltaDecoder: Decoder[RSE.OutputTextDelta] = deriveConfiguredDecoder
+  implicit val rseOutputTextDoneDecoder: Decoder[RSE.OutputTextDone] = deriveConfiguredDecoder
+  implicit val rseOutputTextAnnotationAddedDecoder: Decoder[RSE.OutputTextAnnotationAdded] = deriveConfiguredDecoder
+  implicit val rseRefusalDeltaDecoder: Decoder[RSE.RefusalDelta] = deriveConfiguredDecoder
+  implicit val rseRefusalDoneDecoder: Decoder[RSE.RefusalDone] = deriveConfiguredDecoder
+  implicit val rseReasoningTextDeltaDecoder: Decoder[RSE.ReasoningTextDelta] = deriveConfiguredDecoder
+  implicit val rseReasoningTextDoneDecoder: Decoder[RSE.ReasoningTextDone] = deriveConfiguredDecoder
+  implicit val rseReasoningSummaryTextDeltaDecoder: Decoder[RSE.ReasoningSummaryTextDelta] = deriveConfiguredDecoder
+  implicit val rseReasoningSummaryTextDoneDecoder: Decoder[RSE.ReasoningSummaryTextDone] = deriveConfiguredDecoder
+  implicit val rseReasoningSummaryPartAddedDecoder: Decoder[RSE.ReasoningSummaryPartAdded] = deriveConfiguredDecoder
+  implicit val rseReasoningSummaryPartDoneDecoder: Decoder[RSE.ReasoningSummaryPartDone] = deriveConfiguredDecoder
+  implicit val rseFunctionCallArgumentsDeltaDecoder: Decoder[RSE.FunctionCallArgumentsDelta] = deriveConfiguredDecoder
+  implicit val rseFunctionCallArgumentsDoneDecoder: Decoder[RSE.FunctionCallArgumentsDone] = deriveConfiguredDecoder
+  implicit val rseFileSearchCallInProgressDecoder: Decoder[RSE.FileSearchCallInProgress] = deriveConfiguredDecoder
+  implicit val rseFileSearchCallSearchingDecoder: Decoder[RSE.FileSearchCallSearching] = deriveConfiguredDecoder
+  implicit val rseFileSearchCallCompletedDecoder: Decoder[RSE.FileSearchCallCompleted] = deriveConfiguredDecoder
+  implicit val rseWebSearchCallInProgressDecoder: Decoder[RSE.WebSearchCallInProgress] = deriveConfiguredDecoder
+  implicit val rseWebSearchCallSearchingDecoder: Decoder[RSE.WebSearchCallSearching] = deriveConfiguredDecoder
+  implicit val rseWebSearchCallCompletedDecoder: Decoder[RSE.WebSearchCallCompleted] = deriveConfiguredDecoder
+  implicit val rseCodeInterpreterCallInProgressDecoder: Decoder[RSE.CodeInterpreterCallInProgress] = deriveConfiguredDecoder
+  implicit val rseCodeInterpreterCallInterpretingDecoder: Decoder[RSE.CodeInterpreterCallInterpreting] = deriveConfiguredDecoder
+  implicit val rseCodeInterpreterCallCompletedDecoder: Decoder[RSE.CodeInterpreterCallCompleted] = deriveConfiguredDecoder
+  implicit val rseCodeInterpreterCallCodeDeltaDecoder: Decoder[RSE.CodeInterpreterCallCodeDelta] = deriveConfiguredDecoder
+  implicit val rseCodeInterpreterCallCodeDoneDecoder: Decoder[RSE.CodeInterpreterCallCodeDone] = deriveConfiguredDecoder
+  implicit val rseImageGenerationCallInProgressDecoder: Decoder[RSE.ImageGenerationCallInProgress] = deriveConfiguredDecoder
+  implicit val rseImageGenerationCallGeneratingDecoder: Decoder[RSE.ImageGenerationCallGenerating] = deriveConfiguredDecoder
+  implicit val rseImageGenerationCallCompletedDecoder: Decoder[RSE.ImageGenerationCallCompleted] = deriveConfiguredDecoder
+  implicit val rseImageGenerationCallPartialImageDecoder: Decoder[RSE.ImageGenerationCallPartialImage] = deriveConfiguredDecoder
+  implicit val rseMcpCallInProgressDecoder: Decoder[RSE.McpCallInProgress] = deriveConfiguredDecoder
+  implicit val rseMcpCallCompletedDecoder: Decoder[RSE.McpCallCompleted] = deriveConfiguredDecoder
+  implicit val rseMcpCallFailedDecoder: Decoder[RSE.McpCallFailed] = deriveConfiguredDecoder
+  implicit val rseMcpCallArgumentsDeltaDecoder: Decoder[RSE.McpCallArgumentsDelta] = deriveConfiguredDecoder
+  implicit val rseMcpCallArgumentsDoneDecoder: Decoder[RSE.McpCallArgumentsDone] = deriveConfiguredDecoder
+  implicit val rseMcpListToolsInProgressDecoder: Decoder[RSE.McpListToolsInProgress] = deriveConfiguredDecoder
+  implicit val rseMcpListToolsCompletedDecoder: Decoder[RSE.McpListToolsCompleted] = deriveConfiguredDecoder
+  implicit val rseMcpListToolsFailedDecoder: Decoder[RSE.McpListToolsFailed] = deriveConfiguredDecoder
+  implicit val rseCustomToolCallInputDeltaDecoder: Decoder[RSE.CustomToolCallInputDelta] = deriveConfiguredDecoder
+  implicit val rseCustomToolCallInputDoneDecoder: Decoder[RSE.CustomToolCallInputDone] = deriveConfiguredDecoder
+  implicit val rseShellCallCommandAddedDecoder: Decoder[RSE.ShellCallCommandAdded] = deriveConfiguredDecoder
+  implicit val rseShellCallCommandDeltaDecoder: Decoder[RSE.ShellCallCommandDelta] = deriveConfiguredDecoder
+  implicit val rseShellCallCommandDoneDecoder: Decoder[RSE.ShellCallCommandDone] = deriveConfiguredDecoder
+  implicit val rseShellCallOutputContentDeltaDecoder: Decoder[RSE.ShellCallOutputContentDelta] = deriveConfiguredDecoder
+  implicit val rseShellCallOutputContentDoneDecoder: Decoder[RSE.ShellCallOutputContentDone] = deriveConfiguredDecoder
+  implicit val rseAudioDeltaDecoder: Decoder[RSE.AudioDelta] = deriveConfiguredDecoder
+  implicit val rseAudioDoneDecoder: Decoder[RSE.AudioDone] = deriveConfiguredDecoder
+  implicit val rseAudioTranscriptDeltaDecoder: Decoder[RSE.AudioTranscriptDelta] = deriveConfiguredDecoder
+  implicit val rseAudioTranscriptDoneDecoder: Decoder[RSE.AudioTranscriptDone] = deriveConfiguredDecoder
+  implicit val rseErrorDecoder: Decoder[RSE.Error] = deriveConfiguredDecoder
+  implicit val rseUnknownDecoder: Decoder[RSE.Unknown] = deriveConfiguredDecoder
+  implicit val responsesStreamEventDecoder: Decoder[RSE] =
+    OpenAIManualCodecs.responsesStreamEventDispatch(deriveConfiguredDecoder[RSE])
   implicit val deleteModelResponseResponseDecoder: Decoder[DeleteModelResponseResponse] = deriveConfiguredDecoder
 }

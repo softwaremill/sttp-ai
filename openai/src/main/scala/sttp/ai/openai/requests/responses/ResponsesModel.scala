@@ -38,6 +38,7 @@ object ResponsesModel {
       GPT4oMini20240718,
       GPT5,
       GPT520250807,
+      GPT56Luna,
       GPT5ChatLatest,
       GPT5Mini,
       GPT5Mini20250807,
@@ -97,6 +98,9 @@ object ResponsesModel {
   case object GPT4oMini20240718 extends ResponsesModel("gpt-4o-mini-2024-07-18")
   case object GPT5 extends ResponsesModel("gpt-5")
   case object GPT520250807 extends ResponsesModel("gpt-5-2025-08-07")
+  case object GPT56Luna extends ResponsesModel("gpt-5.6-luna")
+  case object GPT56Terra extends ResponsesModel("gpt-5.6-terra")
+  case object GPT56Sol extends ResponsesModel("gpt-5.6-sol")
   case object GPT5ChatLatest extends ResponsesModel("gpt-5-chat-latest")
   case object GPT5Mini extends ResponsesModel("gpt-5-mini")
   case object GPT5Mini20250807 extends ResponsesModel("gpt-5-mini-2025-08-07")
