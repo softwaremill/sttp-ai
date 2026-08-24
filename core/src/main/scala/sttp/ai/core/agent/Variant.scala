@@ -25,8 +25,14 @@ object Variant {
   def named[A](name: String)(implicit s: TapirSchema[A], e: Encoder[A], d: Decoder[A], ct: ClassTag[A]): Variant[A] =
     new Variant[A](name, s, e, d, ct.runtimeClass)
 
-  // strips the module suffix ("Refund$" for objects) and the local-class counter Scala 2.13 leaves in simple names
-  // ("Strict$1" for a method-local class, where Scala 3 reports plain "Strict"), so defaults are version-consistent
-  private def defaultName(cls: Class[_]): String =
-    cls.getSimpleName.stripSuffix("$").replaceAll("\\$\\d+$", "")
+  // Derives the name from getName rather than getSimpleName: the latter is platform- and version-divergent for
+  // local/nested classes (JVM 2.13 says "Strict$1", JVM 3 "Strict", Scala Native just "1"). getName is identical
+  // everywhere; the last non-numeric '$'-segment is the declared class name (numeric segments are local-class
+  // counters, a trailing "$" marks a module class).
+  private def defaultName(cls: Class[_]): String = {
+    val base = cls.getName
+    val afterPkg = base.substring(base.lastIndexOf('.') + 1)
+    val segments = afterPkg.split('$').filter(s => s.nonEmpty && !s.forall(_.isDigit))
+    if (segments.nonEmpty) segments.last else afterPkg
+  }
 }
