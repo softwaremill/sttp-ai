@@ -83,9 +83,24 @@ class ResponseSchemaDerivedUnionSpec extends AnyFlatSpec with Matchers with Opti
     errors.map(_.message).mkString should include("duplicate variant names across union members")
   }
 
+  it should "reject a non-case-class member at compile time" in {
+    val errors = typeCheckErrors("""
+      sttp.ai.core.agent.ResponseSchema.derivedUnion[sttp.ai.core.agent.ResponseSchemaDerivedUnionSpec.Refund | String]
+    """)
+    errors.map(_.message).mkString should include("is not a case class")
+  }
+
+  it should "reject instantiations of the same generic type with a dedicated error" in {
+    val errors = typeCheckErrors("""
+      case class Box[A](value: A)
+      sttp.ai.core.agent.ResponseSchema.derivedUnion[Box[Int] | Box[String]]
+    """)
+    errors.map(_.message).mkString should include("erase to one runtime class")
+  }
+
   it should "reject a member without a given Schema, naming the member" in {
     val errors = typeCheckErrors("""
-      class Opaque(val x: Int)
+      case class Opaque(x: Int)
       sttp.ai.core.agent.ResponseSchema.derivedUnion[sttp.ai.core.agent.ResponseSchemaDerivedUnionSpec.Refund | Opaque]
     """)
     val messages = errors.map(_.message).mkString

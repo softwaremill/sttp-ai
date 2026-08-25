@@ -4,7 +4,6 @@ import io.circe.{Codec, Json}
 import sttp.apispec.Schema
 import sttp.shared.Identity
 import sttp.tapir.{Schema => TapirSchema}
-import sttp.tapir.docs.apispec.schema.TapirSchemaToJsonSchema
 
 trait AgentTool[F[_], T] {
   def name: String
@@ -36,7 +35,7 @@ object AgentTool {
       override def name: String = toolName
       override def description: String = toolDescription
       override def jsonSchema: Schema =
-        TapirSchemaToJsonSchema(tapirSchema, markOptionsAsNullable = true)
+        ResponseSchema.renderTapirSchema(tapirSchema)
       override def codec: Codec[T] = toolCodec
       override def execute(input: T): F[String] = f(input)
     }

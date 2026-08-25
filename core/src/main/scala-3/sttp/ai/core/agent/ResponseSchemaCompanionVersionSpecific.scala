@@ -54,10 +54,32 @@ private[agent] object ResponseSchemaUnionMacros {
     members.groupBy(_.typeSymbol.name).collect { case (n, ts) if ts.sizeIs > 1 => (n, ts) }.toList match {
       case Nil        => ()
       case collisions =>
-        val detail = collisions.map { case (n, ts) => s"'$n' (${ts.map(_.typeSymbol.fullName).mkString(", ")})" }.mkString("; ")
+        // Instantiations of the SAME generic type erase to one runtime class: encoding cannot tell them apart, so no
+        // labeling helps - a different remedy than for distinct types merely sharing a simple name.
+        collisions.collectFirst { case (n, ts) if ts.map(_.typeSymbol).distinct.sizeIs == 1 => (n, ts) } match {
+          case Some((n, ts)) =>
+            fail(
+              s"union members ${ts.map(renderType).mkString(" and ")} are instantiations of the same generic type '$n', " +
+                "which erase to one runtime class; encoding cannot distinguish them - model them as distinct case classes instead"
+            )
+          case None =>
+            val detail = collisions.map { case (n, ts) => s"'$n' (${ts.map(_.typeSymbol.fullName).mkString(", ")})" }.mkString("; ")
+            fail(
+              s"duplicate variant names across union members: $detail; distinct types sharing a simple name cannot be told apart " +
+                "by the kind discriminator - use ResponseSchema.oneOf with Variant.named to label them explicitly"
+            )
+        }
+    }
+
+    // Union members must be case classes: primitives, Strings, and other non-product types render to non-object
+    // schemas and would only fail at runtime construction; custom object schemas for non-case classes remain available
+    // through the explicit ResponseSchema.oneOf.
+    members.foreach { tpe =>
+      val isCaseClass = tpe.classSymbol.exists(cs => cs.flags.is(Flags.Case) && !cs.flags.is(Flags.Module))
+      if (!isCaseClass)
         fail(
-          s"duplicate variant names across union members: $detail; distinct types sharing a simple name cannot be told apart " +
-            "by the kind discriminator - use ResponseSchema.oneOf with Variant.named to label them explicitly"
+          s"union member ${renderType(tpe)} is not a case class; variants must be case classes - " +
+            "for custom object schemas use ResponseSchema.oneOf"
         )
     }
 

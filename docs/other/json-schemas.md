@@ -108,6 +108,12 @@ The agent builder accepts one in two ways:
 `deriveResponseSchema[T]` is exactly `responseSchema(ResponseSchema.derived[T]())` - there is no behavioral
 difference beyond who constructs the `ResponseSchema`.
 
+One provider caveat: the standalone `description` carried by a `ResponseSchema` is currently forwarded to the
+model by the OpenAI backend only. `ResponseSchema.derivedUnion` and `ResponseSchema.oneOf` additionally embed the
+description into the schema document itself, so for unions it reaches every provider; for
+`ResponseSchema.derived[T](description)` on Claude or Gemini, put the guidance in the system prompt or in `T`'s
+field-level `@description` annotations instead.
+
 ## Union types: structured intent classification
 
 On Scala 3, a response schema can be derived for a union type, so a classifier agent returns one of several

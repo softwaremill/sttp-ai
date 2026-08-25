@@ -249,6 +249,19 @@ class SchemaSupportSpec extends AnyFlatSpec with Matchers with EitherValues {
     variant.downField("properties").keys.map(_.head) shouldBe Some("kind")
   }
 
+  it should "not corrupt patternProperties entries named like schema keywords" in {
+    val rawSchema =
+      """{"type":"object",
+        |"properties":{"a":{"type":"string"}},
+        |"required":["a"],
+        |"patternProperties":{"^type$":{"type":"integer"},"^properties$":{"type":"string"}}}""".stripMargin
+    val result = normalize(rawSchema)
+    val pp = result.hcursor.downField("patternProperties")
+    pp.downField("additionalProperties").focus shouldBe None
+    pp.downField("^type$").get[String]("type") shouldBe Right("integer")
+    pp.downField("^properties$").get[String]("type") shouldBe Right("string")
+  }
+
   it should "not corrupt a $defs entry literally named properties or type" in {
     val rawSchema =
       """{"type":"object",

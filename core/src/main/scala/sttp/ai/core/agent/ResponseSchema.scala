@@ -1,9 +1,11 @@
 package sttp.ai.core.agent
 
-import io.circe.{Codec, DecodingFailure, Encoder, HCursor, Json, JsonObject}
-import sttp.apispec.Schema
+import io.circe.{Codec, DecodingFailure, Encoder, HCursor, Json}
+import sttp.apispec.{ExampleSingleValue, Schema, SchemaLike, SchemaType}
 import sttp.tapir.docs.apispec.schema.TapirSchemaToJsonSchema
 import sttp.tapir.{Schema => TapirSchema}
+
+import scala.collection.immutable.ListMap
 
 final case class ResponseSchema[T] private (
     schema: Schema,
@@ -52,63 +54,61 @@ object ResponseSchema extends ResponseSchemaCompanionVersionSpecific {
     val duplicateClasses = variants.groupBy(_.runtimeClass).collect { case (c, vs) if vs.size > 1 => c.getName }
     require(duplicateClasses.isEmpty, s"duplicate variant classes: ${duplicateClasses.mkString(", ")}")
 
-    val prepared: Seq[(JsonObject, Map[String, Json])] = variants.map { v =>
-      val rendered = sttp.apispec.circe.encoderSchema(renderTapirSchema(v.tapirSchema)).deepDropNullValues
-      val obj = rendered.asObject.getOrElse(
-        throw new IllegalArgumentException(s"variant '${v.name}': variant schemas must be object schemas (case classes)")
-      )
+    // Assembled entirely in the typed apispec model: `properties` is a ListMap, so the discriminator-first invariant
+    // below holds structurally (no JSON round trip whose key-order preservation we would silently depend on).
+    val prepared: Seq[(Schema, ListMap[String, SchemaLike])] = variants.map { v =>
+      val rendered = renderTapirSchema(v.tapirSchema)
       require(
-        !obj.contains("$ref"),
+        rendered.$ref.isEmpty,
         s"variant '${v.name}': reference-rooted schemas (e.g. hand-built recursive schemas rendering to a root $$ref) are not " +
           "supported as union variants; use a non-recursive case class, or ResponseSchema.derived for a single recursive type"
       )
       require(
-        obj("type").contains(Json.fromString("object")),
-        s"variant '${v.name}': variant schemas must be object schemas (case classes), got ${rendered.noSpaces}"
+        rendered.`type`.contains(List(SchemaType.Object)),
+        s"variant '${v.name}': variant schemas must be object schemas (case classes)"
       )
-      val props = obj("properties").flatMap(_.asObject).getOrElse(JsonObject.empty)
-      require(!props.contains("kind"), s"variant '${v.name}' already defines a 'kind' property, which is reserved for the discriminator")
-      val nestedDefs = obj("$defs").flatMap(_.asObject).map(_.toMap).getOrElse(Map.empty[String, Json])
-      val required = obj("required").flatMap(_.asArray).getOrElse(Vector.empty)
+      require(
+        !rendered.properties.contains("kind"),
+        s"variant '${v.name}' already defines a 'kind' property, which is reserved for the discriminator"
+      )
       // The discriminator must be the FIRST property: structured-output grammars (OpenAI strict mode, Claude) constrain
       // generation to the schema's property order, and models lead with the discriminator - if `kind` were last, emitting
       // it first would eliminate every variant except those whose only property is `kind` (verified live: all non-empty
       // variants became undecodable and the model was forced into the empty variant).
-      val kindSchema = Json.obj("type" -> Json.fromString("string"), "enum" -> Json.arr(Json.fromString(v.name)))
-      val withKind = obj
-        .remove("$defs")
-        .remove("$schema")
-        .add(
-          "properties",
-          Json.fromJsonObject(JsonObject.fromIterable(("kind" -> kindSchema) +: props.toList))
-        )
-        .add("required", Json.fromValues(Json.fromString("kind") +: required))
-      (withKind, nestedDefs)
+      val kindSchema = Schema(`type` = Some(List(SchemaType.String)), `enum` = Some(List(ExampleSingleValue(v.name))))
+      val withKind = rendered.copy(
+        $schema = None,
+        $defs = None,
+        properties = ListMap("kind" -> kindSchema) ++ rendered.properties,
+        required = "kind" :: rendered.required
+      )
+      (withKind, rendered.$defs.getOrElse(ListMap.empty))
     }
 
-    val mergedDefs = prepared.foldLeft(Map.empty[String, Json]) { case (acc, (_, defs)) =>
-      defs.foreach { case (key, definition) =>
-        acc.get(key).foreach { existing =>
-          require(
-            existing == definition,
-            s"conflicting $$defs entry '$key': two variants nest different schemas under the same name; rename one of the nested types"
-          )
+    val mergedDefs: ListMap[String, SchemaLike] = prepared.foldLeft(ListMap.empty[String, SchemaLike]) { case (acc, (_, defs)) =>
+      defs.foldLeft(acc) { case (a, (key, definition)) =>
+        a.get(key) match {
+          case Some(existing) =>
+            require(
+              existing == definition,
+              s"conflicting $$defs entry '$key': two variants nest different schemas under the same name; rename one of the nested types"
+            )
+            a
+          case None => a.updated(key, definition)
         }
       }
-      acc ++ defs
     }
 
-    val root = JsonObject(
-      "$schema" -> Json.fromString("https://json-schema.org/draft/2020-12/schema"),
-      "type" -> Json.fromString("object"),
-      "required" -> Json.arr(Json.fromString("result")),
-      "properties" -> Json.obj("result" -> Json.obj("anyOf" -> Json.fromValues(prepared.map(p => Json.fromJsonObject(p._1)))))
+    val root = Schema(
+      $schema = Some("https://json-schema.org/draft/2020-12/schema"),
+      $defs = if (mergedDefs.isEmpty) None else Some(mergedDefs),
+      // embedded in the schema itself (not only in ResponseSchema.description) so it reaches every provider - the
+      // standalone description field is currently forwarded by the OpenAI backend only
+      description = description,
+      `type` = Some(List(SchemaType.Object)),
+      required = List("result"),
+      properties = ListMap("result" -> Schema(anyOf = prepared.map(p => p._1: SchemaLike).toList))
     )
-    val rootWithDefs = if (mergedDefs.isEmpty) root else root.add("$defs", Json.fromJsonObject(JsonObject.fromMap(mergedDefs)))
-    val apispecSchema: Schema = Json
-      .fromJsonObject(rootWithDefs)
-      .as[Schema](sttp.apispec.circe.schemaDecoder)
-      .fold(e => throw new IllegalArgumentException(s"internal error: assembled union schema failed to parse: ${e.getMessage}"), identity)
 
     val byName: Map[String, Variant[_ <: U]] = variants.map(v => v.name -> v).toMap
     val validKinds = variants.map(_.name).mkString(", ")
@@ -125,7 +125,8 @@ object ResponseSchema extends ResponseSchemaCompanionVersionSpecific {
                 case Some(o) => Json.fromJsonObject(o.remove("kind"))
                 case None    => result.focus.getOrElse(Json.Null)
               }
-              v.decoder.decodeJson(withoutKind)
+              // re-anchor variant decode failures under the .result path, which decodeJson's fresh cursor loses
+              v.decoder.decodeJson(withoutKind).left.map(df => DecodingFailure(df.message, df.history ::: result.history))
             case None => Left(DecodingFailure(s"unknown kind '$kind'; expected one of: $validKinds", result.history))
           }
         }
@@ -147,6 +148,6 @@ object ResponseSchema extends ResponseSchemaCompanionVersionSpecific {
       }
     }
 
-    new ResponseSchema[U](apispecSchema, unionCodec, description)
+    new ResponseSchema[U](root, unionCodec, description)
   }
 }

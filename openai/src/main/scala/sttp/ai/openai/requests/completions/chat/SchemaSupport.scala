@@ -46,6 +46,11 @@ object SchemaSupport {
     * We implement these by folding over the JSON structure. However, if a schema uses discriminated unions (indicated by a `discriminator`
     * property), we skip forcing `additionalProperties: false` to preserve flexibility in selecting sub-schemas.
     */
+  // JSON-Schema keywords whose value is a map of user-chosen names to schemas (unlike ordinary keywords, whose value
+  // is itself a schema): their containers must never be folded as if they were schema objects.
+  private val nameToSchemaContainers: Set[String] =
+    Set("$defs", "definitions", "patternProperties", "dependentSchemas", "dependencies")
+
   private val schemaFolder: Json.Folder[Json] = new Json.Folder[Json] {
     lazy val onNull: Json = Json.Null
     def onBoolean(value: Boolean): Json = Json.fromBoolean(value)
@@ -79,15 +84,16 @@ object SchemaSupport {
             addAdditionalProperties = true,
             requiredProperties = v.asObject.fold(List.empty[String])(_.keys.toList)
           )
-        } else if (k == "$defs" || k == "definitions") {
-          // Same container rule as "properties": the entries are definition NAMES, not schema keywords. Fold each
-          // definition's schema VALUE, but never fold the container itself through `onObject` - a definition literally
-          // named "properties"/"type" must not be mistaken for a keyword of the container.
-          val foldedDefs = v.asObject match {
-            case Some(defs) => Json.fromJsonObject(JsonObject.fromIterable(defs.toList.map { case (n, s) => n -> s.foldWith(this) }))
-            case None       => v.foldWith(this)
+        } else if (nameToSchemaContainers.contains(k)) {
+          // Same container rule as "properties": the entries are user-chosen NAMES mapping to schemas, not schema
+          // keywords. Fold each entry's schema VALUE, but never fold the container itself through `onObject` - an
+          // entry literally named "properties"/"type" must not be mistaken for a keyword of the container. (Values
+          // that are not schemas, e.g. the string arrays legacy "dependencies" allows, pass through the fold intact.)
+          val foldedEntries = v.asObject match {
+            case Some(entries) => Json.fromJsonObject(JsonObject.fromIterable(entries.toList.map { case (n, s) => n -> s.foldWith(this) }))
+            case None          => v.foldWith(this)
           }
-          acc.copy(fields = (k, foldedDefs) :: acc.fields)
+          acc.copy(fields = (k, foldedEntries) :: acc.fields)
         } else if (k == "type")
           acc.copy(
             fields = (k, v.foldWith(this)) :: acc.fields,

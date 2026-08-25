@@ -112,10 +112,17 @@ class ResponseSchemaOneOfSpec extends AnyFlatSpec with Matchers with OptionValue
     rs.codec.decodeJson(encoded) shouldBe Right(Refund("o-9"))
   }
 
-  it should "carry the description overload into the ResponseSchema" in {
+  it should "carry the description overload into the ResponseSchema and embed it in the schema root" in {
     val described = ResponseSchema.oneOf[Intent]("Classify the user's intent")(Variant[Refund], Variant[Complaint], Variant[GeneralQuery])
     described.description shouldBe Some("Classify the user's intent")
+    schemaJson(described).hcursor.get[String]("description") shouldBe Right("Classify the user's intent")
     rs.description shouldBe None
+  }
+
+  it should "report variant decode failures under the result path" in {
+    val res = rs.codec.decodeJson(Json.obj("result" -> Json.obj("kind" -> "Refund".asJson, "orderId" -> 5.asJson)))
+    res.isLeft shouldBe true
+    res.left.toOption.value.history.map(_.toString) should contain("DownField(result)")
   }
 
   it should "hoist nested case-class schemas into the root $defs and reference them" in {
