@@ -39,3 +39,5 @@ generated-docs/out/_build/
 # Superpowers specs/plans and SDD working files (local only)
 docs/superpowers/
 .superpowers/
+
+CLAUDE.local.md
