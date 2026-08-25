@@ -35,6 +35,43 @@ The `derives io.circe.Codec.AsObject, Schema` clause automatically generates the
 
 See [JSON Schemas: structured outputs & tools](../other/json-schemas.md) for how schema derivation works and how to customise it.
 
+## Deriving tool sets from a service trait
+
+On Scala 3, a whole tool set can be derived from a service trait's methods with `AgentTools.derive` — one tool per public method, without defining an input case class per tool:
+
+```scala mdoc:compile-only
+//> using dep com.softwaremill.sttp.ai::openai:@VERSION@
+
+import sttp.ai.core.agent.*
+import sttp.tapir.Schema.annotations.description
+
+trait WeatherService:
+  @description("Get the current weather for a city")
+  def currentWeather(@description("City name") city: String): String
+
+  @description("Get a multi-day forecast")
+  def forecast(city: String, days: Int): String
+
+class WeatherServiceImpl extends WeatherService:
+  def currentWeather(city: String): String = s"Sunny in $city"
+  def forecast(city: String, days: Int): String = s"$days days of sun in $city"
+
+val tools = AgentTools.derive[WeatherService](WeatherServiceImpl())
+// two AgentTools: "currentWeather" and "forecast"
+```
+
+The rules:
+
+- Every public method with a single (possibly empty) parameter list becomes a tool; methods inherited from parent traits are included. Parameterless accessors (`def foo: String`, `val`s, `var`s) are skipped — unless a parameterless `def` carries `@description`, which is a compile error (add `()` to expose it as a tool).
+- The tool name is the method name; JSON schema properties are the parameter names, with types taken from each parameter's tapir `Schema`. `Option` parameters become optional properties. Case-class parameters work out of the box (given their own `Schema`/`Codec` instances); their schemas are referenced via `$defs`.
+- Each method must carry a `@description` annotation (`sttp.tapir.Schema.annotations.description`) — it becomes the tool description. Parameter-level `@description` annotations become property descriptions. The annotation argument can be a string literal or any compile-time constant string (e.g. a `final val`).
+- Methods must return `String`. For effectful services use `AgentTools.deriveF[F, MyService]` with methods returning `F[String]` (covariantly narrowed return types, e.g. `Some[String]` for `F = Option`, conform).
+- Invalid shapes — a missing `@description`, overloads, default parameter values, multiple/`using` parameter lists, type parameters, by-name or vararg parameters, or a parameter type without given `Schema`/`Decoder`/`Encoder` instances — are compile-time errors.
+- All inherited public methods must conform to these rules — there is no per-method exclusion mechanism — so a service trait should not mix tool methods with unrelated public methods (e.g. extending `AutoCloseable` won't work).
+- Duplicate tool names are rejected within one trait (no overloads), but when combining tool sets derived from several traits, keeping names unique across the combined set is the caller's responsibility.
+
+Derivation is **Scala 3 only**: on Scala 2.13, define tools individually with `AgentTool.fromFunction` as shown above.
+
 ## Agent Result
 
 ```scala

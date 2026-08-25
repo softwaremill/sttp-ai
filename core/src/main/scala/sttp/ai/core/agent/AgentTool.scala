@@ -61,15 +61,26 @@ object AgentTool {
       override def execute(input: Map[String, Json]): F[String] = f(input)
     }
 
-  /** Providers require a tool's input/parameters schema to be a JSON-Schema *object*; MCP allows schemas that omit `type` (e.g. `{}` for
-    * no-argument tools) and the boolean form `true` ("any input is valid"). Both are normalized to a minimal object schema; anything else
-    * passes through unchanged.
+  /** Providers require a tool's input/parameters schema to be a JSON-Schema *object*, and some also require the `properties` key to be
+    * present on it; MCP allows schemas that omit `type` (e.g. `{}` for no-argument tools) and the boolean form `true` ("any input is
+    * valid"). All are normalized to a minimal object schema. The `properties` repair is skipped for schemas that define their shape another
+    * way (`$ref`, combinators, a discriminator, or an explicit non-false `additionalProperties` for map-like objects) — injecting an empty
+    * `properties` there would misrepresent the schema.
     */
   private[ai] def ensureObjectType(schema: Json): Json =
-    if (schema.isBoolean) Json.obj("type" -> Json.fromString("object"))
+    if (schema.isBoolean) ensureObjectType(Json.obj("type" -> Json.fromString("object")))
     else
       schema.asObject match {
-        case Some(obj) if !obj.contains("type") => Json.fromJsonObject(obj.add("type", Json.fromString("object")))
-        case _                                  => schema
+        case Some(obj) =>
+          val typed = if (obj.contains("type")) obj else obj.add("type", Json.fromString("object"))
+          val shapeDefinedElsewhere =
+            Seq("$ref", "oneOf", "anyOf", "allOf", "discriminator").exists(typed.contains) ||
+              typed("additionalProperties").exists(ap => !ap.isBoolean || ap.asBoolean.contains(true))
+          val repaired =
+            if (typed("type").contains(Json.fromString("object")) && !typed.contains("properties") && !shapeDefinedElsewhere)
+              typed.add("properties", Json.obj())
+            else typed
+          Json.fromJsonObject(repaired)
+        case None => schema
       }
 }

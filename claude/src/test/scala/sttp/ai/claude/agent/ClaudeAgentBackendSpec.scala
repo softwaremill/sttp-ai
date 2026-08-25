@@ -59,7 +59,7 @@ class ClaudeAgentBackendSpec extends AnyFlatSpec with Matchers with EitherValues
 
     backend.convertedTools.head match {
       case raw: Tool.CustomRaw =>
-        raw.inputSchema shouldBe parse("""{"type":"object"}""").value
+        raw.inputSchema shouldBe parse("""{"type":"object","properties":{}}""").value
       case other => fail(s"expected Tool.CustomRaw, got $other")
     }
   }
@@ -101,7 +101,7 @@ class ClaudeAgentBackendSpec extends AnyFlatSpec with Matchers with EitherValues
     val backend = new ClaudeAgentBackend[Identity](client, _ => ClaudeModel.ClaudeHaiku4_5, Seq(tool), None, None)(IdentityMonad)
 
     backend.convertedTools.head match {
-      case raw: Tool.CustomRaw => raw.inputSchema shouldBe parse("""{"type":"object"}""").value
+      case raw: Tool.CustomRaw => raw.inputSchema shouldBe parse("""{"type":"object","properties":{}}""").value
       case other               => fail(s"expected Tool.CustomRaw, got $other")
     }
   }

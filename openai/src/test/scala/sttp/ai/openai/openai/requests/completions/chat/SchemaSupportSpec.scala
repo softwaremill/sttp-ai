@@ -113,6 +113,50 @@ class SchemaSupportSpec extends AnyFlatSpec with Matchers with EitherValues {
     result shouldBe expected
   }
 
+  it should "add empty properties to an object root that has a type but no properties" in {
+    val result = normalize("""{"type":"object"}""")
+    val expected = parse("""{"type":"object","properties":{},"additionalProperties":false}""").value
+    result shouldBe expected
+  }
+
+  it should "not stamp properties onto a propertyless discriminated-union root" in {
+    val rawSchema =
+      """{"type":"object",
+        |"discriminator":{"propertyName":"kind"},
+        |"oneOf":[{"type":"object","properties":{"kind":{"type":"string"},"a":{"type":"string"}},"required":["kind","a"]}]}""".stripMargin
+    val result = normalize(rawSchema)
+    result.hcursor.downField("properties").focus shouldBe None
+    result.hcursor.downField("additionalProperties").focus shouldBe None
+  }
+
+  it should "add empty properties to a propertyless nested object, not just the root" in {
+    val rawSchema =
+      """{"type":"object",
+        |"properties":{"a":{"$ref":"#/$defs/Empty"}},
+        |"required":["a"],
+        |"$defs":{"Empty":{"title":"Empty","type":"object"}}}""".stripMargin
+    val result = normalize(rawSchema)
+    val empty = result.hcursor.downField("$defs").downField("Empty")
+    empty.downField("properties").focus shouldBe Some(Json.obj())
+    empty.get[Boolean]("additionalProperties") shouldBe Right(false)
+  }
+
+  it should "normalize the boolean schema form to a strict-valid object" in {
+    normalize("true") shouldBe parse("""{"type":"object","properties":{},"additionalProperties":false}""").value
+  }
+
+  it should "leave a $ref-only root untouched instead of constraining it to an empty object" in {
+    val refRoot = """{"$ref":"#/$defs/X"}"""
+    normalize(refRoot) shouldBe parse(refRoot).value
+  }
+
+  it should "not silently narrow a map-like object to an empty one" in {
+    val result = normalize("""{"type":"object","additionalProperties":{"type":"string"}}""")
+    // additionalProperties clobbering to false is pre-existing strict-mode behavior; the important part is that no
+    // empty `properties` appears, so OpenAI still rejects the schema loudly instead of accepting a {}-only object
+    result.hcursor.downField("properties").focus shouldBe None
+  }
+
   it should "still skip additionalProperties on discriminated unions" in {
     val result = normalize(
       """{"type":"object",

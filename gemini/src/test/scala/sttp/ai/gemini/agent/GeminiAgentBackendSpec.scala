@@ -75,7 +75,7 @@ class GeminiAgentBackendSpec extends AnyFlatSpec with Matchers with EitherValues
     }
 
     newBackend(Seq(tool)).convertedTools.head match {
-      case Tool.Function(_, _, parameters) => parameters shouldBe parse("""{"type":"object"}""").value
+      case Tool.Function(_, _, parameters) => parameters shouldBe parse("""{"type":"object","properties":{}}""").value
       case other                           => fail(s"expected Tool.Function, got $other")
     }
   }
@@ -259,8 +259,9 @@ class GeminiAgentBackendSpec extends AnyFlatSpec with Matchers with EitherValues
     }
 
     newBackend(Seq(tool)).convertedTools.head match {
-      case Tool.Function(_, _, parameters) => parameters shouldBe Json.obj("type" -> Json.fromString("object"))
-      case other                           => fail(s"expected Tool.Function, got $other")
+      case Tool.Function(_, _, parameters) =>
+        parameters shouldBe Json.obj("type" -> Json.fromString("object"), "properties" -> Json.obj())
+      case other => fail(s"expected Tool.Function, got $other")
     }
   }
 

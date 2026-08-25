@@ -22,7 +22,11 @@ object SchemaSupport {
     * Only apply this when the caller actually requested strict mode (`strict: true`); everything else should get a faithful encoding (see
     * [[schemaCodec]]).
     */
-  def normalizeForStrict(schemaJson: Json): Json = ensureStrictObjectRoot(schemaJson.foldWith(schemaFolder))
+  def normalizeForStrict(schemaJson: Json): Json =
+    // The boolean schema form `true`/`false` ("any input" / "no input", an MCP idiom) never reaches the folder as an
+    // object; normalize it to the minimal object schema first so strict mode gets type/properties/additionalProperties.
+    if (schemaJson.isBoolean) normalizeForStrict(Json.obj("type" -> Json.fromString("object")))
+    else ensureStrictObjectRoot(schemaJson.foldWith(schemaFolder))
 
   /** Normalizes an apispec `Schema` to OpenAI's strict-mode rules. See [[normalizeForStrict(Json)]]. */
   def normalizeForStrict(schema: Schema): Json = normalizeForStrict(encoderSchema(schema).deepDropNullValues)
@@ -102,7 +106,19 @@ object SchemaSupport {
       val remove = addlPropsRemove ++ requiredRemove
       val fields = addlPropsAdd ++ requiredAdd ++ state.fields.filterNot { case (k, _) => remove.contains(k) }
 
-      Json.fromFields(fields)
+      // Strict mode requires `properties` on every object, not just the root (a zero-field case class in $defs is an
+      // object too). Repair only plain objects: schemas whose shape lives elsewhere ($ref, combinators, a
+      // discriminator, or an explicit non-false additionalProperties for map-like objects) are left alone - injecting
+      // an empty `properties` there would silently narrow them (a map-like root should keep failing loudly, since
+      // strict mode cannot express free-form objects at all).
+      val isPlainPropertylessObject =
+        value("type").contains(Json.fromString("object")) &&
+          !value.contains("properties") &&
+          !Seq("$ref", "oneOf", "anyOf", "allOf", "discriminator").exists(value.contains) &&
+          !value("additionalProperties").exists(ap => !ap.isBoolean || ap.asBoolean.contains(true))
+      val repairedFields = if (isPlainPropertylessObject) fields :+ ("properties" -> Json.obj()) else fields
+
+      Json.fromFields(repairedFields)
     }
   }
 
@@ -146,18 +162,19 @@ object SchemaSupport {
     }
 
   /** `normalizeForStrict` is only ever called on a schema OpenAI itself requires to be an object (a tool's `parameters`, or a
-    * structured-output schema's root) — but the folder above only adds `additionalProperties: false`/`properties` to an object when it sees
-    * a `"properties"` or `"type": "object"` key to trigger on. A schema with NEITHER (e.g. a genuinely argument-less tool advertising a
-    * bare `{}`) would otherwise reach OpenAI missing fields strict mode always requires (`type`, `properties`, `additionalProperties`), and
-    * be rejected at request time.
+    * structured-output schema's root) - but the folder repairs `properties` only on objects that already carry `"type": "object"`. A
+    * degenerate root with NEITHER `type` nor `properties` (e.g. a genuinely argument-less tool advertising a bare `{}`) would otherwise
+    * reach OpenAI missing the fields strict mode always requires, and be rejected at request time.
     *
-    * The guard mirrors the folder's own trigger condition exactly: a schema that already has `"properties"` or `"type"` is left alone even
-    * if `additionalProperties` ended up absent, since that can be a deliberate choice (e.g. the folder's discriminated-union skip) rather
-    * than the degenerate case this handles.
+    * The repair is skipped for roots whose shape is defined elsewhere (`$ref`, combinators, a discriminator): stamping
+    * `type`/`properties`/`additionalProperties` next to those would silently constrain the schema to `{}` instead of surfacing the
+    * incompatibility.
     */
   private def ensureStrictObjectRoot(json: Json): Json =
     json.asObject match {
-      case Some(obj) if !obj.contains("properties") && !obj.contains("type") =>
+      case Some(obj)
+          if !obj.contains("properties") && !obj.contains("type") &&
+            !Seq("$ref", "oneOf", "anyOf", "allOf", "discriminator").exists(obj.contains) =>
         Json.fromJsonObject(
           obj
             .add("type", Json.fromString("object"))
