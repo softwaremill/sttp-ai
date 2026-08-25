@@ -7,7 +7,7 @@ For choosing between the sync and async client, see [basics](basics.md).
 `GeminiModel` is a small catalogue of well-known model identifiers. It is optional — every request-building method (`InteractionRequest.simple`, `.withSystem`, `.withTools`, or the `InteractionRequest` constructor) takes a plain `model: String`, so you can always pass a literal model name directly. Use `GeminiModel.value` when you'd rather reference a model symbolically, and `GeminiModel.CustomModel` for anything not listed:
 
 ```scala
-//> using dep com.softwaremill.sttp.ai::gemini:0.8.0
+//> using dep com.softwaremill.sttp.ai::gemini:0.9.0
 
 import sttp.ai.gemini.models.GeminiModel
 
@@ -50,7 +50,7 @@ object ModelsExample:
 | (response body fails to parse as `T`) | `GeminiException.DeserializationGeminiException` |
 
 ```scala
-//> using dep com.softwaremill.sttp.ai::gemini:0.8.0
+//> using dep com.softwaremill.sttp.ai::gemini:0.9.0
 
 import sttp.ai.gemini.GeminiExceptions.GeminiException
 import sttp.ai.gemini.GeminiSyncClient

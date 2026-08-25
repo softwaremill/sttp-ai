@@ -7,7 +7,7 @@ Any provider exposing an OpenAI-compatible endpoint works with the OpenAI client
 Azure OpenAI's API-key authentication uses an `api-key: <key>` header instead of the standard `Authorization: Bearer <key>`. Pass `AuthScheme.AzureApiKey` together with your deployment's endpoint URL (including the `api-version` query parameter — it is preserved on every request):
 
 ```scala
-//> using dep com.softwaremill.sttp.ai::openai:0.8.0
+//> using dep com.softwaremill.sttp.ai::openai:0.9.0
 
 import sttp.model.Uri.*
 import sttp.ai.openai.{AuthScheme, OpenAISyncClient}
@@ -43,7 +43,7 @@ The newer Azure `/openai/v1/` endpoint also accepts standard Bearer authenticati
 ## Ollama
 
 ```scala
-//> using dep com.softwaremill.sttp.ai::openai:0.8.0
+//> using dep com.softwaremill.sttp.ai::openai:0.9.0
 
 import sttp.model.Uri.*
 import sttp.ai.openai.OpenAISyncClient
@@ -99,7 +99,7 @@ object Main:
 [Grok](https://x.ai) is xAI's model family, served from an OpenAI-compatible endpoint:
 
 ```scala
-//> using dep com.softwaremill.sttp.ai::openai:0.8.0
+//> using dep com.softwaremill.sttp.ai::openai:0.9.0
 
 import sttp.model.Uri.*
 import sttp.ai.openai.OpenAISyncClient
@@ -136,7 +136,7 @@ object Main:
 Groq with cats-effect based backend:
 
 ```scala
-//> using dep com.softwaremill.sttp.ai::openai:0.8.0
+//> using dep com.softwaremill.sttp.ai::openai:0.9.0
 //> using dep com.softwaremill.sttp.client4::cats:4.0.0-M17
 
 import cats.effect.IO
@@ -204,7 +204,7 @@ object Main:
 OpenRouter with sync backend:
 
 ```scala
-//> using dep com.softwaremill.sttp.ai::openai:0.8.0
+//> using dep com.softwaremill.sttp.ai::openai:0.9.0
 
 import sttp.model.Uri.*
 import sttp.ai.openai.OpenAISyncClient
@@ -261,7 +261,7 @@ are decoded into the same `reasoningContent: Option[String]` field, on the respo
 (accumulate the deltas exactly like `content`):
 
 ```scala
-//> using dep com.softwaremill.sttp.ai::openai:0.8.0
+//> using dep com.softwaremill.sttp.ai::openai:0.9.0
 
 import sttp.model.Uri.*
 import sttp.ai.openai.OpenAISyncClient
@@ -300,7 +300,7 @@ typed field on `ChatBody`, `CompletionsBody`, or `EmbeddingsBody` (e.g. vLLM's `
 JSON values into the top level of the serialized request, alongside the typed fields:
 
 ```scala
-//> using dep com.softwaremill.sttp.ai::openai:0.8.0
+//> using dep com.softwaremill.sttp.ai::openai:0.9.0
 
 import io.circe.Json
 import sttp.model.Uri.*
@@ -347,7 +347,7 @@ Example below uses `HttpClientCatsBackend` as a backend, make sure to [add it to
 or use backend of your choice.
 
 ```scala
-//> using dep com.softwaremill.sttp.ai::openai:0.8.0
+//> using dep com.softwaremill.sttp.ai::openai:0.9.0
 //> using dep com.softwaremill.sttp.client4::cats:4.0.0-M17
 
 import cats.effect.IO

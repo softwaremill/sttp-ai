@@ -14,7 +14,7 @@ Framework for building autonomous AI agents that iteratively solve tasks using t
 ## Quick Start
 
 ```scala
-//> using dep com.softwaremill.sttp.ai::openai:0.8.0
+//> using dep com.softwaremill.sttp.ai::openai:0.9.0
 
 import sttp.ai.core.agent.*
 import sttp.ai.openai.OpenAI
@@ -43,7 +43,10 @@ object BasicExample extends App {
 
     val result = agent.run("What's the weather in Paris?")(backend)
 
-    println(s"Answer: ${result.finalAnswer}")
+    result.finalAnswer match {
+      case Right(answer) => println(s"Answer: $answer")
+      case Left(failure) => println(s"Agent did not finish cleanly: $failure")
+    }
     println(s"Iterations: ${result.iterations}")
   } finally backend.close()
 }

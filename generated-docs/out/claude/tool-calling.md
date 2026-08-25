@@ -7,7 +7,7 @@ Tools let Claude request that your application execute a function and report its
 Define your own tools that Claude calls and your application executes:
 
 ```scala
-//> using dep com.softwaremill.sttp.ai::claude:0.8.0
+//> using dep com.softwaremill.sttp.ai::claude:0.9.0
 
 import sttp.ai.claude.models.{ClaudeModel, ContentBlock, Message, PropertySchema, Tool, ToolInputSchema}
 import sttp.ai.claude.requests.MessageRequest
@@ -38,7 +38,7 @@ val request = MessageRequest.withTools(
 When Claude decides to call a tool, the response contains `ContentBlock.ToolUse` blocks. Execute the tool yourself, then send the result back as a `Message.toolResult` (a user-role message with a `ContentBlock.ToolResult`), together with the conversation so far:
 
 ```scala
-//> using dep com.softwaremill.sttp.ai::claude:0.8.0
+//> using dep com.softwaremill.sttp.ai::claude:0.9.0
 
 import sttp.ai.claude.ClaudeSyncClient
 import sttp.ai.claude.models.{ClaudeModel, ContentBlock, Message, PropertySchema, Tool, ToolInputSchema}
@@ -99,7 +99,7 @@ Currently supported:
 - **`Tool.WebSearch`** (`web_search_20250305`)
 
 ```scala
-//> using dep com.softwaremill.sttp.ai::claude:0.8.0
+//> using dep com.softwaremill.sttp.ai::claude:0.9.0
 
 import sttp.ai.claude.ClaudeSyncClient
 import sttp.ai.claude.models.{ClaudeModel, ContentBlock, Message, Tool}
