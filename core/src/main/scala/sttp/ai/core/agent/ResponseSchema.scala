@@ -11,7 +11,7 @@ final case class ResponseSchema[T] private (
     description: Option[String]
 )
 
-object ResponseSchema {
+object ResponseSchema extends ResponseSchemaCompanionVersionSpecific {
 
   def derived[T](
       description: Option[String] = None
@@ -29,7 +29,7 @@ object ResponseSchema {
     TapirSchemaToJsonSchema(ts, markOptionsAsNullable = true)
 
   /** Builds a discriminated-union response schema from explicitly listed variants. Works on Scala 2.13 and 3; `U` is typically a sealed
-    * trait (on Scala 3, [[UnionResponseSchema.derive]] assembles the variants from a union type and delegates here).
+    * trait (on Scala 3, `derivedUnion` assembles the variants from a union type and delegates here).
     *
     * Wire shape (uniform across providers; OpenAI strict mode forbids anyOf at the schema root, hence the wrapper object): a root object
     * with a single required `result` property whose schema is the anyOf of the variants, each variant carrying a required

@@ -6,22 +6,26 @@ import sttp.tapir.Schema as TapirSchema
 import scala.quoted.*
 import scala.reflect.ClassTag
 
-/** Derives a [[ResponseSchema]] for a Scala 3 union type (e.g. `Refund | Complaint | GeneralQuery`) by decomposing the union and delegating
-  * to [[ResponseSchema.oneOf]] with one [[Variant]] per member — one engine, one wire shape. Each member needs given tapir `Schema`, circe
-  * `Encoder`/`Decoder`, and a `ClassTag`. Members must be distinct case-class-like types (object schemas); the variant name is the member
-  * class's simple name.
-  *
-  * Scala 3 only: on Scala 2.13 (or for sealed traits), list the variants explicitly with [[ResponseSchema.oneOf]].
-  */
-object UnionResponseSchema {
+/** Scala 3-only additions to the [[ResponseSchema]] companion (the Scala 2.13 counterpart of this trait is empty). */
+trait ResponseSchemaCompanionVersionSpecific {
 
-  inline def derive[T]: ResponseSchema[T] = ${ deriveNoDescImpl[T] }
+  /** Derives a [[ResponseSchema]] for a Scala 3 union type (e.g. `Refund | Complaint | GeneralQuery`) by decomposing the union and
+    * delegating to [[ResponseSchema.oneOf]] with one [[Variant]] per member — one engine, one wire shape. Each member needs given tapir
+    * `Schema`, circe `Encoder`/`Decoder`, and a `ClassTag`. Members must be distinct case-class-like types (object schemas); the variant
+    * name is the member class's simple name.
+    *
+    * Scala 3 only: on Scala 2.13 (or for sealed traits), list the variants explicitly with [[ResponseSchema.oneOf]].
+    */
+  inline def derivedUnion[T]: ResponseSchema[T] = ${ ResponseSchemaUnionMacros.deriveNoDescImpl[T] }
 
-  inline def derive[T](description: String): ResponseSchema[T] = ${ deriveDescImpl[T]('description) }
+  inline def derivedUnion[T](description: String): ResponseSchema[T] = ${ ResponseSchemaUnionMacros.deriveDescImpl[T]('description) }
+}
 
-  private def deriveNoDescImpl[T: Type](using Quotes): Expr[ResponseSchema[T]] = deriveImpl[T](None)
+private[agent] object ResponseSchemaUnionMacros {
 
-  private def deriveDescImpl[T: Type](description: Expr[String])(using Quotes): Expr[ResponseSchema[T]] =
+  def deriveNoDescImpl[T: Type](using Quotes): Expr[ResponseSchema[T]] = deriveImpl[T](None)
+
+  def deriveDescImpl[T: Type](description: Expr[String])(using Quotes): Expr[ResponseSchema[T]] =
     deriveImpl[T](Some(description))
 
   private def deriveImpl[T: Type](description: Option[Expr[String]])(using Quotes): Expr[ResponseSchema[T]] = {
@@ -29,7 +33,7 @@ object UnionResponseSchema {
 
     def renderType(t: TypeRepr): String = MacroSupport.renderType(t)
 
-    def fail(msg: String): Nothing = report.errorAndAbort(s"UnionResponseSchema.derive[${renderType(TypeRepr.of[T])}]: $msg")
+    def fail(msg: String): Nothing = report.errorAndAbort(s"ResponseSchema.derivedUnion[${renderType(TypeRepr.of[T])}]: $msg")
 
     def flatten(t: TypeRepr): List[TypeRepr] = t.dealias match {
       case OrType(left, right) => flatten(left) ++ flatten(right)

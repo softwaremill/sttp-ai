@@ -139,10 +139,10 @@ Input can be typed the same way. `input[In]` transitions the builder's `In` type
 user message as compact JSON (via its circe `Encoder`) wrapped in a small fixed envelope; `inputRenderer[In]` takes
 an explicit `In => String` function when you want control over how the value is rendered.
 
-Response schemas also support discriminated unions — `UnionResponseSchema.derive[A | B | C]` on Scala 3, or
+Response schemas also support discriminated unions — `ResponseSchema.derivedUnion[A | B | C]` on Scala 3, or
 `ResponseSchema.oneOf` with explicit variants for sealed traits and Scala 2.13 (see
-[JSON Schemas](../other/json-schemas.md) for the wire shape, and for why unions need this dedicated entry point
-instead of `deriveResponseSchema`). A classifier agent then routes each intent to a
+[JSON Schemas](../other/json-schemas.md) for the wire shape, for when to use `.responseSchema` vs
+`.deriveResponseSchema`, and for why unions need a dedicated constructor). A classifier agent then routes each intent to a
 typed sub-agent, with unhandled intents caught by the compiler's exhaustivity check:
 
 ```scala mdoc:compile-only
@@ -164,7 +164,7 @@ val openai = OpenAI.fromEnv
 
 val classifier = OpenAIAgent
   .synchronous(openai, "gpt-4o-mini")
-  .responseSchema(UnionResponseSchema.derive[Refund | Complaint | GeneralQuery]("Classify the user's intent"))
+  .responseSchema(ResponseSchema.derivedUnion[Refund | Complaint | GeneralQuery]("Classify the user's intent"))
   .build
 
 val answer = classifier.run("I want my money back for order o-1")(backend).finalAnswer.map {

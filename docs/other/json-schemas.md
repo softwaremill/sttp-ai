@@ -93,10 +93,20 @@ Where raw JSON is expected instead (Gemini's `Tool.Function` parameters, Claude'
 ## Response schemas
 
 A `ResponseSchema[T]` bundles the two things a typed agent needs to return a `T`: the JSON schema sent to the
-model to constrain its final answer, and the circe codec that parses the answer back into `T`. It is usually
-created implicitly - `deriveResponseSchema[T]` on the agent builder calls `ResponseSchema.derived[T]`, which
-renders `T`'s tapir `Schema` and pairs it with `T`'s circe `Codec` - but it can also be built explicitly and
-passed to `.responseSchema(...)`, which is how the union support below plugs in.
+model to constrain its final answer, and the circe codec that parses the answer back into `T`.
+
+The agent builder accepts one in two ways:
+
+- `.deriveResponseSchema[T]` - shorthand for the common case. It calls `ResponseSchema.derived[T]`, rendering
+  `T`'s tapir `Schema` and pairing it with `T`'s circe `Codec`. Use it when `T` is a case class (or any type with
+  those given instances) and the derived schema is what you want.
+- `.responseSchema(rs)` - takes an explicitly built `ResponseSchema`. Use it when the schema cannot or should not
+  come from plain derivation: union types (`ResponseSchema.derivedUnion[A | B]`, below), explicit variants for
+  sealed traits (`ResponseSchema.oneOf`), or a `ResponseSchema.derived[T](description)` carrying a schema
+  description.
+
+`deriveResponseSchema[T]` is exactly `responseSchema(ResponseSchema.derived[T]())` - there is no behavioral
+difference beyond who constructs the `ResponseSchema`.
 
 ## Union types: structured intent classification
 
@@ -115,14 +125,14 @@ final case class Complaint(topic: String) derives Codec.AsObject, Schema
 final case class GeneralQuery() derives Codec.AsObject, Schema
 
 val intentSchema: ResponseSchema[Refund | Complaint | GeneralQuery] =
-  UnionResponseSchema.derive[Refund | Complaint | GeneralQuery]("Classify the user's intent")
+  ResponseSchema.derivedUnion[Refund | Complaint | GeneralQuery]("Classify the user's intent")
 ```
 
 `deriveResponseSchema[T]` cannot be used here: it needs given tapir `Schema[T]` and circe `Codec[T]` instances,
 and neither library can derive them for a union type (unions have no `Mirror`). More fundamentally, the union
 wire shape couples schema and codec - the `kind` discriminator injected into each variant's schema must be
 exactly what the decoder dispatches on - so the pair has to be built together, which is what
-`UnionResponseSchema.derive` does before handing the result to `.responseSchema(...)`.
+`ResponseSchema.derivedUnion` does before the result is handed to `.responseSchema(...)`.
 
 The model sees a uniform wire shape that works across OpenAI (including strict mode, which forbids `anyOf` at the
 schema root), Claude, and Gemini: a root object with a single required `result` property holding an `anyOf` of the
