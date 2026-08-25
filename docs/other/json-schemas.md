@@ -90,6 +90,14 @@ val jsonSchema: Schema =
 
 Where raw JSON is expected instead (Gemini's `Tool.Function` parameters, Claude's `Tool.CustomRaw`), build the `io.circe.Json` value directly — see the [Gemini structured-outputs page](../gemini/structured-outputs.md) for an example.
 
+## Response schemas
+
+A `ResponseSchema[T]` bundles the two things a typed agent needs to return a `T`: the JSON schema sent to the
+model to constrain its final answer, and the circe codec that parses the answer back into `T`. It is usually
+created implicitly - `deriveResponseSchema[T]` on the agent builder calls `ResponseSchema.derived[T]`, which
+renders `T`'s tapir `Schema` and pairs it with `T`'s circe `Codec` - but it can also be built explicitly and
+passed to `.responseSchema(...)`, which is how the union support below plugs in.
+
 ## Union types: structured intent classification
 
 On Scala 3, a response schema can be derived for a union type, so a classifier agent returns one of several
@@ -109,6 +117,12 @@ final case class GeneralQuery() derives Codec.AsObject, Schema
 val intentSchema: ResponseSchema[Refund | Complaint | GeneralQuery] =
   UnionResponseSchema.derive[Refund | Complaint | GeneralQuery]("Classify the user's intent")
 ```
+
+`deriveResponseSchema[T]` cannot be used here: it needs given tapir `Schema[T]` and circe `Codec[T]` instances,
+and neither library can derive them for a union type (unions have no `Mirror`). More fundamentally, the union
+wire shape couples schema and codec - the `kind` discriminator injected into each variant's schema must be
+exactly what the decoder dispatches on - so the pair has to be built together, which is what
+`UnionResponseSchema.derive` does before handing the result to `.responseSchema(...)`.
 
 The model sees a uniform wire shape that works across OpenAI (including strict mode, which forbids `anyOf` at the
 schema root), Claude, and Gemini: a root object with a single required `result` property holding an `anyOf` of the

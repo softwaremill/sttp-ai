@@ -141,7 +141,8 @@ an explicit `In => String` function when you want control over how the value is 
 
 Response schemas also support discriminated unions — `UnionResponseSchema.derive[A | B | C]` on Scala 3, or
 `ResponseSchema.oneOf` with explicit variants for sealed traits and Scala 2.13 (see
-[JSON Schemas](../other/json-schemas.md) for the wire shape). A classifier agent then routes each intent to a
+[JSON Schemas](../other/json-schemas.md) for the wire shape, and for why unions need this dedicated entry point
+instead of `deriveResponseSchema`). A classifier agent then routes each intent to a
 typed sub-agent, with unhandled intents caught by the compiler's exhaustivity check:
 
 ```scala mdoc:compile-only
