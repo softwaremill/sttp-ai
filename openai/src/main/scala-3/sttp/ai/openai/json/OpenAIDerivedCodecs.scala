@@ -79,6 +79,7 @@ import sttp.ai.openai.requests.responses.{ToolChoice => RespTC}
 import sttp.ai.openai.requests.responses.{InputItemsListResponseBody => IIL}
 import sttp.ai.openai.requests.responses.{ResponsesRequestBody => RRB}
 import sttp.ai.openai.requests.responses.{ResponsesResponseBody => RRESP}
+import sttp.ai.openai.requests.responses.{ResponsesStreamEvent => RSE}
 import sttp.ai.openai.requests.responses.DeleteModelResponseResponse
 import sttp.ai.openai.requests.completions.chat.SchemaSupport.schemaCodec
 import OpenAIManualCodecs.*
@@ -608,7 +609,9 @@ object OpenAIDerivedCodecs {
   implicit val rrespOutWebActionDecoder: Decoder[RRESP.OutputItem.WebSearchCall.Action] = ConfiguredDecoder.derived
   implicit val rrespOutCodeInterpreterOutputDecoder: Decoder[RRESP.OutputItem.CodeInterpreterOutput] = ConfiguredDecoder.derived
   implicit val rrespAnnotationDecoder: Decoder[RRESP.OutputContent.Annotation] = ConfiguredDecoder.derived
-  implicit val rrespOutputContentDecoder: Decoder[RRESP.OutputContent] = ConfiguredDecoder.derived
+  // Unmodelled content-part `type`s decode to `OutputContent.Unknown` instead of failing; see responsesOutputContentDispatch.
+  implicit val rrespOutputContentDecoder: Decoder[RRESP.OutputContent] =
+    OpenAIManualCodecs.responsesOutputContentDispatch(ConfiguredDecoder.derived[RRESP.OutputContent])
   implicit val rrespFormatDecoder: Decoder[RRESP.Format] = ConfiguredDecoder.derived
   implicit val rrespInInputMessageDecoder: Decoder[RRESP.InputItem.InputMessage] = ConfiguredDecoder.derived
   implicit val rrespInOutputMessageDecoder: Decoder[RRESP.InputItem.OutputMessage] = ConfiguredDecoder.derived
@@ -631,11 +634,153 @@ object OpenAIDerivedCodecs {
   implicit val rrespInCustomToolCallDecoder: Decoder[RRESP.InputItem.CustomToolCall] = ConfiguredDecoder.derived
   implicit val rrespInItemReferenceDecoder: Decoder[RRESP.InputItem.ItemReference] = ConfiguredDecoder.derived
   implicit val rrespInputItemDecoder: Decoder[RRESP.InputItem] = ConfiguredDecoder.derived
-  implicit val rrespOutputItemDecoder: Decoder[RRESP.OutputItem] = ConfiguredDecoder.derived
+  // Unmodelled item `type`s decode to `OutputItem.Unknown` instead of failing; see responsesOutputItemDispatch.
+  implicit val rrespOutputItemDecoder: Decoder[RRESP.OutputItem] =
+    OpenAIManualCodecs.responsesOutputItemDispatch(ConfiguredDecoder.derived[RRESP.OutputItem])
   implicit val rrespTextConfigDecoder: Decoder[RRESP.TextConfig] = ConfiguredDecoder.derived
   implicit val responsesResponseBodyDecoder: Decoder[RRESP] = {
     import sttp.ai.core.json.CirceHelpers.emptyMapAsNone // local: empty `metadata` object -> None
     ConfiguredDecoder.derived
   }
+  // responses ResponsesStreamEvent (streaming events, decode-only). `Decoder`s for *field* types are mandatory (circe recurses
+  // into sum children but not into product fields); the per-event leaves bound the derivation blast radius of a 59-child sum.
+  // The dotted wire discriminators are rewritten to snake_cased constructor names by the dispatch helper.
+  implicit val rseTopLogProbDecoder: Decoder[RSE.TopLogProb] = ConfiguredDecoder.derived
+  implicit val rseLogProbDecoder: Decoder[RSE.LogProb] = ConfiguredDecoder.derived
+  implicit val rseShellOutputDeltaDecoder: Decoder[RSE.ShellOutputDelta] = ConfiguredDecoder.derived
+  implicit val rseShellOutcomeDecoder: Decoder[RSE.ShellOutcome] = ConfiguredDecoder.derived
+  implicit val rseShellOutputDecoder: Decoder[RSE.ShellOutput] = ConfiguredDecoder.derived
+  implicit val rseCreatedDecoder: Decoder[RSE.Created] = ConfiguredDecoder.derived
+  implicit val rseInProgressDecoder: Decoder[RSE.InProgress] = ConfiguredDecoder.derived
+  implicit val rseCompletedDecoder: Decoder[RSE.Completed] = ConfiguredDecoder.derived
+  implicit val rseFailedDecoder: Decoder[RSE.Failed] = ConfiguredDecoder.derived
+  implicit val rseIncompleteDecoder: Decoder[RSE.Incomplete] = ConfiguredDecoder.derived
+  implicit val rseQueuedDecoder: Decoder[RSE.Queued] = ConfiguredDecoder.derived
+  implicit val rseOutputItemAddedDecoder: Decoder[RSE.OutputItemAdded] = ConfiguredDecoder.derived
+  implicit val rseOutputItemDoneDecoder: Decoder[RSE.OutputItemDone] = ConfiguredDecoder.derived
+  implicit val rseContentPartAddedDecoder: Decoder[RSE.ContentPartAdded] = ConfiguredDecoder.derived
+  implicit val rseContentPartDoneDecoder: Decoder[RSE.ContentPartDone] = ConfiguredDecoder.derived
+  implicit val rseOutputTextDeltaDecoder: Decoder[RSE.OutputTextDelta] = ConfiguredDecoder.derived
+  implicit val rseOutputTextDoneDecoder: Decoder[RSE.OutputTextDone] = ConfiguredDecoder.derived
+  implicit val rseOutputTextAnnotationAddedDecoder: Decoder[RSE.OutputTextAnnotationAdded] = ConfiguredDecoder.derived
+  implicit val rseRefusalDeltaDecoder: Decoder[RSE.RefusalDelta] = ConfiguredDecoder.derived
+  implicit val rseRefusalDoneDecoder: Decoder[RSE.RefusalDone] = ConfiguredDecoder.derived
+  implicit val rseReasoningTextDeltaDecoder: Decoder[RSE.ReasoningTextDelta] = ConfiguredDecoder.derived
+  implicit val rseReasoningTextDoneDecoder: Decoder[RSE.ReasoningTextDone] = ConfiguredDecoder.derived
+  implicit val rseReasoningSummaryTextDeltaDecoder: Decoder[RSE.ReasoningSummaryTextDelta] = ConfiguredDecoder.derived
+  implicit val rseReasoningSummaryTextDoneDecoder: Decoder[RSE.ReasoningSummaryTextDone] = ConfiguredDecoder.derived
+  implicit val rseReasoningSummaryPartAddedDecoder: Decoder[RSE.ReasoningSummaryPartAdded] = ConfiguredDecoder.derived
+  implicit val rseReasoningSummaryPartDoneDecoder: Decoder[RSE.ReasoningSummaryPartDone] = ConfiguredDecoder.derived
+  implicit val rseFunctionCallArgumentsDeltaDecoder: Decoder[RSE.FunctionCallArgumentsDelta] = ConfiguredDecoder.derived
+  implicit val rseFunctionCallArgumentsDoneDecoder: Decoder[RSE.FunctionCallArgumentsDone] = ConfiguredDecoder.derived
+  implicit val rseFileSearchCallInProgressDecoder: Decoder[RSE.FileSearchCallInProgress] = ConfiguredDecoder.derived
+  implicit val rseFileSearchCallSearchingDecoder: Decoder[RSE.FileSearchCallSearching] = ConfiguredDecoder.derived
+  implicit val rseFileSearchCallCompletedDecoder: Decoder[RSE.FileSearchCallCompleted] = ConfiguredDecoder.derived
+  implicit val rseWebSearchCallInProgressDecoder: Decoder[RSE.WebSearchCallInProgress] = ConfiguredDecoder.derived
+  implicit val rseWebSearchCallSearchingDecoder: Decoder[RSE.WebSearchCallSearching] = ConfiguredDecoder.derived
+  implicit val rseWebSearchCallCompletedDecoder: Decoder[RSE.WebSearchCallCompleted] = ConfiguredDecoder.derived
+  implicit val rseCodeInterpreterCallInProgressDecoder: Decoder[RSE.CodeInterpreterCallInProgress] = ConfiguredDecoder.derived
+  implicit val rseCodeInterpreterCallInterpretingDecoder: Decoder[RSE.CodeInterpreterCallInterpreting] = ConfiguredDecoder.derived
+  implicit val rseCodeInterpreterCallCompletedDecoder: Decoder[RSE.CodeInterpreterCallCompleted] = ConfiguredDecoder.derived
+  implicit val rseCodeInterpreterCallCodeDeltaDecoder: Decoder[RSE.CodeInterpreterCallCodeDelta] = ConfiguredDecoder.derived
+  implicit val rseCodeInterpreterCallCodeDoneDecoder: Decoder[RSE.CodeInterpreterCallCodeDone] = ConfiguredDecoder.derived
+  implicit val rseImageGenerationCallInProgressDecoder: Decoder[RSE.ImageGenerationCallInProgress] = ConfiguredDecoder.derived
+  implicit val rseImageGenerationCallGeneratingDecoder: Decoder[RSE.ImageGenerationCallGenerating] = ConfiguredDecoder.derived
+  implicit val rseImageGenerationCallCompletedDecoder: Decoder[RSE.ImageGenerationCallCompleted] = ConfiguredDecoder.derived
+  implicit val rseImageGenerationCallPartialImageDecoder: Decoder[RSE.ImageGenerationCallPartialImage] = ConfiguredDecoder.derived
+  implicit val rseMcpCallInProgressDecoder: Decoder[RSE.McpCallInProgress] = ConfiguredDecoder.derived
+  implicit val rseMcpCallCompletedDecoder: Decoder[RSE.McpCallCompleted] = ConfiguredDecoder.derived
+  implicit val rseMcpCallFailedDecoder: Decoder[RSE.McpCallFailed] = ConfiguredDecoder.derived
+  implicit val rseMcpCallArgumentsDeltaDecoder: Decoder[RSE.McpCallArgumentsDelta] = ConfiguredDecoder.derived
+  implicit val rseMcpCallArgumentsDoneDecoder: Decoder[RSE.McpCallArgumentsDone] = ConfiguredDecoder.derived
+  implicit val rseMcpListToolsInProgressDecoder: Decoder[RSE.McpListToolsInProgress] = ConfiguredDecoder.derived
+  implicit val rseMcpListToolsCompletedDecoder: Decoder[RSE.McpListToolsCompleted] = ConfiguredDecoder.derived
+  implicit val rseMcpListToolsFailedDecoder: Decoder[RSE.McpListToolsFailed] = ConfiguredDecoder.derived
+  implicit val rseCustomToolCallInputDeltaDecoder: Decoder[RSE.CustomToolCallInputDelta] = ConfiguredDecoder.derived
+  implicit val rseCustomToolCallInputDoneDecoder: Decoder[RSE.CustomToolCallInputDone] = ConfiguredDecoder.derived
+  implicit val rseShellCallCommandAddedDecoder: Decoder[RSE.ShellCallCommandAdded] = ConfiguredDecoder.derived
+  implicit val rseShellCallCommandDeltaDecoder: Decoder[RSE.ShellCallCommandDelta] = ConfiguredDecoder.derived
+  implicit val rseShellCallCommandDoneDecoder: Decoder[RSE.ShellCallCommandDone] = ConfiguredDecoder.derived
+  implicit val rseShellCallOutputContentDeltaDecoder: Decoder[RSE.ShellCallOutputContentDelta] = ConfiguredDecoder.derived
+  implicit val rseShellCallOutputContentDoneDecoder: Decoder[RSE.ShellCallOutputContentDone] = ConfiguredDecoder.derived
+  implicit val rseAudioDeltaDecoder: Decoder[RSE.AudioDelta] = ConfiguredDecoder.derived
+  implicit val rseAudioDoneDecoder: Decoder[RSE.AudioDone] = ConfiguredDecoder.derived
+  implicit val rseAudioTranscriptDeltaDecoder: Decoder[RSE.AudioTranscriptDelta] = ConfiguredDecoder.derived
+  implicit val rseAudioTranscriptDoneDecoder: Decoder[RSE.AudioTranscriptDone] = ConfiguredDecoder.derived
+  implicit val rseErrorDecoder: Decoder[RSE.Error] = ConfiguredDecoder.derived
+
+  /** Upcasts a leaf event decoder for [[responsesStreamEventDecoders]] (circe's `Decoder` is invariant). */
+  private def rseLeaf[A <: RSE](decoder: Decoder[A]): Decoder[RSE] = decoder.map(identity[RSE])
+
+  /** Wire `type` -> decoder for the event carrying it: the single source of truth for which streaming events this release models.
+    *
+    * Subsumes the discriminator rewriting the dispatch used to do - the leaf decoder is looked up directly, so an event is decoded once
+    * rather than rewritten and re-dispatched through a 59-child sum decoder on every `output_text.delta` - and, being the only place the
+    * wire types are listed, leaves nothing to keep in sync by hand. A new [[RSE]] case must be registered here, or it will always decode as
+    * `RSE.Unknown`; `ResponsesStreamEventDataSpec` walks these keys against the fixtures to catch a registration whose payload does not
+    * decode.
+    */
+  val responsesStreamEventDecoders: Map[String, Decoder[RSE]] = Map(
+    "response.created" -> rseLeaf(rseCreatedDecoder),
+    "response.in_progress" -> rseLeaf(rseInProgressDecoder),
+    "response.completed" -> rseLeaf(rseCompletedDecoder),
+    "response.failed" -> rseLeaf(rseFailedDecoder),
+    "response.incomplete" -> rseLeaf(rseIncompleteDecoder),
+    "response.queued" -> rseLeaf(rseQueuedDecoder),
+    "response.output_item.added" -> rseLeaf(rseOutputItemAddedDecoder),
+    "response.output_item.done" -> rseLeaf(rseOutputItemDoneDecoder),
+    "response.content_part.added" -> rseLeaf(rseContentPartAddedDecoder),
+    "response.content_part.done" -> rseLeaf(rseContentPartDoneDecoder),
+    "response.output_text.delta" -> rseLeaf(rseOutputTextDeltaDecoder),
+    "response.output_text.done" -> rseLeaf(rseOutputTextDoneDecoder),
+    "response.output_text.annotation.added" -> rseLeaf(rseOutputTextAnnotationAddedDecoder),
+    "response.refusal.delta" -> rseLeaf(rseRefusalDeltaDecoder),
+    "response.refusal.done" -> rseLeaf(rseRefusalDoneDecoder),
+    "response.reasoning_text.delta" -> rseLeaf(rseReasoningTextDeltaDecoder),
+    "response.reasoning_text.done" -> rseLeaf(rseReasoningTextDoneDecoder),
+    "response.reasoning_summary_text.delta" -> rseLeaf(rseReasoningSummaryTextDeltaDecoder),
+    "response.reasoning_summary_text.done" -> rseLeaf(rseReasoningSummaryTextDoneDecoder),
+    "response.reasoning_summary_part.added" -> rseLeaf(rseReasoningSummaryPartAddedDecoder),
+    "response.reasoning_summary_part.done" -> rseLeaf(rseReasoningSummaryPartDoneDecoder),
+    "response.function_call_arguments.delta" -> rseLeaf(rseFunctionCallArgumentsDeltaDecoder),
+    "response.function_call_arguments.done" -> rseLeaf(rseFunctionCallArgumentsDoneDecoder),
+    "response.file_search_call.in_progress" -> rseLeaf(rseFileSearchCallInProgressDecoder),
+    "response.file_search_call.searching" -> rseLeaf(rseFileSearchCallSearchingDecoder),
+    "response.file_search_call.completed" -> rseLeaf(rseFileSearchCallCompletedDecoder),
+    "response.web_search_call.in_progress" -> rseLeaf(rseWebSearchCallInProgressDecoder),
+    "response.web_search_call.searching" -> rseLeaf(rseWebSearchCallSearchingDecoder),
+    "response.web_search_call.completed" -> rseLeaf(rseWebSearchCallCompletedDecoder),
+    "response.code_interpreter_call.in_progress" -> rseLeaf(rseCodeInterpreterCallInProgressDecoder),
+    "response.code_interpreter_call.interpreting" -> rseLeaf(rseCodeInterpreterCallInterpretingDecoder),
+    "response.code_interpreter_call.completed" -> rseLeaf(rseCodeInterpreterCallCompletedDecoder),
+    "response.code_interpreter_call_code.delta" -> rseLeaf(rseCodeInterpreterCallCodeDeltaDecoder),
+    "response.code_interpreter_call_code.done" -> rseLeaf(rseCodeInterpreterCallCodeDoneDecoder),
+    "response.image_generation_call.in_progress" -> rseLeaf(rseImageGenerationCallInProgressDecoder),
+    "response.image_generation_call.generating" -> rseLeaf(rseImageGenerationCallGeneratingDecoder),
+    "response.image_generation_call.completed" -> rseLeaf(rseImageGenerationCallCompletedDecoder),
+    "response.image_generation_call.partial_image" -> rseLeaf(rseImageGenerationCallPartialImageDecoder),
+    "response.mcp_call.in_progress" -> rseLeaf(rseMcpCallInProgressDecoder),
+    "response.mcp_call.completed" -> rseLeaf(rseMcpCallCompletedDecoder),
+    "response.mcp_call.failed" -> rseLeaf(rseMcpCallFailedDecoder),
+    "response.mcp_call_arguments.delta" -> rseLeaf(rseMcpCallArgumentsDeltaDecoder),
+    "response.mcp_call_arguments.done" -> rseLeaf(rseMcpCallArgumentsDoneDecoder),
+    "response.mcp_list_tools.in_progress" -> rseLeaf(rseMcpListToolsInProgressDecoder),
+    "response.mcp_list_tools.completed" -> rseLeaf(rseMcpListToolsCompletedDecoder),
+    "response.mcp_list_tools.failed" -> rseLeaf(rseMcpListToolsFailedDecoder),
+    "response.custom_tool_call_input.delta" -> rseLeaf(rseCustomToolCallInputDeltaDecoder),
+    "response.custom_tool_call_input.done" -> rseLeaf(rseCustomToolCallInputDoneDecoder),
+    "response.shell_call_command.added" -> rseLeaf(rseShellCallCommandAddedDecoder),
+    "response.shell_call_command.delta" -> rseLeaf(rseShellCallCommandDeltaDecoder),
+    "response.shell_call_command.done" -> rseLeaf(rseShellCallCommandDoneDecoder),
+    "response.shell_call_output_content.delta" -> rseLeaf(rseShellCallOutputContentDeltaDecoder),
+    "response.shell_call_output_content.done" -> rseLeaf(rseShellCallOutputContentDoneDecoder),
+    "response.audio.delta" -> rseLeaf(rseAudioDeltaDecoder),
+    "response.audio.done" -> rseLeaf(rseAudioDoneDecoder),
+    "response.audio.transcript.delta" -> rseLeaf(rseAudioTranscriptDeltaDecoder),
+    "response.audio.transcript.done" -> rseLeaf(rseAudioTranscriptDoneDecoder),
+    "error" -> rseLeaf(rseErrorDecoder)
+  )
+  implicit val responsesStreamEventDecoder: Decoder[RSE] =
+    OpenAIManualCodecs.responsesStreamEventDispatch(responsesStreamEventDecoders)
   implicit val deleteModelResponseResponseDecoder: Decoder[DeleteModelResponseResponse] = ConfiguredDecoder.derived
 }
