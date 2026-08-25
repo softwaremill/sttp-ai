@@ -5,7 +5,7 @@ The [Messages API](https://docs.anthropic.com/claude/reference/messages_post) is
 ## Basic text conversation
 
 ```scala
-//> using dep com.softwaremill.sttp.ai::claude:0.8.0
+//> using dep com.softwaremill.sttp.ai::claude:0.10.0
 
 import sttp.ai.claude.models.{ClaudeModel, ContentBlock, Message}
 import sttp.ai.claude.requests.MessageRequest
@@ -28,7 +28,7 @@ val request = MessageRequest.simple(
 Unlike OpenAI, Claude uses a separate `system` parameter instead of system role messages:
 
 ```scala
-//> using dep com.softwaremill.sttp.ai::claude:0.8.0
+//> using dep com.softwaremill.sttp.ai::claude:0.10.0
 
 import sttp.ai.claude.models.{ClaudeModel, ContentBlock, Message}
 import sttp.ai.claude.requests.MessageRequest
@@ -44,7 +44,7 @@ val request = MessageRequest.withSystem(
 ## Image support
 
 ```scala
-//> using dep com.softwaremill.sttp.ai::claude:0.8.0
+//> using dep com.softwaremill.sttp.ai::claude:0.10.0
 
 import java.util.Base64
 import java.nio.file.{Files, Paths}
@@ -75,7 +75,7 @@ val request = MessageRequest.simple(
 ## Advanced parameters
 
 ```scala
-//> using dep com.softwaremill.sttp.ai::claude:0.8.0
+//> using dep com.softwaremill.sttp.ai::claude:0.10.0
 
 import sttp.ai.claude.models.{CacheControl, ClaudeModel, ContentBlock, Message}
 import sttp.ai.claude.requests.MessageRequest

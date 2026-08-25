@@ -21,7 +21,7 @@ This module provides direct access to the [OpenAI API](https://platform.openai.c
 ## Basic usage
 
 ```scala
-//> using dep com.softwaremill.sttp.ai::openai:0.8.0
+//> using dep com.softwaremill.sttp.ai::openai:0.10.0
 
 import sttp.ai.openai.OpenAISyncClient
 import sttp.ai.openai.requests.completions.chat.ChatRequestResponseData.ChatResponse
@@ -71,7 +71,7 @@ object Main:
 Newer OpenAI reasoning models (GPT-5, o1, o3, ...) reject the `max_tokens` parameter with `Unsupported parameter: 'max_tokens' is not supported with this model. Use 'max_completion_tokens' instead.` For these models leave `maxTokens = None` and set `maxCompletionTokens`:
 
 ```scala
-//> using dep com.softwaremill.sttp.ai::openai:0.8.0
+//> using dep com.softwaremill.sttp.ai::openai:0.10.0
 
 import sttp.ai.openai.requests.completions.chat.ChatRequestBody.{ChatBody, ChatCompletionModel}
 import sttp.ai.openai.requests.completions.chat.message.*

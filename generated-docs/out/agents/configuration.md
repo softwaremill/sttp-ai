@@ -10,7 +10,7 @@ val agent = OpenAIAgent
   .maxIterations(10)                               // Max reasoning steps
   .systemPrompt("Custom prompt")                   // Optional instructions
   .tools(tool1, tool2)                             // Your tools
-  .deriveResponseSchema[T]                          // Optional typed result (see runAs[T] below)
+  .deriveResponseSchema[T]                          // (fixes the agent's output type — see typed input and output in tools.md)
   .build
 ```
 

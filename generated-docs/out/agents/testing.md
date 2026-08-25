@@ -10,7 +10,7 @@ This serves two use-cases:
 Add the dependency in test scope:
 
 ```sbt
-"com.softwaremill.sttp.ai" %% "agent-testkit" % "0.8.0" % Test
+"com.softwaremill.sttp.ai" %% "agent-testkit" % "0.10.0" % Test
 ```
 
 The scalatest dependency is `Provided`: to use the matchers, bring your own scalatest (any 3.2.x) — which a scalatest test suite already has. The plain query API (see below) needs no test-framework dependency at all.
@@ -20,7 +20,7 @@ The scalatest dependency is `Provided`: to use the matchers, bring your own scal
 `ScriptedAgent` holds a queue of responses — one per model round-trip — and produces a standard agent builder, so swapping a real agent for a scripted one is a one-line change (`OpenAIAgent.builder(...)` becomes `script.builder`). Tools, system prompt, and all other configuration work exactly as with a real backend, and the real agent loop runs: your tools actually execute.
 
 ```scala
-//> using dep com.softwaremill.sttp.ai::agent-testkit:0.8.0
+//> using dep com.softwaremill.sttp.ai::agent-testkit:0.10.0
 
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
@@ -56,7 +56,7 @@ class CalculatorAgentSpec extends AnyFlatSpec with Matchers with AgentMatchers {
     result should haveCalledTool("calculator")
     result should haveCalledToolWith("calculator", """{"a": 1, "b": 2}""")
     result should haveFinishedWith(FinishReason.NaturalStop)
-    result.finalAnswer shouldBe "The answer is 3"
+    result.finalAnswer shouldBe Right("The answer is 3")
 
     // assert on what was sent to the "model"
     script should haveReceivedPrompt("What is 1 + 2?")

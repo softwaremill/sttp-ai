@@ -25,8 +25,8 @@ case class InteractionStreamEvent(
 ## Using fs2 (cats-effect)
 
 ```scala
-//> using dep com.softwaremill.sttp.ai::gemini:0.8.0
-//> using dep com.softwaremill.sttp.ai::fs2:0.8.0
+//> using dep com.softwaremill.sttp.ai::gemini:0.10.0
+//> using dep com.softwaremill.sttp.ai::fs2:0.10.0
 
 import cats.effect.IO
 import cats.effect.unsafe.implicits.global
@@ -67,8 +67,8 @@ object FS2StreamingExample:
 The Ox extension is defined directly on `GeminiClient`, returning a plain `Request` (not a `StreamRequest`, since Ox streams from a blocking `InputStream` rather than a stream capability type) whose body is a `Flow[Either[Exception, InteractionStreamEvent]]` — deserialization failures of individual events surface per-element as a `Left`, instead of failing the whole flow. Any sttp4 backend works, e.g. the plain blocking `DefaultSyncBackend`.
 
 ```scala
-//> using dep com.softwaremill.sttp.ai::gemini:0.8.0
-//> using dep com.softwaremill.sttp.ai::ox:0.8.0
+//> using dep com.softwaremill.sttp.ai::gemini:0.10.0
+//> using dep com.softwaremill.sttp.ai::ox:0.10.0
 
 import sttp.ai.gemini.GeminiClient
 import sttp.ai.gemini.requests.InteractionRequest

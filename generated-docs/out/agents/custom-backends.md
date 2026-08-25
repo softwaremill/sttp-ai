@@ -37,7 +37,7 @@ The agent builder is effect-polymorphic: `OpenAIAgent.builder[F]`, `ClaudeAgent.
 ### Cats Effect
 
 ```scala
-//> using dep com.softwaremill.sttp.ai::openai:0.8.0
+//> using dep com.softwaremill.sttp.ai::openai:0.10.0
 //> using dep com.softwaremill.sttp.client4::cats:4.0.0-M17
 
 import cats.effect.{IO, IOApp}
@@ -62,14 +62,19 @@ object CatsEffectExample extends IOApp.Simple:
     val agent = OpenAIAgent.builder[IO](OpenAI.fromEnv, "gpt-4o-mini").maxIterations(5).tools(weatherTool).build
     HttpClientCatsBackend.resource[IO]().use { backend =>
       agent.run("What's the weather in London?")(backend)
-        .flatMap(r => IO.println(s"Answer: ${r.finalAnswer}"))
+        .flatMap { r =>
+          r.finalAnswer match {
+            case Right(answer) => IO.println(s"Answer: $answer")
+            case Left(failure) => IO.println(s"Agent did not finish cleanly: $failure")
+          }
+        }
     }
 ```
 
 ### ZIO
 
 ```scala
-//> using dep com.softwaremill.sttp.ai::zio:0.8.0
+//> using dep com.softwaremill.sttp.ai::zio:0.10.0
 
 import sttp.ai.core.agent.*
 import sttp.ai.openai.OpenAI
@@ -98,7 +103,10 @@ object ZIOExample extends ZIOAppDefault:
       for {
         backend <- HttpClientZioBackend.scoped()
         result <- agent.run("What's the weather in London?")(backend)
-        _ <- Console.printLine(s"Answer: ${result.finalAnswer}")
+        _ <- result.finalAnswer match {
+          case Right(answer) => Console.printLine(s"Answer: $answer")
+          case Left(failure) => Console.printLine(s"Agent did not finish cleanly: $failure")
+        }
       } yield ()
     }
 ```

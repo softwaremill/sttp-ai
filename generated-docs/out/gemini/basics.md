@@ -17,7 +17,7 @@ This module provides **native support for Google's Gemini API**, built on the [I
 ## Basic Usage (Gemini)
 
 ```scala
-//> using dep com.softwaremill.sttp.ai::gemini:0.8.0
+//> using dep com.softwaremill.sttp.ai::gemini:0.10.0
 
 import sttp.ai.gemini.GeminiSyncClient
 import sttp.ai.gemini.requests.InteractionRequest
@@ -47,7 +47,7 @@ object Main:
 For non-blocking code, use `GeminiClient` directly with an sttp backend of your choice. Every method returns a plain sttp `Request` whose body is an `Either` — nothing is thrown, and you choose when and how to `.send` it. `createInteraction`, `getInteraction`, and `cancelInteraction` return `Either[GeminiException, InteractionResponse]`; `deleteInteraction` returns `Either[GeminiException, Unit]`.
 
 ```scala
-//> using dep com.softwaremill.sttp.ai::gemini:0.8.0
+//> using dep com.softwaremill.sttp.ai::gemini:0.10.0
 
 import sttp.ai.gemini.GeminiClient
 import sttp.ai.gemini.requests.InteractionRequest
