@@ -138,8 +138,13 @@ object AgentTools {
             val schema = Expr.summon[TapirSchema[ft]].getOrElse(missing(s"sttp.tapir.Schema[$tpeName]"))
             val decoder = Expr.summon[Decoder[ft]].getOrElse(missing(s"io.circe.Decoder[$tpeName]"))
             val encoder = Expr.summon[Encoder[ft]].getOrElse(missing(s"io.circe.Encoder[$tpeName]"))
+            // Only Option parameters are optional properties (as documented). Tapir marks iterable schemas
+            // isOptional=true, which would drop e.g. a List parameter from `required` even though the generated
+            // circe decoder fails on a missing key - pin optionality to the parameter's Option-ness instead.
+            val optionAligned: Expr[TapirSchema[ft]] =
+              if (optionalFlags(i)) schema else '{ $schema.copy(isOptional = false) }
             val described: Expr[TapirSchema[ft]] =
-              paramDescriptionOf(m, i, p).fold(schema)(d => '{ $schema.description(${ Expr(d) }) })
+              paramDescriptionOf(m, i, p).fold(optionAligned)(d => '{ $optionAligned.description(${ Expr(d) }) })
             val idx = Expr(i)
             val field: Expr[SProductField[Tup]] = '{
               SProductField[Tup, ft](
@@ -173,6 +178,16 @@ object AgentTools {
 
           override def apply(c: io.circe.HCursor): Decoder.Result[Tup] =
             if (!c.value.isObject) Left(DecodingFailure("Tool arguments must be a JSON object", c.history))
+            else if (c.value.asObject.exists(_.keys.exists(k => !names.contains(k))))
+              // Unknown keys are rejected rather than ignored: with all-Option tools a misspelled argument key would
+              // otherwise silently decode to None and execute, instead of producing an error the loop can feed back.
+              Left(
+                DecodingFailure(
+                  s"unknown tool argument(s): ${c.value.asObject.get.keys.filterNot(names.contains).mkString(", ")}; " +
+                    s"expected: ${names.mkString(", ")}",
+                  c.history
+                )
+              )
             else {
               val values = new Array[Any](${ Expr(arity) })
               var i = 0

@@ -104,8 +104,33 @@ class AgentToolsDeriveSpec extends AnyFlatSpec with Matchers with OptionValues {
   it should "support no-arg methods with an empty object schema" in {
     val tools = AgentTools.derive[RichService](new RichImpl)
     val now = tools.find(_.name == "now").value
-    AgentTool.ensureObjectType(now.rawJsonSchema).hcursor.get[String]("type") shouldBe Right("object")
+    // assert on the raw schema directly - going through ensureObjectType here would make the assertion vacuous,
+    // since that helper inserts the type key itself
+    now.rawJsonSchema.hcursor.get[String]("type") shouldBe Right("object")
+    AgentTool.ensureObjectType(now.rawJsonSchema).hcursor.downField("properties").succeeded shouldBe true
     run(now, Json.obj()) shouldBe "now"
+  }
+
+  it should "keep collection parameters required even though tapir marks iterable schemas optional" in {
+    trait ListService {
+      @description("Sum some numbers")
+      def sum(numbers: List[Int], label: Option[String]): String
+    }
+    val tools = AgentTools.derive[ListService](new ListService {
+      override def sum(numbers: List[Int], label: Option[String]): String = s"${label.getOrElse("sum")}:${numbers.sum}"
+    })
+    val raw = tools.head.rawJsonSchema
+    raw.hcursor.downField("required").as[Set[String]] shouldBe Right(Set("numbers"))
+    run(tools.head, Json.obj("numbers" -> Json.arr(1.asJson, 2.asJson))) shouldBe "sum:3"
+    tools.head.codec.decodeJson(Json.obj()).isLeft shouldBe true
+  }
+
+  it should "reject unknown argument keys instead of silently ignoring them" in {
+    val tools = AgentTools.derive[RichService](new RichImpl)
+    val search = tools.find(_.name == "search").value
+    val res = search.codec.decodeJson(Json.obj("query" -> "cats".asJson, "limt" -> 5.asJson))
+    res.isLeft shouldBe true
+    res.left.toOption.value.getMessage should include("limt")
   }
 
   trait BaseTools {
