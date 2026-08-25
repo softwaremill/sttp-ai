@@ -89,3 +89,85 @@ val jsonSchema: Schema =
 ```
 
 Where raw JSON is expected instead (Gemini's `Tool.Function` parameters, Claude's `Tool.CustomRaw`), build the `io.circe.Json` value directly — see the [Gemini structured-outputs page](../gemini/structured-outputs.md) for an example.
+
+## Response schemas
+
+A `ResponseSchema[T]` bundles the two things a typed agent needs to return a `T`: the JSON schema sent to the
+model to constrain its final answer, and the circe codec that parses the answer back into `T`.
+
+The agent builder accepts one in two ways:
+
+- `.deriveResponseSchema[T]` - shorthand for the common case. It calls `ResponseSchema.derived[T]`, rendering
+  `T`'s tapir `Schema` and pairing it with `T`'s circe `Codec`. Use it when `T` is a case class (or any type with
+  those given instances) and the derived schema is what you want.
+- `.responseSchema(rs)` - takes an explicitly built `ResponseSchema`. Use it when the schema cannot or should not
+  come from plain derivation: union types (`ResponseSchema.derivedUnion[A | B]`, below), explicit variants for
+  sealed traits (`ResponseSchema.oneOf`), or a `ResponseSchema.derived[T](description)` carrying a schema
+  description.
+
+`deriveResponseSchema[T]` is exactly `responseSchema(ResponseSchema.derived[T]())` - there is no behavioral
+difference beyond who constructs the `ResponseSchema`.
+
+One provider caveat: the standalone `description` carried by a `ResponseSchema` is currently forwarded to the
+model by the OpenAI backend only. `ResponseSchema.derivedUnion` and `ResponseSchema.oneOf` additionally embed the
+description into the schema document itself, so for unions it reaches every provider; for
+`ResponseSchema.derived[T](description)` on Claude or Gemini, put the guidance in the system prompt or in `T`'s
+field-level `@description` annotations instead.
+
+## Union types: structured intent classification
+
+On Scala 3, a response schema can be derived for a union type, so a classifier agent returns one of several
+intents and the caller dispatches with an exhaustive `match`:
+
+```scala mdoc:compile-only
+//> using dep com.softwaremill.sttp.ai::openai:@VERSION@
+
+import io.circe.Codec
+import sttp.ai.core.agent.*
+import sttp.tapir.Schema
+
+final case class Refund(orderId: String) derives Codec.AsObject, Schema
+final case class Complaint(topic: String) derives Codec.AsObject, Schema
+final case class GeneralQuery() derives Codec.AsObject, Schema
+
+val intentSchema: ResponseSchema[Refund | Complaint | GeneralQuery] =
+  ResponseSchema.derivedUnion[Refund | Complaint | GeneralQuery]("Classify the user's intent")
+```
+
+`deriveResponseSchema[T]` cannot be used here: it needs given tapir `Schema[T]` and circe `Codec[T]` instances,
+and neither library can derive them for a union type (unions have no `Mirror`). More fundamentally, the union
+wire shape couples schema and codec - the `kind` discriminator injected into each variant's schema must be
+exactly what the decoder dispatches on - so the pair has to be built together, which is what
+`ResponseSchema.derivedUnion` does before the result is handed to `.responseSchema(...)`.
+
+The model sees a uniform wire shape that works across OpenAI (including strict mode, which forbids `anyOf` at the
+schema root), Claude, and Gemini: a root object with a single required `result` property holding an `anyOf` of the
+variants, each variant carrying a required `kind` discriminator pinned to the variant's name:
+
+```json
+{"result": {"kind": "Refund", "orderId": "o-1"}}
+```
+
+Each union member needs given tapir `Schema`, circe `Encoder`/`Decoder`, and `ClassTag` instances, and must be a
+case-class-like object schema. Distinct types sharing a simple name (e.g. `billing.Refund | shipping.Refund`) are
+rejected at compile time - label them explicitly with `ResponseSchema.oneOf` and `Variant.named` instead. The variant name defaults to the class's simple name; use `Variant.named` with the
+explicit API below to customise it.
+
+On Scala 2.13 — or for sealed traits on either version — list the variants explicitly; the wire shape and codec
+are identical (instances shown with Scala 3 `derives` syntax; on Scala 2.13 define the same instances with
+`deriveCodec` and `Schema.derived` implicit vals):
+
+```scala mdoc:compile-only
+//> using dep com.softwaremill.sttp.ai::openai:@VERSION@
+
+import io.circe.Codec
+import sttp.ai.core.agent.*
+import sttp.tapir.Schema
+
+sealed trait Intent
+final case class Refund(orderId: String) extends Intent derives Codec.AsObject, Schema
+final case class Complaint(topic: String) extends Intent derives Codec.AsObject, Schema
+
+val intentSchema: ResponseSchema[Intent] =
+  ResponseSchema.oneOf[Intent](Variant.named[Refund]("refund_request"), Variant[Complaint])
+```
