@@ -616,6 +616,85 @@ class AgentSpec extends AnyFlatSpec with Matchers with OptionValues {
     budgetResult.finishReason shouldBe FinishReason.BudgetExceeded
   }
 
+  "AgentResult history" should "contain the full transcript including the final assistant answer" in {
+    val result = runLoop(
+      agentBuilder(
+        AgentResponse("", Seq(ToolCall(id = "call_1", toolName = "calculator", input = """{"a":5,"b":10}""")), StopReason.ToolUse),
+        AgentResponse("Done", Seq.empty, StopReason.EndTurn)
+      ).tools(calculatorTool)
+    )
+
+    result.history.entries shouldBe Seq(
+      ConversationEntry.UserPrompt("Test"),
+      ConversationEntry.AssistantResponse("", Seq(ToolCall("call_1", "calculator", """{"a":5,"b":10}"""))),
+      ConversationEntry.ToolResult("call_1", "calculator", "Result: 15.0"),
+      ConversationEntry.AssistantResponse("Done", Seq.empty)
+    )
+  }
+
+  it should "not record unexecuted tool calls from a forced final response" in {
+    val dummyTool = AgentTool.fromFunction(
+      "dummy",
+      "Dummy tool"
+    )((_: DummyInput) => "dummy result")
+
+    val result = runLoop(
+      agentBuilder(
+        AgentResponse("", Seq(ToolCall(id = "call_1", toolName = "dummy", input = "{}")), StopReason.ToolUse),
+        AgentResponse("forced answer", Seq(ToolCall(id = "call_2", toolName = "dummy", input = "{}")), StopReason.ToolUse)
+      ).maxIterations(2).tools(dummyTool)
+    )
+
+    result.finishReason shouldBe FinishReason.MaxIterations: Unit
+    result.history.entries.last shouldBe ConversationEntry.AssistantResponse("forced answer", Seq.empty): Unit
+    result.history.entries.collect { case ConversationEntry.AssistantResponse(_, calls) => calls }.flatten shouldBe
+      Seq(ToolCall("call_1", "dummy", "{}"))
+  }
+
+  it should "include the partial answer when the token limit is hit" in {
+    val result = runLoop(agentBuilder(AgentResponse("partial answer", Seq.empty, StopReason.MaxTokens)))
+
+    result.history.entries shouldBe Seq(
+      ConversationEntry.UserPrompt("Test"),
+      ConversationEntry.AssistantResponse("partial answer", Seq.empty)
+    )
+  }
+
+  "Agent run with history" should "seed the conversation and append the input as the next user message" in {
+    val stubBackend = new StubAgentBackend(Seq(AgentResponse("It is 42.", Seq.empty, StopReason.EndTurn)))
+    val seed = ConversationHistory.empty
+      .addUserPrompt("What is 2+2?")
+      .addAssistantResponse("4", Seq.empty)
+
+    val result = AgentBuilder[Identity, TestModel.type](_ => stubBackend)(IdentityMonad).build.run("Now times 10?", seed)(backend)
+
+    stubBackend.receivedHistories.head.entries shouldBe (seed.entries :+ ConversationEntry.UserPrompt("Now times 10?")): Unit
+    result.history.entries shouldBe (seed.entries ++ Seq(
+      ConversationEntry.UserPrompt("Now times 10?"),
+      ConversationEntry.AssistantResponse("It is 42.", Seq.empty)
+    ))
+  }
+
+  it should "continue a conversation from a previous result's history" in {
+    val stubBackend = new StubAgentBackend(
+      Seq(
+        AgentResponse("First answer", Seq.empty, StopReason.EndTurn),
+        AgentResponse("Second answer", Seq.empty, StopReason.EndTurn)
+      )
+    )
+    val agent = AgentBuilder[Identity, TestModel.type](_ => stubBackend)(IdentityMonad).build
+
+    val first = agent.run("First question")(backend)
+    val second = agent.run("Second question", first.history)(backend)
+
+    stubBackend.receivedHistories(1).entries shouldBe Seq(
+      ConversationEntry.UserPrompt("First question"),
+      ConversationEntry.AssistantResponse("First answer", Seq.empty),
+      ConversationEntry.UserPrompt("Second question")
+    ): Unit
+    second.history.entries.last shouldBe ConversationEntry.AssistantResponse("Second answer", Seq.empty)
+  }
+
   "AgentBuilder" should "append with addInterceptor() and replace with interceptors()" in {
     val a = AgentInterceptor.noop[Identity]
     val b = AgentInterceptor.noop[Identity]

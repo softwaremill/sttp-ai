@@ -30,13 +30,20 @@ final case class ToolCallRecord(
     iteration: Int
 )
 
+/** @param history
+  *   the full conversation accumulated by the run — the seed history passed to `run` (if any), the rendered user message, assistant
+  *   responses, tool results, and the final assistant answer. Feed it back into [[Agent.run]] together with a new user message to continue
+  *   the conversation. Per-request iteration markers and forced-finish instructions are transient and not part of it; tool calls from a
+  *   forced final response are not executed and thus not recorded.
+  */
 final case class AgentResult[T](
     finalAnswer: T,
     iterations: Int,
     toolCalls: Seq[ToolCallRecord],
     finishReason: FinishReason,
     usage: TokenUsage = TokenUsage.Zero,
-    llmCalls: Seq[LlmCallUsage] = Seq.empty
+    llmCalls: Seq[LlmCallUsage] = Seq.empty,
+    history: ConversationHistory = ConversationHistory.empty
 )
 
 sealed trait AgentFailure {
