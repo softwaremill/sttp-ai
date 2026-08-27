@@ -16,9 +16,12 @@ private[claude] class ClaudeAgentBackend[F[_]](
     modelForIteration: IterationInfo => ClaudeModel,
     val tools: Seq[AgentTool[F, _]],
     val systemPrompt: Option[String],
-    responseSchema: Option[ResponseSchema[_]]
+    responseSchema: Option[ResponseSchema[_]],
+    maxTokens: Option[Int] = None
 )(implicit monad: sttp.monad.MonadError[F])
     extends AgentBackend[F] {
+
+  private val effectiveMaxTokens: Int = maxTokens.getOrElse(ClaudeAgentBackend.DefaultMaxTokens)
 
   private[claude] val convertedTools: Seq[Tool] = tools.map(convertTool)
 
@@ -77,7 +80,7 @@ private[claude] class ClaudeAgentBackend[F[_]](
     val request = MessageRequest(
       model = modelForIteration(iterationInfo).value,
       messages = messages.toList,
-      maxTokens = 4096,
+      maxTokens = effectiveMaxTokens,
       system = systemPrompt,
       tools = if (includeTools && convertedTools.nonEmpty) Some(convertedTools.toList) else None,
       outputConfig = outputConfig
@@ -123,6 +126,10 @@ private[claude] class ClaudeAgentBackend[F[_]](
     }
 }
 
+private[claude] object ClaudeAgentBackend {
+  val DefaultMaxTokens: Int = 4096
+}
+
 object ClaudeAgent {
 
   /** Entry point: `ClaudeAgent.builder[F](client, model)`. The indirection lets `M` be inferred while `F` is given explicitly. */
@@ -142,7 +149,7 @@ object ClaudeAgent {
         monad: sttp.monad.MonadError[F]
     ): AgentBuilder[F, M, String, String] =
       AgentBuilder[F, M](config =>
-        new ClaudeAgentBackend[F](client, modelForIteration, config.userTools, config.systemPrompt, config.responseSchema)
+        new ClaudeAgentBackend[F](client, modelForIteration, config.userTools, config.systemPrompt, config.responseSchema, config.maxTokens)
       )
 
     def apply(client: ClaudeClient, modelName: String)(implicit

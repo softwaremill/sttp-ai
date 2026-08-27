@@ -43,10 +43,11 @@ class GeminiAgentBackendSpec extends AnyFlatSpec with Matchers with EitherValues
   private def newBackend(
       tools: Seq[AgentTool[Identity, _]],
       systemPrompt: Option[String] = None,
-      responseSchema: Option[ResponseSchema[_]] = None
+      responseSchema: Option[ResponseSchema[_]] = None,
+      maxTokens: Option[Int] = None
   ): GeminiAgentBackend[Identity] = {
     val client = GeminiClient(GeminiConfig(apiKey = "test-key"))
-    new GeminiAgentBackend[Identity](client, _ => GeminiModel.CustomModel(testModel), tools, systemPrompt, responseSchema)(
+    new GeminiAgentBackend[Identity](client, _ => GeminiModel.CustomModel(testModel), tools, systemPrompt, responseSchema, maxTokens)(
       IdentityMonad
     )
   }
@@ -92,11 +93,12 @@ class GeminiAgentBackendSpec extends AnyFlatSpec with Matchers with EitherValues
       includeTools: Boolean,
       history: ConversationHistory,
       systemPrompt: Option[String] = None,
-      responseSchema: Option[ResponseSchema[_]] = None
+      responseSchema: Option[ResponseSchema[_]] = None,
+      maxTokens: Option[Int] = None
   ): String = {
     val schema = parse(rawSchema).value.as[Schema](sttp.apispec.circe.schemaDecoder).value
     val tool = AgentTool.dynamic("create-event", "Creates an event", schema)(_ => "ok")
-    val backend = newBackend(Seq(tool), systemPrompt, responseSchema)
+    val backend = newBackend(Seq(tool), systemPrompt, responseSchema, maxTokens)
 
     val captured = new AtomicReference[GenericRequest[_, _]](null)
     val httpStub = DefaultSyncBackend.stub.whenAnyRequest.thenRespondF { request =>
@@ -119,6 +121,12 @@ class GeminiAgentBackendSpec extends AnyFlatSpec with Matchers with EitherValues
   it should "bound the response with a default generation_config.max_output_tokens of 4096" in {
     val bodyJson = parse(captureRequestBody(includeTools = true, ConversationHistory.withInitialPrompt("hello"))).value
     bodyJson.hcursor.downField("generation_config").downField("max_output_tokens").as[Int] shouldBe Right(4096)
+  }
+
+  it should "send the configured max tokens as generation_config.max_output_tokens" in {
+    val bodyJson =
+      parse(captureRequestBody(includeTools = true, ConversationHistory.withInitialPrompt("hello"), maxTokens = Some(8192))).value
+    bodyJson.hcursor.downField("generation_config").downField("max_output_tokens").as[Int] shouldBe Right(8192)
   }
 
   it should "replay the full history as input steps" in {

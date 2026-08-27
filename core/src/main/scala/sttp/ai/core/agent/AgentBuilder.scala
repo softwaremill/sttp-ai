@@ -25,6 +25,9 @@ final class AgentBuilder[F[_], M <: AIModel, In, Out] private (
 
   def maxIterations(value: Int): AgentBuilder[F, M, In, Out] = withConfig(config.copy(maxIterations = value))
 
+  /** Caps the tokens the model may generate per LLM call. Unset, each provider's default applies (Claude/Gemini: 4096, OpenAI: no cap). */
+  def maxTokens(value: Int): AgentBuilder[F, M, In, Out] = withConfig(config.copy(maxTokens = Some(value)))
+
   def systemPrompt(buildSystemPrompt: SystemPromptParameters => String): AgentBuilder[F, M, In, Out] =
     withConfig(config.copy(systemPromptBuilder = Some(buildSystemPrompt)))
 

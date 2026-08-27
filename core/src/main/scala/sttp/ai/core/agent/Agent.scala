@@ -13,7 +13,15 @@ trait Agent[F[_], In, Out] { self =>
 
   protected implicit def monad: MonadError[F]
 
-  def run(in: In)(backend: Backend[F]): F[AgentResult[Either[AgentFailure, Out]]]
+  /** Runs the agent loop as a fresh conversation seeded only with `in`. */
+  def run(in: In)(backend: Backend[F]): F[AgentResult[Either[AgentFailure, Out]]] =
+    run(in, ConversationHistory.empty)(backend)
+
+  /** Runs the agent loop continuing an existing conversation: `history` seeds the conversation and `in` (rendered by the input renderer) is
+    * appended as the next user message. Pass [[AgentResult.history]] from a previous run to keep talking with full context; the returned
+    * result's `history` extends the seed and can be fed back in again.
+    */
+  def run(in: In, history: ConversationHistory)(backend: Backend[F]): F[AgentResult[Either[AgentFailure, Out]]]
 
   /** Typed handoff: runs `this`, then feeds its `Out` to `next` as a fresh conversation (rendered by `next`'s input renderer). Compiles
     * only when this agent's output type is `next`'s input type. If `this` fails (`Left`), `next` never runs. Metadata is aggregated:
@@ -21,13 +29,15 @@ trait Agent[F[_], In, Out] { self =>
     * `ToolCallRecord.iteration` stays stage-local. If `next` raises an error in `F`'s error channel, it propagates as a plain error and
     * `this` stage's accumulated metadata (usage, tool calls) is not reported in that case. Interceptors are also stage-local: each agent
     * runs with its own configured interceptors, so e.g. a budget interceptor on `next` does not observe this stage's token spend.
+    * Conversation histories are stage-local too: a seed history passed to `run` seeds only `this` stage, and the combined result's
+    * `history` is that of the last stage that ran.
     */
   def andThen[Out2](next: Agent[F, Out, Out2]): Agent[F, In, Out2] = {
     val m = monad
     new Agent[F, In, Out2] {
       protected implicit def monad: MonadError[F] = m
-      def run(in: In)(backend: Backend[F]): F[AgentResult[Either[AgentFailure, Out2]]] =
-        self.run(in)(backend).flatMap { first =>
+      def run(in: In, history: ConversationHistory)(backend: Backend[F]): F[AgentResult[Either[AgentFailure, Out2]]] =
+        self.run(in, history)(backend).flatMap { first =>
           first.finalAnswer match {
             case Left(failure) =>
               m.unit(
@@ -37,7 +47,8 @@ trait Agent[F[_], In, Out] { self =>
                   first.toolCalls,
                   first.finishReason,
                   first.usage,
-                  first.llmCalls
+                  first.llmCalls,
+                  first.history
                 )
               )
             case Right(out) =>
@@ -48,7 +59,8 @@ trait Agent[F[_], In, Out] { self =>
                   first.toolCalls ++ second.toolCalls,
                   second.finishReason,
                   first.usage + second.usage,
-                  first.llmCalls ++ second.llmCalls
+                  first.llmCalls ++ second.llmCalls,
+                  second.history
                 )
               }
           }
@@ -61,9 +73,9 @@ trait Agent[F[_], In, Out] { self =>
     val m = monad
     new Agent[F, In, Out2] {
       protected implicit def monad: MonadError[F] = m
-      def run(in: In)(backend: Backend[F]): F[AgentResult[Either[AgentFailure, Out2]]] =
-        self.run(in)(backend).map { res =>
-          AgentResult(res.finalAnswer.map(f), res.iterations, res.toolCalls, res.finishReason, res.usage, res.llmCalls)
+      def run(in: In, history: ConversationHistory)(backend: Backend[F]): F[AgentResult[Either[AgentFailure, Out2]]] =
+        self.run(in, history)(backend).map { res =>
+          AgentResult(res.finalAnswer.map(f), res.iterations, res.toolCalls, res.finishReason, res.usage, res.llmCalls, res.history)
         }
     }
   }
@@ -73,8 +85,8 @@ trait Agent[F[_], In, Out] { self =>
     val m = monad
     new Agent[F, In2, Out] {
       protected implicit def monad: MonadError[F] = m
-      def run(in: In2)(backend: Backend[F]): F[AgentResult[Either[AgentFailure, Out]]] =
-        self.run(f(in))(backend)
+      def run(in: In2, history: ConversationHistory)(backend: Backend[F]): F[AgentResult[Either[AgentFailure, Out]]] =
+        self.run(f(in), history)(backend)
     }
   }
 }
