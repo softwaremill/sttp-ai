@@ -70,7 +70,7 @@ object ChatExample extends App {
   try {
     val agent = OpenAIAgent.synchronous(OpenAI.fromEnv, ChatCompletionModel.GPT4oMini).build
 
-    val first = agent.run("My name is Igor. What is 2+2?")(backend)
+    val first = agent.run("My name is John Doe. What is 2+2?")(backend)
     println(first.finalAnswer)
 
     // seed the next run with the previous history: the model sees the whole conversation
