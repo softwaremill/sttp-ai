@@ -1,6 +1,6 @@
 package sttp.ai.core.agent
 
-import scala.annotation.unused
+import sttp.ai.core.compat.unused
 
 /** Middleware for the agent loop. Interceptors wrap iterations, LLM calls, and tool executions (onion-style, like sttp backend wrappers),
   * and can steer the loop via [[decide]].
