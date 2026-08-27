@@ -15,7 +15,8 @@ private[openai] class OpenAIAgentBackend[F[_]](
     val tools: Seq[AgentTool[F, _]],
     val systemPrompt: Option[String],
     responseSchema: Option[ResponseSchema[_]],
-    strictTools: Boolean
+    strictTools: Boolean,
+    maxTokens: Option[Int] = None
 )(implicit monad: sttp.monad.MonadError[F])
     extends AgentBackend[F] {
 
@@ -90,7 +91,9 @@ private[openai] class OpenAIAgentBackend[F[_]](
       model = modelForIteration(iterationInfo),
       messages = messages,
       tools = if (includeTools && convertedTools.nonEmpty) Some(convertedTools) else None,
-      responseFormat = responseFormat
+      responseFormat = responseFormat,
+      // maxCompletionTokens rather than the legacy maxTokens: reasoning models (GPT-5, o-series) reject max_tokens.
+      maxCompletionTokens = maxTokens
     )
     monad.flatMap(monad.map(openAI.createChatCompletion(request).send(backend))(_.body)) {
       case Right(response) =>
@@ -175,7 +178,15 @@ object OpenAIAgent {
         monad: sttp.monad.MonadError[F]
     ): AgentBuilder[F, M, String, String] =
       AgentBuilder[F, M](config =>
-        new OpenAIAgentBackend[F](openAI, modelForIteration, config.userTools, config.systemPrompt, config.responseSchema, strictTools)
+        new OpenAIAgentBackend[F](
+          openAI,
+          modelForIteration,
+          config.userTools,
+          config.systemPrompt,
+          config.responseSchema,
+          strictTools,
+          config.maxTokens
+        )
       )
 
     def apply(openAI: OpenAI, modelName: String)(implicit

@@ -2,8 +2,13 @@ package sttp.ai.core.agent
 
 import sttp.ai.core.agent.AgentConfig.SystemPromptParameters
 
+/** @param maxTokens
+  *   caps the tokens the model may generate per LLM call. `None` (the default) keeps each provider's default behavior: Claude and Gemini
+  *   send 4096, OpenAI sends no cap. When a response hits the cap the loop ends with [[FinishReason.TokenLimit]].
+  */
 case class AgentConfig[F[_]](
     maxIterations: Int = 10,
+    maxTokens: Option[Int] = None,
     systemPromptBuilder: Option[SystemPromptParameters => String] = Some(AgentConfig.buildSystemPrompt),
     userTools: Seq[AgentTool[F, _]] = Seq.empty[AgentTool[F, _]],
     exceptionHandler: ExceptionHandler = ExceptionHandler.default,

@@ -584,15 +584,21 @@ class AgentSpec extends AnyFlatSpec with Matchers with OptionValues {
   "AgentBuilder" should "accumulate configuration into the built config" in {
     val config = agentBuilder()
       .maxIterations(7)
+      .maxTokens(8192)
       .systemPrompt("custom")
       .tools(calculatorTool)
       .exceptionHandler(ExceptionHandler.sendAllToLLM)
       .config
 
     config.maxIterations shouldBe 7
+    config.maxTokens shouldBe Some(8192)
     config.systemPrompt.value shouldBe "custom"
     config.userTools should contain only calculatorTool
     config.exceptionHandler shouldBe ExceptionHandler.sendAllToLLM
+  }
+
+  it should "leave maxTokens unset by default" in {
+    agentBuilder().config.maxTokens shouldBe None
   }
 
   it should "derive the default system prompt from the final maxIterations" in {

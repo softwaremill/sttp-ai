@@ -8,6 +8,7 @@ Configure the agent with the fluent builder. Use `OpenAIAgent.builder[F]` / `Cla
 val agent = OpenAIAgent
   .synchronous(OpenAI.fromEnv, "gpt-4o-mini")
   .maxIterations(10)                               // Max reasoning steps
+  .maxTokens(8192)                                 // Optional per-call output-token cap
   .systemPrompt("Custom prompt")                   // Optional instructions
   .tools(tool1, tool2)                             // Your tools
   .deriveResponseSchema[T]                          // (fixes the agent's output type — see typed input and output in tools.md)
@@ -19,6 +20,11 @@ model to produce a final text answer instead of a tool call whose result would b
 `FinishReason.MaxIterations`). Tools are therefore only available for the first `maxIterations - 1` iterations — so with
 `maxIterations = 1` the agent never gets to use its tools. Set `maxIterations` at least one higher than the number of
 tool-using steps you expect the task to need.
+
+`maxTokens` caps the tokens the model may generate on each LLM call. When unset, each provider's default applies:
+Claude and Gemini send 4096, OpenAI sends no cap (the model's own maximum applies). For OpenAI it is sent as
+`max_completion_tokens`, which also works with reasoning models. When a response is cut off by the cap, the run ends
+with `FinishReason.TokenLimit` and the partial answer is returned as `Left(AgentIncomplete(...))`.
 
 The OpenAI factories additionally accept a `strictTools` flag (default `true`): when `true`, tool schemas are
 normalized for OpenAI's strict function calling (`additionalProperties: false`, all properties required, optional

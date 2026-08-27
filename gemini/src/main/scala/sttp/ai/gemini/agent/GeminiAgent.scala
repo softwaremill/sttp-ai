@@ -19,9 +19,12 @@ private[gemini] class GeminiAgentBackend[F[_]](
     modelForIteration: IterationInfo => GeminiModel,
     val tools: Seq[AgentTool[F, _]],
     val systemPrompt: Option[String],
-    responseSchema: Option[ResponseSchema[_]]
+    responseSchema: Option[ResponseSchema[_]],
+    maxTokens: Option[Int] = None
 )(implicit monad: sttp.monad.MonadError[F])
     extends AgentBackend[F] {
+
+  private val effectiveMaxTokens: Int = maxTokens.getOrElse(GeminiAgentBackend.DefaultMaxTokens)
 
   private[gemini] val convertedTools: Seq[Tool] = tools.map(convertTool)
 
@@ -91,7 +94,7 @@ private[gemini] class GeminiAgentBackend[F[_]](
           tools = if (includeTools && convertedTools.nonEmpty) Some(convertedTools.toList) else None,
           responseFormat = responseFormat,
           store = Some(false),
-          generationConfig = Some(GenerationConfig(maxOutputTokens = Some(4096)))
+          generationConfig = Some(GenerationConfig(maxOutputTokens = Some(effectiveMaxTokens)))
         )
 
         monad.flatMap(monad.map(client.createInteraction(request).send(backend))(_.body)) {
@@ -151,6 +154,10 @@ private[gemini] class GeminiAgentBackend[F[_]](
   }
 }
 
+private[gemini] object GeminiAgentBackend {
+  val DefaultMaxTokens: Int = 4096
+}
+
 object GeminiAgent {
 
   /** Entry point: `GeminiAgent.builder[F](client, model)`. The indirection lets `M` be inferred while `F` is given explicitly. */
@@ -170,7 +177,7 @@ object GeminiAgent {
         monad: sttp.monad.MonadError[F]
     ): AgentBuilder[F, M, String, String] =
       AgentBuilder[F, M](config =>
-        new GeminiAgentBackend[F](client, modelForIteration, config.userTools, config.systemPrompt, config.responseSchema)
+        new GeminiAgentBackend[F](client, modelForIteration, config.userTools, config.systemPrompt, config.responseSchema, config.maxTokens)
       )
 
     def apply(client: GeminiClient, modelName: String)(implicit

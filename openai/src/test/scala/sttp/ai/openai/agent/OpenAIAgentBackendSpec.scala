@@ -29,14 +29,15 @@ class OpenAIAgentBackendSpec extends AnyFlatSpec with Matchers with EitherValues
     AgentTool.dynamic("create", "Creates a thing", schema)(_ => "ok")
   }
 
-  private def backend(strictTools: Boolean): OpenAIAgentBackend[Identity] =
+  private def backend(strictTools: Boolean, maxTokens: Option[Int] = None): OpenAIAgentBackend[Identity] =
     new OpenAIAgentBackend[Identity](
       new OpenAI("test-key"),
       _ => ChatCompletionModel.GPT4oMini,
       Seq(testTool),
       None,
       None,
-      strictTools
+      strictTools,
+      maxTokens
     )(IdentityMonad)
 
   "OpenAIAgentBackend" should "register tools as strict with normalized schemas when strictTools is true" in {
@@ -57,13 +58,13 @@ class OpenAIAgentBackendSpec extends AnyFlatSpec with Matchers with EitherValues
     params.hcursor.downField("properties").downField("note").downField("type").as[String] shouldBe Right("string")
   }
 
-  private def captureRequestBody(includeTools: Boolean): String = {
+  private def captureRequestBody(includeTools: Boolean, maxTokens: Option[Int] = None): String = {
     val captured = new AtomicReference[GenericRequest[_, _]](null)
     val httpStub = DefaultSyncBackend.stub.whenAnyRequest.thenRespondF { request =>
       captured.set(request)
       ResponseStub.adjust(sttp.ai.openai.fixtures.CompletionsFixture.structuredOutputsResponse, StatusCode.Ok)
     }
-    backend(strictTools = true).sendRequest(
+    backend(strictTools = true, maxTokens).sendRequest(
       ConversationHistory.withInitialPrompt("hello"),
       httpStub,
       includeTools = includeTools,
@@ -81,6 +82,15 @@ class OpenAIAgentBackendSpec extends AnyFlatSpec with Matchers with EitherValues
 
   it should "omit tools from the request body when includeTools is false" in {
     captureRequestBody(includeTools = false) should not include "\"tools\""
+  }
+
+  it should "not send a completion-token cap by default" in {
+    captureRequestBody(includeTools = true) should not include "\"max_completion_tokens\""
+  }
+
+  it should "send the configured max tokens as max_completion_tokens" in {
+    val bodyJson = parse(captureRequestBody(includeTools = true, maxTokens = Some(8192))).value
+    bodyJson.hcursor.downField("max_completion_tokens").as[Int] shouldBe Right(8192)
   }
 
   it should "resolve the model per iteration via modelForIteration" in {

@@ -117,11 +117,11 @@ class ClaudeAgentBackendSpec extends AnyFlatSpec with Matchers with EitherValues
       |  "usage": {"input_tokens": 10, "output_tokens": 20}
       |}""".stripMargin
 
-  private def captureRequestBody(includeTools: Boolean): String = {
+  private def captureRequestBody(includeTools: Boolean, maxTokens: Option[Int] = None): String = {
     val schema = parse(rawSchema).value.as[Schema](sttp.apispec.circe.schemaDecoder).value
     val tool = AgentTool.dynamic("create-event", "Creates an event", schema)(_ => "ok")
     val client = ClaudeClient(ClaudeConfig(apiKey = "test-key"))
-    val backend = new ClaudeAgentBackend[Identity](client, _ => ClaudeModel.ClaudeHaiku4_5, Seq(tool), None, None)(IdentityMonad)
+    val backend = new ClaudeAgentBackend[Identity](client, _ => ClaudeModel.ClaudeHaiku4_5, Seq(tool), None, None, maxTokens)(IdentityMonad)
 
     val captured = new AtomicReference[GenericRequest[_, _]](null)
     val httpStub = DefaultSyncBackend.stub.whenAnyRequest.thenRespondF { request =>
@@ -141,6 +141,16 @@ class ClaudeAgentBackendSpec extends AnyFlatSpec with Matchers with EitherValues
 
   it should "omit tools from the request body when includeTools is false" in {
     captureRequestBody(includeTools = false) should not include "\"tools\""
+  }
+
+  it should "send max_tokens 4096 by default" in {
+    val bodyJson = parse(captureRequestBody(includeTools = true)).value
+    bodyJson.hcursor.downField("max_tokens").as[Int] shouldBe Right(4096)
+  }
+
+  it should "send the configured max_tokens" in {
+    val bodyJson = parse(captureRequestBody(includeTools = true, maxTokens = Some(8192))).value
+    bodyJson.hcursor.downField("max_tokens").as[Int] shouldBe Right(8192)
   }
 
   it should "resolve the model per iteration via modelForIteration" in {
