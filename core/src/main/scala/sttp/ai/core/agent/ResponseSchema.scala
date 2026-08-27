@@ -43,10 +43,10 @@ object ResponseSchema extends ResponseSchemaCompanionVersionSpecific {
     * classes are unrelated).
     */
   def oneOf[U](first: Variant[_ <: U], rest: Variant[_ <: U]*): ResponseSchema[U] =
-    oneOfImpl(first +: rest, None)
+    oneOfImpl[U](Seq[Variant[_ <: U]](first) ++ rest, None)
 
   def oneOf[U](description: String)(first: Variant[_ <: U], rest: Variant[_ <: U]*): ResponseSchema[U] =
-    oneOfImpl(first +: rest, Some(description))
+    oneOfImpl[U](Seq[Variant[_ <: U]](first) ++ rest, Some(description))
 
   private def oneOfImpl[U](variants: Seq[Variant[_ <: U]], description: Option[String]): ResponseSchema[U] = {
     val duplicateNames = variants.groupBy(_.name).collect { case (n, vs) if vs.size > 1 => n }

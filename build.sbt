@@ -16,7 +16,11 @@ lazy val commonSettings = commonSmlBuildSettings ++ ossPublishSettings ++ Seq(
   Test / scalacOptions += "-Wconf:msg=discarded non-Unit value of type org.scalatest.Assertion:silent",
   // 2.12 has no `scala.annotation.unused` to suppress warnings per-site (see sttp.ai.core.compat.unused), so silence the category there;
   // 2.13 keeps full unused checking
-  scalacOptions ++= (if (scalaVersion.value.startsWith("2.12")) Seq("-Wconf:msg=never used:silent") else Seq.empty)
+  scalacOptions ++= (if (scalaVersion.value.startsWith("2.12")) Seq("-Wconf:msg=never used:silent") else Seq.empty),
+  // 2.12's missing-interpolator lint resolves in-scope names inside plain string literals ("$defs", "$ref"), which errors with
+  // "recursive value needs type" when the name is the val being defined (fixed in 2.13) - drop the lint on 2.12 only
+  scalacOptions := (if (scalaVersion.value.startsWith("2.12")) scalacOptions.value.filterNot(_ == "-Xlint:missing-interpolator")
+                    else scalacOptions.value)
 )
 
 lazy val root = (project in file("."))
