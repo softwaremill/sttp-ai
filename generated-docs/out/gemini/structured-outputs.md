@@ -9,7 +9,7 @@ See [JSON Schemas: structured outputs & tools](../other/json-schemas.md) for all
 For the shortest path, use `GeminiSyncClient.createInteractionAs[T]` — the JSON Schema is derived from `T` via Tapir and set on the request automatically (unless the request already carries a `ResponseFormat.JsonSchema`), and the model's output text is parsed back into `T` via circe.
 
 ```scala
-//> using dep com.softwaremill.sttp.ai::gemini:0.10.0
+//> using dep com.softwaremill.sttp.ai::gemini:0.11.0
 
 import sttp.ai.gemini.GeminiSyncClient
 import sttp.ai.gemini.requests.InteractionRequest
@@ -38,7 +38,7 @@ object Main:
 If you'd rather build (or already have) the JSON Schema yourself, set `ResponseFormat.JsonSchema` on the request directly with `withStructuredOutput` and parse the response text yourself. Gemini's Interactions API takes the schema verbatim — there is no `json_schema` wrapper envelope:
 
 ```scala
-//> using dep com.softwaremill.sttp.ai::gemini:0.10.0
+//> using dep com.softwaremill.sttp.ai::gemini:0.11.0
 
 import io.circe.Json
 import sttp.ai.gemini.GeminiSyncClient

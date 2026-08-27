@@ -16,7 +16,7 @@ Most schema-accepting APIs in this library take a `sttp.apispec.Schema` — the 
 In Scala 3, a `derives` clause supplies both the Tapir schema and the circe codec:
 
 ```scala
-//> using dep com.softwaremill.sttp.ai::openai:0.10.0
+//> using dep com.softwaremill.sttp.ai::openai:0.11.0
 
 import sttp.tapir.Schema
 
@@ -64,7 +64,7 @@ Note: when OpenAI structured outputs run in strict mode, the schema is additiona
 If you prefer not to use Tapir derivation — or the schema doesn't correspond to any case class — build the `sttp.apispec.Schema` by hand:
 
 ```scala
-//> using dep com.softwaremill.sttp.ai::openai:0.10.0
+//> using dep com.softwaremill.sttp.ai::openai:0.11.0
 
 import scala.collection.immutable.ListMap
 import sttp.apispec.{Schema, SchemaType}
@@ -120,7 +120,7 @@ On Scala 3, a response schema can be derived for a union type, so a classifier a
 intents and the caller dispatches with an exhaustive `match`:
 
 ```scala
-//> using dep com.softwaremill.sttp.ai::openai:0.10.0
+//> using dep com.softwaremill.sttp.ai::openai:0.11.0
 
 import io.circe.Codec
 import sttp.ai.core.agent.*
@@ -158,7 +158,7 @@ are identical (instances shown with Scala 3 `derives` syntax; on Scala 2.13 defi
 `deriveCodec` and `Schema.derived` implicit vals):
 
 ```scala
-//> using dep com.softwaremill.sttp.ai::openai:0.10.0
+//> using dep com.softwaremill.sttp.ai::openai:0.11.0
 
 import io.circe.Codec
 import sttp.ai.core.agent.*

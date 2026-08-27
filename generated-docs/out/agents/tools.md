@@ -5,7 +5,7 @@
 Tools are defined using type-safe case classes with the `derives` syntax:
 
 ```scala
-//> using dep com.softwaremill.sttp.ai::openai:0.10.0
+//> using dep com.softwaremill.sttp.ai::openai:0.11.0
 
 import sttp.ai.core.agent.*
 import sttp.tapir.Schema
@@ -40,7 +40,7 @@ See [JSON Schemas: structured outputs & tools](../other/json-schemas.md) for how
 On Scala 3, a whole tool set can be derived from a service trait's methods with `AgentTools.derive` — one tool per public method, without defining an input case class per tool:
 
 ```scala
-//> using dep com.softwaremill.sttp.ai::openai:0.10.0
+//> using dep com.softwaremill.sttp.ai::openai:0.11.0
 
 import sttp.ai.core.agent.*
 import sttp.tapir.Schema.annotations.description
@@ -100,7 +100,7 @@ On failure the iteration trace is preserved: `finalAnswer` is a `Left(AgentFailu
 Note that because `MaxIterations` and forced stops still parse, `finalAnswer` can be `Right(t)` even though the run was capped or cut short by an interceptor — check `AgentResult.finishReason` if you need to distinguish that from a natural stop.
 
 ```scala
-//> using dep com.softwaremill.sttp.ai::openai:0.10.0
+//> using dep com.softwaremill.sttp.ai::openai:0.11.0
 
 import sttp.ai.core.agent.*
 import sttp.ai.openai.OpenAI
@@ -146,7 +146,7 @@ Response schemas also support discriminated unions — `ResponseSchema.derivedUn
 typed sub-agent, with unhandled intents caught by the compiler's exhaustivity check:
 
 ```scala
-//> using dep com.softwaremill.sttp.ai::openai:0.10.0
+//> using dep com.softwaremill.sttp.ai::openai:0.11.0
 
 import io.circe.Codec
 import sttp.ai.core.agent.*
@@ -181,7 +181,7 @@ compiles when the first agent's `Out` matches the second's `In`, so a mismatched
 runtime surprise.
 
 ```scala
-//> using dep com.softwaremill.sttp.ai::openai:0.10.0
+//> using dep com.softwaremill.sttp.ai::openai:0.11.0
 
 import sttp.ai.openai.OpenAI
 import sttp.ai.openai.agent.OpenAIAgent

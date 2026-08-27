@@ -5,20 +5,20 @@
 Add the following dependency:
 
 ```sbt
-"com.softwaremill.sttp.ai" %% "openai" % "0.10.0"
+"com.softwaremill.sttp.ai" %% "openai" % "0.11.0"
 
 // For streaming support, add one or more (these modules are shared across OpenAI, Claude, and Gemini):
-"com.softwaremill.sttp.ai" %% "fs2" % "0.10.0"    // cats-effect/fs2
-"com.softwaremill.sttp.ai" %% "zio" % "0.10.0"    // ZIO
-"com.softwaremill.sttp.ai" %% "akka" % "0.10.0"   // Akka Streams (Scala 2.13 only)
-"com.softwaremill.sttp.ai" %% "pekko" % "0.10.0"  // Pekko Streams
-"com.softwaremill.sttp.ai" %% "ox" % "0.10.0"     // Ox direct-style (Scala 3 only)
+"com.softwaremill.sttp.ai" %% "fs2" % "0.11.0"    // cats-effect/fs2
+"com.softwaremill.sttp.ai" %% "zio" % "0.11.0"    // ZIO
+"com.softwaremill.sttp.ai" %% "akka" % "0.11.0"   // Akka Streams (Scala 2.12/2.13 only)
+"com.softwaremill.sttp.ai" %% "pekko" % "0.11.0"  // Pekko Streams
+"com.softwaremill.sttp.ai" %% "ox" % "0.11.0"     // Ox direct-style (Scala 3 only)
 ```
 
 Then send your first request (reads the `OPENAI_KEY` environment variable):
 
 ```scala
-//> using dep com.softwaremill.sttp.ai::openai:0.10.0
+//> using dep com.softwaremill.sttp.ai::openai:0.11.0
 
 import sttp.ai.openai.OpenAISyncClient
 import sttp.ai.openai.requests.completions.chat.ChatRequestBody.{ChatBody, ChatCompletionModel}
@@ -43,20 +43,20 @@ See [OpenAI API basics](openai/basics.md) for more.
 Add the following dependency:
 
 ```sbt
-"com.softwaremill.sttp.ai" %% "claude" % "0.10.0"
+"com.softwaremill.sttp.ai" %% "claude" % "0.11.0"
 
 // For streaming support, add one or more (these modules are shared across OpenAI, Claude, and Gemini):
-"com.softwaremill.sttp.ai" %% "fs2" % "0.10.0"    // cats-effect/fs2
-"com.softwaremill.sttp.ai" %% "zio" % "0.10.0"    // ZIO
-"com.softwaremill.sttp.ai" %% "akka" % "0.10.0"   // Akka Streams (Scala 2.13 only)
-"com.softwaremill.sttp.ai" %% "pekko" % "0.10.0"  // Pekko Streams
-"com.softwaremill.sttp.ai" %% "ox" % "0.10.0"     // Ox direct-style (Scala 3 only)
+"com.softwaremill.sttp.ai" %% "fs2" % "0.11.0"    // cats-effect/fs2
+"com.softwaremill.sttp.ai" %% "zio" % "0.11.0"    // ZIO
+"com.softwaremill.sttp.ai" %% "akka" % "0.11.0"   // Akka Streams (Scala 2.12/2.13 only)
+"com.softwaremill.sttp.ai" %% "pekko" % "0.11.0"  // Pekko Streams
+"com.softwaremill.sttp.ai" %% "ox" % "0.11.0"     // Ox direct-style (Scala 3 only)
 ```
 
 Then send your first request (reads the `ANTHROPIC_API_KEY` environment variable):
 
 ```scala
-//> using dep com.softwaremill.sttp.ai::claude:0.10.0
+//> using dep com.softwaremill.sttp.ai::claude:0.11.0
 
 import sttp.ai.claude.ClaudeSyncClient
 import sttp.ai.claude.models.{ClaudeModel, Message}
@@ -82,20 +82,20 @@ See [Claude API basics](claude/basics.md) for more.
 Add the following dependency:
 
 ```sbt
-"com.softwaremill.sttp.ai" %% "gemini" % "0.10.0"
+"com.softwaremill.sttp.ai" %% "gemini" % "0.11.0"
 
 // For streaming support, add one or more (these modules are shared across OpenAI, Claude, and Gemini):
-"com.softwaremill.sttp.ai" %% "fs2" % "0.10.0"    // cats-effect/fs2
-"com.softwaremill.sttp.ai" %% "zio" % "0.10.0"    // ZIO
-"com.softwaremill.sttp.ai" %% "akka" % "0.10.0"   // Akka Streams (Scala 2.13 only)
-"com.softwaremill.sttp.ai" %% "pekko" % "0.10.0"  // Pekko Streams
-"com.softwaremill.sttp.ai" %% "ox" % "0.10.0"     // Ox direct-style (Scala 3 only)
+"com.softwaremill.sttp.ai" %% "fs2" % "0.11.0"    // cats-effect/fs2
+"com.softwaremill.sttp.ai" %% "zio" % "0.11.0"    // ZIO
+"com.softwaremill.sttp.ai" %% "akka" % "0.11.0"   // Akka Streams (Scala 2.12/2.13 only)
+"com.softwaremill.sttp.ai" %% "pekko" % "0.11.0"  // Pekko Streams
+"com.softwaremill.sttp.ai" %% "ox" % "0.11.0"     // Ox direct-style (Scala 3 only)
 ```
 
 Then send your first request (reads the `GEMINI_API_KEY` environment variable):
 
 ```scala
-//> using dep com.softwaremill.sttp.ai::gemini:0.10.0
+//> using dep com.softwaremill.sttp.ai::gemini:0.11.0
 
 import sttp.ai.gemini.GeminiSyncClient
 import sttp.ai.gemini.requests.InteractionRequest
@@ -111,4 +111,4 @@ object GeminiHello:
 
 See [Gemini API basics](gemini/basics.md) for more.
 
-sttp-ai is available for Scala 2.13 and Scala 3.
+sttp-ai is available for Scala 2.12, 2.13 and Scala 3.

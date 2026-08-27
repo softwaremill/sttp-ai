@@ -5,7 +5,7 @@ The Interactions API models a conversation as a single resource — an *interact
 ## The Interaction Lifecycle
 
 ```scala
-//> using dep com.softwaremill.sttp.ai::gemini:0.10.0
+//> using dep com.softwaremill.sttp.ai::gemini:0.11.0
 
 import sttp.ai.gemini.GeminiSyncClient
 import sttp.ai.gemini.requests.InteractionRequest
@@ -42,7 +42,7 @@ object LifecycleExample:
 The API's own default is `store = true` — every interaction you create is persisted server-side unless you opt out. Pass `store = Some(false)` to skip persistence (nothing to fetch or delete afterwards):
 
 ```scala
-//> using dep com.softwaremill.sttp.ai::gemini:0.10.0
+//> using dep com.softwaremill.sttp.ai::gemini:0.11.0
 
 import sttp.ai.gemini.requests.InteractionRequest
 
@@ -65,7 +65,7 @@ There are two ways to continue a conversation, matching the two `store` modes:
 - **Stateless replay** — set `store = Some(false)` and pass the *entire* conversation so far as `InteractionInput.StepsInput(steps)`. This is what `GeminiAgent`'s backend always does internally (see [tool-calling.md](tool-calling.md)), since an agent loop shouldn't depend on server-side state surviving between iterations.
 
 ```scala
-//> using dep com.softwaremill.sttp.ai::gemini:0.10.0
+//> using dep com.softwaremill.sttp.ai::gemini:0.11.0
 
 import sttp.ai.gemini.GeminiSyncClient
 import sttp.ai.gemini.models.{Content, InteractionInput, Step}

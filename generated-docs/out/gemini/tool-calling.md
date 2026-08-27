@@ -5,7 +5,7 @@
 Define your own tools with `Tool.Function`. `parameters` is a raw JSON Schema (`io.circe.Json`), passed to the API byte-for-byte — handy when the schema comes from an MCP server or another source you don't want re-encoded. See [JSON Schemas: structured outputs & tools](../other/json-schemas.md) for ways to produce a schema.
 
 ```scala
-//> using dep com.softwaremill.sttp.ai::gemini:0.10.0
+//> using dep com.softwaremill.sttp.ai::gemini:0.11.0
 
 import io.circe.Json
 import sttp.ai.gemini.GeminiSyncClient
@@ -54,7 +54,7 @@ object ToolCallingExample:
 `response.functionCalls` gives you every `Step.FunctionCall` the model asked for (`id`, `name`, `arguments` as `io.circe.Json`). Execute them yourself, then continue the conversation by replaying the full step history — original prompt, the model's function call, and your `Step.FunctionResult` — via `InteractionInput.StepsInput` with `store = Some(false)`:
 
 ```scala
-//> using dep com.softwaremill.sttp.ai::gemini:0.10.0
+//> using dep com.softwaremill.sttp.ai::gemini:0.11.0
 
 import io.circe.Json
 import sttp.ai.gemini.GeminiSyncClient
@@ -112,7 +112,7 @@ Two Google-hosted tools are available alongside custom `Tool.Function`s — no `
 - **`Tool.CodeExecution`** — lets the model run code in a sandboxed environment
 
 ```scala
-//> using dep com.softwaremill.sttp.ai::gemini:0.10.0
+//> using dep com.softwaremill.sttp.ai::gemini:0.11.0
 
 import sttp.ai.gemini.GeminiSyncClient
 import sttp.ai.gemini.models.{InteractionInput, Tool}
@@ -139,7 +139,7 @@ Custom and built-in tools can be mixed in the same `tools` list.
 For a full tool-calling loop — the model calls a tool, your code runs it, the result is fed back, repeat until the model produces a final answer — use `GeminiAgent` instead of driving `createInteraction` by hand. It plugs into the same `sttp.ai.core.agent` framework used by the OpenAI and Claude agents (see [agents/quickstart.md](../agents/quickstart.md)); internally its backend always uses stateless `InteractionInput.StepsInput` replay with `store = Some(false)`, so no server-side state is required between iterations.
 
 ```scala
-//> using dep com.softwaremill.sttp.ai::gemini:0.10.0
+//> using dep com.softwaremill.sttp.ai::gemini:0.11.0
 
 import sttp.ai.core.agent.*
 import sttp.ai.gemini.agent.GeminiAgent
