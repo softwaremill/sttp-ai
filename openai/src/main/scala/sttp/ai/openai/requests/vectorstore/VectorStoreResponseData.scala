@@ -69,17 +69,17 @@ object VectorStoreResponseData {
     * @param data
     *   A list of vector store objects.
     * @param firstId
-    *   Id of first object
+    *   Id of first object, or None when the list is empty
     * @param lastId
-    *   Id of last object
+    *   Id of last object, or None when the list is empty
     * @param hasMore
     *   Denotes if there are more object available
     */
   case class ListVectorStoresResponse(
       `object`: String = "list",
       data: Seq[VectorStore],
-      firstId: String,
-      lastId: String,
+      firstId: Option[String],
+      lastId: Option[String],
       hasMore: Boolean
   )
 

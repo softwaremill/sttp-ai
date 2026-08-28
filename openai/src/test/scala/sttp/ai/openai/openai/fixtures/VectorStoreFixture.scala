@@ -94,4 +94,13 @@ object VectorStoreFixture {
       | "object": "vector_store.deleted",
       | "deleted": true
       |}""".stripMargin
+  val jsonEmptyList: String =
+    """{
+      |  "object": "list",
+      |  "data": [],
+      |  "first_id": null,
+      |  "last_id": null,
+      |  "has_more": false
+      |}""".stripMargin
+
 }

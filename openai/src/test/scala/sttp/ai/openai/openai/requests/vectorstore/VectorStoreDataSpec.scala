@@ -113,8 +113,8 @@ class VectorStoreDataSpec extends AnyFlatSpec with Matchers with EitherValues {
     val givenResponse = ListVectorStoresResponse(
       `object` = "list",
       data = Seq(first, second),
-      firstId = "vs_abc123",
-      lastId = "vs_abc456",
+      firstId = Some("vs_abc123"),
+      lastId = Some("vs_abc456"),
       hasMore = false
     )
 
@@ -126,6 +126,20 @@ class VectorStoreDataSpec extends AnyFlatSpec with Matchers with EitherValues {
 
     // then
     serializedJson.value shouldBe givenResponse
+  }
+
+  "Empty vector store list response with null cursors" should "be properly deserialized from Json" in {
+    // when
+    val deserialized: Either[Exception, ListVectorStoresResponse] = decode[ListVectorStoresResponse](VectorStoreFixture.jsonEmptyList)
+
+    // then
+    deserialized.value shouldBe ListVectorStoresResponse(
+      `object` = "list",
+      data = Seq.empty,
+      firstId = None,
+      lastId = None,
+      hasMore = false
+    )
   }
 
   "Delete of vector stores response" should "be properly deserialized from Json" in {

@@ -55,6 +55,11 @@ import sttp.ai.openai.requests.vectorstore.file.VectorStoreFileResponseData.{
   ListVectorStoreFilesResponse,
   VectorStoreFile
 }
+import sttp.ai.openai.requests.vectorstore.file.batch.VectorStoreFileBatchRequestBody.{
+  CreateVectorStoreFileBatchBody,
+  ListVectorStoreFilesInBatchBody
+}
+import sttp.ai.openai.requests.vectorstore.file.batch.VectorStoreFileBatchResponseData.VectorStoreFileBatch
 import sttp.ai.openai.requests.{admin, batch, finetuning}
 import io.circe.{parser, Decoder}
 import sttp.tapir.{Schema => TapirSchema}
@@ -1123,6 +1128,63 @@ class OpenAISyncClient private (
     */
   def deleteVectorStoreFile(vectorStoreId: String, fileId: String): DeleteVectorStoreFileResponse =
     sendOrThrow(openAI.deleteVectorStoreFile(vectorStoreId, fileId))
+
+  /** Creates vector store file batch
+    *
+    * @param vectorStoreId
+    *   Id of vector store
+    * @param createVectorStoreFileBatchBody
+    *   Properties of the batch (file ids to attach)
+    * @return
+    *   Newly created vector store file batch
+    */
+  def createVectorStoreFileBatch(
+      vectorStoreId: String,
+      createVectorStoreFileBatchBody: CreateVectorStoreFileBatchBody
+  ): VectorStoreFileBatch =
+    sendOrThrow(openAI.createVectorStoreFileBatch(vectorStoreId, createVectorStoreFileBatchBody))
+
+  /** Retrieves vector store file batch by id
+    *
+    * @param vectorStoreId
+    *   Id of vector store
+    * @param batchId
+    *   Id of vector store file batch
+    * @return
+    *   Vector store file batch
+    */
+  def retrieveVectorStoreFileBatch(vectorStoreId: String, batchId: String): VectorStoreFileBatch =
+    sendOrThrow(openAI.retrieveVectorStoreFileBatch(vectorStoreId, batchId))
+
+  /** Cancels vector store file batch by id
+    *
+    * @param vectorStoreId
+    *   Id of vector store
+    * @param batchId
+    *   Id of vector store file batch
+    * @return
+    *   Modified vector store file batch
+    */
+  def cancelVectorStoreFileBatch(vectorStoreId: String, batchId: String): VectorStoreFileBatch =
+    sendOrThrow(openAI.cancelVectorStoreFileBatch(vectorStoreId, batchId))
+
+  /** List files belonging to particular vector store file batch
+    *
+    * @param vectorStoreId
+    *   Id of vector store
+    * @param batchId
+    *   Id of vector store file batch
+    * @param queryParameters
+    *   Search params
+    * @return
+    *   List of vector store files
+    */
+  def listVectorStoreFilesInBatch(
+      vectorStoreId: String,
+      batchId: String,
+      queryParameters: ListVectorStoreFilesInBatchBody = ListVectorStoreFilesInBatchBody()
+  ): ListVectorStoreFilesResponse =
+    sendOrThrow(openAI.listVectorStoreFilesInBatch(vectorStoreId, batchId, queryParameters))
 
   /** Creates and executes a batch from an uploaded file of requests
     *

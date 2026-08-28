@@ -55,6 +55,11 @@ import sttp.ai.openai.requests.vectorstore.file.VectorStoreFileResponseData.{
   ListVectorStoreFilesResponse,
   VectorStoreFile
 }
+import sttp.ai.openai.requests.vectorstore.file.batch.VectorStoreFileBatchRequestBody.{
+  CreateVectorStoreFileBatchBody,
+  ListVectorStoreFilesInBatchBody
+}
+import sttp.ai.openai.requests.vectorstore.file.batch.VectorStoreFileBatchResponseData.VectorStoreFileBatch
 import sttp.ai.openai.requests.{admin, batch, finetuning}
 
 import java.io.{File, InputStream}
@@ -1577,6 +1582,80 @@ class OpenAI(
       .delete(openAIUris.vectorStoreFile(vectorStoreId, fileId))
       .response(asJson_parseErrors[DeleteVectorStoreFileResponse])
 
+  /** Create a vector store file batch.
+    *
+    * [[https://platform.openai.com/docs/api-reference/vector-stores-file-batches/createBatch]]
+    *
+    * @param vectorStoreId
+    *   The ID of the vector store for which to create a file batch.
+    * @param createVectorStoreFileBatchBody
+    *   Properties of the batch (file ids to attach).
+    * @return
+    *   A vector store file batch object.
+    */
+  def createVectorStoreFileBatch(
+      vectorStoreId: String,
+      createVectorStoreFileBatchBody: CreateVectorStoreFileBatchBody
+  ): Request[Either[OpenAIException, VectorStoreFileBatch]] =
+    betaOpenAIAuthRequest
+      .post(openAIUris.vectorStoreFileBatches(vectorStoreId))
+      .body(asJson(createVectorStoreFileBatchBody))
+      .response(asJson_parseErrors[VectorStoreFileBatch])
+
+  /** Retrieves a vector store file batch.
+    *
+    * [[https://platform.openai.com/docs/api-reference/vector-stores-file-batches/getBatch]]
+    *
+    * @param vectorStoreId
+    *   The ID of the vector store that the file batch belongs to.
+    * @param batchId
+    *   The ID of the file batch being retrieved.
+    * @return
+    *   The vector store file batch object.
+    */
+  def retrieveVectorStoreFileBatch(vectorStoreId: String, batchId: String): Request[Either[OpenAIException, VectorStoreFileBatch]] =
+    betaOpenAIAuthRequest
+      .get(openAIUris.vectorStoreFileBatch(vectorStoreId, batchId))
+      .response(asJson_parseErrors[VectorStoreFileBatch])
+
+  /** Cancel a vector store file batch. This attempts to cancel the processing of files in this batch as soon as possible.
+    *
+    * [[https://platform.openai.com/docs/api-reference/vector-stores-file-batches/cancelBatch]]
+    *
+    * @param vectorStoreId
+    *   The ID of the vector store that the file batch belongs to.
+    * @param batchId
+    *   The ID of the file batch to cancel.
+    * @return
+    *   The modified vector store file batch object.
+    */
+  def cancelVectorStoreFileBatch(vectorStoreId: String, batchId: String): Request[Either[OpenAIException, VectorStoreFileBatch]] =
+    betaOpenAIAuthRequest
+      .post(openAIUris.vectorStoreFileBatchCancel(vectorStoreId, batchId))
+      .response(asJson_parseErrors[VectorStoreFileBatch])
+
+  /** Returns a list of vector store files in a batch.
+    *
+    * [[https://platform.openai.com/docs/api-reference/vector-stores-file-batches/listBatchFiles]]
+    *
+    * @param vectorStoreId
+    *   The ID of the vector store that the files belong to.
+    * @param batchId
+    *   The ID of the file batch that the files belong to.
+    * @param queryParameters
+    *   Search params
+    * @return
+    *   A list of vector store file objects.
+    */
+  def listVectorStoreFilesInBatch(
+      vectorStoreId: String,
+      batchId: String,
+      queryParameters: ListVectorStoreFilesInBatchBody = ListVectorStoreFilesInBatchBody()
+  ): Request[Either[OpenAIException, ListVectorStoreFilesResponse]] =
+    betaOpenAIAuthRequest
+      .get(openAIUris.vectorStoreFileBatchFiles(vectorStoreId, batchId).withParams(queryParameters.toMap))
+      .response(asJson_parseErrors[ListVectorStoreFilesResponse])
+
   /** Creates and executes a batch from an uploaded file of requests
     *
     * [[https://platform.openai.com/docs/api-reference/batch/create]]
@@ -1801,6 +1880,14 @@ private class OpenAIUris(val baseUri: Uri) {
     vectorStore(vectorStoreId).addPath("files")
   def vectorStoreFile(vectorStoreId: String, fileId: String): Uri =
     vectorStoreFiles(vectorStoreId).addPath(fileId)
+  def vectorStoreFileBatches(vectorStoreId: String): Uri =
+    vectorStore(vectorStoreId).addPath("file_batches")
+  def vectorStoreFileBatch(vectorStoreId: String, batchId: String): Uri =
+    vectorStoreFileBatches(vectorStoreId).addPath(batchId)
+  def vectorStoreFileBatchCancel(vectorStoreId: String, batchId: String): Uri =
+    vectorStoreFileBatch(vectorStoreId, batchId).addPath("cancel")
+  def vectorStoreFileBatchFiles(vectorStoreId: String, batchId: String): Uri =
+    vectorStoreFileBatch(vectorStoreId, batchId).addPath("files")
 }
 
 object OpenAIUris {

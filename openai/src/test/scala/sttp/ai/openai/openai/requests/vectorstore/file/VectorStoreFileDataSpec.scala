@@ -47,6 +47,17 @@ class VectorStoreFileDataSpec extends AnyFlatSpec with Matchers with EitherValue
     serializedJson shouldBe jsonRequest
   }
 
+  "Vector store file search params" should "be properly converted to query parameters" in {
+    // given
+    val givenRequest = ListVectorStoreFilesBody(limit = 5, after = Some("111"), filter = Some(InProgress))
+
+    // when
+    val params = givenRequest.toMap
+
+    // then
+    params shouldBe Map("limit" -> "5", "order" -> "desc", "after" -> "111", "filter" -> "in_progress")
+  }
+
   "Vector store file response" should "be properly deserialized from Json" in {
     import sttp.ai.openai.requests.vectorstore.file.VectorStoreFileResponseData.VectorStoreFile._
     // given
@@ -114,8 +125,8 @@ class VectorStoreFileDataSpec extends AnyFlatSpec with Matchers with EitherValue
     val givenResponse = ListVectorStoreFilesResponse(
       `object` = "list",
       data = Seq(one, two),
-      firstId = "vsf_1",
-      lastId = "vsf_2",
+      firstId = Some("vsf_1"),
+      lastId = Some("vsf_2"),
       hasMore = true
     )
     val jsonResponse = VectorStoreFileFixture.jsonList
@@ -126,6 +137,21 @@ class VectorStoreFileDataSpec extends AnyFlatSpec with Matchers with EitherValue
 
     // then
     serializedJson.value shouldBe givenResponse
+  }
+
+  "Empty vector store file list response with null cursors" should "be properly deserialized from Json" in {
+    // when
+    val deserialized: Either[Exception, ListVectorStoreFilesResponse] =
+      decode[ListVectorStoreFilesResponse](VectorStoreFileFixture.jsonEmptyList)
+
+    // then
+    deserialized.value shouldBe ListVectorStoreFilesResponse(
+      `object` = "list",
+      data = Seq.empty,
+      firstId = None,
+      lastId = None,
+      hasMore = false
+    )
   }
 
   "Delete of vector store file response" should "be properly deserialized from Json" in {

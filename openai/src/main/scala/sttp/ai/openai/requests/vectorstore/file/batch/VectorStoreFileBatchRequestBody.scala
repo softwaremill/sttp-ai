@@ -1,17 +1,19 @@
-package sttp.ai.openai.requests.vectorstore.file
+package sttp.ai.openai.requests.vectorstore.file.batch
 
-object VectorStoreFileRequestBody {
+import sttp.ai.openai.requests.vectorstore.file.FileStatus
 
-  /** Create a vector store file by attaching a File to a vector store.
+object VectorStoreFileBatchRequestBody {
+
+  /** Create a vector store file batch by attaching multiple Files to a vector store.
     *
-    * @param fileId
-    *   A File ID that the vector store should use. Useful for tools like file_search that can access files.
+    * @param fileIds
+    *   A list of File IDs that the vector store should use. Useful for tools like file_search that can access files.
     */
-  case class CreateVectorStoreFileBody(
-      fileId: String
+  case class CreateVectorStoreFileBatchBody(
+      fileIds: Seq[String]
   )
 
-  /** Represents options for listing objects with pagination and filtering.
+  /** Represents options for listing files in a vector store file batch with pagination and filtering.
     *
     * @param limit
     *   Defaults to 20 A limit on the number of objects to be returned. Limit can range between 1 and 100, and the default is 20.
@@ -28,7 +30,7 @@ object VectorStoreFileRequestBody {
     * @param filter
     *   Optional. Filter by file status. Possible values are "in_progress", "completed", "failed", "cancelled".
     */
-  case class ListVectorStoreFilesBody(
+  case class ListVectorStoreFilesInBatchBody(
       limit: Int = 20,
       order: String = "desc",
       after: Option[String] = None,
