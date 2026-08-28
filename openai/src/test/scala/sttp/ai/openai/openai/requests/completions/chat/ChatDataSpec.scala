@@ -42,8 +42,8 @@ class ChatDataSpec extends AnyFlatSpec with Matchers with EitherValues {
     val jsonResponse = fixtures.ChatFixture.jsonListChatResponse
     val expectedResponse = ListChatResponse(
       data = Seq(),
-      firstId = "chatcmpl-AyPNinnUqUDYo9SAdA52NobMflmj2",
-      lastId = "chatcmpl-AyPNinnUqUDYo9SAdA52NobMflmj2",
+      firstId = Some("chatcmpl-AyPNinnUqUDYo9SAdA52NobMflmj2"),
+      lastId = Some("chatcmpl-AyPNinnUqUDYo9SAdA52NobMflmj2"),
       hasMore = false
     )
     // when
@@ -73,8 +73,8 @@ class ChatDataSpec extends AnyFlatSpec with Matchers with EitherValues {
           )
         )
       ),
-      firstId = "chatcmpl-76FxnKOjnPkDVYTAQ1wK8iUNFJPvR",
-      lastId = "chatcmpl-76FxnKOjnPkDVYTAQ1wK8iUNFJPvR",
+      firstId = Some("chatcmpl-76FxnKOjnPkDVYTAQ1wK8iUNFJPvR"),
+      lastId = Some("chatcmpl-76FxnKOjnPkDVYTAQ1wK8iUNFJPvR"),
       hasMore = true
     )
     // when

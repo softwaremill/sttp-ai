@@ -40,7 +40,7 @@ object VectorStoreFileRequestBody {
       map ++
         after.map("after" -> _) ++
         before.map("before" -> _) ++
-        filter.map("filter" -> _.toString)
+        filter.map(f => "filter" -> FileStatus.toApiValue(f))
     }
   }
 

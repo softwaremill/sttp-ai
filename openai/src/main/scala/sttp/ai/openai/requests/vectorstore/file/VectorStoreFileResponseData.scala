@@ -51,17 +51,17 @@ object VectorStoreFileResponseData {
     * @param data
     *   A list of vector store file objects.
     * @param firstId
-    *   Id of first object
+    *   Id of first object, or None when the list is empty
     * @param lastId
-    *   Id of last object
+    *   Id of last object, or None when the list is empty
     * @param hasMore
     *   Denotes if there are more object available
     */
   case class ListVectorStoreFilesResponse(
       `object`: String = "list",
       data: Seq[VectorStoreFile],
-      firstId: String,
-      lastId: String,
+      firstId: Option[String],
+      lastId: Option[String],
       hasMore: Boolean
   )
 

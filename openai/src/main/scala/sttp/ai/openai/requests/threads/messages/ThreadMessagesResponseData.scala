@@ -53,8 +53,8 @@ object ThreadMessagesResponseData {
   case class ListMessagesResponse(
       `object`: String = "list",
       data: Seq[MessageData],
-      firstId: String,
-      lastId: String,
+      firstId: Option[String],
+      lastId: Option[String],
       hasMore: Boolean
   )
 

@@ -110,8 +110,8 @@ class AssistantsDataSpec extends AnyFlatSpec with Matchers with EitherValues {
           metadata = Map.empty
         )
       ),
-      firstId = "asst_abc123",
-      lastId = "asst_abc789",
+      firstId = Some("asst_abc123"),
+      lastId = Some("asst_abc789"),
       hasMore = false
     )
 
@@ -169,8 +169,8 @@ class AssistantsDataSpec extends AnyFlatSpec with Matchers with EitherValues {
           metadata = Map.empty
         )
       ),
-      firstId = "asst_abc123",
-      lastId = "asst_abc789",
+      firstId = Some("asst_abc123"),
+      lastId = Some("asst_abc789"),
       hasMore = false
     )
 

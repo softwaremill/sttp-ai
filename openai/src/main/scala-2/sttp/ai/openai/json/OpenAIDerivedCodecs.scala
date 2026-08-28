@@ -74,6 +74,7 @@ import sttp.ai.openai.requests.admin.{
 }
 import sttp.ai.openai.requests.vectorstore.{VectorStoreRequestBody, VectorStoreResponseData}
 import sttp.ai.openai.requests.vectorstore.file.{FileStatus, VectorStoreFileRequestBody, VectorStoreFileResponseData}
+import sttp.ai.openai.requests.vectorstore.file.batch.{VectorStoreFileBatchRequestBody, VectorStoreFileBatchResponseData}
 import sttp.ai.openai.requests.threads.{ThreadsRequestBody, ThreadsResponseData}
 import sttp.ai.openai.requests.threads.messages.{ThreadMessagesRequestBody, ThreadMessagesResponseData => TMR}
 import sttp.ai.openai.requests.threads.runs.{ThreadRunsRequestBody, ThreadRunsResponseData => TRR}
@@ -392,6 +393,9 @@ object OpenAIDerivedCodecs {
   implicit val vectorStoreFileCodec: Codec[VectorStoreFileResponseData.VectorStoreFile] = deriveConfiguredCodec
   implicit val listVectorStoreFilesResponseCodec: Codec[VectorStoreFileResponseData.ListVectorStoreFilesResponse] = deriveConfiguredCodec
   implicit val deleteVectorStoreFileResponseCodec: Codec[VectorStoreFileResponseData.DeleteVectorStoreFileResponse] = deriveConfiguredCodec
+  implicit val createVectorStoreFileBatchBodyEncoder: Encoder[VectorStoreFileBatchRequestBody.CreateVectorStoreFileBatchBody] =
+    deriveConfiguredEncoder
+  implicit val vectorStoreFileBatchCodec: Codec[VectorStoreFileBatchResponseData.VectorStoreFileBatch] = deriveConfiguredCodec
 
   // threads request bodies
   implicit val attachmentCodec: Codec[Attachment] = {

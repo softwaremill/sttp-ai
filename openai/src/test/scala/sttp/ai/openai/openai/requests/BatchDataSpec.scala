@@ -44,8 +44,8 @@ class BatchDataSpec extends AnyFlatSpec with Matchers with EitherValues {
     val expectedResponse: ListBatchResponse = ListBatchResponse(
       data = Seq(BatchFixture.batchResponse),
       hasMore = true,
-      firstId = "ftckpt_zc4Q7MP6XxulcVzj4MZdwsAB",
-      lastId = "ftckpt_enQCFmOTGj3syEpYVhBRLTSy"
+      firstId = Some("ftckpt_zc4Q7MP6XxulcVzj4MZdwsAB"),
+      lastId = Some("ftckpt_enQCFmOTGj3syEpYVhBRLTSy")
     )
     // when
     val deserializedJsonResponse: Either[Exception, ListBatchResponse] =

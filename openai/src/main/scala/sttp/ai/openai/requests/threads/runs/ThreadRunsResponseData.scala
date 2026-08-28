@@ -157,8 +157,8 @@ object ThreadRunsResponseData {
   case class ListRunsResponse(
       `object`: String = "list",
       data: Seq[RunData],
-      firstId: String,
-      lastId: String,
+      firstId: Option[String],
+      lastId: Option[String],
       hasMore: Boolean
   )
 
@@ -387,8 +387,8 @@ object ThreadRunsResponseData {
   case class ListRunStepsResponse(
       `object`: String = "list",
       data: Seq[RunStepData],
-      firstId: String,
-      lastId: String,
+      firstId: Option[String],
+      lastId: Option[String],
       hasMore: Boolean
   )
 

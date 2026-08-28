@@ -47,8 +47,8 @@ object ChatRequestResponseData {
   case class ListMessageResponse(
       `object`: String = "list",
       data: Seq[Message],
-      firstId: String,
-      lastId: String,
+      firstId: Option[String],
+      lastId: Option[String],
       hasMore: Boolean
   )
 
@@ -165,8 +165,8 @@ object ChatRequestResponseData {
   case class ListChatResponse(
       `object`: String = "list",
       data: Seq[ChatResponse],
-      firstId: String,
-      lastId: String,
+      firstId: Option[String],
+      lastId: Option[String],
       hasMore: Boolean
   )
 

@@ -23,8 +23,8 @@ case class ListAdminApiKeyResponse(
     `object`: String = "list",
     data: Seq[AdminApiKeyResponse],
     hasMore: Boolean,
-    firstId: String,
-    lastId: String
+    firstId: Option[String],
+    lastId: Option[String]
 )
 
 case class DeleteAdminApiKeyResponse(

@@ -39,8 +39,8 @@ class AdminApiKeyDataSpec extends AnyFlatSpec with Matchers with EitherValues {
     val expectedResponse: ListAdminApiKeyResponse = ListAdminApiKeyResponse(
       data = Seq(AdminFixture.adminApiKeyResponse),
       hasMore = false,
-      firstId = "key_abc",
-      lastId = "key_abc"
+      firstId = Some("key_abc"),
+      lastId = Some("key_abc")
     )
     // when
     val deserializedJsonResponse: Either[Exception, ListAdminApiKeyResponse] =

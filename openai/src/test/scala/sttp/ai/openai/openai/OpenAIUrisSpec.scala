@@ -34,4 +34,18 @@ class OpenAIUrisSpec extends AnyFlatSpec with Matchers {
     uris.Models.toString shouldBe "https://api.openai.com/v1/models": Unit
     uris.Transcriptions.toString shouldBe "https://api.openai.com/v1/audio/transcriptions"
   }
+
+  "OpenAIUris vector store paths" should "match the OpenAI API reference" in {
+    val uris = new OpenAIUris(plainBase)
+    val base = "https://api.openai.com/v1/vector_stores"
+
+    uris.VectorStores.toString shouldBe base: Unit
+    uris.vectorStore("vs_1").toString shouldBe s"$base/vs_1": Unit
+    uris.vectorStoreFiles("vs_1").toString shouldBe s"$base/vs_1/files": Unit
+    uris.vectorStoreFile("vs_1", "file_1").toString shouldBe s"$base/vs_1/files/file_1": Unit
+    uris.vectorStoreFileBatches("vs_1").toString shouldBe s"$base/vs_1/file_batches": Unit
+    uris.vectorStoreFileBatch("vs_1", "vsfb_1").toString shouldBe s"$base/vs_1/file_batches/vsfb_1": Unit
+    uris.vectorStoreFileBatchCancel("vs_1", "vsfb_1").toString shouldBe s"$base/vs_1/file_batches/vsfb_1/cancel": Unit
+    uris.vectorStoreFileBatchFiles("vs_1", "vsfb_1").toString shouldBe s"$base/vs_1/file_batches/vsfb_1/files"
+  }
 }

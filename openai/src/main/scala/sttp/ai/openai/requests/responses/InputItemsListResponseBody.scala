@@ -20,9 +20,9 @@ import sttp.tapir.{Schema => TSchema}
   */
 case class InputItemsListResponseBody(
     data: List[InputItemsListResponseBody.InputItem],
-    firstId: String,
+    firstId: Option[String],
     hasMore: Boolean,
-    lastId: String,
+    lastId: Option[String],
     `object`: String
 )
 

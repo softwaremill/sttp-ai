@@ -161,8 +161,8 @@ class FineTuningDataSpec extends AnyFlatSpec with Matchers with EitherValues {
             stepNumber = 2000
           )
         ),
-      firstId = "ftckpt_zc4Q7MP6XxulcVzj4MZdwsAB",
-      lastId = "ftckpt_enQCFmOTGj3syEpYVhBRLTSy",
+      firstId = Some("ftckpt_zc4Q7MP6XxulcVzj4MZdwsAB"),
+      lastId = Some("ftckpt_enQCFmOTGj3syEpYVhBRLTSy"),
       hasMore = true
     )
     // when
