@@ -68,8 +68,8 @@ object AssistantsResponseData {
   case class ListAssistantsResponse(
       `object`: String = "list",
       data: Seq[AssistantData],
-      firstId: String,
-      lastId: String,
+      firstId: Option[String],
+      lastId: Option[String],
       hasMore: Boolean
   )
 

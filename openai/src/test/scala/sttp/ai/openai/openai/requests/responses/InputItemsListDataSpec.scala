@@ -40,8 +40,8 @@ class InputItemsListDataSpec extends AnyFlatSpec with Matchers with EitherValues
 
     // then
     deserializedResponse.`object` shouldBe "list"
-    deserializedResponse.firstId shouldBe "msg_abc123"
-    deserializedResponse.lastId shouldBe "msg_abc123"
+    deserializedResponse.firstId shouldBe Some("msg_abc123")
+    deserializedResponse.lastId shouldBe Some("msg_abc123")
     deserializedResponse.hasMore shouldBe false
     deserializedResponse.data should have size 1
 

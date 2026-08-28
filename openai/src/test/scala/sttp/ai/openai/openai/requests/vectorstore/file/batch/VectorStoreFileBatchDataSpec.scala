@@ -10,10 +10,7 @@ import sttp.ai.openai.json.OpenAIDerivedCodecs._
 import sttp.ai.openai.json.OpenAIManualCodecs._
 import sttp.ai.openai.requests.vectorstore.VectorStoreResponseData.FileCounts
 import sttp.ai.openai.requests.vectorstore.file.{Completed, InProgress}
-import sttp.ai.openai.requests.vectorstore.file.batch.VectorStoreFileBatchRequestBody.{
-  CreateVectorStoreFileBatchBody,
-  ListVectorStoreFilesInBatchBody
-}
+import sttp.ai.openai.requests.vectorstore.file.batch.VectorStoreFileBatchRequestBody.CreateVectorStoreFileBatchBody
 import sttp.ai.openai.requests.vectorstore.file.batch.VectorStoreFileBatchResponseData.VectorStoreFileBatch
 
 class VectorStoreFileBatchDataSpec extends AnyFlatSpec with Matchers with EitherValues {
@@ -28,35 +25,6 @@ class VectorStoreFileBatchDataSpec extends AnyFlatSpec with Matchers with Either
 
     // then
     serializedJson shouldBe jsonRequest
-  }
-
-  "Vector store files in batch search params" should "be properly serialized to Json" in {
-    // given
-    val givenRequest = ListVectorStoreFilesInBatchBody(
-      limit = 30,
-      order = "asc",
-      after = Some("111"),
-      before = Some("222"),
-      filter = Some(InProgress)
-    )
-    val jsonRequest: io.circe.Json = parse(VectorStoreFileBatchFixture.jsonListRequest).value
-
-    // when
-    val serializedJson: io.circe.Json = givenRequest.asJson.deepDropNullValues
-
-    // then
-    serializedJson shouldBe jsonRequest
-  }
-
-  "Vector store files in batch search params" should "be properly converted to query parameters" in {
-    // given
-    val givenRequest = ListVectorStoreFilesInBatchBody(limit = 5, after = Some("111"), filter = Some(Completed))
-
-    // when
-    val params = givenRequest.toMap
-
-    // then
-    params shouldBe Map("limit" -> "5", "order" -> "desc", "after" -> "111", "filter" -> "completed")
   }
 
   "In-progress vector store file batch response" should "be properly deserialized from Json" in {

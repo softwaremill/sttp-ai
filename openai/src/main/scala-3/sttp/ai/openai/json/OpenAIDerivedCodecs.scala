@@ -378,8 +378,6 @@ object OpenAIDerivedCodecs {
     ConfiguredCodec.derived
   implicit val createVectorStoreFileBatchBodyEncoder: Encoder[VectorStoreFileBatchRequestBody.CreateVectorStoreFileBatchBody] =
     ConfiguredEncoder.derived
-  implicit val listVectorStoreFilesInBatchBodyEncoder: Encoder[VectorStoreFileBatchRequestBody.ListVectorStoreFilesInBatchBody] =
-    ConfiguredEncoder.derived
   implicit val vectorStoreFileBatchCodec: Codec[VectorStoreFileBatchResponseData.VectorStoreFileBatch] = ConfiguredCodec.derived
 
   // threads request bodies

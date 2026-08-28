@@ -7,15 +7,6 @@ object VectorStoreFileBatchFixture {
       |  "file_ids": ["file_1", "file_2"]
       |}""".stripMargin
 
-  val jsonListRequest: String =
-    """{
-      |  "limit": 30,
-      |  "order": "asc",
-      |  "after": "111",
-      |  "before": "222",
-      |  "filter": "in_progress"
-      |}""".stripMargin
-
   val jsonObjectInProgress: String =
     """{
       |  "id": "vsfb_1",

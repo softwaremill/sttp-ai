@@ -55,10 +55,7 @@ import sttp.ai.openai.requests.vectorstore.file.VectorStoreFileResponseData.{
   ListVectorStoreFilesResponse,
   VectorStoreFile
 }
-import sttp.ai.openai.requests.vectorstore.file.batch.VectorStoreFileBatchRequestBody.{
-  CreateVectorStoreFileBatchBody,
-  ListVectorStoreFilesInBatchBody
-}
+import sttp.ai.openai.requests.vectorstore.file.batch.VectorStoreFileBatchRequestBody.CreateVectorStoreFileBatchBody
 import sttp.ai.openai.requests.vectorstore.file.batch.VectorStoreFileBatchResponseData.VectorStoreFileBatch
 import sttp.ai.openai.requests.{admin, batch, finetuning}
 import io.circe.{parser, Decoder}
@@ -1182,7 +1179,7 @@ class OpenAISyncClient private (
   def listVectorStoreFilesInBatch(
       vectorStoreId: String,
       batchId: String,
-      queryParameters: ListVectorStoreFilesInBatchBody = ListVectorStoreFilesInBatchBody()
+      queryParameters: ListVectorStoreFilesBody = ListVectorStoreFilesBody()
   ): ListVectorStoreFilesResponse =
     sendOrThrow(openAI.listVectorStoreFilesInBatch(vectorStoreId, batchId, queryParameters))
 

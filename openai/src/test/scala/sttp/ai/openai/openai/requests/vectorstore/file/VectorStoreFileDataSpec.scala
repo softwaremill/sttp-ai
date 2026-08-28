@@ -47,6 +47,11 @@ class VectorStoreFileDataSpec extends AnyFlatSpec with Matchers with EitherValue
     serializedJson shouldBe jsonRequest
   }
 
+  "FileStatus.toApiValue" should "agree with the JSON codec for every status" in
+    Seq[FileStatus](InProgress, Completed, Failed, Cancelled).foreach { status =>
+      Some(FileStatus.toApiValue(status)) shouldBe status.asJson.asString
+    }
+
   "Vector store file search params" should "be properly converted to query parameters" in {
     // given
     val givenRequest = ListVectorStoreFilesBody(limit = 5, after = Some("111"), filter = Some(InProgress))

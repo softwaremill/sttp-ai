@@ -166,8 +166,8 @@ case class FineTuningJobCheckpointResponse(
 case class ListFineTuningJobCheckpointResponse(
     `object`: String = "list",
     data: Seq[FineTuningJobCheckpointResponse],
-    firstId: String,
-    lastId: String,
+    firstId: Option[String],
+    lastId: Option[String],
     hasMore: Boolean
 )
 

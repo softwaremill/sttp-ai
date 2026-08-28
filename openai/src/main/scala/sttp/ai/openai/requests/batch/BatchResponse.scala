@@ -103,7 +103,7 @@ case class RequestCounts(
 case class ListBatchResponse(
     `object`: String = "list",
     data: Seq[BatchResponse],
-    firstId: String,
-    lastId: String,
+    firstId: Option[String],
+    lastId: Option[String],
     hasMore: Boolean
 )

@@ -109,8 +109,8 @@ class ThreadMessagesDataSpec extends AnyFlatSpec with Matchers with EitherValues
           metadata = Map.empty
         )
       ),
-      firstId = "msg_abc123",
-      lastId = "msg_abc456",
+      firstId = Some("msg_abc123"),
+      lastId = Some("msg_abc456"),
       hasMore = false
     )
 

@@ -55,10 +55,7 @@ import sttp.ai.openai.requests.vectorstore.file.VectorStoreFileResponseData.{
   ListVectorStoreFilesResponse,
   VectorStoreFile
 }
-import sttp.ai.openai.requests.vectorstore.file.batch.VectorStoreFileBatchRequestBody.{
-  CreateVectorStoreFileBatchBody,
-  ListVectorStoreFilesInBatchBody
-}
+import sttp.ai.openai.requests.vectorstore.file.batch.VectorStoreFileBatchRequestBody.CreateVectorStoreFileBatchBody
 import sttp.ai.openai.requests.vectorstore.file.batch.VectorStoreFileBatchResponseData.VectorStoreFileBatch
 import sttp.ai.openai.requests.{admin, batch, finetuning}
 
@@ -1650,7 +1647,7 @@ class OpenAI(
   def listVectorStoreFilesInBatch(
       vectorStoreId: String,
       batchId: String,
-      queryParameters: ListVectorStoreFilesInBatchBody = ListVectorStoreFilesInBatchBody()
+      queryParameters: ListVectorStoreFilesBody = ListVectorStoreFilesBody()
   ): Request[Either[OpenAIException, ListVectorStoreFilesResponse]] =
     betaOpenAIAuthRequest
       .get(openAIUris.vectorStoreFileBatchFiles(vectorStoreId, batchId).withParams(queryParameters.toMap))

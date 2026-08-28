@@ -183,8 +183,8 @@ class ThreadRunsDataSpec extends AnyFlatSpec with Matchers with EitherValues {
             )
           )
         ),
-        firstId = "run_abc123",
-        lastId = "run_abc456",
+        firstId = Some("run_abc123"),
+        lastId = Some("run_abc456"),
         hasMore = false
       )
 
@@ -230,8 +230,8 @@ class ThreadRunsDataSpec extends AnyFlatSpec with Matchers with EitherValues {
             )
           )
         ),
-        firstId = "step_abc123",
-        lastId = "step_abc456",
+        firstId = Some("step_abc123"),
+        lastId = Some("step_abc456"),
         hasMore = false
       )
 

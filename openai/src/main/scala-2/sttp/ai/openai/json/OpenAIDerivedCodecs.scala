@@ -395,8 +395,6 @@ object OpenAIDerivedCodecs {
   implicit val deleteVectorStoreFileResponseCodec: Codec[VectorStoreFileResponseData.DeleteVectorStoreFileResponse] = deriveConfiguredCodec
   implicit val createVectorStoreFileBatchBodyEncoder: Encoder[VectorStoreFileBatchRequestBody.CreateVectorStoreFileBatchBody] =
     deriveConfiguredEncoder
-  implicit val listVectorStoreFilesInBatchBodyEncoder: Encoder[VectorStoreFileBatchRequestBody.ListVectorStoreFilesInBatchBody] =
-    deriveConfiguredEncoder
   implicit val vectorStoreFileBatchCodec: Codec[VectorStoreFileBatchResponseData.VectorStoreFileBatch] = deriveConfiguredCodec
 
   // threads request bodies
