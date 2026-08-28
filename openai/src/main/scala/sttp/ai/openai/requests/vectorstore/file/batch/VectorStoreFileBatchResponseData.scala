@@ -10,7 +10,8 @@ object VectorStoreFileBatchResponseData {
     * @param id
     *   The identifier, which can be referenced in API endpoints.
     * @param object
-    *   The object type, which is always vector_store.file_batch.
+    *   The object type. The live API returns vector_store.file_batch (observed 2026-08), while the OpenAPI spec's enum lists
+    *   vector_store.files_batch; treat this as an opaque string.
     * @param createdAt
     *   The Unix timestamp (in seconds) for when the vector store files batch was created.
     * @param vectorStoreId
