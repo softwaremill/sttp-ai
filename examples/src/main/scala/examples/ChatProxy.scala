@@ -1,4 +1,4 @@
-//> using dep com.softwaremill.sttp.ai::ox:0.10.0
+//> using dep com.softwaremill.sttp.ai::ox:0.11.0
 //> using dep com.softwaremill.sttp.tapir::tapir-netty-server-sync:1.13.28
 //> using dep com.softwaremill.sttp.client4::ox:4.0.26
 //> using dep ch.qos.logback:logback-classic:1.5.38
