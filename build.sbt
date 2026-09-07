@@ -4,7 +4,7 @@ import com.softwaremill.SbtSoftwareMillCommon.commonSmlBuildSettings
 import com.softwaremill.UpdateVersionInDocs
 
 val scala2 = List("2.13.18", "2.12.20")
-val scala3 = List("3.3.8")
+val scala3 = List("3.9.0")
 
 def dependenciesFor(version: String)(deps: (Option[(Long, Long)] => ModuleID)*): Seq[ModuleID] =
   deps.map(_.apply(CrossVersion.partialVersion(version)))
