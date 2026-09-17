@@ -11,6 +11,12 @@ def dependenciesFor(version: String)(deps: (Option[(Long, Long)] => ModuleID)*):
 
 lazy val commonSettings = commonSmlBuildSettings ++ ossPublishSettings ++ Seq(
   organization := "com.softwaremill.sttp.ai",
+  // -Yfuture-lazy-vals is backed by VarHandle, hence the Java 11 output; the JVM check skips the Native rows
+  scalacOptions ++= {
+    val isJvm = virtualAxes.?.value.forall(_.contains(VirtualAxis.jvm))
+    if (isJvm && ScalaArtifacts.isScala3(scalaVersion.value)) Seq("-Yfuture-lazy-vals", "-java-output-version", "11")
+    else Seq.empty
+  },
   // Suppress ScalaTest Assertion unused value warnings in tests
   Test / scalacOptions += "-Wconf:msg=unused value of type org.scalatest.Assertion:silent",
   Test / scalacOptions += "-Wconf:msg=discarded non-Unit value of type org.scalatest.Assertion:silent"
