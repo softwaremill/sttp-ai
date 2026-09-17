@@ -9,12 +9,16 @@ val scala3 = List("3.3.8")
 def dependenciesFor(version: String)(deps: (Option[(Long, Long)] => ModuleID)*): Seq[ModuleID] =
   deps.map(_.apply(CrossVersion.partialVersion(version)))
 
+lazy val javaOutputVersion = settingKey[String]("Java version to emit Scala 3 bytecode for")
+
 lazy val commonSettings = commonSmlBuildSettings ++ ossPublishSettings ++ Seq(
   organization := "com.softwaremill.sttp.ai",
-  // -Yfuture-lazy-vals is backed by VarHandle, hence the Java 11 output; the JVM check skips the Native rows
+  // -Yfuture-lazy-vals is backed by VarHandle, hence the Java output version; the JVM check skips the Native rows
+  javaOutputVersion := "11",
   scalacOptions ++= {
     val isJvm = virtualAxes.?.value.forall(_.contains(VirtualAxis.jvm))
-    if (isJvm && ScalaArtifacts.isScala3(scalaVersion.value)) Seq("-Yfuture-lazy-vals", "-java-output-version", "11")
+    if (isJvm && ScalaArtifacts.isScala3(scalaVersion.value))
+      Seq("-Yfuture-lazy-vals", "-java-output-version", javaOutputVersion.value)
     else Seq.empty
   },
   // Suppress ScalaTest Assertion unused value warnings in tests
@@ -197,6 +201,7 @@ lazy val ox = (projectMatrix in file("streaming/ox"))
     scalaVersions = scala3
   )
   .settings(commonSettings)
+  .settings(javaOutputVersion := "21") // ox requires JDK 21
   .settings(
     libraryDependencies ++= Libraries.sttpClientOx
   )
@@ -211,6 +216,7 @@ lazy val mcp = (projectMatrix in file("mcp"))
     scalaVersions = scala3
   )
   .settings(commonSettings)
+  .settings(javaOutputVersion := "21") // chimp and tapir-netty-server-sync, which build on ox, require JDK 21
   .settings(
     libraryDependencies ++= Seq(
       Libraries.chimpClient,
