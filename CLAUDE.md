@@ -24,7 +24,7 @@ sbt compile                              # All modules
 sbt openai/compile                       # OpenAI module
 sbt claude/compile                       # Claude module
 sbt gemini/compile                       # Gemini module
-sbt mcp3/compile                         # MCP module (Scala 3 only; sbt-projectmatrix suffixes the Scala 3 row with "3")
+sbt mcp/compile                          # MCP module (Scala 3 only)
 
 # Test
 sbt test                                 # Unit tests (excludes integration)

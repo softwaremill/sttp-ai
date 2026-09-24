@@ -1,5 +1,4 @@
 import sbt.*
-import org.portablescala.sbtplatformdeps.PlatformDepsPlugin.autoImport.*
 
 object Dependencies {
 
@@ -19,36 +18,36 @@ object Dependencies {
 
   object Libraries {
 
-    val scalaTest = Def.setting("org.scalatest" %%% "scalatest" % V.scalaTest % Test)
+    val scalaTest = Def.setting("org.scalatest" %% "scalatest" % V.scalaTest % Test)
 
     // scalatest in provided scope — the agent testkit publishes matcher implementations, but users bring their own scalatest
     // (and users of only the query API need no scalatest at all)
-    val scalaTestProvided = Def.setting("org.scalatest" %%% "scalatest" % V.scalaTest % Provided)
+    val scalaTestProvided = Def.setting("org.scalatest" %% "scalatest" % V.scalaTest % Provided)
 
     val sttpApispec = Def.setting(
       Seq(
-        "com.softwaremill.sttp.apispec" %%% "apispec-model" % V.sttpApispec,
-        "com.softwaremill.sttp.apispec" %%% "jsonschema-circe" % V.sttpApispec
+        "com.softwaremill.sttp.apispec" %% "apispec-model" % V.sttpApispec,
+        "com.softwaremill.sttp.apispec" %% "jsonschema-circe" % V.sttpApispec
       )
     )
 
     val sttpClient = Def.setting(
       Seq(
-        "com.softwaremill.sttp.client4" %%% "core" % V.sttpClient
+        "com.softwaremill.sttp.client4" %% "core" % V.sttpClient
       )
     )
 
     val circe = Def.setting(
       Seq(
-        "io.circe" %%% "circe-core" % V.circe,
-        "io.circe" %%% "circe-parser" % V.circe,
-        "io.circe" %%% "circe-generic" % V.circe
+        "io.circe" %% "circe-core" % V.circe,
+        "io.circe" %% "circe-parser" % V.circe,
+        "io.circe" %% "circe-generic" % V.circe
       )
     )
 
     // circe-generic-extras provides `Configuration` (snake_case + discriminator) only on Scala 2.13.
     // On Scala 3 the equivalent lives in circe-generic's `io.circe.derivation` package.
-    val circeGenericExtras = Def.setting("io.circe" %%% "circe-generic-extras" % V.circeGenericExtras)
+    val circeGenericExtras = Def.setting("io.circe" %% "circe-generic-extras" % V.circeGenericExtras)
 
     val sttpClientFs2 = Seq(
       "com.softwaremill.sttp.client4" %% "fs2" % V.sttpClient,
@@ -71,7 +70,7 @@ object Dependencies {
       "com.softwaremill.sttp.client4" %% "ox" % V.sttpClient
     )
 
-    val tapirApispecDocs = Def.setting("com.softwaremill.sttp.tapir" %%% "tapir-apispec-docs" % V.tapir)
+    val tapirApispecDocs = Def.setting("com.softwaremill.sttp.tapir" %% "tapir-apispec-docs" % V.tapir)
 
     val chimpClient = "com.softwaremill.chimp" %% "chimp-client" % V.chimp
 
