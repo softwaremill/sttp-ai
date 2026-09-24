@@ -24,7 +24,7 @@ jobs:
         distribution: 'temurin'
         java-version: '21'
         cache: 'sbt'
-    - uses: sbt/setup-sbt@82da71df4e122282484a99a8d70096bc2369dbd8 # v1, specifically v1.5.9
+    - uses: sbt/setup-sbt@ce95da69b39609ea153bad087708da5f37366897 # v1, specifically v1.5.10
     - name: Install scala-cli
       uses: VirtusLab/scala-cli-setup@c33dfbf1a5f16ee60efff453b7f9a987d2b6955b # main, specifically v1.17.1
       with:
@@ -44,7 +44,7 @@ jobs:
     - name: Verify that model update scripts compile using Scala CLI
       run: sbt -v verifyModelUpdateScriptsCompileUsingScalaCli
     - name: Test
-      run: sbt -v test
+      run: sbt -v testFull
     - uses: actions/upload-artifact@v7  # upload test results
       if: success() || failure()        # run this step even if previous step failed
       with:
@@ -67,7 +67,7 @@ jobs:
           distribution: 'temurin'
           java-version: '21'
           cache: 'sbt'
-      - uses: sbt/setup-sbt@82da71df4e122282484a99a8d70096bc2369dbd8 # v1, specifically v1.5.9
+      - uses: sbt/setup-sbt@ce95da69b39609ea153bad087708da5f37366897 # v1, specifically v1.5.10
       - name: Install native dependencies
         run: |
           sudo apt-get update

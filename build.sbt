@@ -11,43 +11,49 @@ def dependenciesFor(version: String)(deps: (Option[(Long, Long)] => ModuleID)*):
 
 lazy val javaOutputVersion = settingKey[String]("Java version to emit Scala 3 bytecode for")
 
-lazy val commonSettings = commonSmlBuildSettings ++ ossPublishSettings ++ Seq(
-  organization := "com.softwaremill.sttp.ai",
-  // -Yfuture-lazy-vals is backed by VarHandle, hence the Java output version; the JVM check skips the Native rows
-  javaOutputVersion := "11",
-  scalacOptions ++= {
-    val isJvm = virtualAxes.?.value.forall(_.contains(VirtualAxis.jvm))
-    if (isJvm && ScalaArtifacts.isScala3(scalaVersion.value))
-      Seq("-Yfuture-lazy-vals", "-java-output-version", javaOutputVersion.value)
-    else Seq.empty
-  },
-  // Suppress ScalaTest Assertion unused value warnings in tests
-  Test / scalacOptions += "-Wconf:msg=unused value of type org.scalatest.Assertion:silent",
-  Test / scalacOptions += "-Wconf:msg=discarded non-Unit value of type org.scalatest.Assertion:silent",
-  // 2.12 has no `scala.annotation.unused` to suppress warnings per-site (see sttp.ai.core.compat.unused), so silence the category there;
-  // 2.13 keeps full unused checking
-  scalacOptions ++= (if (scalaVersion.value.startsWith("2.12")) Seq("-Wconf:msg=never used:silent") else Seq.empty),
-  // 2.12's missing-interpolator lint resolves in-scope names inside plain string literals ("$defs", "$ref"), which errors with
-  // "recursive value needs type" when the name is the val being defined (fixed in 2.13) - drop the lint on 2.12 only
-  scalacOptions := (if (scalaVersion.value.startsWith("2.12")) scalacOptions.value.filterNot(_ == "-Xlint:missing-interpolator")
-                    else scalacOptions.value)
-)
+commonSmlBuildSettings
+ossPublishSettings
+
+organization := "com.softwaremill.sttp.ai"
+// -Yfuture-lazy-vals is backed by VarHandle, hence the Java output version; the JVM check skips the Native rows
+javaOutputVersion := "11"
+scalacOptions ++= Def.uncached {
+  val isJvm = virtualAxes.?.value.forall(_.contains(VirtualAxis.jvm))
+  if (isJvm && ScalaArtifacts.isScala3(scalaVersion.value))
+    Seq("-Yfuture-lazy-vals", "-java-output-version", javaOutputVersion.value)
+  else Seq.empty
+}
+// Suppress ScalaTest Assertion unused value warnings in tests
+Test / scalacOptions += "-Wconf:msg=unused value of type org.scalatest.Assertion:silent"
+Test / scalacOptions += "-Wconf:msg=discarded non-Unit value of type org.scalatest.Assertion:silent"
+// 2.12 has no `scala.annotation.unused` to suppress warnings per-site (see sttp.ai.core.compat.unused), so silence the category there;
+// 2.13 keeps full unused checking
+scalacOptions ++= (if (scalaVersion.value.startsWith("2.12")) Seq("-Wconf:msg=never used:silent") else Seq.empty)
+// 2.12's missing-interpolator lint resolves in-scope names inside plain string literals ("$defs", "$ref"), which errors with
+// "recursive value needs type" when the name is the val being defined (fixed in 2.13) - drop the lint on 2.12 only
+scalacOptions := (if (scalaVersion.value.startsWith("2.12")) scalacOptions.value.filterNot(_ == "-Xlint:missing-interpolator")
+                  else scalacOptions.value)
 
 lazy val root = (project in file("."))
-  .settings(commonSettings: _*)
   .settings(
     publish / skip := true,
     name := "sttp-ai",
     scalaVersion := scala2.head,
-    updateDocs := Def.taskDyn {
+    updateDocs := Def.uncached(Def.taskDyn {
       val files = UpdateVersionInDocs(sLog.value, organization.value, version.value)
       Def.task {
         (docs.jvm(scala3.head) / mdoc).toTask("").value
         files ++ Seq(file("generated-docs/out"))
       }
-    }.value
+    }.value),
+    // defined on the root project only: in sbt 2, bare settings in build.sbt apply to every subproject
+    compileDocumentation := (docs.jvm(scala3.head) / mdoc).toTask(" --out target/sttp-ai-docs").value,
+    verifyExamplesCompileUsingScalaCli :=
+      Def.uncached(VerifyExamplesCompileUsingScalaCli(sLog.value, (examples.jvm(scala3.head) / sourceDirectory).value)),
+    verifyModelUpdateScriptsCompileUsingScalaCli :=
+      Def.uncached(VerifyExamplesCompileUsingScalaCli(sLog.value, file("model_update_scripts")))
   )
-  .aggregate(allAgregates: _*)
+  .aggregate(allAgregates *)
 
 lazy val allAgregates = core.projectRefs ++
   openai.projectRefs ++
@@ -70,7 +76,6 @@ lazy val core = (projectMatrix in file("core"))
   .nativePlatform(
     scalaVersions = scala3
   )
-  .settings(commonSettings: _*)
   .settings(
     libraryDependencies ++=
       Libraries.sttpClient.value ++ Libraries.sttpApispec.value ++ Libraries.circe.value ++ Seq(
@@ -96,7 +101,6 @@ lazy val openai = (projectMatrix in file("openai"))
         Libraries.sttpApispec.value ++ Seq(Libraries.scalaTest.value),
     libraryDependencies ++= (if (scalaVersion.value.startsWith("2.")) Seq(Libraries.circeGenericExtras.value) else Seq.empty)
   )
-  .settings(commonSettings: _*)
   .dependsOn(core % "compile->compile;test->test")
 
 lazy val claude = (projectMatrix in file("claude"))
@@ -106,7 +110,6 @@ lazy val claude = (projectMatrix in file("claude"))
   .nativePlatform(
     scalaVersions = scala3
   )
-  .settings(commonSettings: _*)
   .settings(
     libraryDependencies ++=
       Seq(Libraries.tapirApispecDocs.value) ++
@@ -123,7 +126,6 @@ lazy val gemini = (projectMatrix in file("gemini"))
   .nativePlatform(
     scalaVersions = scala3
   )
-  .settings(commonSettings: _*)
   .settings(
     libraryDependencies ++=
       Seq(Libraries.tapirApispecDocs.value) ++
@@ -140,7 +142,6 @@ lazy val agentTestkit = (projectMatrix in file("agent-testkit"))
   .nativePlatform(
     scalaVersions = scala3
   )
-  .settings(commonSettings: _*)
   .settings(
     name := "agent-testkit",
     libraryDependencies += Libraries.scalaTestProvided.value
@@ -151,7 +152,6 @@ lazy val fs2 = (projectMatrix in file("streaming/fs2"))
   .jvmPlatform(
     scalaVersions = scala2 ++ scala3
   )
-  .settings(commonSettings)
   .settings(
     libraryDependencies ++= Libraries.sttpClientFs2
   )
@@ -165,7 +165,6 @@ lazy val zio = (projectMatrix in file("streaming/zio"))
   .jvmPlatform(
     scalaVersions = scala2 ++ scala3
   )
-  .settings(commonSettings)
   .settings(
     libraryDependencies += Libraries.sttpClientZio
   )
@@ -179,7 +178,6 @@ lazy val pekko = (projectMatrix in file("streaming/pekko"))
   .jvmPlatform(
     scalaVersions = scala2 ++ scala3
   )
-  .settings(commonSettings)
   .settings(
     libraryDependencies ++= Libraries.sttpClientPekko
   )
@@ -193,7 +191,6 @@ lazy val akka = (projectMatrix in file("streaming/akka"))
   .jvmPlatform(
     scalaVersions = scala2
   )
-  .settings(commonSettings)
   .settings(
     libraryDependencies ++= Libraries.sttpClientAkka
   )
@@ -207,7 +204,6 @@ lazy val ox = (projectMatrix in file("streaming/ox"))
   .jvmPlatform(
     scalaVersions = scala3
   )
-  .settings(commonSettings)
   .settings(javaOutputVersion := "21") // ox requires JDK 21
   .settings(
     libraryDependencies ++= Libraries.sttpClientOx
@@ -222,7 +218,6 @@ lazy val mcp = (projectMatrix in file("mcp"))
   .jvmPlatform(
     scalaVersions = scala3
   )
-  .settings(commonSettings)
   .settings(javaOutputVersion := "21") // chimp and tapir-netty-server-sync, which build on ox, require JDK 21
   .settings(
     libraryDependencies ++= Seq(
@@ -239,7 +234,6 @@ lazy val examples = (projectMatrix in file("examples"))
   .jvmPlatform(
     scalaVersions = scala3
   )
-  .settings(commonSettings)
   .settings(
     libraryDependencies ++= Seq(
       "com.softwaremill.sttp.tapir" %% "tapir-netty-server-sync" % V.tapir,
@@ -249,23 +243,16 @@ lazy val examples = (projectMatrix in file("examples"))
   )
   .dependsOn(ox)
 
-val compileDocumentation: TaskKey[Unit] = taskKey[Unit]("Compiles docs module throwing away its output")
-compileDocumentation :=
-  (docs.jvm(scala3.head) / mdoc).toTask(" --out target/sttp-ai-docs").value
+lazy val compileDocumentation: TaskKey[Unit] = taskKey[Unit]("Compiles docs module throwing away its output")
 
 // verify the scala-cli `//> using dep` directives, which are not covered by the sbt build
-val verifyExamplesCompileUsingScalaCli: TaskKey[Unit] = taskKey[Unit]("Verify that each example compiles using Scala CLI")
-verifyExamplesCompileUsingScalaCli :=
-  VerifyExamplesCompileUsingScalaCli(sLog.value, (examples.jvm(scala3.head) / sourceDirectory).value)
+lazy val verifyExamplesCompileUsingScalaCli: TaskKey[Unit] = taskKey[Unit]("Verify that each example compiles using Scala CLI")
 
-val verifyModelUpdateScriptsCompileUsingScalaCli: TaskKey[Unit] =
+lazy val verifyModelUpdateScriptsCompileUsingScalaCli: TaskKey[Unit] =
   taskKey[Unit]("Verify that each model update script compiles using Scala CLI")
-verifyModelUpdateScriptsCompileUsingScalaCli :=
-  VerifyExamplesCompileUsingScalaCli(sLog.value, file("model_update_scripts"))
 
 lazy val docs = (projectMatrix in file("generated-docs")) // important: it must not be docs/
   .enablePlugins(MdocPlugin)
-  .settings(commonSettings)
   .settings(
     mdocIn := file("docs"),
     moduleName := "sttp-ai-docs",
