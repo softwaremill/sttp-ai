@@ -8,6 +8,7 @@
 - **Enum choices** — `Choice.of[E]` turns an enum's cases into options and decodes the answer back to a case
 - **Structured entries** — the state, instructions, options and levels can be text or JSON
 - **Data-driven lists** — `askAll` asks a `Seq` of questions built at runtime
+- **Gateways** — any server that follows the TypeSafe OpenAPI spec, e.g. OpenRouter or Vercel AI Gateway, via `baseUrl` and `model`
 - **Sync and async clients** — `JevSyncClient` blocks and throws; `JevClient` returns sttp requests to send with any backend
 - **Scala 3 only** — JVM and Scala Native
 
@@ -126,6 +127,29 @@ object AsyncMain:
 
     backend.close()
 ```
+
+## Gateways and compatible servers
+
+Any server that follows the TypeSafe OpenAPI spec works: set `baseUrl` and `model`.
+
+```scala mdoc:compile-only
+import sttp.ai.jev.*
+import sttp.model.Uri
+
+val openRouter = JevConfig(
+  apiKey = sys.env("OPENROUTER_API_KEY"),
+  baseUrl = Uri.unsafeParse("https://openrouter.ai/api"),
+  model = JevModel.CustomModel("~typesafe/jev-latest")
+)
+
+val vercel = JevConfig(
+  apiKey = sys.env("AI_GATEWAY_API_KEY"),
+  baseUrl = Uri.unsafeParse("https://ai-gateway.vercel.sh/typesafe"),
+  model = JevModel.CustomModel("typesafe-ai/jev")
+)
+```
+
+The same can be set with `TYPESAFE_BASE_URL` and `TYPESAFE_DEFAULT_MODEL`. `listModels()` needs the server to implement `GET /v1/models` as in the spec (Vercel does; OpenRouter returns its own catalogue there).
 
 ## Jev Configuration
 

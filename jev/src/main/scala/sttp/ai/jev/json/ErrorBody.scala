@@ -1,13 +1,15 @@
 package sttp.ai.jev.json
 
-import io.circe.{Decoder, Json}
+import io.circe.Decoder
 import io.circe.parser.decode
 
 /** What a non-2xx body says: a human-readable `message` and, when the server sent one, its `error_type`. */
 private[jev] final case class ErrorBody(message: String, errorType: Option[String])
 
 private[jev] object ErrorBody:
-  private val objectDetail: Decoder[ErrorBody] =
+  private val plainString: Decoder[ErrorBody] = Decoder.decodeString.map(ErrorBody(_, None))
+
+  private val messageWithType: Decoder[ErrorBody] =
     Decoder.forProduct2("message", "error_type")((message: String, errorType: Option[String]) => ErrorBody(message, errorType))
 
   private val locationPart: Decoder[String] = Decoder.decodeString.or(Decoder.decodeInt.map(_.toString))
@@ -19,15 +21,17 @@ private[jev] object ErrorBody:
       Decoder.decodeString
     )
 
-  private val validationDetail: Decoder[ErrorBody] =
+  private val validationList: Decoder[ErrorBody] =
     Decoder.decodeList(validationError).map(errors => ErrorBody(errors.mkString("; "), None))
 
-  private val stringDetail: Decoder[ErrorBody] = Decoder.decodeString.map(ErrorBody(_, None))
+  private val detail: Decoder[ErrorBody] = messageWithType.or(validationList).or(plainString).at("detail")
 
-  private val detail: Decoder[ErrorBody] = objectDetail.or(validationDetail).or(stringDetail)
+  // Same order as the official SDKs, so a gateway body is read the way its own clients read it
+  private val body: Decoder[ErrorBody] =
+    plainString.at("error").or(plainString.at("message").at("error")).or(messageWithType).or(detail)
 
-  /** Reads `detail` in any of its three shapes: `{error_type, message}`, a list of validation errors (`{loc, msg}`, joined by `; `), or a
-    * plain string. A body in none of these shapes becomes the message verbatim.
+  /** Reads the message from `error` (a string or `{message}`), a top-level `message` (with optional `error_type`), or `detail` (an
+    * `{error_type, message}` object, a list of validation errors, or a string). A body in none of these shapes becomes the message
+    * verbatim.
     */
-  def parse(body: String): ErrorBody =
-    decode[Json](body).flatMap(_.hcursor.get("detail")(using detail)).getOrElse(ErrorBody(body, None))
+  def parse(body: String): ErrorBody = decode(body)(using ErrorBody.body).getOrElse(ErrorBody(body, None))

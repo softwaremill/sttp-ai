@@ -36,6 +36,27 @@ class JevErrorSpec extends AnyFlatSpec with Matchers with EitherValues:
     exception.getMessage shouldBe "model: Field required; questions.0.score.criteria: Field required"
   }
 
+  it should "read an OpenRouter error object" in {
+    val exception = error("""{"error":{"message":"No cookie auth credentials found","code":401}}""", StatusCode.Unauthorized)
+    exception shouldBe an[AuthenticationException]
+    exception.getMessage shouldBe "No cookie auth credentials found"
+    exception.`type` shouldBe None
+  }
+
+  it should "read a Vercel top-level message, keeping the error type" in {
+    val exception = error("""{"message":"Authentication failed","error_type":"authentication_error"}""", StatusCode.Unauthorized)
+    exception shouldBe an[AuthenticationException]
+    exception.getMessage shouldBe "Authentication failed"
+    exception.`type` shouldBe Some("authentication_error")
+  }
+
+  it should "read a string error" in {
+    val exception = error("""{"error":"plain text"}""", StatusCode.BadRequest)
+    exception shouldBe an[InvalidRequestException]
+    exception.getMessage shouldBe "plain text"
+    exception.`type` shouldBe None
+  }
+
   it should "map 401 and 403 to an authentication failure" in {
     val body = """{"detail":{"error_type":"authentication_error","message":"Cannot authenticate with the server."}}"""
     error(body, StatusCode.Unauthorized) shouldBe an[AuthenticationException]
