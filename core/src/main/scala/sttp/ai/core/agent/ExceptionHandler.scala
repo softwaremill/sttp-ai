@@ -19,7 +19,7 @@ trait ExceptionHandler {
     * @param rawArguments
     *   The raw argument string that failed to parse
     * @param parseException
-    *   The parsing exception
+    *   The decoding failure returned by the tool's codec. A codec that throws instead of returning a failure is not routed here.
     * @return
     *   Left(errorMessage) to send to LLM, or Right(exception) to propagate
     */
