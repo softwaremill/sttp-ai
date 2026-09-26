@@ -13,7 +13,7 @@ object Dependencies {
     val tapir = "1.13.31"
     val circe = "0.14.16"
     val circeGenericExtras = "0.14.4" // 0.14.5 is only available as RC
-    val chimp = "0.5.2"
+    val chimp = "0.6.0"
   }
 
   object Libraries {
