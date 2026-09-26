@@ -23,11 +23,14 @@ object JevTicketTriageExample extends App:
       ticket,
       (
         Choice.of[Team]("Which team should handle this ticket"),
-        Score.of[Frustration]("How frustrated the customer is", {
-          case Frustration.Calm    => "Calm, just stating facts"
-          case Frustration.Annoyed => "Frustrated but civil"
-          case Frustration.Furious => "Very angry, strong language"
-        }),
+        Score.of[Frustration](
+          "How frustrated the customer is",
+          {
+            case Frustration.Calm    => "Calm, just stating facts"
+            case Frustration.Annoyed => "Frustrated but civil"
+            case Frustration.Furious => "Very angry, strong language"
+          }
+        ),
         Noul("The customer needs a reply today")
       )
     )
