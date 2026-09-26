@@ -72,12 +72,12 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install libidn2-dev libcurl3-dev
-      # sbt 2's runner is a thin client: it attaches to a server started by an earlier step, which then lacks this
-      # step's env (sbt-ci-release saw no PGP_SECRET and published nothing). --server runs sbt in-process.
+      # sbt 2 reuses the server started by an earlier step, with that step's env; shut it down so ci-release
+      # starts its own and sees the secrets below (see "sbt server with multiple steps" in the sbt 2 migration guide)
       - name: Compile
-        run: sbt --server compile
+        run: sbt "compile ; shutdown"
       - name: Publish artifacts
-        run: sbt --server ci-release
+        run: sbt ci-release
         env:
           PGP_PASSPHRASE: ${{ secrets.PGP_PASSPHRASE }}
           PGP_SECRET: ${{ secrets.PGP_SECRET }}
