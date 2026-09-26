@@ -173,25 +173,20 @@ private[agent] class LoopAgent[F[_], In, Out](
   }
 
   private def executeTool[T](tool: AgentTool[F, T], toolCall: ToolCall): F[String] =
-    monad
-      .eval(decode[T](toolCall.input)(tool.codec).fold(throw _, identity))
-      .map[Either[String, T]](Right(_))
-      .handleError { case parseException: Exception =>
-        config.exceptionHandler.handleParseError(toolCall.toolName, toolCall.input, parseException) match {
-          case Left(errorMessage) => monad.unit(Left(errorMessage))
+    decode[T](toolCall.input)(tool.codec) match {
+      case Left(parseError) =>
+        config.exceptionHandler.handleParseError(toolCall.toolName, toolCall.input, parseError) match {
+          case Left(errorMessage) => monad.unit(errorMessage)
           case Right(ex)          => monad.error(ex)
         }
-      }
-      .flatMap {
-        case Left(errorMessage) => monad.unit(errorMessage)
-        case Right(typedInput)  =>
-          tool.execute(typedInput).handleError { case e: Exception =>
-            config.exceptionHandler.handleToolException(toolCall.toolName, e) match {
-              case Left(errorMessage) => monad.unit(errorMessage)
-              case Right(ex)          => monad.error(ex)
-            }
+      case Right(typedInput) =>
+        tool.execute(typedInput).handleError { case e: Exception =>
+          config.exceptionHandler.handleToolException(toolCall.toolName, e) match {
+            case Left(errorMessage) => monad.unit(errorMessage)
+            case Right(ex)          => monad.error(ex)
           }
-      }
+        }
+    }
 
   private def extractFinalAnswer(history: ConversationHistory): String =
     history.entries.reverseIterator

@@ -17,7 +17,7 @@ import sttp.ai.core.http.ResponseHandlers
   */
 object OpenAIJson extends ResponseHandlers[OpenAIException, Decoder] {
 
-  override def read[T: Decoder](s: String): T = parser.decode[T](s).fold(throw _, identity)
+  override def read[T: Decoder](s: String): Either[Exception, T] = parser.decode[T](s)
 
   override def deserializationException(cause: Exception, metadata: ResponseMetadata): OpenAIException =
     DeserializationOpenAIException(cause, metadata)

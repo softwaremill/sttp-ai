@@ -48,11 +48,6 @@ object GeminiAkkaStreaming {
     Flow[ServerSentEvent]
       .filter(_.data.exists(data => data.trim.nonEmpty && data != DoneEvent))
       .collect { case ServerSentEvent(Some(data), _, _, _) =>
-        try
-          decode[InteractionStreamEvent](data).fold(throw _, identity)
-        catch {
-          case e: Exception =>
-            throw GeminiException.DeserializationGeminiException(e, metadata)
-        }
+        decode[InteractionStreamEvent](data).fold(e => throw GeminiException.DeserializationGeminiException(e, metadata), identity)
       }
 }

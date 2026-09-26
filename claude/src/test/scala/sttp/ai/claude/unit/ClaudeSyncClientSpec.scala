@@ -86,6 +86,12 @@ class ClaudeSyncClientSpec extends AnyFlatSpec with Matchers {
     res shouldBe Weather("Krakow", 12.0, "sunny")
   }
 
+  "createMessage" should "throw a DeserializationClaudeException when a 200 body is neither a message nor an error response" in {
+    val client = stubClient("{}")
+
+    intercept[DeserializationClaudeException](client.createMessage(request)): Unit
+  }
+
   it should "retry transient failures according to maxRetries" in {
     val attempts = new AtomicInteger(0)
     val rateLimitBody = """{"type":"error","error":{"type":"rate_limit_error","message":"rate limited"}}"""

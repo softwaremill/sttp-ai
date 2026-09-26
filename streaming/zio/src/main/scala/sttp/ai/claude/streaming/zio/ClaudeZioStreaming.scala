@@ -48,12 +48,7 @@ object ClaudeZioStreaming {
     _.filter(event => event.data.exists(data => data.trim.nonEmpty && data != DoneEvent))
       .collectZIO { case ServerSentEvent(Some(data), _, _, _) =>
         ZIO.fromEither(
-          try
-            Right(decode[MessageStreamResponse](data).fold(throw _, identity))
-          catch {
-            case e: Exception =>
-              Left(ClaudeException.DeserializationClaudeException(e, metadata))
-          }
+          decode[MessageStreamResponse](data).left.map(ClaudeException.DeserializationClaudeException(_, metadata))
         )
       }
 }

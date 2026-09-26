@@ -50,18 +50,15 @@ class ClaudeClientImpl(config: ClaudeConfig) extends ClaudeClient with ResponseH
       throw new UnsupportedModelForStructuredOutputException(modelId)
     }
 
-  override def read[T: Decoder](s: String): T = decode[T](s).fold(throw _, identity)
+  override def read[T: Decoder](s: String): Either[Exception, T] = decode[T](s)
 
   override def deserializationException(cause: Exception, metadata: ResponseMetadata): ClaudeException =
     ClaudeException.DeserializationClaudeException(cause, metadata)
 
   override def mapErrorToException(errorResponse: String, metadata: ResponseMetadata): ClaudeException =
-    try {
-      val errorResp = read[sttp.ai.claude.responses.ErrorResponse](errorResponse)
-      mapErrorResponseToException(errorResp, metadata)
-    } catch {
-      case e: Exception =>
-        ClaudeException.DeserializationClaudeException(e, metadata)
+    read[sttp.ai.claude.responses.ErrorResponse](errorResponse) match {
+      case Right(errorResp) => mapErrorResponseToException(errorResp, metadata)
+      case Left(e)          => ClaudeException.DeserializationClaudeException(e, metadata)
     }
 
   private def mapErrorResponseToException(

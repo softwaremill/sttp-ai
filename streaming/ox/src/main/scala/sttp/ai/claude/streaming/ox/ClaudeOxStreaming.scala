@@ -40,11 +40,6 @@ private def mapEventToResponse(
       .parse(s)
       .filter(event => event.data.exists(data => data.trim.nonEmpty && data != DoneEvent))
       .collect { case ServerSentEvent(Some(data), _, _, _) =>
-        try
-          Right(decode[MessageStreamResponse](data).fold(throw _, identity))
-        catch {
-          case e: Exception =>
-            Left(ClaudeException.DeserializationClaudeException(e, metadata))
-        }
+        decode[MessageStreamResponse](data).left.map(ClaudeException.DeserializationClaudeException(_, metadata))
       }
   )
