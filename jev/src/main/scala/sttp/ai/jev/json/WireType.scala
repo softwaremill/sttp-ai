@@ -7,4 +7,4 @@ private[jev] object WireType:
   def of(question: Question[?]): String = question match
     case _: Noul      => "noul"
     case _: Choice[?] => "choice"
-    case _: Score     => "score"
+    case _: Score[?]  => "score"

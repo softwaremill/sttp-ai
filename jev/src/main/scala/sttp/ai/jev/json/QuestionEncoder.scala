@@ -22,7 +22,7 @@ private[jev] object QuestionEncoder:
     val (instructions, criteria) = question match
       case Noul(instructions, whenTrue, whenFalse) => (instructions, noulCriteria(whenTrue, whenFalse))
       case Choice(instructions, options)           => (instructions, Some(choiceCriteria(options)))
-      case Score(instructions, levels)             => (instructions, Some(Json.arr(levels.map(encodeEntry)*)))
+      case Score(instructions, levels)             => (instructions, Some(Json.arr(levels.map(level => encodeEntry(level.description))*)))
     Json.fromFields(
       List("type" -> Json.fromString(WireType.of(question)), "instructions" -> encodeEntry(instructions)) ++ criteria.map("criteria" -> _)
     )

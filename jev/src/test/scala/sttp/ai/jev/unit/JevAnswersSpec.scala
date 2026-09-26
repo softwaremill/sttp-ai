@@ -11,10 +11,10 @@ import sttp.model.Header
 
 class JevAnswersSpec extends AnyFlatSpec with Matchers with EitherValues:
 
-  private def answer[A](question: Question[A], body: String): Either[JevException, A] =
+  private def answer[A <: Answer](question: Question[A], body: String): Either[JevException, A] =
     client.ask(state, question).send(backend(body)).body.map(_.answers)
 
-  private def failureMessage[A](question: Question[A], body: String): String =
+  private def failureMessage[A <: Answer](question: Question[A], body: String): String =
     answer(question, body).left.value match
       case e: DeserializationJevException => e.getMessage
       case other                          => fail(s"expected a deserialization failure, got $other")
@@ -32,7 +32,16 @@ class JevAnswersSpec extends AnyFlatSpec with Matchers with EitherValues:
   }
 
   it should "index score probabilities by level, ignoring the legend" in {
-    answer(howFrustrated, responseWith(scoreAnswer)).value shouldBe ScoreAnswer(1.0, 0.99, Vector(0.0, 1.0, 0.0))
+    answer(howFrustrated, responseWith(scoreAnswer)).value shouldBe ScoreAnswer(1.0, 0.99, Vector(0, 1, 2), Vector(0.0, 1.0, 0.0))
+  }
+
+  it should "decode an enum score to its cases" in {
+    answer(typedFrustration, responseWith(scoreAnswer)).value shouldBe
+      ScoreAnswer(1.0, 0.99, Vector(Frustration.Calm, Frustration.Civil, Frustration.Angry), Vector(0.0, 1.0, 0.0))
+  }
+
+  it should "report the most likely enum level" in {
+    answer(typedFrustration, responseWith(scoreAnswer)).value.mostLikely shouldBe Frustration.Civil
   }
 
   it should "decode an enum choice to its case" in {
@@ -73,7 +82,7 @@ class JevAnswersSpec extends AnyFlatSpec with Matchers with EitherValues:
 
   it should "answer a mixed list with a Seq[Answer]" in {
     val answers: Seq[Answer] = syncClient(responseWith(noulAnswer, scoreAnswer)).askAll(state, Seq(isUrgent, howFrustrated)).answers
-    answers shouldBe Seq(NoulAnswer(0.99), ScoreAnswer(1.0, 0.99, Vector(0.0, 1.0, 0.0)))
+    answers shouldBe Seq(NoulAnswer(0.99), ScoreAnswer(1.0, 0.99, Vector(0, 1, 2), Vector(0.0, 1.0, 0.0)))
   }
 
   it should "answer a homogeneous list with the specific answer type" in {
@@ -82,7 +91,7 @@ class JevAnswersSpec extends AnyFlatSpec with Matchers with EitherValues:
   }
 
   it should "type tuple answers position by position" in {
-    summon[Answers[(Noul, Choice[Team], Score)] =:= (NoulAnswer, ChoiceAnswer[Team], ScoreAnswer)]
+    summon[Answers[(Noul, Choice[Team], Score[Int])] =:= (NoulAnswer, ChoiceAnswer[Team], ScoreAnswer[Int])]
     succeed
   }
 
@@ -110,6 +119,11 @@ class JevAnswersSpec extends AnyFlatSpec with Matchers with EitherValues:
   it should "fail on a probability key outside the options" in {
     val body = responseWith("""{"type":"choice","choice":"sales","confidence":0.7,"probabilities":{"sales":0.9,"legal":0.1}}""")
     failureMessage(department, body) should include("unknown option 'legal'")
+  }
+
+  it should "fail on a missing option probability" in {
+    val body = responseWith("""{"type":"choice","choice":"sales","confidence":0.7,"probabilities":{"sales":0.9,"billing":0.1}}""")
+    failureMessage(department, body) should include("missing probability for option 'technical'")
   }
 
   it should "fail on a missing level probability" in {

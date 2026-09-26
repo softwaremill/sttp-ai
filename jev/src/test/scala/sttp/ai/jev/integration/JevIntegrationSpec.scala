@@ -39,7 +39,7 @@ class JevIntegrationSpec extends AnyFlatSpec with Matchers with BeforeAndAfterAl
     team.choice shouldBe team.probabilities.maxBy(_._2)._1
     team.probabilities.keySet shouldBe Team.values.toSet
     team.probabilities.values.sum shouldBe 1.0 +- 0.05
-    frustration.probabilities should have size 3
+    frustration.mostLikely should (be >= 0 and be <= 2)
     response.usage.inputTokens should be > 0
     response.requestId shouldBe defined
   }

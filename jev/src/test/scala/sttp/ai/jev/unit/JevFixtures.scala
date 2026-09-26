@@ -10,6 +10,9 @@ import sttp.model.{Header, StatusCode}
 enum Team:
   case Billing, Technical, Sales
 
+enum Frustration:
+  case Calm, Civil, Angry
+
 /** The quickstart triage request and the verbatim server response to it (answers keyed by position, in a different order than sent). */
 object JevFixtures:
   val config: JevConfig = JevConfig("test-key")
@@ -28,7 +31,17 @@ object JevFixtures:
     "technical" -> "Bugs or integration problems",
     "sales" -> "Pricing or account questions"
   )
-  val howFrustrated: Score = Score("How frustrated the customer appears", "Calm, just stating facts", "Frustrated but civil", "Very angry")
+  val howFrustrated: Score[Int] =
+    Score("How frustrated the customer appears", "Calm, just stating facts", "Frustrated but civil", "Very angry")
+
+  val typedFrustration: Score[Frustration] = Score.of[Frustration](
+    "How frustrated the customer appears",
+    {
+      case Frustration.Calm  => "Calm, just stating facts"
+      case Frustration.Civil => "Frustrated but civil"
+      case Frustration.Angry => "Very angry"
+    }
+  )
 
   val noulAnswer: String = """{"type":"noul","noul":0.99}"""
   val choiceAnswer: String =

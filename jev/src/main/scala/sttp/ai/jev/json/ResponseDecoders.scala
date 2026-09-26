@@ -3,7 +3,7 @@ package sttp.ai.jev.json
 import io.circe.{Decoder, JsonObject}
 import io.circe.derivation.ConfiguredDecoder
 import sttp.ai.core.json.CirceConfiguration.jsonConfiguration
-import sttp.ai.jev.{ModelInfo, Question, SystemOneResponse, Usage}
+import sttp.ai.jev.{Answer, ModelInfo, Question, SystemOneResponse, Usage}
 
 /** Decoders of the 2xx bodies. */
 private[jev] object ResponseDecoders:
@@ -14,7 +14,7 @@ private[jev] object ResponseDecoders:
   val models: Decoder[Seq[ModelInfo]] = Decoder.instance(_.get[List[ModelInfo]]("models"))
 
   /** `POST /v1/systemone`: answers are matched to `questions` by position. */
-  def systemOne[A](questions: Seq[Question[A]], requestId: Option[String]): Decoder[SystemOneResponse[Seq[A]]] =
+  def systemOne[A <: Answer](questions: Seq[Question[A]], requestId: Option[String]): Decoder[SystemOneResponse[Seq[A]]] =
     Decoder.instance: cursor =>
       for
         model <- cursor.get[String]("model")

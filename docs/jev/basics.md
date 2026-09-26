@@ -5,7 +5,7 @@
 ## Jev Features
 
 - **Typed answers** — ask a tuple of questions, get a tuple of answers, each with its own type
-- **Enum choices** — `Choice.of[E]` turns an enum's cases into options and decodes the answer back to a case
+- **Enum choices and levels** — `Choice.of[E]` / `Score.of[L]` turn an enum's cases into options or levels and decode the answer back to a case
 - **Structured entries** — the state, instructions, options and levels can be text or JSON
 - **Data-driven lists** — `askAll` asks a `Seq` of questions built at runtime
 - **Gateways** — any server that follows the TypeSafe OpenAPI spec, e.g. OpenRouter or Vercel AI Gateway, via `baseUrl` and `model`
@@ -22,6 +22,9 @@ import sttp.ai.jev.*
 enum Team:
   case Billing, Technical, Sales
 
+enum Frustration:
+  case Calm, Civil, Angry
+
 object Main:
   def main(args: Array[String]): Unit =
     // Reads the TYPESAFE_API_KEY environment variable
@@ -34,20 +37,24 @@ object Main:
         ticket,
         (
           Choice.of[Team]("Which team should handle this ticket"),
-          Score("How frustrated the customer is", "Calm", "Frustrated but civil", "Very angry"),
+          Score.of[Frustration]("How frustrated the customer is", {
+            case Frustration.Calm  => "Calm, just stating facts"
+            case Frustration.Civil => "Frustrated but civil"
+            case Frustration.Angry => "Very angry"
+          }),
           Noul("The customer needs a reply today")
         )
       )
       val (team, frustration, urgent) = response.answers
 
       println(team.choice)            // a Team
-      println(frustration.mostLikely) // level index: 0, 1 or 2
+      println(frustration.mostLikely) // a Frustration
       println(urgent.probability)     // 0 to 1
       println(s"Usage: ${response.usage}")
     finally client.close()
 ```
 
-The answer types follow the question types, position by position: `ChoiceAnswer[Team]`, `ScoreAnswer`, `NoulAnswer`.
+The answer types follow the question types, position by position: `ChoiceAnswer[Team]`, `ScoreAnswer[Frustration]`, `NoulAnswer`.
 
 A single question is answered with a single answer:
 
@@ -64,9 +71,11 @@ def isSpam(client: JevSyncClient, email: String): Double =
 - `Choice` — picks one option. Answer: `ChoiceAnswer(choice, confidence, probabilities)`; `confidence` (0 to 1) is the server's certainty in the answer. Build it with:
   - `Choice.described(instructions, "name" -> "description", ...)` — named, described options
   - `Choice.strings(instructions, names)` — bare names
-  - `Choice.of[E](instructions, describe)` — every case of an enum (cases without parameters only)
+  - `Choice.of[E](instructions, describe)` — every case of an enum or sealed family of singleton cases (cases with parameters do not compile)
   - `Choice.from(instructions, values)(name, describe)` — any values, named by a function
-- `Score(instructions, level0, level1, ...)` — position on levels ordered low to high. Answer: `ScoreAnswer(score, confidence, probabilities)`; `score` is the expected level index, `mostLikely` the most probable one.
+- `Score` — position on levels ordered low to high. Answer: `ScoreAnswer(score, confidence, levels, probabilities)`; `score` is the expected level index, `mostLikely` the most probable level. Build it with:
+  - `Score(instructions, level0, level1, ...)` — a `Score[Int]`: `mostLikely` is the level index
+  - `Score.of[L](instructions, describe)` — every case of an enum or sealed family of singleton cases as a level, in declaration order; a `Score[L]`: `mostLikely` is a case
 
 Every text argument (state, instructions, descriptions, levels) is an `Entry`: a `String` or a circe `Json` object or array:
 
@@ -93,7 +102,7 @@ def check(client: JevSyncClient, text: String, rules: Seq[String]): Unit =
   val questions: Seq[Question[Answer]] = Score("Tone", "Friendly", "Neutral", "Hostile") +: rules.map(Noul(_))
   client.askAll(text, questions).answers.foreach {
     case NoulAnswer(p)      => println(s"rule holds: $p")
-    case s: ScoreAnswer     => println(s"tone level: ${s.mostLikely}")
+    case s: ScoreAnswer[?]  => println(s"tone level: ${s.mostLikely}")
     case c: ChoiceAnswer[?] => println(c.choice)
   }
 ```
@@ -101,7 +110,7 @@ def check(client: JevSyncClient, text: String, rules: Seq[String]): Unit =
 A list of one question type (e.g. `Seq[Noul]`) is answered with that answer type (`Seq[NoulAnswer]`).
 
 Notes:
-- Generic helpers should take a `Question[A]` and return `A`; with `Question[?]` the answer type is lost.
+- Generic helpers should take a `Question[A]` with `A <: Answer` and return `A`; with `Question[?]` the answer type is lost.
 - Server error messages name questions by their 0-based position in the request, e.g. `questions.2.score.criteria`.
 
 ## Async Usage

@@ -17,13 +17,14 @@ defined by the caller. Server limits (at most 255 options, 10 levels) depend on 
 
 * `Question[+A]` carries the answer type as a type parameter. A tuple of questions is answered by a tuple
   of answers whose type is computed by the `Answers[Qs]` match type, so `val (a, b) = client.ask(state,
-  (noul, choice)).answers` is exactly typed. Choice options are arbitrary Scala values (`Choice.of` maps an
-  enum's cases by their declared names) and are decoded back to those values.
+  (noul, choice)).answers` is exactly typed. Choice options and score levels are arbitrary Scala values
+  (`Choice.of` / `Score.of` map an enum's cases) and are decoded back to those values.
 * Wire keys are positional (`"0".."n-1"`); callers never name questions. Server errors refer to the same
   positions.
-* The one purely client-side invariant, distinct option names, is a `require` in `Choice` (duplicates would
-  collapse into one JSON key). Server limits are not duplicated client-side: the server's own message reaches
-  the caller as `InvalidRequestException`.
+* The purely client-side invariants, distinct option names and values, are `require`s in `Choice` (duplicate
+  names would collapse into one JSON key; duplicate values could not be told apart in the answer). Server
+  limits are not duplicated client-side: the server's own message reaches the caller as
+  `InvalidRequestException`.
 * `model` is a `JevConfig` field: Scala forbids default arguments on overloaded methods, and `ask` is
   overloaded (single question, tuple).
 * `JevSyncClient` throws like the other sync clients; `JevClient` returns `Request[Either[JevException, _]]`.
@@ -33,8 +34,9 @@ defined by the caller. Server limits (at most 255 options, 10 levels) depend on 
 ## Consequences
 
 * Typed access to answers comes from the tuple position; helpers over generic questions must take
-  `Question[A]` so the result type is stated.
+  `Question[A]` with `A <: Answer` so the result type is stated.
 * Two unchecked casts live inside the client (tuple elements to `Question[?]`, decoded list to
-  `Answers[Qs]`); both are justified by the `<:<` evidence and the match type.
+  `Answers[Qs]`); both are justified by the `AllQuestions[Qs]` evidence (a `<:<` alias, so a misuse names
+  the offending tuple) and the match type.
 * If a server limit changes, no library release is needed.
 * No Scala 2 artifacts of this module.

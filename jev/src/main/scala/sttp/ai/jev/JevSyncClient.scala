@@ -15,17 +15,17 @@ class JevSyncClient(config: JevConfig, backend: SyncBackend = DefaultSyncBackend
     request.send(sendBackend).body.fold(throw _, identity)
 
   /** Asks one question about `state`. */
-  def ask[A](state: Entry, question: Question[A]): SystemOneResponse[A] =
+  def ask[A <: Answer](state: Entry, question: Question[A]): SystemOneResponse[A] =
     sendOrThrow(client.ask(state, question))
 
   /** Asks a tuple of questions about `state`; the answers are a tuple of the matching answer types, position by position, so
     * `val (urgent, team) = ask(state, (noul, choice)).answers` is exactly typed.
     */
-  def ask[Qs <: NonEmptyTuple](state: Entry, questions: Qs)(using Tuple.Union[Qs] <:< Question[?]): SystemOneResponse[Answers[Qs]] =
+  def ask[Qs <: NonEmptyTuple](state: Entry, questions: Qs)(using AllQuestions[Qs]): SystemOneResponse[Answers[Qs]] =
     sendOrThrow(client.ask(state, questions))
 
   /** Asks a list of questions about `state`, answered in the same order. A mixed list is a `Seq[Question[Answer]]`. */
-  def askAll[A](state: Entry, questions: Seq[Question[A]]): SystemOneResponse[Seq[A]] =
+  def askAll[A <: Answer](state: Entry, questions: Seq[Question[A]]): SystemOneResponse[Seq[A]] =
     sendOrThrow(client.askAll(state, questions))
 
   def listModels(): Seq[ModelInfo] =

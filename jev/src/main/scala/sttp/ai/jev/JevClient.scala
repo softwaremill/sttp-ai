@@ -14,17 +14,17 @@ import sttp.model.{ResponseMetadata, StatusCode, Uri}
   */
 trait JevClient:
   /** Asks one question about `state`. */
-  def ask[A](state: Entry, question: Question[A]): Request[Either[JevException, SystemOneResponse[A]]]
+  def ask[A <: Answer](state: Entry, question: Question[A]): Request[Either[JevException, SystemOneResponse[A]]]
 
   /** Asks a tuple of questions about `state`; the answers are a tuple of the matching answer types, position by position:
     * `ask(state, (noul, choice))` answers with `(NoulAnswer, ChoiceAnswer[O])`. Every element must be a [[Question]].
     */
   def ask[Qs <: NonEmptyTuple](state: Entry, questions: Qs)(using
-      Tuple.Union[Qs] <:< Question[?]
+      AllQuestions[Qs]
   ): Request[Either[JevException, SystemOneResponse[Answers[Qs]]]]
 
   /** Asks a list of questions about `state`, answered in the same order. A mixed list is a `Seq[Question[Answer]]`. */
-  def askAll[A](state: Entry, questions: Seq[Question[A]]): Request[Either[JevException, SystemOneResponse[Seq[A]]]]
+  def askAll[A <: Answer](state: Entry, questions: Seq[Question[A]]): Request[Either[JevException, SystemOneResponse[Seq[A]]]]
 
   def listModels(): Request[Either[JevException, Seq[ModelInfo]]]
 
@@ -37,19 +37,19 @@ private[jev] class JevClientImpl(config: JevConfig) extends JevClient:
   private val systemOneUri: Uri = config.baseUrl.addPath("v1", "systemone")
   private val modelsUri: Uri = config.baseUrl.addPath("v1", "models")
 
-  override def ask[A](state: Entry, question: Question[A]): Request[Either[JevException, SystemOneResponse[A]]] =
+  override def ask[A <: Answer](state: Entry, question: Question[A]): Request[Either[JevException, SystemOneResponse[A]]] =
     // exactly one answer is decoded per question sent
     askAll(state, Seq(question)).mapResponse(_.map(_.map(_.head)))
 
   override def ask[Qs <: NonEmptyTuple](state: Entry, questions: Qs)(using
-      Tuple.Union[Qs] <:< Question[?]
+      AllQuestions[Qs]
   ): Request[Either[JevException, SystemOneResponse[Answers[Qs]]]] =
     // unchecked: the `<:<` evidence is a compile-time guard only, as `Tuple.Union[questions.type]` does not reduce to a type it converts
     val questionList = questions.toList.map(_.asInstanceOf[Question[?]])
     // unchecked: `Answers[Qs]` pairs each position with its question's answer type, which is what `decodeAll` produced, in order
     askAll(state, questionList).mapResponse(_.map(_.map(answers => Tuple.fromArray(answers.toArray).asInstanceOf[Answers[Qs]])))
 
-  override def askAll[A](state: Entry, questions: Seq[Question[A]]): Request[Either[JevException, SystemOneResponse[Seq[A]]]] =
+  override def askAll[A <: Answer](state: Entry, questions: Seq[Question[A]]): Request[Either[JevException, SystemOneResponse[Seq[A]]]] =
     basicRequest
       .headers(config.authHeaders)
       .readTimeout(config.timeout)

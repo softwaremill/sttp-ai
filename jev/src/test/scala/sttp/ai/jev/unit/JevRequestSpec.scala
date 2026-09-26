@@ -83,6 +83,11 @@ class JevRequestSpec extends AnyFlatSpec with Matchers with EitherValues with Op
     ).value
   }
 
+  it should "send enum levels in declaration order as their descriptions" in {
+    sentQuestion(typedFrustration).hcursor.downField("criteria").focus shouldBe
+      Some(Json.arr(Json.fromString("Calm, just stating facts"), Json.fromString("Frustrated but civil"), Json.fromString("Very angry")))
+  }
+
   it should "send structured entries verbatim" in {
     val structuredState = Json.obj("source_text" -> Json.fromString("Invoice #4471"))
     val instructions =
