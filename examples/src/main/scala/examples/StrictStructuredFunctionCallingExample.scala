@@ -16,7 +16,7 @@ object StrictStructuredFunctionCallingExample extends App {
   import io.circe.syntax.*
   import sttp.client4.{DefaultSyncBackend, SyncBackend}
   import sttp.ai.openai.OpenAI
-  import sttp.ai.openai.requests.completions.chat.ChatRequestBody.{ChatBody, ChatCompletionModel, ResponseFormat}
+  import sttp.ai.openai.requests.completions.chat.ChatRequestBody.{ChatBody, ChatCompletionModel}
   import sttp.ai.openai.requests.completions.chat.message.{Content, Message, ToolChoice}
   import sttp.ai.openai.requests.completions.chat.message.Tool.Function
 

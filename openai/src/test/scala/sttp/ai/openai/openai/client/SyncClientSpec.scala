@@ -15,13 +15,9 @@ import sttp.ai.openai.OpenAIExceptions.OpenAIException
 import sttp.ai.openai.OpenAIExceptions.OpenAIException.DeserializationOpenAIException
 import sttp.ai.openai.config.OpenAIConfig
 import sttp.ai.openai.fixtures.ErrorFixture
-import sttp.ai.openai.json.OpenAIDerivedCodecs._
-import sttp.ai.openai.json.OpenAIManualCodecs._
 import sttp.ai.openai.requests.completions.chat.ChatRequestBody.{ChatBody, ChatCompletionModel}
 import sttp.ai.openai.requests.models.ModelsResponseData._
-import sttp.ai.openai.requests.responses.ResponsesModel.GPT4oMini
 import sttp.ai.openai.{AuthScheme, CustomizeOpenAIRequest, OpenAISyncClient}
-import sttp.tapir.Schema
 
 import java.util.concurrent.atomic.{AtomicInteger, AtomicReference}
 import scala.concurrent.duration.DurationInt
@@ -211,7 +207,7 @@ class SyncClientSpec extends AnyFlatSpec with Matchers with EitherValues {
     // when
     val mockRes = MathReasoning(Nil, "final answer")
     import sttp.tapir.generic.auto._
-    val res = syncClient.createChatCompletion[MathReasoning](ChatBody(Nil, ChatCompletionModel.GPT4oMini)) { body =>
+    val res = syncClient.createChatCompletion[MathReasoning](ChatBody(Nil, ChatCompletionModel.GPT4oMini)) { _ =>
       Right(mockRes)
     }
 
@@ -231,7 +227,7 @@ class SyncClientSpec extends AnyFlatSpec with Matchers with EitherValues {
     // when
     import sttp.tapir.generic.auto._
     val caught =
-      intercept[OpenAIException](syncClient.createChatCompletion[MathReasoning](ChatBody(Nil, ChatCompletionModel.GPT4oMini)) { body =>
+      intercept[OpenAIException](syncClient.createChatCompletion[MathReasoning](ChatBody(Nil, ChatCompletionModel.GPT4oMini)) { _ =>
         Left("parsed error")
       })
 
@@ -289,7 +285,7 @@ class SyncClientSpec extends AnyFlatSpec with Matchers with EitherValues {
     val mockRes = MathReasoning(Nil, "final answer")
     import sttp.tapir.generic.auto._
     val caught =
-      intercept[OpenAIException](syncClient.createChatCompletion[MathReasoning](ChatBody(Nil, ChatCompletionModel.GPT4oMini)) { body =>
+      intercept[OpenAIException](syncClient.createChatCompletion[MathReasoning](ChatBody(Nil, ChatCompletionModel.GPT4oMini)) { _ =>
         Right(mockRes)
       })
 

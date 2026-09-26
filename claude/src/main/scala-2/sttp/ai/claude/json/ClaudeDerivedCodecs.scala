@@ -6,7 +6,6 @@ import sttp.ai.claude.models._
 import sttp.ai.claude.models.ContentBlock._
 import sttp.ai.claude.requests.MessageRequest
 import sttp.ai.claude.responses._
-import sttp.ai.claude.responses.MessageStreamResponse._
 import sttp.ai.core.json.CirceConfiguration.jsonConfiguration
 import ClaudeManualCodecs._
 

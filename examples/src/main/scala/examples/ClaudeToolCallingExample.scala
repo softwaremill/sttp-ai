@@ -7,11 +7,9 @@
 package examples
 
 import sttp.ai.claude.*
-import sttp.ai.claude.ClaudeExceptions.ClaudeException
 import sttp.ai.claude.config.ClaudeConfig
 import sttp.ai.claude.models.*
 import sttp.ai.claude.requests.MessageRequest
-import sttp.ai.claude.responses.MessageResponse
 import sttp.client4.{DefaultSyncBackend, SyncBackend}
 
 object ClaudeToolCallingExample extends App {

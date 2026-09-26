@@ -5,6 +5,7 @@ import io.circe.syntax.*
 import org.scalatest.OptionValues
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
+import scala.annotation.unused
 import sttp.shared.Identity
 import sttp.tapir.Schema
 import sttp.tapir.Schema.annotations.description
@@ -18,7 +19,7 @@ class AgentToolsDeriveSpec extends AnyFlatSpec with Matchers with OptionValues {
     @description("Get a forecast")
     def forecast(city: String, days: Int): String
 
-    private def helper(x: String): String = x
+    @unused private def helper(x: String): String = x
   }
 
   class WeatherImpl extends WeatherService {

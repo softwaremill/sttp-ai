@@ -8,7 +8,6 @@ import sttp.ai.openai.requests.moderations.ModerationsRequestBody.ModerationMode
 import sttp.ai.openai.requests.moderations.ModerationsResponseData._
 import io.circe.parser.decode
 import sttp.ai.openai.json.OpenAIDerivedCodecs._
-import sttp.ai.openai.json.OpenAIManualCodecs._
 
 class ModerationsDataSpec extends AnyFlatSpec with Matchers with EitherValues {
   "Given create moderation response as Json" should "be properly deserialized to case class" in {

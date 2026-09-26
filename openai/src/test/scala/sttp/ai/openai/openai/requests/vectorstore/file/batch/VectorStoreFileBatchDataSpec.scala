@@ -7,7 +7,6 @@ import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
 import sttp.ai.openai.fixtures.VectorStoreFileBatchFixture
 import sttp.ai.openai.json.OpenAIDerivedCodecs._
-import sttp.ai.openai.json.OpenAIManualCodecs._
 import sttp.ai.openai.requests.vectorstore.VectorStoreResponseData.FileCounts
 import sttp.ai.openai.requests.vectorstore.file.{Completed, InProgress}
 import sttp.ai.openai.requests.vectorstore.file.batch.VectorStoreFileBatchRequestBody.CreateVectorStoreFileBatchBody

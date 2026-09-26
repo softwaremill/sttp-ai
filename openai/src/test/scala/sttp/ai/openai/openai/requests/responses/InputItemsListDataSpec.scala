@@ -1,7 +1,6 @@
 package sttp.ai.openai.requests.responses
 
 import sttp.ai.openai.json.OpenAIDerivedCodecs._
-import sttp.ai.openai.json.OpenAIManualCodecs._
 
 import io.circe.parser.decode
 import org.scalatest.EitherValues

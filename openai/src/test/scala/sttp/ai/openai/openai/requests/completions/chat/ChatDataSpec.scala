@@ -13,13 +13,11 @@ import sttp.ai.openai.utils.ChatCompletionFixtures._
 import io.circe.parser.{decode, parse}
 import io.circe.syntax._
 import sttp.ai.openai.json.OpenAIDerivedCodecs._
-import sttp.ai.openai.json.OpenAIManualCodecs._
 
 class ChatDataSpec extends AnyFlatSpec with Matchers with EitherValues {
 
   "Given delete chat completion response as Json" should "be properly deserialized to case class" in {
     import ChatRequestResponseData.DeleteChatCompletionResponse
-    import ChatRequestResponseData.DeleteChatCompletionResponse._
 
     // given
     val jsonResponse = fixtures.ChatFixture.jsonDeleteChatCompletionResponse
@@ -36,7 +34,6 @@ class ChatDataSpec extends AnyFlatSpec with Matchers with EitherValues {
 
   "Given list chat response as Json" should "be properly deserialized to case class" in {
     import ChatRequestResponseData.ListChatResponse
-    import ChatRequestResponseData.ListChatResponse._
 
     // given
     val jsonResponse = fixtures.ChatFixture.jsonListChatResponse
@@ -53,7 +50,6 @@ class ChatDataSpec extends AnyFlatSpec with Matchers with EitherValues {
   }
 
   "Given list message response as Json" should "be properly deserialized to case class" in {
-    import ChatRequestResponseData.ListMessageResponse._
     import ChatRequestResponseData.{ListMessageResponse, Message}
 
     // given
@@ -84,7 +80,6 @@ class ChatDataSpec extends AnyFlatSpec with Matchers with EitherValues {
   }
 
   "Given chat completions response as Json" should "be properly deserialized to case class" in {
-    import ChatRequestResponseData.ChatResponse._
     import ChatRequestResponseData._
 
     // given
@@ -203,8 +198,6 @@ class ChatDataSpec extends AnyFlatSpec with Matchers with EitherValues {
   }
 
   "Given update chat completions request as case class" should "be properly serialized to Json" in {
-    import ChatRequestBody.UpdateChatCompletionRequestBody._
-
     // given
     val givenRequest = ChatRequestBody.UpdateChatCompletionRequestBody(
       metadata = Map("key" -> "value")

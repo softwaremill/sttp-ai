@@ -61,7 +61,7 @@ class AgentMatchersSpec extends AnyFlatSpec with Matchers with AgentMatchers {
 
   it should "point at last-iteration tool withholding when no tools were offered at all" in {
     val script = ScriptedAgent.synchronous(ScriptedResponse.text("done"))
-    script.builder.tools(calculatorTool).maxIterations(1).build.run("go")(SyncBackendStub)
+    script.builder.tools(calculatorTool).maxIterations(1).build.run("go")(SyncBackendStub): Unit
 
     val e = intercept[TestFailedException](script should haveOfferedTool("calculator"))
     e.getMessage should include("withholds tools on the last allowed iteration")

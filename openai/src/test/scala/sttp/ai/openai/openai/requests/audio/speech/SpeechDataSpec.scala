@@ -3,7 +3,6 @@ package sttp.ai.openai.requests.audio.speech
 import io.circe.parser.parse
 import io.circe.syntax._
 import sttp.ai.openai.json.OpenAIDerivedCodecs._
-import sttp.ai.openai.json.OpenAIManualCodecs._
 
 import org.scalatest.EitherValues
 import org.scalatest.flatspec.AnyFlatSpec

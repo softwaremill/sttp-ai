@@ -7,7 +7,6 @@ import sttp.ai.claude.requests.MessageRequest
 import sttp.ai.claude.responses.MessageStreamResponse
 import sttp.ai.claude.responses.MessageStreamResponse.EventData.DoneEvent
 import io.circe.parser.decode
-import sttp.ai.claude.json.ClaudeManualCodecs._
 import sttp.ai.claude.json.ClaudeDerivedCodecs._
 import sttp.client4.Request
 import sttp.client4.impl.ox.sse.OxServerSentEvents

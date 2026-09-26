@@ -9,7 +9,6 @@ import sttp.ai.openai.requests.vectorstore.VectorStoreResponseData._
 import io.circe.parser.{decode, parse}
 import io.circe.syntax._
 import sttp.ai.openai.json.OpenAIDerivedCodecs._
-import sttp.ai.openai.json.OpenAIManualCodecs._
 
 class VectorStoreDataSpec extends AnyFlatSpec with Matchers with EitherValues {
 
@@ -63,7 +62,6 @@ class VectorStoreDataSpec extends AnyFlatSpec with Matchers with EitherValues {
   }
 
   "Vector store object" should "be properly deserialized from Json" in {
-    import sttp.ai.openai.requests.vectorstore.VectorStoreResponseData.VectorStore._
     // given
     val givenResponse = VectorStore(
       id = "vs_1",
@@ -88,7 +86,6 @@ class VectorStoreDataSpec extends AnyFlatSpec with Matchers with EitherValues {
   }
 
   "List of vector stores" should "be properly deserialized from Json" in {
-    import sttp.ai.openai.requests.vectorstore.VectorStoreResponseData.ListVectorStoresResponse._
     // given
 
     val first = VectorStore(
@@ -143,7 +140,6 @@ class VectorStoreDataSpec extends AnyFlatSpec with Matchers with EitherValues {
   }
 
   "Delete of vector stores response" should "be properly deserialized from Json" in {
-    import sttp.ai.openai.requests.vectorstore.VectorStoreResponseData.DeleteVectorStoreResponse._
     // given
 
     val givenResponse = DeleteVectorStoreResponse(

@@ -10,7 +10,6 @@ import io.circe.syntax._
 import org.scalatest.EitherValues
 import org.scalatest.OptionValues
 import sttp.ai.claude.json.ClaudeDerivedCodecs._
-import sttp.ai.claude.json.ClaudeManualCodecs._
 import sttp.tapir.{Schema => TSchema}
 
 class MessageRequestSpec extends AnyFlatSpec with Matchers with EitherValues with OptionValues {

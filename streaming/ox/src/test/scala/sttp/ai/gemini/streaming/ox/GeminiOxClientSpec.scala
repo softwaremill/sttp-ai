@@ -3,7 +3,7 @@ package sttp.ai.gemini.streaming.ox
 import org.scalatest.EitherValues
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
-import ox.{supervised, Ox}
+import ox.supervised
 import sttp.ai.gemini.GeminiClient
 import sttp.ai.gemini.GeminiExceptions.GeminiException
 import sttp.ai.gemini.GeminiExceptions.GeminiException.DeserializationGeminiException
@@ -136,7 +136,7 @@ class GeminiOxClientSpec extends AnyFlatSpec with Matchers with EitherValues {
     }
   }
 
-  private def assertStreamedInteraction(givenResponse: InputStream, expectedResponse: Seq[InteractionStreamEvent])(using Ox) = {
+  private def assertStreamedInteraction(givenResponse: InputStream, expectedResponse: Seq[InteractionStreamEvent]) = {
     val stub = DefaultSyncBackend.stub.whenAnyRequest.thenRespond(ResponseStub.adjust(givenResponse))
     val client = GeminiClient(GeminiConfig("test-token"))
 

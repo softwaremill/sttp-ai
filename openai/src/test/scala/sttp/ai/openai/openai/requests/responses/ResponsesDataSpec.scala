@@ -3,7 +3,6 @@ package sttp.ai.openai.requests.responses
 import io.circe.parser.parse
 import io.circe.syntax._
 import sttp.ai.openai.json.OpenAIDerivedCodecs._
-import sttp.ai.openai.json.OpenAIManualCodecs._
 
 import org.scalatest.EitherValues
 import org.scalatest.flatspec.AnyFlatSpec
@@ -16,8 +15,7 @@ import sttp.ai.openai.requests.responses.ResponsesRequestBody.{
   Format => RequestFormat,
   PromptConfig => RequestPromptConfig,
   ReasoningConfig => RequestReasoningConfig,
-  TextConfig => RequestTextConfig,
-  _
+  TextConfig => RequestTextConfig
 }
 import sttp.ai.openai.requests.responses.ResponsesResponseBody._
 import sttp.ai.openai.requests.responses.ToolChoice.ToolChoiceObject
@@ -110,8 +108,6 @@ class ResponsesDataSpec extends AnyFlatSpec with Matchers with EitherValues {
   }
 
   "Given responses request with text format" should "be properly serialized to Json" in {
-    import ResponsesRequestBody._
-
     // given
     val givenRequest = ResponsesRequestBody(
       model = Some(ResponsesModel.GPT4o),

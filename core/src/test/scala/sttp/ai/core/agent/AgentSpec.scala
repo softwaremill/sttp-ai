@@ -238,7 +238,7 @@ class AgentSpec extends AnyFlatSpec with Matchers with OptionValues {
         AgentResponse("Done", Seq.empty, StopReason.EndTurn)
       )
     )
-    runLoop(AgentBuilder[Identity, TestModel.type](_ => stubBackend)(IdentityMonad).tools(dummyTool))
+    runLoop(AgentBuilder[Identity, TestModel.type](_ => stubBackend)(IdentityMonad).tools(dummyTool)): Unit
 
     stubBackend.receivedHistories should have size 2
     val firstHistory = stubBackend.receivedHistories.head
@@ -261,7 +261,7 @@ class AgentSpec extends AnyFlatSpec with Matchers with OptionValues {
       )
     )
 
-    runLoop(AgentBuilder[Identity, TestModel.type](_ => stubBackend)(IdentityMonad).maxIterations(3).tools(dummyTool))
+    runLoop(AgentBuilder[Identity, TestModel.type](_ => stubBackend)(IdentityMonad).maxIterations(3).tools(dummyTool)): Unit
 
     stubBackend.iterationInfos.map(_.iteration) shouldBe Vector(1, 2, 3)
     stubBackend.iterationInfos.map(_.maxIterations).distinct shouldBe Vector(3)
@@ -563,7 +563,7 @@ class AgentSpec extends AnyFlatSpec with Matchers with OptionValues {
       ).tools(calculatorTool)
         .exceptionHandler(ExceptionHandler.sendAllToLLM)
         .addInterceptor(recording)
-    )
+    ): Unit
 
     results should contain inOrderOnly (
       ToolCall("call_1", "calculator", """{"a":5,"b":10}"""),

@@ -7,7 +7,6 @@ import sttp.ai.openai.fixtures.UploadFixture
 import io.circe.parser.{decode, parse}
 import io.circe.syntax._
 import sttp.ai.openai.json.OpenAIDerivedCodecs._
-import sttp.ai.openai.json.OpenAIManualCodecs._
 
 class UploadDataSpec extends AnyFlatSpec with Matchers with EitherValues {
 

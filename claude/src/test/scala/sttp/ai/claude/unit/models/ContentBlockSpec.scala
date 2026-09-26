@@ -8,7 +8,6 @@ import io.circe.parser.{decode, parse}
 import io.circe.syntax._
 import org.scalatest.EitherValues
 import sttp.ai.claude.json.ClaudeDerivedCodecs._
-import sttp.ai.claude.json.ClaudeManualCodecs._
 
 class ContentBlockSpec extends AnyFlatSpec with Matchers with EitherValues {
 

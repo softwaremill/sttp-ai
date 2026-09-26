@@ -1,6 +1,6 @@
 package sttp.ai.gemini.models
 
-import sttp.ai.core.model.{AIModel, Capability}
+import sttp.ai.core.model.AIModel
 import sttp.ai.core.model.Capability._
 
 /** Well-known Gemini model identifiers. Use [[GeminiModel.CustomModel]] for models not listed here. */

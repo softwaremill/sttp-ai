@@ -25,7 +25,6 @@ import sttp.ai.openai.requests.completions.chat.ChatRequestResponseData.{
   ListChatResponse,
   ListMessageResponse
 }
-import sttp.ai.openai.requests.completions.chat.{ListMessagesQueryParameters => _}
 import sttp.ai.openai.requests.embeddings.EmbeddingsRequestBody.EmbeddingsBody
 import sttp.ai.openai.requests.embeddings.EmbeddingsResponseBody.EmbeddingResponse
 import sttp.ai.openai.requests.files.FilesResponseData._

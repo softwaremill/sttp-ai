@@ -7,7 +7,6 @@ import io.circe.parser.{decode, parse}
 import io.circe.syntax._
 import org.scalatest.EitherValues
 import org.scalatest.OptionValues
-import sttp.ai.claude.json.ClaudeDerivedCodecs._
 import sttp.ai.claude.json.ClaudeManualCodecs._
 
 class ToolSpec extends AnyFlatSpec with Matchers with EitherValues with OptionValues {

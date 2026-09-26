@@ -84,7 +84,8 @@ private[agent] object ResponseSchemaUnionMacros {
     }
 
     val variantExprs: List[Expr[Variant[? <: T]]] = members.map { tpe =>
-      tpe.asType match {
+      // @unchecked: -Ycheck-all-patmat reports the higher-kinded Type case, which a union member never is
+      (tpe.asType: @unchecked) match {
         case '[a] =>
           def missing(what: String): Nothing = fail(s"no given $what for union member ${renderType(tpe)}")
           val s = Expr.summon[TapirSchema[a]].getOrElse(missing(s"sttp.tapir.Schema[${renderType(tpe)}]"))

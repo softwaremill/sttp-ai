@@ -8,7 +8,6 @@ import sttp.ai.openai.requests.batch.{BatchRequestBody, BatchResponse, ListBatch
 import io.circe.parser.{decode, parse}
 import io.circe.syntax._
 import sttp.ai.openai.json.OpenAIDerivedCodecs._
-import sttp.ai.openai.json.OpenAIManualCodecs._
 
 class BatchDataSpec extends AnyFlatSpec with Matchers with EitherValues {
 

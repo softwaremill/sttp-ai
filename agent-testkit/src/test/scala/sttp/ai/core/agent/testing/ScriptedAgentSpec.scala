@@ -47,7 +47,7 @@ class ScriptedAgentSpec extends AnyFlatSpec with Matchers with OptionValues {
 
   it should "record prompts, offered tools and tool results across the run" in {
     val script = calculatorScript()
-    script.builder.tools(calculatorTool).build.run("What is 1 + 2?")(httpBackend)
+    script.builder.tools(calculatorTool).build.run("What is 1 + 2?")(httpBackend): Unit
 
     script.requests should have size 2
     script.initialPrompt.value shouldBe "What is 1 + 2?"
@@ -90,7 +90,7 @@ class ScriptedAgentSpec extends AnyFlatSpec with Matchers with OptionValues {
   it should "record the configured response schema" in {
     val script = ScriptedAgent.synchronous(ScriptedResponse.text("""{"value": 3}"""))
 
-    script.builder.deriveResponseSchema[Answer].build.run("compute")(httpBackend)
+    script.builder.deriveResponseSchema[Answer].build.run("compute")(httpBackend): Unit
 
     script.responseSchemaSent should not be empty
     script.responseSchemaSent.value.schema shouldBe ResponseSchema.derived[Answer]().schema
@@ -98,7 +98,7 @@ class ScriptedAgentSpec extends AnyFlatSpec with Matchers with OptionValues {
 
   it should "record no response schema when none is configured" in {
     val script = calculatorScript()
-    script.builder.tools(calculatorTool).build.run("What is 1 + 2?")(httpBackend)
+    script.builder.tools(calculatorTool).build.run("What is 1 + 2?")(httpBackend): Unit
 
     script.responseSchemaSent shouldBe empty
   }

@@ -6,12 +6,10 @@ import org.scalatest.matchers.should.Matchers
 import sttp.ai.openai.fixtures
 import io.circe.parser.decode
 import sttp.ai.openai.json.OpenAIDerivedCodecs._
-import sttp.ai.openai.json.OpenAIManualCodecs._
 
 class AudioCreationDataSpec extends AnyFlatSpec with Matchers with EitherValues {
   "Given audio generation response as Json" should "be properly deserialized to case class" in {
     import sttp.ai.openai.requests.audio.AudioResponseData.AudioResponse
-    import sttp.ai.openai.requests.audio.AudioResponseData.AudioResponse._
 
     // given
     val jsonResponse = fixtures.AudioFixture.jsonResponse

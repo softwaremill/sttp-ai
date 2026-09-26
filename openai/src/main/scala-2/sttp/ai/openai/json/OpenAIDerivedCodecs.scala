@@ -88,8 +88,6 @@ import sttp.ai.openai.requests.responses.DeleteModelResponseResponse
 import sttp.ai.openai.requests.completions.chat.SchemaSupport.schemaCodec
 import OpenAIManualCodecs._
 import io.circe.generic.extras.encoding.ReprAsObjectEncoder
-import io.circe.generic.extras.Configuration
-import io.circe.generic.extras.codec.{ConfiguredAsObjectCodec, ReprAsObjectCodec}
 import io.circe.generic.extras.decoding.{ConfiguredDecoder, ReprDecoder}
 import io.circe.generic.extras.encoding.ConfiguredAsObjectEncoder
 import io.circe.syntax.{EncoderOps, KeyOps}
