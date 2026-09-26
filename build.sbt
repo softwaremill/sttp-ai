@@ -263,7 +263,7 @@ lazy val examples = (projectMatrix in file("examples"))
     ) ++ Libraries.sttpClientOx,
     publish / skip := true
   )
-  .dependsOn(ox)
+  .dependsOn(ox, jev)
 
 lazy val compileDocumentation: TaskKey[Unit] = taskKey[Unit]("Compiles docs module throwing away its output")
 
