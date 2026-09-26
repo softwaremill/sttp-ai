@@ -6,7 +6,6 @@ import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
 import sttp.ai.openai.fixtures.ResponsesStreamEventFixture
 import sttp.ai.openai.json.OpenAIDerivedCodecs._
-import sttp.ai.openai.json.OpenAIManualCodecs._
 
 class ResponsesStreamEventDataSpec extends AnyFlatSpec with Matchers with EitherValues {
 

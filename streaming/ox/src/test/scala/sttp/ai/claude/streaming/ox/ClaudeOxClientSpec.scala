@@ -3,7 +3,7 @@ package sttp.ai.claude.streaming.ox
 import org.scalatest.EitherValues
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
-import ox.{supervised, Ox}
+import ox.supervised
 import sttp.ai.claude.ClaudeClient
 import sttp.ai.claude.ClaudeExceptions.ClaudeException
 import sttp.ai.claude.ClaudeExceptions.ClaudeException.DeserializationClaudeException
@@ -13,7 +13,6 @@ import sttp.ai.claude.requests.MessageRequest
 import sttp.ai.claude.responses.MessageStreamResponse
 import sttp.ai.claude.responses.MessageStreamResponse.EventData.DoneEvent
 import io.circe.parser.decode
-import sttp.ai.claude.json.ClaudeManualCodecs._
 import sttp.ai.claude.json.ClaudeDerivedCodecs._
 import sttp.client4.DefaultSyncBackend
 import sttp.client4.testing.ResponseStub
@@ -158,7 +157,7 @@ class ClaudeOxClientSpec extends AnyFlatSpec with Matchers with EitherValues {
     decode[MessageStreamResponse](citationsDelta).fold(throw _, identity).asInstanceOf[ContentBlockDelta].delta shouldBe a[CitationsDelta]
   }
 
-  private def assertStreamedMessage(givenResponse: InputStream, expectedResponse: Seq[MessageStreamResponse])(using Ox) = {
+  private def assertStreamedMessage(givenResponse: InputStream, expectedResponse: Seq[MessageStreamResponse]) = {
     val stub = DefaultSyncBackend.stub.whenAnyRequest.thenRespond(ResponseStub.adjust(givenResponse))
     val client = ClaudeClient(ClaudeConfig("test-token"))
 

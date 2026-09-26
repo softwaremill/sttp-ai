@@ -9,7 +9,6 @@ import sttp.ai.openai.requests.vectorstore.file.VectorStoreFileResponseData._
 import io.circe.parser.{decode, parse}
 import io.circe.syntax._
 import sttp.ai.openai.json.OpenAIDerivedCodecs._
-import sttp.ai.openai.json.OpenAIManualCodecs._
 
 class VectorStoreFileDataSpec extends AnyFlatSpec with Matchers with EitherValues {
 
@@ -64,7 +63,6 @@ class VectorStoreFileDataSpec extends AnyFlatSpec with Matchers with EitherValue
   }
 
   "Vector store file response" should "be properly deserialized from Json" in {
-    import sttp.ai.openai.requests.vectorstore.file.VectorStoreFileResponseData.VectorStoreFile._
     // given
     val givenResponse = VectorStoreFile(
       id = "vsf_1",
@@ -84,7 +82,6 @@ class VectorStoreFileDataSpec extends AnyFlatSpec with Matchers with EitherValue
   }
 
   "Vector store file response with error" should "be properly deserialized from Json" in {
-    import sttp.ai.openai.requests.vectorstore.file.VectorStoreFileResponseData.VectorStoreFile._
     // given
     val givenResponse = VectorStoreFile(
       id = "vsf_1",
@@ -105,7 +102,6 @@ class VectorStoreFileDataSpec extends AnyFlatSpec with Matchers with EitherValue
   }
 
   "Vector store file list response" should "be properly deserialized from Json" in {
-    import sttp.ai.openai.requests.vectorstore.file.VectorStoreFileResponseData.ListVectorStoreFilesResponse._
     // given
     val one = VectorStoreFile(
       id = "vsf_1",
@@ -160,7 +156,6 @@ class VectorStoreFileDataSpec extends AnyFlatSpec with Matchers with EitherValue
   }
 
   "Delete of vector store file response" should "be properly deserialized from Json" in {
-    import sttp.ai.openai.requests.vectorstore.file.VectorStoreFileResponseData.DeleteVectorStoreFileResponse._
     // given
 
     val givenResponse = DeleteVectorStoreFileResponse(

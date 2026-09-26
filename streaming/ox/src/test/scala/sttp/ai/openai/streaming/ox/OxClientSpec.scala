@@ -3,7 +3,7 @@ package sttp.ai.openai.streaming.ox
 import org.scalatest.EitherValues
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
-import ox.{supervised, Ox}
+import ox.supervised
 import sttp.client4.DefaultSyncBackend
 import sttp.client4.testing.ResponseStub
 import sttp.model.sse.ServerSentEvent
@@ -125,7 +125,7 @@ class OxClientSpec extends AnyFlatSpec with Matchers with EitherValues {
     }
   }
 
-  private def assertStreamedCompletion(givenResponse: InputStream, expectedResponse: Seq[ChatChunkResponse])(using Ox) = {
+  private def assertStreamedCompletion(givenResponse: InputStream, expectedResponse: Seq[ChatChunkResponse]) = {
     val stub = DefaultSyncBackend.stub.whenAnyRequest.thenRespond(ResponseStub.adjust(givenResponse))
     val client = new OpenAI(authToken = "test-token")
 
@@ -278,7 +278,7 @@ class OxClientSpec extends AnyFlatSpec with Matchers with EitherValues {
     uri.params.get("starting_after") shouldBe Some("7")
   }
 
-  private def assertStreamedModelResponse(givenResponse: InputStream, expectedResponse: Seq[ResponsesStreamEvent])(using Ox) = {
+  private def assertStreamedModelResponse(givenResponse: InputStream, expectedResponse: Seq[ResponsesStreamEvent]) = {
     val stub = DefaultSyncBackend.stub.whenAnyRequest.thenRespond(ResponseStub.adjust(givenResponse))
     val client = new OpenAI(authToken = "test-token")
 

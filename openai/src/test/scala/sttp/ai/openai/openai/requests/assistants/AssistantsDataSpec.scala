@@ -10,7 +10,6 @@ import sttp.ai.openai.requests.completions.chat.message.ToolResources
 import io.circe.parser.{decode, parse}
 import io.circe.syntax._
 import sttp.ai.openai.json.OpenAIDerivedCodecs._
-import sttp.ai.openai.json.OpenAIManualCodecs._
 
 class AssistantsDataSpec extends AnyFlatSpec with Matchers with EitherValues {
 
@@ -36,7 +35,6 @@ class AssistantsDataSpec extends AnyFlatSpec with Matchers with EitherValues {
   }
 
   "Given create assistant response as Json" should "be properly deserialized to case class" in {
-    import sttp.ai.openai.requests.assistants.AssistantsResponseData.AssistantData._
     import sttp.ai.openai.requests.assistants.AssistantsResponseData._
 
     // given
@@ -65,7 +63,6 @@ class AssistantsDataSpec extends AnyFlatSpec with Matchers with EitherValues {
   }
 
   "Given list assistants response as Json" should "be properly deserialized to case class" in {
-    import sttp.ai.openai.requests.assistants.AssistantsResponseData.ListAssistantsResponse._
     import sttp.ai.openai.requests.assistants.AssistantsResponseData._
 
     // given
@@ -124,7 +121,6 @@ class AssistantsDataSpec extends AnyFlatSpec with Matchers with EitherValues {
   }
 
   "Given list assistant files response as Json" should "be properly deserialized to case class" in {
-    import sttp.ai.openai.requests.assistants.AssistantsResponseData.ListAssistantsResponse._
     import sttp.ai.openai.requests.assistants.AssistantsResponseData._
 
     // given
@@ -183,7 +179,6 @@ class AssistantsDataSpec extends AnyFlatSpec with Matchers with EitherValues {
   }
 
   "Given retrieve assistant response as Json" should "be properly deserialized to case class" in {
-    import sttp.ai.openai.requests.assistants.AssistantsResponseData.AssistantData._
     import sttp.ai.openai.requests.assistants.AssistantsResponseData._
 
     // given
@@ -234,7 +229,6 @@ class AssistantsDataSpec extends AnyFlatSpec with Matchers with EitherValues {
   }
 
   "Given modify assistant response as Json" should "be properly deserialized to case class" in {
-    import sttp.ai.openai.requests.assistants.AssistantsResponseData.AssistantData._
     import sttp.ai.openai.requests.assistants.AssistantsResponseData._
 
     // given
@@ -262,7 +256,6 @@ class AssistantsDataSpec extends AnyFlatSpec with Matchers with EitherValues {
   }
 
   "Given delete assistant response as Json" should "be properly deserialized to case class" in {
-    import sttp.ai.openai.requests.assistants.AssistantsResponseData.DeleteAssistantResponse._
     import sttp.ai.openai.requests.assistants.AssistantsResponseData._
 
     // given

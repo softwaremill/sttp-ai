@@ -33,8 +33,8 @@ class ScriptedAgentBackendSpec extends AnyFlatSpec with Matchers {
   it should "record each request with its history, includeTools flag and system prompt" in {
     val backend = newBackend(ScriptedResponse.text("a"), ScriptedResponse.text("b"))
 
-    backend.sendRequest(history, SyncBackendStub, includeTools = true, IterationInfo(1, 10))
-    backend.sendRequest(history, SyncBackendStub, includeTools = false, IterationInfo(2, 10))
+    backend.sendRequest(history, SyncBackendStub, includeTools = true, IterationInfo(1, 10)): Unit
+    backend.sendRequest(history, SyncBackendStub, includeTools = false, IterationInfo(2, 10)): Unit
 
     backend.requests should have size 2
     backend.requests.map(_.includeTools) shouldBe Seq(true, false)
@@ -45,8 +45,8 @@ class ScriptedAgentBackendSpec extends AnyFlatSpec with Matchers {
   it should "record the IterationInfo of each request" in {
     val backend = newBackend(ScriptedResponse.text("a"), ScriptedResponse.text("b"))
 
-    backend.sendRequest(history, SyncBackendStub, includeTools = true, IterationInfo(1, 2))
-    backend.sendRequest(history, SyncBackendStub, includeTools = false, IterationInfo(2, 2))
+    backend.sendRequest(history, SyncBackendStub, includeTools = true, IterationInfo(1, 2)): Unit
+    backend.sendRequest(history, SyncBackendStub, includeTools = false, IterationInfo(2, 2)): Unit
 
     backend.requests.map(_.iterationInfo) shouldBe Seq(IterationInfo(1, 2), IterationInfo(2, 2))
     backend.requests.map(_.iterationInfo.isLastIteration) shouldBe Seq(false, true)
@@ -55,7 +55,7 @@ class ScriptedAgentBackendSpec extends AnyFlatSpec with Matchers {
   it should "record offered tools with their JSON schemas when includeTools is true" in {
     val backend = newBackend(ScriptedResponse.text("a"))
 
-    backend.sendRequest(history, SyncBackendStub, includeTools = true, IterationInfo(1, 10))
+    backend.sendRequest(history, SyncBackendStub, includeTools = true, IterationInfo(1, 10)): Unit
 
     val offered = backend.requests.head.toolsOffered
     offered.map(_.name) shouldBe Seq("echo")
@@ -66,7 +66,7 @@ class ScriptedAgentBackendSpec extends AnyFlatSpec with Matchers {
   it should "record no offered tools when includeTools is false" in {
     val backend = newBackend(ScriptedResponse.text("a"))
 
-    backend.sendRequest(history, SyncBackendStub, includeTools = false, IterationInfo(1, 10))
+    backend.sendRequest(history, SyncBackendStub, includeTools = false, IterationInfo(1, 10)): Unit
 
     backend.requests.head.toolsOffered shouldBe empty
   }
@@ -74,7 +74,7 @@ class ScriptedAgentBackendSpec extends AnyFlatSpec with Matchers {
   it should "fail with ScriptExhaustedException when the script runs out" in {
     val backend = newBackend(ScriptedResponse.text("only one"))
 
-    backend.sendRequest(history, SyncBackendStub, includeTools = true, IterationInfo(1, 10))
+    backend.sendRequest(history, SyncBackendStub, includeTools = true, IterationInfo(1, 10)): Unit
     val exception = intercept[ScriptExhaustedException] {
       backend.sendRequest(history, SyncBackendStub, includeTools = true, IterationInfo(2, 10))
     }
@@ -85,7 +85,7 @@ class ScriptedAgentBackendSpec extends AnyFlatSpec with Matchers {
   it should "still record the request that exhausted the script" in {
     val backend = newBackend()
 
-    intercept[ScriptExhaustedException](backend.sendRequest(history, SyncBackendStub, includeTools = true, IterationInfo(1, 10)))
+    intercept[ScriptExhaustedException](backend.sendRequest(history, SyncBackendStub, includeTools = true, IterationInfo(1, 10))): Unit
 
     backend.requests should have size 1
   }

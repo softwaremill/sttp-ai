@@ -121,7 +121,8 @@ object AgentTools {
       }
 
       val fieldInstances = params.zip(paramTypes).zipWithIndex.map { case ((p, tpe), i) =>
-        tpe.asType match {
+        // @unchecked (here and below): -Ycheck-all-patmat reports the higher-kinded Type case, which a parameter type never is
+        (tpe.asType: @unchecked) match {
           case '[ft] =>
             def missing(what: String): Nothing =
               fail(s"no given $what for parameter '${p.name}' of method '${m.name}'")
@@ -213,7 +214,7 @@ object AgentTools {
       val execExpr: Expr[Tup => F[String]] = '{ (input: Tup) =>
         ${
           val argTerms = paramTypes.zipWithIndex.map { case (tpe, i) =>
-            tpe.asType match {
+            (tpe.asType: @unchecked) match {
               case '[ft] => '{ input.asInstanceOf[Product].productElement(${ Expr(i) }).asInstanceOf[ft] }.asTerm
             }
           }
@@ -261,7 +262,7 @@ object AgentTools {
         fail(s"method '${m.name}' must return ${renderType(TypeRepr.of[F[String]])}, but returns ${renderType(resultType)}")
 
       val tupleTpe = paramTypes.foldRight(TypeRepr.of[EmptyTuple])((t, acc) => TypeRepr.of[*:].appliedTo(List(t, acc)))
-      tupleTpe.asType match {
+      (tupleTpe.asType: @unchecked) match {
         case '[tup] => buildTool[tup](m, toolDescription, params, paramTypes)
       }
     }

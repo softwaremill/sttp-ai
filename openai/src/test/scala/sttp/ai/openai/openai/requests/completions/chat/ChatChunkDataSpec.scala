@@ -8,12 +8,10 @@ import sttp.ai.openai.requests.completions.Stop.SingleStop
 import sttp.ai.openai.utils.ChatCompletionFixtures._
 import io.circe.parser.{decode, parse}
 import sttp.ai.openai.json.OpenAIDerivedCodecs._
-import sttp.ai.openai.json.OpenAIManualCodecs._
 
 class ChatChunkDataSpec extends AnyFlatSpec with Matchers with EitherValues {
 
   "Given chat chunk completions response as Json" should "be properly deserialized to case class" in {
-    import ChatChunkRequestResponseData.ChatChunkResponse._
     import ChatChunkRequestResponseData._
 
     // given

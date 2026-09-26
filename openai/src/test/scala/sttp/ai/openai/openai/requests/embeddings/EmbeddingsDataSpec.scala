@@ -10,7 +10,6 @@ import io.circe.parser.decode
 import io.circe.Json
 import io.circe.syntax._
 import sttp.ai.openai.json.OpenAIDerivedCodecs._
-import sttp.ai.openai.json.OpenAIManualCodecs._
 
 class EmbeddingsDataSpec extends AnyFlatSpec with Matchers with EitherValues {
   "Given list files response as Json" should "be properly deserialized to case class" in {

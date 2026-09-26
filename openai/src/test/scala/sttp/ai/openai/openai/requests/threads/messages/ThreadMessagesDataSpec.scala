@@ -10,7 +10,6 @@ import sttp.ai.openai.requests.threads.messages.ThreadMessagesResponseData.{Dele
 import io.circe.parser.{decode, parse}
 import io.circe.syntax._
 import sttp.ai.openai.json.OpenAIDerivedCodecs._
-import sttp.ai.openai.json.OpenAIManualCodecs._
 
 class ThreadMessagesDataSpec extends AnyFlatSpec with Matchers with EitherValues {
 
@@ -32,8 +31,6 @@ class ThreadMessagesDataSpec extends AnyFlatSpec with Matchers with EitherValues
   }
 
   "Given create thread message response as Json" should "be properly deserialized to case class" in {
-    import sttp.ai.openai.requests.threads.messages.ThreadMessagesResponseData.MessageData._
-
     // given
     val jsonResponse = fixtures.ThreadMessagesFixture.jsonCreateMessageResponse
     val expectedResponse: MessageData = MessageData(
@@ -64,7 +61,6 @@ class ThreadMessagesDataSpec extends AnyFlatSpec with Matchers with EitherValues
   }
 
   "Given list messages response as Json" should "be properly deserialized to case class" in {
-    import ListMessagesResponse._
     // given
     val jsonResponse = fixtures.ThreadMessagesFixture.jsonListMessagesResponse
     val expectedResponse: ListMessagesResponse = ListMessagesResponse(
@@ -122,7 +118,6 @@ class ThreadMessagesDataSpec extends AnyFlatSpec with Matchers with EitherValues
   }
 
   "Given retrieve message response as Json" should "be properly deserialized to case class" in {
-    import MessageData._
     // given
     val jsonResponse = fixtures.ThreadMessagesFixture.jsonRetrieveMessageResponse
     val expectedResponse: MessageData = MessageData(
@@ -153,7 +148,6 @@ class ThreadMessagesDataSpec extends AnyFlatSpec with Matchers with EitherValues
   }
 
   "Given modify message response as Json" should "be properly deserialized to case class" in {
-    import MessageData._
     // given
     val jsonResponse = fixtures.ThreadMessagesFixture.jsonModifyMessageResponse
     val expectedResponse: MessageData = MessageData(
@@ -187,7 +181,6 @@ class ThreadMessagesDataSpec extends AnyFlatSpec with Matchers with EitherValues
   }
 
   "Given delete message response as Json" should "be properly deserialized to case class" in {
-    import DeleteMessageResponse._
     // given
     val jsonResponse = fixtures.ThreadMessagesFixture.jsonDeleteMessageResponse
     val expectedResponse: DeleteMessageResponse = DeleteMessageResponse(

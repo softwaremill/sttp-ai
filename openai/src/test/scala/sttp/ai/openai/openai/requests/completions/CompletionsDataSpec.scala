@@ -9,12 +9,10 @@ import io.circe.parser.{decode, parse}
 import io.circe.syntax._
 import io.circe.Json
 import sttp.ai.openai.json.OpenAIDerivedCodecs._
-import sttp.ai.openai.json.OpenAIManualCodecs._
 
 class CompletionsDataSpec extends AnyFlatSpec with Matchers with EitherValues {
   "Given completions response as Json" should "be properly deserialized to case class" in {
     import sttp.ai.openai.requests.completions.CompletionsRequestBody.CompletionModel.GPT35TurboInstruct
-    import sttp.ai.openai.requests.completions.CompletionsResponseData.CompletionsResponse._
     import sttp.ai.openai.requests.completions.CompletionsResponseData._
 
     // given
@@ -57,7 +55,6 @@ class CompletionsDataSpec extends AnyFlatSpec with Matchers with EitherValues {
 
   "Given ollama completions response as Json" should "be properly deserialized to case class" in {
     import sttp.ai.openai.requests.completions.CompletionsRequestBody.CompletionModel.CustomCompletionModel
-    import sttp.ai.openai.requests.completions.CompletionsResponseData.CompletionsResponse._
     import sttp.ai.openai.requests.completions.CompletionsResponseData._
 
     // given
@@ -91,7 +88,6 @@ class CompletionsDataSpec extends AnyFlatSpec with Matchers with EitherValues {
 
   "Given completions response with partial token details as Json" should "be properly deserialized to case class" in {
     import sttp.ai.openai.requests.completions.CompletionsRequestBody.CompletionModel.GPT35TurboInstruct
-    import sttp.ai.openai.requests.completions.CompletionsResponseData.CompletionsResponse._
     import sttp.ai.openai.requests.completions.CompletionsResponseData._
 
     // given
@@ -134,7 +130,6 @@ class CompletionsDataSpec extends AnyFlatSpec with Matchers with EitherValues {
 
   "Given completions request as case class" should "be properly serialized to Json" in {
     import sttp.ai.openai.requests.completions.CompletionsRequestBody.CompletionModel.GPT35TurboInstruct
-    import sttp.ai.openai.requests.completions.CompletionsRequestBody.CompletionsBody._
     import sttp.ai.openai.requests.completions.CompletionsRequestBody._
 
     // given
@@ -160,7 +155,6 @@ class CompletionsDataSpec extends AnyFlatSpec with Matchers with EitherValues {
 
   "Given completions of MultiplePrompt response as Json" should "be properly deserialized to case class" in {
     import sttp.ai.openai.requests.completions.CompletionsRequestBody.CompletionModel.GPT35TurboInstruct
-    import sttp.ai.openai.requests.completions.CompletionsResponseData.CompletionsResponse._
     import sttp.ai.openai.requests.completions.CompletionsResponseData._
 
     // given
@@ -209,7 +203,6 @@ class CompletionsDataSpec extends AnyFlatSpec with Matchers with EitherValues {
 
   "Given completions of MultiplePrompt request as case class" should "be properly serialized to Json" in {
     import sttp.ai.openai.requests.completions.CompletionsRequestBody.CompletionModel.GPT35TurboInstruct
-    import sttp.ai.openai.requests.completions.CompletionsRequestBody.CompletionsBody._
     import sttp.ai.openai.requests.completions.CompletionsRequestBody._
 
     // given
@@ -235,7 +228,6 @@ class CompletionsDataSpec extends AnyFlatSpec with Matchers with EitherValues {
 
   "Given completions request with extraBody" should "merge extraBody entries into the top level of the serialized Json" in {
     import sttp.ai.openai.requests.completions.CompletionsRequestBody.CompletionModel.GPT35TurboInstruct
-    import sttp.ai.openai.requests.completions.CompletionsRequestBody.CompletionsBody._
     import sttp.ai.openai.requests.completions.CompletionsRequestBody._
 
     val givenRequest = CompletionsRequestBody.CompletionsBody(

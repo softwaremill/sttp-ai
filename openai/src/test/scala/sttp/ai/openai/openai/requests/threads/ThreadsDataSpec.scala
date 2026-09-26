@@ -10,7 +10,6 @@ import sttp.ai.openai.requests.threads.messages.ThreadMessagesRequestBody.Create
 import io.circe.parser.{decode, parse}
 import io.circe.syntax._
 import sttp.ai.openai.json.OpenAIDerivedCodecs._
-import sttp.ai.openai.json.OpenAIManualCodecs._
 class ThreadsDataSpec extends AnyFlatSpec with Matchers with EitherValues {
 
   "Given empty create thread request as case class" should "be properly serialized to Json" in {
@@ -112,7 +111,6 @@ class ThreadsDataSpec extends AnyFlatSpec with Matchers with EitherValues {
   }
 
   "Given create empty thread response as Json" should "be properly deserialized to case class" in {
-    import sttp.ai.openai.requests.threads.ThreadsResponseData.ThreadData._
     import sttp.ai.openai.requests.threads.ThreadsResponseData._
 
     // given
@@ -131,7 +129,6 @@ class ThreadsDataSpec extends AnyFlatSpec with Matchers with EitherValues {
   }
 
   "Given create thread with messages and metadata response as Json" should "be properly deserialized to case class" in {
-    import sttp.ai.openai.requests.threads.ThreadsResponseData.ThreadData._
     import sttp.ai.openai.requests.threads.ThreadsResponseData._
 
     // given
@@ -151,7 +148,6 @@ class ThreadsDataSpec extends AnyFlatSpec with Matchers with EitherValues {
   }
 
   "Given delete thread response as Json" should "be properly deserialized to case class" in {
-    import sttp.ai.openai.requests.threads.ThreadsResponseData.DeleteThreadResponse._
     import sttp.ai.openai.requests.threads.ThreadsResponseData._
 
     // given

@@ -11,7 +11,6 @@ import sttp.client4.impl.fs2.Fs2ServerSentEvents
 import sttp.model.ResponseMetadata
 import sttp.model.sse.ServerSentEvent
 import io.circe.parser.decode
-import sttp.ai.claude.json.ClaudeManualCodecs._
 import sttp.ai.claude.json.ClaudeDerivedCodecs._
 
 object ClaudeFs2Streaming {

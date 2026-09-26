@@ -14,7 +14,7 @@ class CapabilitySpec extends AnyFlatSpec with Matchers {
   import CapabilitySpecModels._
 
   "Supports" should "resolve for a model that mixes in the capability" in {
-    implicitly[Supports[ToolModel.type, Capability.ToolCalling]]
+    implicitly[Supports[ToolModel.type, Capability.ToolCalling]]: Unit
     succeed
   }
 
@@ -37,10 +37,10 @@ class CapabilitySpec extends AnyFlatSpec with Matchers {
     object AllShorthandModel extends AIModel with Capability.All {
       val value: String = "all-shorthand"
     }
-    implicitly[Supports[AllShorthandModel.type, Capability.Vision]]
-    implicitly[Supports[AllShorthandModel.type, Capability.ToolCalling]]
-    implicitly[Supports[AllShorthandModel.type, Capability.StructuredOutput]]
-    implicitly[Supports[AllShorthandModel.type, Capability.Reasoning]]
+    implicitly[Supports[AllShorthandModel.type, Capability.Vision]]: Unit
+    implicitly[Supports[AllShorthandModel.type, Capability.ToolCalling]]: Unit
+    implicitly[Supports[AllShorthandModel.type, Capability.StructuredOutput]]: Unit
+    implicitly[Supports[AllShorthandModel.type, Capability.Reasoning]]: Unit
     succeed
   }
 
@@ -53,10 +53,10 @@ class CapabilitySpec extends AnyFlatSpec with Matchers {
         with Capability.Reasoning {
       val value: String = "all"
     }
-    implicitly[Supports[AllModel.type, Capability.Vision]]
-    implicitly[Supports[AllModel.type, Capability.ToolCalling]]
-    implicitly[Supports[AllModel.type, Capability.StructuredOutput]]
-    implicitly[Supports[AllModel.type, Capability.Reasoning]]
+    implicitly[Supports[AllModel.type, Capability.Vision]]: Unit
+    implicitly[Supports[AllModel.type, Capability.ToolCalling]]: Unit
+    implicitly[Supports[AllModel.type, Capability.StructuredOutput]]: Unit
+    implicitly[Supports[AllModel.type, Capability.Reasoning]]: Unit
     succeed
   }
 }

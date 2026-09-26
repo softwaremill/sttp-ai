@@ -23,12 +23,21 @@ scalacOptions ++= Def.uncached {
     Seq("-Yfuture-lazy-vals", "-java-output-version", javaOutputVersion.value)
   else Seq.empty
 }
-// Suppress ScalaTest Assertion unused value warnings in tests
-Test / scalacOptions += "-Wconf:msg=unused value of type org.scalatest.Assertion:silent"
-Test / scalacOptions += "-Wconf:msg=discarded non-Unit value of type org.scalatest.Assertion:silent"
+// Suppress ScalaTest Assertion unused value warnings in tests; Scala 3 names the type org.scalatest.compatible.Assertion, and
+// the compile-check assertions (assertDoesNotCompile etc.) expand to a Succeeded literal on Scala 2
+Test / scalacOptions += "-Wconf:msg=unused value of type org.scalatest.(compatible.Assertion|Assertion|Succeeded.type):silent"
+Test / scalacOptions += "-Wconf:msg=discarded non-Unit value of type org.scalatest.(compatible.)?Assertion:silent"
 // 2.12 has no `scala.annotation.unused` to suppress warnings per-site (see sttp.ai.core.compat.unused), so silence the category there;
-// 2.13 keeps full unused checking
-scalacOptions ++= (if (scalaVersion.value.startsWith("2.12")) Seq("-Wconf:msg=never used:silent") else Seq.empty)
+// 2.13 keeps full unused checking. 2.12's -Ywarn-value-discard also fires on the explicit `: Unit` ascriptions which satisfy
+// -Wnonunit-statement on 2.13/3 (those exempt them), so value discards are only checked on 2.13/3. 2.12 also reports the deprecated
+// FileData fields at the codec derived for them (2.13 reports them at the fields, where FileData's @nowarn covers them)
+scalacOptions ++= (if (scalaVersion.value.startsWith("2.12"))
+                     Seq(
+                       "-Wconf:msg=never used:silent",
+                       "-Wconf:cat=w-flag-value-discard:silent",
+                       "-Wconf:cat=deprecation&site=sttp.ai.openai.json.OpenAIDerivedCodecs.fileDataCodec.*:silent"
+                     )
+                   else Seq.empty)
 // 2.12's missing-interpolator lint resolves in-scope names inside plain string literals ("$defs", "$ref"), which errors with
 // "recursive value needs type" when the name is the val being defined (fixed in 2.13) - drop the lint on 2.12 only
 scalacOptions := (if (scalaVersion.value.startsWith("2.12")) scalacOptions.value.filterNot(_ == "-Xlint:missing-interpolator")

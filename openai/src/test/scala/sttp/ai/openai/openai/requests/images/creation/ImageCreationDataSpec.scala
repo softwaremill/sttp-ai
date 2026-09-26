@@ -8,11 +8,9 @@ import sttp.ai.openai.requests.images.{ResponseFormat, Size}
 import io.circe.parser.{decode, parse}
 import io.circe.syntax._
 import sttp.ai.openai.json.OpenAIDerivedCodecs._
-import sttp.ai.openai.json.OpenAIManualCodecs._
 class ImageCreationDataSpec extends AnyFlatSpec with Matchers with EitherValues {
 
   "Given image generation response as Json" should "be properly deserialized to case class" in {
-    import sttp.ai.openai.requests.images.ImageResponseData.ImageResponse._
     import sttp.ai.openai.requests.images.ImageResponseData._
 
     // given
@@ -34,7 +32,6 @@ class ImageCreationDataSpec extends AnyFlatSpec with Matchers with EitherValues 
   }
 
   "Given a fully populated ImageCreationBody" should "serialize to full JSON correctly" in {
-    import sttp.ai.openai.requests.images.creation.ImageCreationRequestBody.ImageCreationBody._
     import sttp.ai.openai.requests.images.creation.ImageCreationRequestBody._
 
     // given
@@ -65,7 +62,6 @@ class ImageCreationDataSpec extends AnyFlatSpec with Matchers with EitherValues 
   }
 
   "Given an ImageCreationBody with optional fields set to None" should "serialize without those fields" in {
-    import sttp.ai.openai.requests.images.creation.ImageCreationRequestBody.ImageCreationBody._
     import sttp.ai.openai.requests.images.creation.ImageCreationRequestBody._
 
     // given
@@ -96,7 +92,6 @@ class ImageCreationDataSpec extends AnyFlatSpec with Matchers with EitherValues 
   }
 
   "Given create image request as case class created with enum values" should "be properly serialized to Json" in {
-    import sttp.ai.openai.requests.images.creation.ImageCreationRequestBody.ImageCreationBody._
     import sttp.ai.openai.requests.images.creation.ImageCreationRequestBody._
 
     // given
@@ -127,7 +122,6 @@ class ImageCreationDataSpec extends AnyFlatSpec with Matchers with EitherValues 
   }
 
   "Given create image request as case class with different model" should "be properly serialized to Json" in {
-    import sttp.ai.openai.requests.images.creation.ImageCreationRequestBody.ImageCreationBody._
     import sttp.ai.openai.requests.images.creation.ImageCreationRequestBody._
 
     // given
