@@ -433,6 +433,34 @@ class AgentSpec extends AnyFlatSpec with Matchers with OptionValues {
     result.toolCalls.head.output shouldBe "CUSTOM ERROR in error_tool: IllegalArgumentException"
   }
 
+  it should "use custom parse error formatting when tool arguments fail to decode" in {
+    val customHandler = new ExceptionHandler {
+      def handleToolException(toolName: String, exception: Exception): Either[String, Exception] =
+        Left(s"CUSTOM ERROR in $toolName")
+
+      def handleParseError(toolName: String, rawArguments: String, parseException: Exception): Either[String, Exception] =
+        Left(s"CUSTOM PARSE ERROR in $toolName: $rawArguments")
+    }
+
+    val result = runLoop(
+      agentBuilder(
+        AgentResponse("", Seq(ToolCall(id = "call_1", toolName = "calculator", input = """{"a":"bad"}""")), StopReason.ToolUse),
+        AgentResponse("Done", Seq.empty, StopReason.EndTurn)
+      ).tools(calculatorTool).exceptionHandler(customHandler)
+    )
+
+    result.toolCalls.head.output shouldBe """CUSTOM PARSE ERROR in calculator: {"a":"bad"}"""
+  }
+
+  it should "propagate the parse error when handleParseError returns Right" in
+    assertThrows[io.circe.Error] {
+      runLoop(
+        agentBuilder(
+          AgentResponse("", Seq(ToolCall(id = "call_1", toolName = "calculator", input = """{"a":"bad"}""")), StopReason.ToolUse)
+        ).tools(calculatorTool).exceptionHandler(ExceptionHandler.propagateAll)
+      )
+    }
+
   case class WeatherSummary(city: String, tempC: Double, conditions: String)
   object WeatherSummary {
     implicit val codec: Codec[WeatherSummary] =

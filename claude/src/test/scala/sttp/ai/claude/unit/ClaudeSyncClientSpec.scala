@@ -75,6 +75,13 @@ class ClaudeSyncClientSpec extends AnyFlatSpec with Matchers {
     intercept[DeserializationClaudeException](client.createMessageAs[Weather](request)): Unit
   }
 
+  "createMessage" should "throw a DeserializationClaudeException when an error response body is not JSON" in {
+    val backend = DefaultSyncBackend.stub.whenAnyRequest.thenRespondAdjust("<html>502</html>", StatusCode.BadGateway)
+    val client = ClaudeSyncClient(ClaudeConfig(apiKey = "test-key"), backend)
+
+    intercept[DeserializationClaudeException](client.createMessage(request)): Unit
+  }
+
   it should "respect a structured output format already set on the request" in {
     import sttp.tapir.generic.auto._
 

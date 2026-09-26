@@ -48,12 +48,7 @@ object GeminiZioStreaming {
     _.filter(_.data.exists(data => data.trim.nonEmpty && data != DoneEvent))
       .collectZIO { case ServerSentEvent(Some(data), _, _, _) =>
         ZIO.fromEither(
-          try
-            Right(decode[InteractionStreamEvent](data).fold(throw _, identity))
-          catch {
-            case e: Exception =>
-              Left(GeminiException.DeserializationGeminiException(e, metadata))
-          }
+          decode[InteractionStreamEvent](data).left.map(GeminiException.DeserializationGeminiException(_, metadata))
         )
       }
 }

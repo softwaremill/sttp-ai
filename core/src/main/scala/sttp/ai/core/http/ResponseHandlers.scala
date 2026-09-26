@@ -12,8 +12,8 @@ import java.io.InputStream
   */
 trait ResponseHandlers[E <: AIException, Reader[_]] {
 
-  /** JSON reader for type T */
-  def read[T: Reader](s: String): T
+  /** Decodes a JSON string into `T`; the `Left` is the decoding failure */
+  def read[T: Reader](s: String): Either[Exception, T]
 
   /** Create a deserialization exception specific to the API */
   def deserializationException(cause: Exception, metadata: ResponseMetadata): E
@@ -28,16 +28,11 @@ trait ResponseHandlers[E <: AIException, Reader[_]] {
         case Left(error) =>
           Left(deserializationException(new Exception(error), metadata))
         case Right(body) =>
-          try
-            Right(read[T](body))
-          catch {
-            case e: Exception =>
-              try
-                Left(mapErrorToException(body, metadata))
-              catch {
-                case _: Exception =>
-                  Left(deserializationException(e, metadata))
-              }
+          read[T](body).left.map { e =>
+            try mapErrorToException(body, metadata)
+            catch {
+              case _: Exception => deserializationException(e, metadata)
+            }
           }
       }
     }

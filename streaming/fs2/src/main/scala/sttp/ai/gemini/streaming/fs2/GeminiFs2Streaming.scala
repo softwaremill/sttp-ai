@@ -47,11 +47,6 @@ object GeminiFs2Streaming {
   private def deserializeEvent[F[_]](metadata: ResponseMetadata): Pipe[F, ServerSentEvent, Either[Exception, InteractionStreamEvent]] =
     _.filter(_.data.exists(data => data.trim.nonEmpty && data != DoneEvent))
       .collect { case ServerSentEvent(Some(data), _, _, _) =>
-        try
-          Right(decode[InteractionStreamEvent](data).fold(throw _, identity))
-        catch {
-          case e: Exception =>
-            Left(GeminiException.DeserializationGeminiException(e, metadata))
-        }
+        decode[InteractionStreamEvent](data).left.map(GeminiException.DeserializationGeminiException(_, metadata))
       }
 }

@@ -37,7 +37,7 @@ private[gemini] class GeminiClientImpl(config: GeminiConfig) extends GeminiClien
       request.header(name, value)
     }
 
-  override def read[T: Decoder](s: String): T = decode[T](s).fold(throw _, identity)
+  override def read[T: Decoder](s: String): Either[Exception, T] = decode[T](s)
 
   override def deserializationException(cause: Exception, metadata: ResponseMetadata): GeminiException =
     GeminiException.DeserializationGeminiException(cause, metadata)
@@ -78,11 +78,7 @@ private[gemini] class GeminiClientImpl(config: GeminiConfig) extends GeminiClien
     asString.mapWithMetadata { (responseBody, metadata) =>
       responseBody match {
         case Left(errorBody) => Left(mapErrorToException(errorBody, metadata))
-        case Right(body)     =>
-          try Right(read[T](body))
-          catch {
-            case e: Exception => Left(deserializationException(e, metadata))
-          }
+        case Right(body)     => read[T](body).left.map(deserializationException(_, metadata))
       }
     }
 
