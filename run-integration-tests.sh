@@ -26,6 +26,7 @@ OPENAI_SET=false
 ANTHROPIC_SET=false
 GEMINI_SET=false
 AZURE_SET=false
+JEV_SET=false
 
 if [ -n "${OPENAI_API_KEY}" ]; then
     OPENAI_SET=true
@@ -55,11 +56,18 @@ else
     echo "⚠️  AZURE_OPENAI_API_KEY/AZURE_OPENAI_ENDPOINT are not set - Azure OpenAI tests will be skipped"
 fi
 
-if [ "$OPENAI_SET" = false ] && [ "$ANTHROPIC_SET" = false ] && [ "$GEMINI_SET" = false ] && [ "$AZURE_SET" = false ]; then
+if [ -n "${TYPESAFE_API_KEY}" ] || [ -n "${JEV_API_KEY}" ]; then
+    JEV_SET=true
+    echo "✓ TYPESAFE_API_KEY / JEV_API_KEY is set"
+else
+    echo "⚠️  TYPESAFE_API_KEY / JEV_API_KEY is not set - Jev tests will be skipped"
+fi
+
+if [ "$OPENAI_SET" = false ] && [ "$ANTHROPIC_SET" = false ] && [ "$GEMINI_SET" = false ] && [ "$AZURE_SET" = false ] && [ "$JEV_SET" = false ]; then
     echo ""
     echo "Usage:"
-    echo "  1. Create .env file with OPENAI_API_KEY, ANTHROPIC_API_KEY, GEMINI_API_KEY and AZURE_OPENAI_API_KEY/AZURE_OPENAI_ENDPOINT"
-    echo "  2. Or set environment variables: export OPENAI_API_KEY=... ANTHROPIC_API_KEY=... GEMINI_API_KEY=... AZURE_OPENAI_API_KEY=... AZURE_OPENAI_ENDPOINT=..."
+    echo "  1. Create .env file with OPENAI_API_KEY, ANTHROPIC_API_KEY, GEMINI_API_KEY, TYPESAFE_API_KEY and AZURE_OPENAI_API_KEY/AZURE_OPENAI_ENDPOINT"
+    echo "  2. Or set environment variables: export OPENAI_API_KEY=... ANTHROPIC_API_KEY=... GEMINI_API_KEY=... TYPESAFE_API_KEY=... AZURE_OPENAI_API_KEY=... AZURE_OPENAI_ENDPOINT=..."
     echo "  3. Or pass OpenAI key as argument: ./run-integration-tests.sh your-key-here"
     echo ""
     echo "📝 Note: Without API keys, all integration tests will be skipped (not failed)"
@@ -70,10 +78,10 @@ echo ""
 echo "🧪 Running integration tests..."
 
 # Run the integration tests (including agent tests)
-sbt "testOnly *OpenAIIntegrationSpec *ClaudeIntegrationSpec *GeminiIntegrationSpec *AzureOpenAIIntegrationSpec *OpenAIAgentIntegrationSpec *ClaudeAgentIntegrationSpec *GeminiAgentIntegrationSpec"
+sbt "testOnly *OpenAIIntegrationSpec *ClaudeIntegrationSpec *GeminiIntegrationSpec *JevIntegrationSpec *AzureOpenAIIntegrationSpec *OpenAIAgentIntegrationSpec *ClaudeAgentIntegrationSpec *GeminiAgentIntegrationSpec"
 
 echo ""
-if [ "$OPENAI_SET" = true ] || [ "$ANTHROPIC_SET" = true ] || [ "$GEMINI_SET" = true ] || [ "$AZURE_SET" = true ]; then
+if [ "$OPENAI_SET" = true ] || [ "$ANTHROPIC_SET" = true ] || [ "$GEMINI_SET" = true ] || [ "$AZURE_SET" = true ] || [ "$JEV_SET" = true ]; then
     echo "✅ Integration tests completed!"
 else
     echo "✅ Integration tests skipped (no API keys provided)"

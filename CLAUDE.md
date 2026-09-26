@@ -10,6 +10,7 @@ sttp-ai is a Scala library providing a non-official client wrapper for OpenAI, C
 - Native OpenAI API support (Chat, Completions, Embeddings, Audio, Images, etc.)
 - Native Claude (Anthropic) API support with dedicated module
 - Native Gemini (Google) API support via the Interactions API with dedicated module
+- Jev (TypeSafe AI) API support with dedicated module (`jev`, Scala 3 only): typed questions about a text, typed answers
 - OpenAI-compatible API support (Ollama, Grok, OpenRouter, etc.)
 - Streaming support for all major effect systems
 - Cross-platform: Scala 2.12.20, 2.13.18 and Scala 3.3.8
@@ -24,6 +25,7 @@ sbt compile                              # All modules
 sbt openai/compile                       # OpenAI module
 sbt claude/compile                       # Claude module
 sbt gemini/compile                       # Gemini module
+sbt jev/compile                          # Jev module (Scala 3 only)
 sbt mcp/compile                          # MCP module (Scala 3 only)
 
 # Test
@@ -67,6 +69,8 @@ sbt scalafmtAll                                                           # 3. F
 | **Authentication** | `Authorization: Bearer <key>` | `x-api-key: <key>` + `anthropic-version` | `x-goog-api-key: <key>` |
 | **Package Structure** | `sttp.ai.openai.*` | `sttp.ai.claude.*` | `sttp.ai.gemini.*` |
 
+**Jev** (`jev/`, package `sttp.ai.jev`, Scala 3 only): `JevClient` / `JevSyncClient`, `Either[JevException, A]`, `Authorization: Bearer <key>`. No messages or streaming: a request is a state plus typed questions (`Noul`, `Choice`, `Score`), answered with typed answers.
+
 **Shared Patterns:**
 - All use **circe with snake_case configuration** for JSON
 - All have **comprehensive exception hierarchies** for API errors
@@ -94,6 +98,7 @@ Each streaming module (`streaming/{effect-system}/`) provides extensions for **a
 - **OpenAI models**: Search for `ChatCompletionModel`, `EmbeddingModel` in `openai/` request bodies
 - **Claude models**: `claude/src/main/scala/sttp/ai/claude/models/ClaudeModel.scala`
 - **Gemini models**: `gemini/src/main/scala/sttp/ai/gemini/models/GeminiModel.scala`
+- **Jev API code**: `jev/src/main/scala/sttp/ai/jev/` (flat package; JSON codecs in `json/`)
 - **Streaming implementations**: `streaming/{effect-system}/src/main/scala/`
 - **MCP tool loading**: `mcp/src/main/scala/sttp/ai/core/agent/mcp/McpTools.scala` (Scala 3 only; depends on `core` and chimp's `chimp-client`, not on `openai`/`claude`)
 - **Examples**: `examples/src/main/scala/examples/` (runnable with scala-cli)

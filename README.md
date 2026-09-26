@@ -7,14 +7,15 @@
 [![sttp.ai:openai](https://maven-badges.sml.io/sonatype-central/com.softwaremill.sttp.ai/openai_3/badge.svg?subject=sttp.ai:openai)](https://maven-badges.sml.io/sonatype-central/com.softwaremill.sttp.ai/openai_3/)
 [![sttp.ai:claude](https://maven-badges.sml.io/sonatype-central/com.softwaremill.sttp.ai/claude_3/badge.svg?subject=sttp.ai:claude)](https://maven-badges.sml.io/sonatype-central/com.softwaremill.sttp.ai/claude_3/)
 [![sttp.ai:gemini](https://maven-badges.sml.io/sonatype-central/com.softwaremill.sttp.ai/gemini_3/badge.svg?subject=sttp.ai:gemini)](https://maven-badges.sml.io/sonatype-central/com.softwaremill.sttp.ai/gemini_3/)
+[![sttp.ai:jev](https://maven-badges.sml.io/sonatype-central/com.softwaremill.sttp.ai/jev_3/badge.svg?subject=sttp.ai:jev)](https://maven-badges.sml.io/sonatype-central/com.softwaremill.sttp.ai/jev_3/)
 
 sttp is a family of Scala HTTP-related projects, and currently includes:
 
 * [sttp client](https://github.com/softwaremill/sttp): The Scala HTTP client you always wanted!
 * [sttp tapir](https://github.com/softwaremill/tapir): Typed API descRiptions
-* sttp ai: this project. Non-official Scala client wrapper for OpenAI, Claude (Anthropic), Gemini (Google), and OpenAI-compatible APIs (e.g. Ollama, Grok, OpenRouter). Use the power of ChatGPT, Claude, and Gemini inside your code!
+* sttp ai: this project. Non-official Scala client wrapper for OpenAI, Claude (Anthropic), Gemini (Google), Jev (TypeSafe AI), and OpenAI-compatible APIs (e.g. Ollama, Grok, OpenRouter). Use the power of ChatGPT, Claude, and Gemini inside your code!
 
-sttp-ai uses sttp client to describe requests and responses used in OpenAI, Claude (Anthropic), Gemini (Google), and OpenAI-compatible endpoints.
+sttp-ai uses sttp client to describe requests and responses used in OpenAI, Claude (Anthropic), Gemini (Google), Jev (TypeSafe AI), and OpenAI-compatible endpoints.
 
 ## Documentation
 
@@ -58,6 +59,14 @@ Add the following dependency:
 "com.softwaremill.sttp.ai" %% "akka" % "0.11.0"   // Akka Streams (Scala 2.12/2.13 only)
 "com.softwaremill.sttp.ai" %% "pekko" % "0.11.0"  // Pekko Streams
 "com.softwaremill.sttp.ai" %% "ox" % "0.11.0"    // Ox direct-style (Scala 3 only)
+```
+
+### For Jev (TypeSafe AI) API
+
+Add the following dependency (Scala 3 only):
+
+```sbt
+"com.softwaremill.sttp.ai" %% "jev" % "0.11.0"
 ```
 
 sttp-openai is available for Scala 2.12, 2.13 and Scala 3

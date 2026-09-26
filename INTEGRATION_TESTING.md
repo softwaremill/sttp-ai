@@ -42,6 +42,16 @@ sbt "testOnly *AzureOpenAIIntegrationSpec"
 
 If the variables are not set, the tests are skipped (not failed).
 
+### Jev (TypeSafe AI)
+
+To run the Jev integration tests, set `TYPESAFE_API_KEY` (or `JEV_API_KEY`), then:
+
+```bash
+sbt "testOnly *JevIntegrationSpec"
+```
+
+The tests send one request with three questions and list the models. If neither variable is set, the tests are skipped (not failed).
+
 ### Running Tests
 
 #### Run all integration tests:

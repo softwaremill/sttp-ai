@@ -59,6 +59,7 @@ lazy val allAgregates = core.projectRefs ++
   openai.projectRefs ++
   claude.projectRefs ++
   gemini.projectRefs ++
+  jev.projectRefs ++
   fs2.projectRefs ++
   zio.projectRefs ++
   pekko.projectRefs ++
@@ -134,6 +135,18 @@ lazy val gemini = (projectMatrix in file("gemini"))
     libraryDependencies ++= (if (scalaVersion.value.startsWith("2.")) Seq(Libraries.circeGenericExtras.value) else Seq.empty)
   )
   .dependsOn(core % "compile->compile;test->test")
+
+lazy val jev = (projectMatrix in file("jev"))
+  .jvmPlatform(
+    scalaVersions = scala3 // match types and union types: no Scala 2 cross-build
+  )
+  .nativePlatform(
+    scalaVersions = scala3
+  )
+  .settings(
+    libraryDependencies ++= Libraries.circe.value ++ Libraries.sttpClient.value ++ Seq(Libraries.scalaTest.value)
+  )
+  .dependsOn(core)
 
 lazy val agentTestkit = (projectMatrix in file("agent-testkit"))
   .jvmPlatform(
@@ -280,5 +293,5 @@ lazy val docs = (projectMatrix in file("generated-docs")) // important: it must 
     // the agent-testkit's scalatest dependency is Provided, so the docs snippets using its matchers need scalatest explicitly
     libraryDependencies += Libraries.scalaTestProvided.value
   )
-  .dependsOn(openai, claude, gemini, fs2, zio, ox, pekko, mcp, agentTestkit)
+  .dependsOn(openai, claude, gemini, jev, fs2, zio, ox, pekko, mcp, agentTestkit)
   .jvmPlatform(scalaVersions = scala3)
