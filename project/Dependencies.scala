@@ -7,7 +7,7 @@ object Dependencies {
     val scalaTestCats = "1.8.0"
 
     val sttpApispec = "0.11.10"
-    val sttpClient = "4.0.26"
+    val sttpClient = "4.0.27"
     val pekkoStreams = "1.7.0"
     val akkaStreams = "2.6.20" // last Apache-2.0 licensed Akka release; 2.7+ is under the BSL
     val tapir = "1.13.31"
