@@ -82,3 +82,42 @@ val chatRequestBody = ChatBody(
   maxCompletionTokens = Some(1000)
 )
 ```
+
+## Compacting long conversations (Responses API)
+
+Long conversations, such as agent runs with many tool calls, can outgrow the model's context window. The Responses API can [compact](https://developers.openai.com/api/docs/guides/compaction) the context into a `compaction` item: an encrypted summary that stands in for the conversation before it. You can request compaction in two ways:
+
+- **Automatically**: set `contextManagement` on the request. Once the context crosses `compactThreshold` tokens, the server compacts it and adds a compaction item to the response output.
+- **On demand**: end the input with `Input.CompactionTrigger()`. The response output then holds a single compaction item.
+
+With `store` enabled (the default) and `previousResponseId`, OpenAI keeps compaction items on its side. When you keep the conversation yourself and send the whole input on every request (`store = Some(false)`), pass each returned compaction item back with `toInput`. Items before the latest compaction item can be dropped from later requests.
+
+```scala mdoc:compile-only
+//> using dep com.softwaremill.sttp.ai::openai:@VERSION@
+
+import sttp.ai.openai.OpenAISyncClient
+import sttp.ai.openai.requests.responses.{ResponsesModel, ResponsesRequestBody}
+import sttp.ai.openai.requests.responses.ResponsesRequestBody.{ContextManagement, Input}
+import sttp.ai.openai.requests.responses.ResponsesRequestBody.Input.InputContentItem.InputText
+import sttp.ai.openai.requests.responses.ResponsesResponseBody.OutputItem
+
+val openAI = OpenAISyncClient(System.getenv("OPENAI_KEY"))
+
+def userMessage(text: String): Input = Input.InputMessage(List(InputText(text)), role = "user", status = None)
+def request(input: List[Input]) =
+  ResponsesRequestBody(model = Some(ResponsesModel.GPT5), store = Some(false), input = Some(Right(input)))
+
+val history: List[Input] = List(userMessage("Let's plan the database migration."))
+
+// on demand: the trigger must be the last input item
+val compacted = openAI.createModelResponse(request(history :+ Input.CompactionTrigger()))
+val compaction = compacted.output.collect { case item: OutputItem.Compaction => item.toInput }
+
+// continue from the compaction item instead of the full history
+val next = openAI.createModelResponse(request(compaction :+ userMessage("What is the first step?")))
+
+// automatically: the server compacts once the context grows past 200k tokens
+val automatic = request(history).copy(
+  contextManagement = Some(List(ContextManagement.Compaction(compactThreshold = Some(200000))))
+)
+```
