@@ -323,4 +323,67 @@ object ResponsesFixture {
       |  },
       |  "output": []
       |}""".stripMargin
+
+  val jsonRequestWithCompaction: String =
+    """{
+      |  "model": "gpt-5",
+      |  "input": [
+      |    {
+      |      "type": "compaction",
+      |      "id": "cmp_123",
+      |      "encrypted_content": "gAAAAB-compacted"
+      |    },
+      |    {
+      |      "type": "message",
+      |      "role": "user",
+      |      "content": [
+      |        {
+      |          "type": "input_text",
+      |          "text": "Continue."
+      |        }
+      |      ]
+      |    }
+      |  ],
+      |  "context_management": [
+      |    {
+      |      "type": "compaction",
+      |      "compact_threshold": 200000
+      |    }
+      |  ]
+      |}""".stripMargin
+
+  val jsonResponseWithCompaction: String =
+    """{
+      |  "id": "resp_compaction123",
+      |  "object": "response",
+      |  "created_at": 1741476777,
+      |  "status": "completed",
+      |  "model": "gpt-5",
+      |  "output": [
+      |    {
+      |      "type": "compaction",
+      |      "id": "cmp_123",
+      |      "encrypted_content": "gAAAAB-compacted",
+      |      "created_by": "system"
+      |    },
+      |    {
+      |      "type": "message",
+      |      "id": "msg_123",
+      |      "status": "completed",
+      |      "role": "assistant",
+      |      "content": [
+      |        {
+      |          "type": "output_text",
+      |          "text": "Done.",
+      |          "annotations": []
+      |        }
+      |      ]
+      |    }
+      |  ],
+      |  "usage": {
+      |    "input_tokens": 120,
+      |    "output_tokens": 30,
+      |    "total_tokens": 150
+      |  }
+      |}""".stripMargin
 }
