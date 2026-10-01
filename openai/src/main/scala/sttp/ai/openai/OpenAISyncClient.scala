@@ -389,7 +389,7 @@ class OpenAISyncClient private (
   def cancelResponse(responseId: String): ResponsesResponseBody =
     sendOrThrow(openAI.cancelResponse(responseId))
 
-  /** Compacts a conversation into a smaller context window.
+  /** Compacts a conversation without generating a response.
     *
     * Start a later [[createModelResponse]] call from the result, using [[CompactedResponse.toInput]].
     *

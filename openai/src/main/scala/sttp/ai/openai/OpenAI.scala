@@ -575,7 +575,7 @@ class OpenAI(
       .post(openAIUris.cancelResponse(responseId))
       .response(asJson_parseErrors[ResponsesResponseBody])
 
-  /** Compacts a conversation into a smaller context window.
+  /** Compacts a conversation without generating a response.
     *
     * Start a later [[createModelResponse]] call from the result, using [[CompactedResponse.toInput]].
     *
@@ -583,9 +583,6 @@ class OpenAI(
     *
     * @param requestBody
     *   The conversation to compact.
-    *
-    * @return
-    *   The compacted conversation.
     */
   def compactConversation(requestBody: CompactRequestBody): Request[Either[OpenAIException, CompactedResponse]] =
     openAIAuthRequest

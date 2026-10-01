@@ -578,4 +578,20 @@ class ResponsesDataSpec extends AnyFlatSpec with Matchers with EitherValues {
       Input.Compaction(encryptedContent = "gAAAAB-compacted", id = Some("cmp_123"))
     )
   }
+
+  it should "drop non-user items, non-text parts and user messages without text when converting to input items" in {
+    import ResponsesRequestBody.Input
+
+    // given
+    val compacted = parse(ResponsesFixture.jsonCompactedResponseWithDroppedItems).value.as[CompactedResponse].value
+
+    // when
+    val input = compacted.toInput
+
+    // then
+    input shouldBe List(
+      Input.InputMessage(List(Input.InputContentItem.InputText("Describe this.")), role = "user", status = None),
+      Input.Compaction(encryptedContent = "gAAAAB-compacted", id = Some("cmp_456"))
+    )
+  }
 }

@@ -3,7 +3,7 @@ package sttp.ai.openai.requests.responses
 import sttp.ai.openai.requests.caching.CacheRetentionPolicy
 import sttp.ai.openai.requests.responses.ResponsesRequestBody.Input
 
-/** Request body for compacting a conversation on demand.
+/** Request body for standalone compaction, which compacts a conversation without generating a response.
   *
   * @param model
   *   Model ID used to compact the conversation.

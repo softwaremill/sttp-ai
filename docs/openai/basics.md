@@ -85,7 +85,7 @@ val chatRequestBody = ChatBody(
 
 ## Compacting long conversations (Responses API)
 
-Long conversations, such as agent runs with many tool calls, can outgrow the model's context window. The Responses API can [compact](https://developers.openai.com/api/docs/guides/compaction) the context into a `compaction` item: an encrypted summary that stands in for the conversation before it. You can request compaction in two ways:
+Long conversations, such as agent runs with many tool calls, can outgrow the model's context window. The Responses API can [compact](https://developers.openai.com/api/docs/guides/compaction) the context into a `compaction` item: an encrypted summary that stands in for the conversation before it. You can request compaction in three ways:
 
 - **Automatically**: set `contextManagement` on the request. Once the context crosses `compactThreshold` tokens, the server compacts it and adds a compaction item to the response output.
 - **On demand**: end the input with `Input.CompactionTrigger()`. The response output then holds a single compaction item.

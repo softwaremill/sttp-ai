@@ -442,4 +442,66 @@ object ResponsesFixture {
       |    "total_tokens": 1411
       |  }
       |}""".stripMargin
+
+  val jsonCompactedResponseWithDroppedItems: String =
+    """{
+      |  "id": "resp_compacted456",
+      |  "object": "response.compaction",
+      |  "created_at": 1790861567,
+      |  "output": [
+      |    {
+      |      "id": "msg_1",
+      |      "type": "message",
+      |      "status": "completed",
+      |      "content": [
+      |        {
+      |          "type": "input_text",
+      |          "text": "Describe this."
+      |        },
+      |        {
+      |          "type": "input_image",
+      |          "detail": "auto",
+      |          "image_url": "https://example.com/cat.png"
+      |        }
+      |      ],
+      |      "role": "user"
+      |    },
+      |    {
+      |      "id": "msg_2",
+      |      "type": "message",
+      |      "status": "completed",
+      |      "content": [
+      |        {
+      |          "type": "input_image",
+      |          "detail": "auto",
+      |          "image_url": "https://example.com/dog.png"
+      |        }
+      |      ],
+      |      "role": "user"
+      |    },
+      |    {
+      |      "id": "msg_3",
+      |      "type": "message",
+      |      "status": "completed",
+      |      "content": [
+      |        {
+      |          "type": "output_text",
+      |          "text": "A cat.",
+      |          "annotations": []
+      |        }
+      |      ],
+      |      "role": "assistant"
+      |    },
+      |    {
+      |      "id": "cmp_456",
+      |      "type": "compaction",
+      |      "encrypted_content": "gAAAAB-compacted"
+      |    }
+      |  ],
+      |  "usage": {
+      |    "input_tokens": 10,
+      |    "output_tokens": 20,
+      |    "total_tokens": 30
+      |  }
+      |}""".stripMargin
 }
