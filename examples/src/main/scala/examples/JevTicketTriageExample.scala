@@ -1,4 +1,4 @@
-//> using dep com.softwaremill.sttp.ai::jev:0.11.2
+//> using dep com.softwaremill.sttp.ai::jev:0.11.3
 
 // remember to set the TYPESAFE_API_KEY (or JEV_API_KEY) env variable!
 // run with: TYPESAFE_API_KEY=... scala-cli run JevTicketTriageExample.scala
