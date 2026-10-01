@@ -575,6 +575,24 @@ class OpenAI(
       .post(openAIUris.cancelResponse(responseId))
       .response(asJson_parseErrors[ResponsesResponseBody])
 
+  /** Compacts a conversation into a smaller context window.
+    *
+    * Start a later [[createModelResponse]] call from the result, using [[CompactedResponse.toInput]].
+    *
+    * [[https://platform.openai.com/docs/api-reference/responses/compact]]
+    *
+    * @param requestBody
+    *   The conversation to compact.
+    *
+    * @return
+    *   The compacted conversation.
+    */
+  def compactConversation(requestBody: CompactRequestBody): Request[Either[OpenAIException, CompactedResponse]] =
+    openAIAuthRequest
+      .post(openAIUris.ResponsesCompact)
+      .body(asJson(requestBody))
+      .response(asJson_parseErrors[CompactedResponse])
+
   /** Returns a list of input items for a given response.
     *
     * [[https://platform.openai.com/docs/api-reference/responses/input-items]]
@@ -1820,6 +1838,7 @@ private class OpenAIUris(val baseUri: Uri) {
   val Speech: Uri = audioBase.addPath("speech")
   val VariationsImage: Uri = imageBase.addPath("variations")
   val Responses: Uri = baseUri.addPath("responses")
+  val ResponsesCompact: Uri = Responses.addPath("compact")
 
   val Assistants: Uri = baseUri.addPath("assistants")
   val Threads: Uri = baseUri.addPath("threads")

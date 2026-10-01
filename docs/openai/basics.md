@@ -89,6 +89,7 @@ Long conversations, such as agent runs with many tool calls, can outgrow the mod
 
 - **Automatically**: set `contextManagement` on the request. Once the context crosses `compactThreshold` tokens, the server compacts it and adds a compaction item to the response output.
 - **On demand**: end the input with `Input.CompactionTrigger()`. The response output then holds a single compaction item.
+- **Standalone**: call `compactConversation`, which compacts without generating a response. The result holds the retained user messages followed by a compaction item; `toInput` turns it into the input for the next request (only the text of user messages is kept).
 
 With `store` enabled (the default) and `previousResponseId`, OpenAI keeps compaction items on its side. When you keep the conversation yourself and send the whole input on every request (`store = Some(false)`), pass each returned compaction item back with `toInput`. Items before the latest compaction item can be dropped from later requests.
 
@@ -96,7 +97,7 @@ With `store` enabled (the default) and `previousResponseId`, OpenAI keeps compac
 //> using dep com.softwaremill.sttp.ai::openai:@VERSION@
 
 import sttp.ai.openai.OpenAISyncClient
-import sttp.ai.openai.requests.responses.{ResponsesModel, ResponsesRequestBody}
+import sttp.ai.openai.requests.responses.{CompactRequestBody, ResponsesModel, ResponsesRequestBody}
 import sttp.ai.openai.requests.responses.ResponsesRequestBody.{ContextManagement, Input}
 import sttp.ai.openai.requests.responses.ResponsesRequestBody.Input.InputContentItem.InputText
 import sttp.ai.openai.requests.responses.ResponsesResponseBody.OutputItem
@@ -120,4 +121,8 @@ val next = openAI.createModelResponse(request(compaction :+ userMessage("What is
 val automatic = request(history).copy(
   contextManagement = Some(List(ContextManagement.Compaction(compactThreshold = Some(200000))))
 )
+
+// standalone: compact without generating a response
+val window = openAI.compactConversation(CompactRequestBody(model = ResponsesModel.GPT5, input = Some(Right(history))))
+val afterWindow = openAI.createModelResponse(request(window.toInput :+ userMessage("What is the first step?")))
 ```

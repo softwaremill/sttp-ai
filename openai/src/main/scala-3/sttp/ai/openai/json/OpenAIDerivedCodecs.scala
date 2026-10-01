@@ -81,6 +81,7 @@ import sttp.ai.openai.requests.responses.{InputItemsListResponseBody => IIL}
 import sttp.ai.openai.requests.responses.{ResponsesRequestBody => RRB}
 import sttp.ai.openai.requests.responses.{ResponsesResponseBody => RRESP}
 import sttp.ai.openai.requests.responses.{ResponsesStreamEvent => RSE}
+import sttp.ai.openai.requests.responses.{CompactRequestBody, CompactedResponse}
 import sttp.ai.openai.requests.responses.DeleteModelResponseResponse
 import sttp.ai.openai.requests.completions.chat.SchemaSupport.schemaCodec
 import OpenAIManualCodecs.*
@@ -524,6 +525,7 @@ object OpenAIDerivedCodecs {
   implicit val iiMcpApprovalRequestDecoder: Decoder[IIL.InputItem.McpApprovalRequest] = ConfiguredDecoder.derived
   implicit val iiMcpApprovalResponseDecoder: Decoder[IIL.InputItem.McpApprovalResponse] = ConfiguredDecoder.derived
   implicit val iiMcpToolCallDecoder: Decoder[IIL.InputItem.McpToolCall] = ConfiguredDecoder.derived
+  implicit val iiCompactionDecoder: Decoder[IIL.InputItem.Compaction] = ConfiguredDecoder.derived
   implicit val iilInputItemDecoder: Decoder[IIL.InputItem] = ConfiguredDecoder.derived
   implicit val inputItemsListResponseBodyDecoder: Decoder[IIL] = ConfiguredDecoder.derived
 
@@ -582,6 +584,7 @@ object OpenAIDerivedCodecs {
   implicit val rrContextManagementEncoder: Encoder[RRB.ContextManagement] = ConfiguredEncoder.derived
   implicit val rrTextConfigEncoder: Encoder[RRB.TextConfig] = ConfiguredEncoder.derived
   implicit val responsesRequestBodyEncoder: Encoder[RRB] = ConfiguredEncoder.derived
+  implicit val compactRequestBodyEncoder: Encoder[CompactRequestBody] = ConfiguredEncoder.derived
 
   // responses ResponsesResponseBody (response, decode-only)
   implicit val rrespErrorObjectDecoder: Decoder[RRESP.ErrorObject] = ConfiguredDecoder.derived
@@ -650,6 +653,7 @@ object OpenAIDerivedCodecs {
     import sttp.ai.core.json.CirceHelpers.emptyMapAsNone // local: empty `metadata` object -> None
     ConfiguredDecoder.derived
   }
+  implicit val compactedResponseDecoder: Decoder[CompactedResponse] = ConfiguredDecoder.derived
   // responses ResponsesStreamEvent (streaming events, decode-only). `Decoder`s for *field* types are mandatory (circe recurses
   // into sum children but not into product fields); the per-event leaves bound the derivation blast radius of a 59-child sum.
   // The dotted wire discriminators are rewritten to snake_cased constructor names by the dispatch helper.

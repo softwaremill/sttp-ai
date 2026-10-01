@@ -84,6 +84,7 @@ import sttp.ai.openai.requests.responses.{InputItemsListResponseBody => IIL}
 import sttp.ai.openai.requests.responses.{ResponsesRequestBody => RRB}
 import sttp.ai.openai.requests.responses.{ResponsesResponseBody => RRESP}
 import sttp.ai.openai.requests.responses.{ResponsesStreamEvent => RSE}
+import sttp.ai.openai.requests.responses.{CompactRequestBody, CompactedResponse}
 import sttp.ai.openai.requests.responses.DeleteModelResponseResponse
 import sttp.ai.openai.requests.completions.chat.SchemaSupport.schemaCodec
 import OpenAIManualCodecs._
@@ -546,6 +547,7 @@ object OpenAIDerivedCodecs {
   implicit val iiMcpApprovalRequestDecoder: Decoder[IIL.InputItem.McpApprovalRequest] = deriveConfiguredDecoder
   implicit val iiMcpApprovalResponseDecoder: Decoder[IIL.InputItem.McpApprovalResponse] = deriveConfiguredDecoder
   implicit val iiMcpToolCallDecoder: Decoder[IIL.InputItem.McpToolCall] = deriveConfiguredDecoder
+  implicit val iiCompactionDecoder: Decoder[IIL.InputItem.Compaction] = deriveConfiguredDecoder
   // flat `"type"` discriminator matches the snake_case constructor names. The `message` branch is handled explicitly: shapeless flattens the
   // nested `Message` sealed sub-trait into its `input_message` / `output_message` leaves, so the derived decoder has no `message` member and
   // would fail with "decoding to CNil"; we intercept `"type":"message"` and delegate to `iilMessageDecoder` (OpenAIManualCodecs), which
@@ -615,6 +617,7 @@ object OpenAIDerivedCodecs {
   implicit val rrContextManagementEncoder: Encoder[RRB.ContextManagement] = deriveConfiguredEncoder
   implicit val rrTextConfigEncoder: Encoder[RRB.TextConfig] = deriveConfiguredEncoder
   implicit val responsesRequestBodyEncoder: Encoder[RRB] = deriveConfiguredEncoder
+  implicit val compactRequestBodyEncoder: Encoder[CompactRequestBody] = deriveConfiguredEncoder
 
   // responses ResponsesResponseBody (response, decode-only)
   implicit val rrespErrorObjectDecoder: Decoder[RRESP.ErrorObject] = deriveConfiguredDecoder
@@ -685,6 +688,7 @@ object OpenAIDerivedCodecs {
     import sttp.ai.core.json.CirceHelpers.emptyMapAsNone // local: empty `metadata` object -> None
     deriveConfiguredDecoder
   }
+  implicit val compactedResponseDecoder: Decoder[CompactedResponse] = deriveConfiguredDecoder
   // responses ResponsesStreamEvent (streaming events, decode-only). `Decoder`s for *field* types are mandatory (circe recurses
   // into sum children but not into product fields); the per-event leaves bound the derivation blast radius of a 59-child sum.
   // The dotted wire discriminators are rewritten to snake_cased constructor names by the dispatch helper.
