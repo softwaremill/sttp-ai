@@ -10,7 +10,7 @@ object Dependencies {
     val sttpClient = "4.0.26"
     val pekkoStreams = "1.7.0"
     val akkaStreams = "2.6.20" // last Apache-2.0 licensed Akka release; 2.7+ is under the BSL
-    val tapir = "1.13.31"
+    val tapir = "1.13.32"
     val circe = "0.14.16"
     val circeGenericExtras = "0.14.4" // 0.14.5 is only available as RC
     val chimp = "0.6.0"
