@@ -389,6 +389,18 @@ class OpenAISyncClient private (
   def cancelResponse(responseId: String): ResponsesResponseBody =
     sendOrThrow(openAI.cancelResponse(responseId))
 
+  /** Compacts a conversation without generating a response.
+    *
+    * Start a later [[createModelResponse]] call from the result, using [[CompactedResponse.toInput]].
+    *
+    * [[https://platform.openai.com/docs/api-reference/responses/compact]]
+    *
+    * @param requestBody
+    *   The conversation to compact.
+    */
+  def compactConversation(requestBody: CompactRequestBody): CompactedResponse =
+    sendOrThrow(openAI.compactConversation(requestBody))
+
   /** Returns a list of input items for a given response.
     *
     * [[https://platform.openai.com/docs/api-reference/responses/list-input-items]]

@@ -535,4 +535,63 @@ class ResponsesDataSpec extends AnyFlatSpec with Matchers with EitherValues {
     // then
     serializedJson shouldBe parse("""{"type": "compaction", "id": "cmp_123", "encrypted_content": "gAAAAB-compacted"}""").value
   }
+
+  "Given a compact request" should "be properly serialized to Json" in {
+    import ResponsesRequestBody.Input._
+
+    // given
+    val givenRequest = CompactRequestBody(
+      model = ResponsesModel.GPT5,
+      input = Some(Right(List(InputMessage(List(InputContentItem.InputText("My name is Ada.")), role = "user", status = None)))),
+      previousResponseId = Some("resp_123")
+    )
+
+    // when
+    val serializedJson: io.circe.Json = givenRequest.asJson.deepDropNullValues
+
+    // then
+    serializedJson shouldBe parse(ResponsesFixture.jsonCompactRequest).value
+  }
+
+  "Given a compacted response" should "be properly deserialized from Json" in {
+    // when
+    val deserializedResponse = parse(ResponsesFixture.jsonCompactedResponse).value.as[CompactedResponse].value
+
+    // then
+    deserializedResponse.`object` shouldBe "response.compaction"
+    deserializedResponse.output.last shouldBe OutputItem.Compaction(id = "cmp_123", encryptedContent = "gAAAAB-compacted")
+    deserializedResponse.usage.totalTokens shouldBe 1411
+  }
+
+  it should "convert to input items carrying the user messages and the compaction item" in {
+    import ResponsesRequestBody.Input
+
+    // given
+    val compacted = parse(ResponsesFixture.jsonCompactedResponse).value.as[CompactedResponse].value
+
+    // when
+    val input = compacted.toInput
+
+    // then
+    input shouldBe List(
+      Input.InputMessage(List(Input.InputContentItem.InputText("My name is Ada.")), role = "user", status = None),
+      Input.Compaction(encryptedContent = "gAAAAB-compacted", id = Some("cmp_123"))
+    )
+  }
+
+  it should "drop non-user items, non-text parts and user messages without text when converting to input items" in {
+    import ResponsesRequestBody.Input
+
+    // given
+    val compacted = parse(ResponsesFixture.jsonCompactedResponseWithDroppedItems).value.as[CompactedResponse].value
+
+    // when
+    val input = compacted.toInput
+
+    // then
+    input shouldBe List(
+      Input.InputMessage(List(Input.InputContentItem.InputText("Describe this.")), role = "user", status = None),
+      Input.Compaction(encryptedContent = "gAAAAB-compacted", id = Some("cmp_456"))
+    )
+  }
 }

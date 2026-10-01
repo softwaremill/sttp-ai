@@ -209,5 +209,7 @@ object InputItemsListResponseBody {
         output: Option[String] = None
     ) extends InputItem
 
+    case class Compaction(id: String, encryptedContent: String, createdBy: Option[String] = None) extends InputItem
+
   }
 }

@@ -52,4 +52,28 @@ class InputItemsListDataSpec extends AnyFlatSpec with Matchers with EitherValues
     val inputText = inputMessage.content.head.asInstanceOf[InputItem.InputContent.InputText]
     inputText.text shouldBe "Tell me a three sentence bedtime story about a unicorn."
   }
+
+  it should "deserialize a compaction item" in {
+    // given
+    val jsonResponse =
+      """{
+        |  "object": "list",
+        |  "data": [
+        |    {
+        |      "id": "cmp_123",
+        |      "type": "compaction",
+        |      "encrypted_content": "gAAAAB-compacted"
+        |    }
+        |  ],
+        |  "first_id": "cmp_123",
+        |  "last_id": "cmp_123",
+        |  "has_more": false
+        |}""".stripMargin
+
+    // when
+    val deserializedResponse = decode[InputItemsListResponseBody](jsonResponse).value
+
+    // then
+    deserializedResponse.data shouldBe List(InputItem.Compaction(id = "cmp_123", encryptedContent = "gAAAAB-compacted"))
+  }
 }

@@ -32,7 +32,8 @@ class OpenAIUrisSpec extends AnyFlatSpec with Matchers {
     uris.ChatCompletions.toString shouldBe "https://api.openai.com/v1/chat/completions": Unit
     uris.Embeddings.toString shouldBe "https://api.openai.com/v1/embeddings": Unit
     uris.Models.toString shouldBe "https://api.openai.com/v1/models": Unit
-    uris.Transcriptions.toString shouldBe "https://api.openai.com/v1/audio/transcriptions"
+    uris.Transcriptions.toString shouldBe "https://api.openai.com/v1/audio/transcriptions": Unit
+    uris.ResponsesCompact.toString shouldBe "https://api.openai.com/v1/responses/compact"
   }
 
   "OpenAIUris vector store paths" should "match the OpenAI API reference" in {

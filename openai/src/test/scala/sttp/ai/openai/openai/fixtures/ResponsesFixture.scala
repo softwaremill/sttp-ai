@@ -386,4 +386,122 @@ object ResponsesFixture {
       |    "total_tokens": 150
       |  }
       |}""".stripMargin
+
+  val jsonCompactRequest: String =
+    """{
+      |  "model": "gpt-5",
+      |  "input": [
+      |    {
+      |      "type": "message",
+      |      "role": "user",
+      |      "content": [
+      |        {
+      |          "type": "input_text",
+      |          "text": "My name is Ada."
+      |        }
+      |      ]
+      |    }
+      |  ],
+      |  "previous_response_id": "resp_123"
+      |}""".stripMargin
+
+  val jsonCompactedResponse: String =
+    """{
+      |  "id": "resp_compacted123",
+      |  "object": "response.compaction",
+      |  "created_at": 1790861567,
+      |  "output": [
+      |    {
+      |      "id": "msg_123",
+      |      "type": "message",
+      |      "status": "completed",
+      |      "content": [
+      |        {
+      |          "type": "input_text",
+      |          "text": "My name is Ada."
+      |        }
+      |      ],
+      |      "role": "user"
+      |    },
+      |    {
+      |      "id": "cmp_123",
+      |      "type": "compaction",
+      |      "encrypted_content": "gAAAAB-compacted"
+      |    }
+      |  ],
+      |  "usage": {
+      |    "input_tokens": 136,
+      |    "input_tokens_details": {
+      |      "cache_write_tokens": 0,
+      |      "cached_tokens": 0
+      |    },
+      |    "output_tokens": 1275,
+      |    "output_tokens_details": {
+      |      "reasoning_tokens": 768
+      |    },
+      |    "total_tokens": 1411
+      |  }
+      |}""".stripMargin
+
+  val jsonCompactedResponseWithDroppedItems: String =
+    """{
+      |  "id": "resp_compacted456",
+      |  "object": "response.compaction",
+      |  "created_at": 1790861567,
+      |  "output": [
+      |    {
+      |      "id": "msg_1",
+      |      "type": "message",
+      |      "status": "completed",
+      |      "content": [
+      |        {
+      |          "type": "input_text",
+      |          "text": "Describe this."
+      |        },
+      |        {
+      |          "type": "input_image",
+      |          "detail": "auto",
+      |          "image_url": "https://example.com/cat.png"
+      |        }
+      |      ],
+      |      "role": "user"
+      |    },
+      |    {
+      |      "id": "msg_2",
+      |      "type": "message",
+      |      "status": "completed",
+      |      "content": [
+      |        {
+      |          "type": "input_image",
+      |          "detail": "auto",
+      |          "image_url": "https://example.com/dog.png"
+      |        }
+      |      ],
+      |      "role": "user"
+      |    },
+      |    {
+      |      "id": "msg_3",
+      |      "type": "message",
+      |      "status": "completed",
+      |      "content": [
+      |        {
+      |          "type": "output_text",
+      |          "text": "A cat.",
+      |          "annotations": []
+      |        }
+      |      ],
+      |      "role": "assistant"
+      |    },
+      |    {
+      |      "id": "cmp_456",
+      |      "type": "compaction",
+      |      "encrypted_content": "gAAAAB-compacted"
+      |    }
+      |  ],
+      |  "usage": {
+      |    "input_tokens": 10,
+      |    "output_tokens": 20,
+      |    "total_tokens": 30
+      |  }
+      |}""".stripMargin
 }
