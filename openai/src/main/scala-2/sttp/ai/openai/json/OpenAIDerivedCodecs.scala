@@ -595,6 +595,8 @@ object OpenAIDerivedCodecs {
   implicit val rrMcpApprovalResponseEncoder: Encoder[RRB.Input.McpApprovalResponse] = deriveConfiguredEncoder
   implicit val rrMcpToolCallEncoder: Encoder[RRB.Input.McpToolCall] = deriveConfiguredEncoder
   implicit val rrItemReferenceEncoder: Encoder[RRB.Input.ItemReference] = deriveConfiguredEncoder
+  implicit val rrCompactionEncoder: Encoder[RRB.Input.Compaction] = deriveConfiguredEncoder
+  implicit val rrCompactionTriggerEncoder: Encoder[RRB.Input.CompactionTrigger] = deriveConfiguredEncoder
   // flat `"type"` discriminator matches the snake_case constructor names; the `message` branch delegates to `rrbInputMessageEncoder`
   // (OpenAIManualCodecs), which encodes input/output messages without an extra tag.
   // `InputMessage`/`OutputMessage` both serialize under the shared OpenAI `"type":"message"` discriminator (the configured derivation would
@@ -609,6 +611,8 @@ object OpenAIDerivedCodecs {
   // can gate strict-mode normalization on the actual `strict` flag; see that file for rationale.
   implicit val rrPromptConfigEncoder: Encoder[RRB.PromptConfig] = deriveConfiguredEncoder
   implicit val rrReasoningConfigEncoder: Encoder[RRB.ReasoningConfig] = deriveConfiguredEncoder
+  implicit val rrContextManagementCompactionEncoder: Encoder[RRB.ContextManagement.Compaction] = deriveConfiguredEncoder
+  implicit val rrContextManagementEncoder: Encoder[RRB.ContextManagement] = deriveConfiguredEncoder
   implicit val rrTextConfigEncoder: Encoder[RRB.TextConfig] = deriveConfiguredEncoder
   implicit val responsesRequestBodyEncoder: Encoder[RRB] = deriveConfiguredEncoder
 

@@ -471,4 +471,68 @@ class ResponsesDataSpec extends AnyFlatSpec with Matchers with EitherValues {
     imageGenTool shouldBe a[ToolChoiceObject.AllowedTools.ToolDefinition.ImageGeneration]
   }
 
+  "Given responses request with context management and a compaction item" should "be properly serialized to Json" in {
+    import ResponsesRequestBody._
+    import Input._
+
+    // given
+    val givenRequest = ResponsesRequestBody(
+      model = Some(ResponsesModel.GPT5),
+      input = Some(
+        Right(
+          List(
+            Compaction(encryptedContent = "gAAAAB-compacted", id = Some("cmp_123")),
+            InputMessage(content = List(InputContentItem.InputText("Continue.")), role = "user", status = None)
+          )
+        )
+      ),
+      contextManagement = Some(List(ContextManagement.Compaction(compactThreshold = Some(200000))))
+    )
+
+    val expectedJson = parse(ResponsesFixture.jsonRequestWithCompaction).value
+
+    // when
+    val serializedJson: io.circe.Json = givenRequest.asJson.deepDropNullValues
+
+    // then
+    serializedJson shouldBe expectedJson
+  }
+
+  "Given responses request with a compaction trigger" should "serialize the trigger as a type-only input item" in {
+    import ResponsesRequestBody.Input._
+
+    // when
+    val serializedJson: io.circe.Json = (CompactionTrigger(): ResponsesRequestBody.Input).asJson
+
+    // then
+    serializedJson shouldBe parse("""{"type": "compaction_trigger"}""").value
+  }
+
+  "Given responses response with a compaction item" should "be properly deserialized from Json" in {
+
+    // given
+    val jsonResponse = parse(ResponsesFixture.jsonResponseWithCompaction).value
+
+    // when
+    val deserializedResponse: ResponsesResponseBody = jsonResponse.as[ResponsesResponseBody].value
+
+    // then
+    deserializedResponse.output.head shouldBe OutputItem.Compaction(
+      id = "cmp_123",
+      encryptedContent = "gAAAAB-compacted",
+      createdBy = Some("system")
+    )
+    deserializedResponse.output(1) shouldBe a[OutputItem.Message]
+  }
+
+  "Given a compaction output item" should "convert to the input item that carries it forward" in {
+    // given
+    val item = OutputItem.Compaction(id = "cmp_123", encryptedContent = "gAAAAB-compacted", createdBy = Some("system"))
+
+    // when
+    val serializedJson: io.circe.Json = (item.toInput: ResponsesRequestBody.Input).asJson.deepDropNullValues
+
+    // then
+    serializedJson shouldBe parse("""{"type": "compaction", "id": "cmp_123", "encrypted_content": "gAAAAB-compacted"}""").value
+  }
 }

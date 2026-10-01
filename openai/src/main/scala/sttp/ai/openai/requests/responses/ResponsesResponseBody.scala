@@ -461,6 +461,21 @@ object ResponsesResponseBody {
 
     case class CustomToolCall(callId: String, input: String, name: String, id: String) extends OutputItem
 
+    /** A compaction item produced by context management or a compaction trigger. Pass it back as [[ResponsesRequestBody.Input.Compaction]]
+      * in a later request to carry the compacted context forward.
+      *
+      * @param encryptedContent
+      *   The encrypted content produced by compaction. When streaming, take it from `response.output_item.done`: the value carried by
+      *   `response.output_item.added` is incomplete.
+      * @param createdBy
+      *   The identifier of the actor that created the item.
+      */
+    case class Compaction(id: String, encryptedContent: String, createdBy: Option[String] = None) extends OutputItem {
+
+      /** This item as an input item, to carry the compacted context into a later request. */
+      def toInput: ResponsesRequestBody.Input.Compaction = ResponsesRequestBody.Input.Compaction(encryptedContent, Some(id))
+    }
+
     /** An output item whose `type` this version of the library does not model. The Responses API emits more item types than are modelled
       * here (`shell_call`, `apply_patch_call`, `program`, `tool_search_call`, ... and their `*_output` counterparts), and new ones are
       * added over time; decoding those to this case rather than failing keeps a streamed response usable. Carries the verbatim item JSON.
@@ -481,7 +496,8 @@ object ResponsesResponseBody {
       "mcp_call",
       "mcp_list_tools",
       "mcp_approval_request",
-      "custom_tool_call"
+      "custom_tool_call",
+      "compaction"
     )
 
     case class PendingSafetyCheck(code: String, id: String, message: String, status: String)

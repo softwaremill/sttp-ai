@@ -68,6 +68,9 @@ import sttp.tapir.{Schema => TSchema}
   * @param promptCacheRetention
   *   Can be used to specify policy on how long the prompt cache should be retained, not every model support every policy, check the API
   *   documentation for more details.
+  * @param contextManagement
+  *   Context management configuration for this request. With a compaction entry, the server compacts the context once its token count
+  *   crosses `compactThreshold`, emitting a [[ResponsesResponseBody.OutputItem.Compaction]] item in the response output.
   */
 case class ResponsesRequestBody(
     background: Option[Boolean] = None,
@@ -95,7 +98,8 @@ case class ResponsesRequestBody(
     topP: Option[Double] = None,
     truncation: Option[String] = None,
     user: Option[String] = None,
-    promptCacheRetention: Option[CacheRetentionPolicy] = None
+    promptCacheRetention: Option[CacheRetentionPolicy] = None,
+    contextManagement: Option[List[ResponsesRequestBody.ContextManagement]] = None
 )
 
 object ResponsesRequestBody {
@@ -110,6 +114,15 @@ object ResponsesRequestBody {
       effort: Option[String] = None,
       summary: Option[String] = None
   )
+
+  sealed trait ContextManagement
+  object ContextManagement {
+
+    /** @param compactThreshold
+      *   Token threshold at which compaction is triggered.
+      */
+    case class Compaction(compactThreshold: Option[Int] = None) extends ContextManagement
+  }
 
   sealed trait Input
   object Input {
@@ -311,6 +324,16 @@ object ResponsesRequestBody {
     ) extends Input
 
     case class ItemReference(id: String) extends Input
+
+    /** A compaction item returned by a previous response. Pass it back unchanged in a later request to carry the compacted context forward.
+      *
+      * @param encryptedContent
+      *   The encrypted content of the compaction summary.
+      */
+    case class Compaction(encryptedContent: String, id: Option[String] = None) extends Input
+
+    /** Compacts the current context. Must be the final input item; the response output then holds a single compaction item. */
+    case class CompactionTrigger() extends Input
   }
 
   sealed trait Format
