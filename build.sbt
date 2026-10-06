@@ -4,7 +4,7 @@ import com.softwaremill.SbtSoftwareMillCommon.commonSmlBuildSettings
 import com.softwaremill.UpdateVersionInDocs
 
 val scala2 = List("2.13.18", "2.12.20")
-val scala3 = List("3.3.8")
+val scala3 = List("3.9.0")
 
 def dependenciesFor(version: String)(deps: (Option[(Long, Long)] => ModuleID)*): Seq[ModuleID] =
   deps.map(_.apply(CrossVersion.partialVersion(version)))
@@ -15,14 +15,22 @@ commonSmlBuildSettings
 ossPublishSettings
 
 organization := "com.softwaremill.sttp.ai"
-// -Yfuture-lazy-vals is backed by VarHandle, hence the Java output version; the JVM check skips the Native rows
-javaOutputVersion := "11"
+// Scala 3.9 requires JDK 17; the JVM check skips the Native rows
+javaOutputVersion := "17"
 scalacOptions ++= Def.uncached {
   val isJvm = virtualAxes.?.value.forall(_.contains(VirtualAxis.jvm))
   if (isJvm && ScalaArtifacts.isScala3(scalaVersion.value))
-    Seq("-Yfuture-lazy-vals", "-java-output-version", javaOutputVersion.value)
+    Seq("-java-output-version", javaOutputVersion.value)
   else Seq.empty
 }
+// TODO(scala-3.9): the shared (2.12/2.13/3) sources use `_` type wildcards and `with` intersection types, deprecated since
+// Scala 3.4; their replacements (`?`, `&`) don't compile on Scala 2 without -Xsource:3, so silence these on Scala 3 only
+scalacOptions ++= (if (ScalaArtifacts.isScala3(scalaVersion.value))
+                     Seq(
+                       "-Wconf:msg=is deprecated for wildcard arguments of types:silent",
+                       "-Wconf:msg=with as a type operator has been deprecated:silent"
+                     )
+                   else Seq.empty)
 // Suppress ScalaTest Assertion unused value warnings in tests; Scala 3 names the type org.scalatest.compatible.Assertion, and
 // the compile-check assertions (assertDoesNotCompile etc.) expand to a Succeeded literal on Scala 2
 Test / scalacOptions += "-Wconf:msg=unused value of type org.scalatest.(compatible.Assertion|Assertion|Succeeded.type):silent"
@@ -261,7 +269,9 @@ lazy val examples = (projectMatrix in file("examples"))
       "com.softwaremill.sttp.tapir" %% "tapir-netty-server-sync" % V.tapir,
       "ch.qos.logback" % "logback-classic" % "1.6.5"
     ) ++ Libraries.sttpClientOx,
-    publish / skip := true
+    publish / skip := true,
+    // TODO(scala-3.9): the examples extend `App`, deprecated since Scala 3.8; migrate them to `@main` / `def main`
+    scalacOptions += "-Wconf:msg=trait App in package scala is deprecated:silent"
   )
   .dependsOn(ox, jev)
 
