@@ -1,4 +1,4 @@
-//> using dep com.softwaremill.sttp.ai::claude:0.11.3
+//> using dep com.softwaremill.sttp.ai::claude:0.11.4
 //> using dep ch.qos.logback:logback-classic:1.5.38
 
 // remember to set the ANTHROPIC_API_KEY env variable!
