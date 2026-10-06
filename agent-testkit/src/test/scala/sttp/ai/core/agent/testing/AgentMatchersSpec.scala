@@ -20,13 +20,13 @@ class AgentMatchersSpec extends AnyFlatSpec with Matchers with AgentMatchers {
     s"Result: ${input.a + input.b}"
   }
 
-  private val (script, result): (ScriptedAgent[Identity], AgentResult[Either[AgentFailure, String]]) = {
+  private val (script, result) = {
     val s = ScriptedAgent.synchronous(
       ScriptedResponse.toolCall("calculator", """{"a": 1, "b": 2}"""),
       ScriptedResponse.text("The answer is 3")
     )
     val r = s.builder.tools(calculatorTool).build.run("What is 1 + 2?")(SyncBackendStub)
-    (s, r)
+    (s, r): (ScriptedAgent[Identity], AgentResult[Either[AgentFailure, String]])
   }
 
   "haveReceivedPrompt" should "pass for a prompt that was sent" in {

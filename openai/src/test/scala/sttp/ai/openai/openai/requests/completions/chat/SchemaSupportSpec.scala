@@ -5,7 +5,6 @@ import io.circe.parser.parse
 import org.scalatest.EitherValues
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
-import sttp.apispec.Schema
 
 class SchemaSupportSpec extends AnyFlatSpec with Matchers with EitherValues {
 
@@ -286,7 +285,7 @@ class SchemaSupportSpec extends AnyFlatSpec with Matchers with EitherValues {
 
   "the faithful codec" should "no longer inject additionalProperties or rewrite required" in {
     val rawSchema = """{"type":"object","properties":{"a":{"type":"string"},"b":{"type":"integer"}},"required":["a"]}"""
-    val schema = parse(rawSchema).value.as[Schema](sttp.apispec.circe.schemaDecoder).value
+    val schema = sttp.apispec.circe.schemaDecoder.decodeJson(parse(rawSchema).value).value
 
     val result = SchemaSupport.schemaCodec(schema)
 

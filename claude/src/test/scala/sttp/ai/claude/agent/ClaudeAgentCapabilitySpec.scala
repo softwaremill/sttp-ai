@@ -7,13 +7,12 @@ import sttp.ai.claude.ClaudeClient
 import sttp.ai.claude.config.ClaudeConfig
 import sttp.ai.core.agent.{AgentTool, IterationInfo}
 import sttp.ai.claude.models.ClaudeModel
-import sttp.apispec.Schema
 import sttp.shared.Identity
 
 object ClaudeAgentCapabilitySpecFixtures {
   val client: ClaudeClient = ClaudeClient(ClaudeConfig(apiKey = "test-key"))
   val echoTool: AgentTool[Identity, _] = {
-    val schema = parse("""{"type":"object"}""").toOption.get.as[Schema](sttp.apispec.circe.schemaDecoder).toOption.get
+    val schema = sttp.apispec.circe.schemaDecoder.decodeJson(parse("""{"type":"object"}""").toOption.get).toOption.get
     AgentTool.dynamic("echo", "Echoes input", schema)(_ => "ok")
   }
 }

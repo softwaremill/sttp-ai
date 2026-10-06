@@ -2,7 +2,7 @@ package sttp.ai.core.agent
 
 import io.circe.Codec
 import io.circe.Encoder
-import io.circe.parser.decode
+import io.circe.parser.parse
 import sttp.ai.core.agent.AgentConfig.SystemPromptParameters
 import sttp.ai.core.model.{AIModel, Capability, Supports}
 import sttp.monad.MonadError
@@ -65,7 +65,7 @@ final class AgentBuilder[F[_], M <: AIModel, In, Out] private (
       makeBackend,
       config.copy(responseSchema = Some(schema)),
       renderInput,
-      answer => decode[T](answer)(schema.codec)
+      answer => parse(answer).flatMap(schema.codec.decodeJson)
     )
 
   def deriveResponseSchema[T](implicit

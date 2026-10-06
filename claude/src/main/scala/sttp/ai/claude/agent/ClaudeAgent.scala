@@ -131,6 +131,7 @@ private[claude] object ClaudeAgentBackend {
 }
 
 object ClaudeAgent {
+  private implicit val identityMonad: sttp.monad.MonadError[Identity] = IdentityMonad
 
   /** Entry point: `ClaudeAgent.builder[F](client, model)`. The indirection lets `M` be inferred while `F` is given explicitly. */
   def builder[F[_]]: BuilderPartiallyApplied[F] = new BuilderPartiallyApplied[F]
@@ -174,26 +175,26 @@ object ClaudeAgent {
   }
 
   def synchronous[M <: ClaudeModel](client: ClaudeClient, model: M): AgentBuilder[Identity, M, String, String] =
-    builder[Identity](client, model)(IdentityMonad)
+    builder[Identity](client, model)
 
   def synchronous[M <: ClaudeModel](
       client: ClaudeClient,
       modelForIteration: IterationInfo => M
   ): AgentBuilder[Identity, M, String, String] =
-    builder[Identity](client, modelForIteration)(IdentityMonad)
+    builder[Identity](client, modelForIteration)
 
   def synchronous(client: ClaudeClient, modelName: String): AgentBuilder[Identity, ClaudeModel.CustomClaudeModel, String, String] =
-    builder[Identity](client, modelName)(IdentityMonad)
+    builder[Identity](client, modelName)
 
   def synchronous[M <: ClaudeModel](claudeConfig: ClaudeConfig, model: M): AgentBuilder[Identity, M, String, String] =
-    builder[Identity](claudeConfig, model)(IdentityMonad)
+    builder[Identity](claudeConfig, model)
 
   def synchronous[M <: ClaudeModel](
       claudeConfig: ClaudeConfig,
       modelForIteration: IterationInfo => M
   ): AgentBuilder[Identity, M, String, String] =
-    builder[Identity](claudeConfig, modelForIteration)(IdentityMonad)
+    builder[Identity](claudeConfig, modelForIteration)
 
   def synchronous(claudeConfig: ClaudeConfig, modelName: String): AgentBuilder[Identity, ClaudeModel.CustomClaudeModel, String, String] =
-    builder[Identity](claudeConfig, modelName)(IdentityMonad)
+    builder[Identity](claudeConfig, modelName)
 }

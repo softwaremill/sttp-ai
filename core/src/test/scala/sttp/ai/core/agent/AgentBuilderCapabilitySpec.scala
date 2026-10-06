@@ -5,19 +5,20 @@ import org.scalatest.EitherValues
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
 import sttp.ai.core.model.{AIModel, Capability}
-import sttp.apispec.Schema
 import sttp.client4.Backend
 import sttp.monad.IdentityMonad
 import sttp.shared.Identity
 
 // Top-level so compile-check snippets can reference everything by stable, fully-qualified path.
 object AgentBuilderCapabilitySpecFixtures {
+  private implicit val identityMonad: sttp.monad.MonadError[Identity] = IdentityMonad
+
   sealed abstract class TestModel(val value: String) extends AIModel
   case object FullModel extends TestModel("full") with Capability.ToolCalling with Capability.StructuredOutput
   case object BareModel extends TestModel("bare")
 
   val echoTool: AgentTool[Identity, _] = {
-    val schema = parse("""{"type":"object"}""").toOption.get.as[Schema](sttp.apispec.circe.schemaDecoder).toOption.get
+    val schema = sttp.apispec.circe.schemaDecoder.decodeJson(parse("""{"type":"object"}""").toOption.get).toOption.get
     AgentTool.dynamic("echo", "Echoes input", schema)(_ => "ok")
   }
 
@@ -33,7 +34,7 @@ object AgentBuilderCapabilitySpecFixtures {
   }
 
   def newBuilder[M <: AIModel]: AgentBuilder[Identity, M, String, String] =
-    AgentBuilder[Identity, M](_ => noopBackend)(IdentityMonad)
+    AgentBuilder[Identity, M](_ => noopBackend)
 
   case class Out(answer: String)
   implicit val outCodec: io.circe.Codec[Out] = io.circe.generic.semiauto.deriveCodec

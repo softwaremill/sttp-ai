@@ -10,6 +10,7 @@ import sttp.monad.IdentityMonad
 import sttp.shared.Identity
 
 class InputRenderingSpec extends AnyFlatSpec with Matchers {
+  private implicit val identityMonad: sttp.monad.MonadError[Identity] = IdentityMonad
 
   case object TestModel extends AIModel with Capability.ToolCalling with Capability.StructuredOutput {
     val value: String = "test-model"
@@ -38,7 +39,7 @@ class InputRenderingSpec extends AnyFlatSpec with Matchers {
 
   "input[In] (JSON default)" should "render the input as JSON inside the standard envelope" in {
     val stub = new RecordingBackend
-    val agent = AgentBuilder[Identity, TestModel.type](_ => stub)(IdentityMonad).input[CityQuery].build
+    val agent = AgentBuilder[Identity, TestModel.type](_ => stub).input[CityQuery].build
 
     agent.run(CityQuery("Paris", 3))(SyncBackendStub): Unit
 
@@ -50,7 +51,7 @@ class InputRenderingSpec extends AnyFlatSpec with Matchers {
 
   "String input (default)" should "render identically with no envelope" in {
     val stub = new RecordingBackend
-    val agent = AgentBuilder[Identity, TestModel.type](_ => stub)(IdentityMonad).build
+    val agent = AgentBuilder[Identity, TestModel.type](_ => stub).build
 
     agent.run("plain prompt")(SyncBackendStub): Unit
 
@@ -59,7 +60,7 @@ class InputRenderingSpec extends AnyFlatSpec with Matchers {
 
   "inputRenderer" should "use the explicit rendering" in {
     val stub = new RecordingBackend
-    val agent = AgentBuilder[Identity, TestModel.type](_ => stub)(IdentityMonad)
+    val agent = AgentBuilder[Identity, TestModel.type](_ => stub)
       .inputRenderer[CityQuery](q => s"Weather for ${q.city} over ${q.days} days, please.")
       .build
 

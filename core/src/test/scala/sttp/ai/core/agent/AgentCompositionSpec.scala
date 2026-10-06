@@ -11,6 +11,7 @@ import sttp.shared.Identity
 import sttp.tapir.Schema
 
 class AgentCompositionSpec extends AnyFlatSpec with Matchers {
+  private implicit val identityMonad: sttp.monad.MonadError[Identity] = IdentityMonad
 
   case object TestModel extends AIModel with Capability.ToolCalling with Capability.StructuredOutput {
     val value: String = "test-model"
@@ -42,7 +43,7 @@ class AgentCompositionSpec extends AnyFlatSpec with Matchers {
 
   private def usage(in: Long, out: Long): TokenUsage = TokenUsage(Tokens(in), Tokens(out), Tokens.Zero, Tokens.Zero)
 
-  private def builder(stub: RecordingBackend) = AgentBuilder[Identity, TestModel.type](_ => stub)(IdentityMonad)
+  private def builder(stub: RecordingBackend) = AgentBuilder[Identity, TestModel.type](_ => stub)
 
   "andThen" should "feed A's typed output to B as a fresh conversation" in {
     val stubA = new RecordingBackend(

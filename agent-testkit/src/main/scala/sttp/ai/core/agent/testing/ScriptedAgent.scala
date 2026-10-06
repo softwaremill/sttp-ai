@@ -41,10 +41,11 @@ final class ScriptedAgent[F[_]] private (script: Seq[AgentResponse])(implicit mo
 }
 
 object ScriptedAgent {
+  private implicit val identityMonad: sttp.monad.MonadError[Identity] = IdentityMonad
 
   def apply[F[_]](responses: AgentResponse*)(implicit monad: MonadError[F]): ScriptedAgent[F] =
     new ScriptedAgent[F](responses)
 
   def synchronous(responses: AgentResponse*): ScriptedAgent[Identity] =
-    apply[Identity](responses: _*)(IdentityMonad)
+    new ScriptedAgent[Identity](responses)
 }

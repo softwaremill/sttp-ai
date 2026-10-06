@@ -2,7 +2,6 @@ package sttp.ai.gemini.json
 
 import io.circe.{Codec, Decoder, Encoder, Json}
 import io.circe.derivation.ConfiguredCodec
-import io.circe.syntax._
 import sttp.ai.gemini.models._
 import sttp.ai.gemini.requests.InteractionRequest
 import sttp.ai.gemini.responses._
@@ -60,7 +59,7 @@ object GeminiDerivedCodecs {
     },
     Encoder.instance {
       case InteractionInput.TextInput(text)   => Json.fromString(text)
-      case InteractionInput.StepsInput(steps) => Json.fromValues(steps.map(_.asJson(stepCodec)))
+      case InteractionInput.StepsInput(steps) => Json.fromValues(steps.map(stepCodec(_)))
     }
   )
 

@@ -9,6 +9,7 @@ import sttp.monad.IdentityMonad
 import sttp.shared.Identity
 
 class ClaudeAgentIntegrationSpec extends AgentIntegrationSpecBase {
+  private implicit val identityMonad: sttp.monad.MonadError[Identity] = IdentityMonad
 
   override def providerName: String = "Claude"
   override def apiKeyEnvVar: String = "ANTHROPIC_API_KEY"
@@ -23,8 +24,8 @@ class ClaudeAgentIntegrationSpec extends AgentIntegrationSpecBase {
       agentConfig.userTools,
       agentConfig.systemPrompt,
       agentConfig.responseSchema
-    )(IdentityMonad)
-    Agent(agentBackend, agentConfig)(IdentityMonad)
+    )
+    Agent(agentBackend, agentConfig)
   }
 
   override def createTypedAgent[T](

@@ -10,6 +10,7 @@ import sttp.monad.IdentityMonad
 import sttp.shared.Identity
 
 class GeminiAgentIntegrationSpec extends AgentIntegrationSpecBase {
+  private implicit val identityMonad: sttp.monad.MonadError[Identity] = IdentityMonad
 
   override def providerName: String = "Gemini"
   override def apiKeyEnvVar: String = "GEMINI_API_KEY"
@@ -24,8 +25,8 @@ class GeminiAgentIntegrationSpec extends AgentIntegrationSpecBase {
       agentConfig.userTools,
       agentConfig.systemPrompt,
       agentConfig.responseSchema
-    )(IdentityMonad)
-    Agent(agentBackend, agentConfig)(IdentityMonad)
+    )
+    Agent(agentBackend, agentConfig)
   }
 
   override def createTypedAgent[T](
