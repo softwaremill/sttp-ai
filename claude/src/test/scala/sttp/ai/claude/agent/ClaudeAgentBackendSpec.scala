@@ -124,7 +124,7 @@ class ClaudeAgentBackendSpec extends AnyFlatSpec with Matchers with EitherValues
     val client = ClaudeClient(ClaudeConfig(apiKey = "test-key"))
     val backend = new ClaudeAgentBackend[Identity](client, _ => ClaudeModel.ClaudeHaiku4_5, Seq(tool), None, None, maxTokens)
 
-    val captured = new AtomicReference[GenericRequest[_, _]](null)
+    val captured = new AtomicReference[GenericRequest[?, ?]](null)
     val httpStub = DefaultSyncBackend.stub.whenAnyRequest.thenRespondF { request =>
       captured.set(request)
       ResponseStub.adjust(minimalMessageResponse, StatusCode.Ok)

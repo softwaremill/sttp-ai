@@ -11,9 +11,12 @@ final case class ResponseSchema[T] private (
     schema: Schema,
     codec: Codec[T],
     description: Option[String]
-)
+) extends ResponseSchemaVersionSpecific[T]
 
 object ResponseSchema extends ResponseSchemaCompanionVersionSpecific {
+
+  private[agent] def create[T](schema: Schema, codec: Codec[T], description: Option[String]): ResponseSchema[T] =
+    new ResponseSchema[T](schema, codec, description)
 
   def derived[T](
       description: Option[String] = None
@@ -42,13 +45,13 @@ object ResponseSchema extends ResponseSchemaCompanionVersionSpecific {
     * variant whose class is a supertype of a later variant's class will shadow it (not reachable with plain case-class variants, whose
     * classes are unrelated).
     */
-  def oneOf[U](first: Variant[_ <: U], rest: Variant[_ <: U]*): ResponseSchema[U] =
-    oneOfImpl[U](Seq[Variant[_ <: U]](first) ++ rest, None)
+  def oneOf[U](first: Variant[? <: U], rest: Variant[? <: U]*): ResponseSchema[U] =
+    oneOfImpl[U](Seq[Variant[? <: U]](first) ++ rest, None)
 
-  def oneOf[U](description: String)(first: Variant[_ <: U], rest: Variant[_ <: U]*): ResponseSchema[U] =
-    oneOfImpl[U](Seq[Variant[_ <: U]](first) ++ rest, Some(description))
+  def oneOf[U](description: String)(first: Variant[? <: U], rest: Variant[? <: U]*): ResponseSchema[U] =
+    oneOfImpl[U](Seq[Variant[? <: U]](first) ++ rest, Some(description))
 
-  private def oneOfImpl[U](variants: Seq[Variant[_ <: U]], description: Option[String]): ResponseSchema[U] = {
+  private def oneOfImpl[U](variants: Seq[Variant[? <: U]], description: Option[String]): ResponseSchema[U] = {
     val duplicateNames = variants.groupBy(_.name).collect { case (n, vs) if vs.size > 1 => n }
     require(duplicateNames.isEmpty, s"duplicate variant names: ${duplicateNames.mkString(", ")}")
     val duplicateClasses = variants.groupBy(_.runtimeClass).collect { case (c, vs) if vs.size > 1 => c.getName }
@@ -110,7 +113,7 @@ object ResponseSchema extends ResponseSchemaCompanionVersionSpecific {
       properties = ListMap("result" -> Schema(anyOf = prepared.map(p => p._1: SchemaLike).toList))
     )
 
-    val byName: Map[String, Variant[_ <: U]] = variants.map(v => v.name -> v).toMap
+    val byName: Map[String, Variant[? <: U]] = variants.map(v => v.name -> v).toMap
     val validKinds = variants.map(_.name).mkString(", ")
 
     val unionCodec: Codec[U] = new Codec[U] {

@@ -17,9 +17,9 @@ import sttp.monad.IdentityMonad
 private[gemini] class GeminiAgentBackend[F[_]](
     client: GeminiClient,
     modelForIteration: IterationInfo => GeminiModel,
-    val tools: Seq[AgentTool[F, _]],
+    val tools: Seq[AgentTool[F, ?]],
     val systemPrompt: Option[String],
-    responseSchema: Option[ResponseSchema[_]],
+    responseSchema: Option[ResponseSchema[?]],
     maxTokens: Option[Int] = None
 )(implicit monad: sttp.monad.MonadError[F])
     extends AgentBackend[F] {
@@ -31,7 +31,7 @@ private[gemini] class GeminiAgentBackend[F[_]](
   private val responseFormat: Option[ResponseFormat] =
     responseSchema.map(rs => ResponseFormat.JsonSchema(rs.schema.asJson.deepDropNullValues))
 
-  private def convertTool(tool: AgentTool[F, _]): Tool =
+  private def convertTool(tool: AgentTool[F, ?]): Tool =
     Tool.Function(
       name = tool.name,
       description = Some(tool.description),

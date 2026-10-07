@@ -14,9 +14,9 @@ import sttp.monad.IdentityMonad
 private[claude] class ClaudeAgentBackend[F[_]](
     client: ClaudeClient,
     modelForIteration: IterationInfo => ClaudeModel,
-    val tools: Seq[AgentTool[F, _]],
+    val tools: Seq[AgentTool[F, ?]],
     val systemPrompt: Option[String],
-    responseSchema: Option[ResponseSchema[_]],
+    responseSchema: Option[ResponseSchema[?]],
     maxTokens: Option[Int] = None
 )(implicit monad: sttp.monad.MonadError[F])
     extends AgentBackend[F] {
@@ -28,7 +28,7 @@ private[claude] class ClaudeAgentBackend[F[_]](
   private val outputConfig: Option[OutputConfig] =
     responseSchema.map(rs => OutputConfig(format = Some(OutputFormat.JsonSchema(rs.schema))))
 
-  private def convertTool(tool: AgentTool[F, _]): Tool =
+  private def convertTool(tool: AgentTool[F, ?]): Tool =
     Tool.CustomRaw(
       name = tool.name,
       description = tool.description,

@@ -62,7 +62,7 @@ class GeminiSyncClientSpec extends AnyFlatSpec with Matchers with EitherValues {
   }
 
   private def captureCreateInteractionAsBody(request: InteractionRequest): String = {
-    val captured = new AtomicReference[GenericRequest[_, _]](null)
+    val captured = new AtomicReference[GenericRequest[?, ?]](null)
     val httpStub = DefaultSyncBackend.stub.whenAnyRequest.thenRespondF { req =>
       captured.set(req)
       ResponseStub.adjust(completedResponse, StatusCode.Ok)

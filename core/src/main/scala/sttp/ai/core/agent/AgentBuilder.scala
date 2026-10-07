@@ -33,15 +33,15 @@ final class AgentBuilder[F[_], M <: AIModel, In, Out] private (
 
   def systemPrompt(prompt: String): AgentBuilder[F, M, In, Out] = systemPrompt(_ => prompt)
 
-  def tools(values: Seq[AgentTool[F, _]])(implicit ev: Supports[M, Capability.ToolCalling]): AgentBuilder[F, M, In, Out] =
+  def tools(values: Seq[AgentTool[F, ?]])(implicit ev: Supports[M, Capability.ToolCalling]): AgentBuilder[F, M, In, Out] =
     withConfig(config.copy(userTools = values))
 
-  def tools(first: AgentTool[F, _], rest: AgentTool[F, _]*)(implicit
+  def tools(first: AgentTool[F, ?], rest: AgentTool[F, ?]*)(implicit
       ev: Supports[M, Capability.ToolCalling]
   ): AgentBuilder[F, M, In, Out] =
     tools(first +: rest)
 
-  def addTool(tool: AgentTool[F, _])(implicit ev: Supports[M, Capability.ToolCalling]): AgentBuilder[F, M, In, Out] =
+  def addTool(tool: AgentTool[F, ?])(implicit ev: Supports[M, Capability.ToolCalling]): AgentBuilder[F, M, In, Out] =
     withConfig(config.copy(userTools = config.userTools :+ tool))
 
   def exceptionHandler(handler: ExceptionHandler): AgentBuilder[F, M, In, Out] = withConfig(config.copy(exceptionHandler = handler))

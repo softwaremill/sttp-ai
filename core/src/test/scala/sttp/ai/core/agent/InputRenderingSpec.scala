@@ -18,7 +18,7 @@ class InputRenderingSpec extends AnyFlatSpec with Matchers {
 
   class RecordingBackend extends AgentBackend[Identity] {
     var receivedHistories: Seq[ConversationHistory] = Seq.empty
-    override def tools: Seq[AgentTool[Identity, _]] = Seq.empty
+    override def tools: Seq[AgentTool[Identity, ?]] = Seq.empty
     override def systemPrompt: Option[String] = None
     override def sendRequest(
         history: ConversationHistory,

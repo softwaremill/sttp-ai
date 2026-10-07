@@ -10,7 +10,7 @@ import sttp.shared.Identity
 
 object OpenAIAgentCapabilitySpecFixtures {
   val openAI: OpenAI = new OpenAI("test-key")
-  val echoTool: AgentTool[Identity, _] = {
+  val echoTool: AgentTool[Identity, ?] = {
     val schema = sttp.apispec.circe.schemaDecoder.decodeJson(parse("""{"type":"object"}""").toOption.get).toOption.get
     AgentTool.dynamic("echo", "Echoes input", schema)(_ => "ok")
   }

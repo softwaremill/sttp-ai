@@ -23,7 +23,7 @@ class AgentInterceptorLoopSpec extends AnyFlatSpec with Matchers {
     var receivedIncludeTools: Seq[Boolean] = Seq.empty
     var receivedIterationInfos: Seq[IterationInfo] = Seq.empty
 
-    override def tools: Seq[AgentTool[Identity, _]] = Seq.empty
+    override def tools: Seq[AgentTool[Identity, ?]] = Seq.empty
     override def systemPrompt: Option[String] = None
 
     override def sendRequest(
@@ -278,7 +278,7 @@ class AgentInterceptorLoopSpec extends AnyFlatSpec with Matchers {
 
     class FutureStubBackend(responses: Seq[AgentResponse]) extends AgentBackend[Future] {
       private var callCount = 0
-      override def tools: Seq[AgentTool[Future, _]] = Seq.empty
+      override def tools: Seq[AgentTool[Future, ?]] = Seq.empty
       override def systemPrompt: Option[String] = None
       override def sendRequest(
           history: ConversationHistory,

@@ -229,7 +229,7 @@ class OxClientSpec extends AnyFlatSpec with Matchers with EitherValues {
 
   "createStreamedModelResponse" should "send stream = true in the request body" in {
     // given
-    val capturedRequest = new AtomicReference[GenericRequest[_, _]](null)
+    val capturedRequest = new AtomicReference[GenericRequest[?, ?]](null)
     val stub = DefaultSyncBackend.stub.whenAnyRequest.thenRespondF { request =>
       capturedRequest.set(request)
       ResponseStub.adjust(sseStream(Seq(doneEvent)))
@@ -254,7 +254,7 @@ class OxClientSpec extends AnyFlatSpec with Matchers with EitherValues {
 
   "resumeStreamedModelResponse" should "request the stored response with stream = true and starting_after" in {
     // given
-    val capturedRequest = new AtomicReference[GenericRequest[_, _]](null)
+    val capturedRequest = new AtomicReference[GenericRequest[?, ?]](null)
     val stub = DefaultSyncBackend.stub.whenAnyRequest.thenRespondF { request =>
       capturedRequest.set(request)
       ResponseStub.adjust(sseStream(Seq(doneEvent)))

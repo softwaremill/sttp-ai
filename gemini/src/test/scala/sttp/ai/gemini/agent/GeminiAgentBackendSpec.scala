@@ -42,9 +42,9 @@ class GeminiAgentBackendSpec extends AnyFlatSpec with Matchers with EitherValues
       |"required":["title","location"]}""".stripMargin
 
   private def newBackend(
-      tools: Seq[AgentTool[Identity, _]],
+      tools: Seq[AgentTool[Identity, ?]],
       systemPrompt: Option[String] = None,
-      responseSchema: Option[ResponseSchema[_]] = None,
+      responseSchema: Option[ResponseSchema[?]] = None,
       maxTokens: Option[Int] = None
   ): GeminiAgentBackend[Identity] = {
     val client = GeminiClient(GeminiConfig(apiKey = "test-key"))
@@ -92,14 +92,14 @@ class GeminiAgentBackendSpec extends AnyFlatSpec with Matchers with EitherValues
       includeTools: Boolean,
       history: ConversationHistory,
       systemPrompt: Option[String] = None,
-      responseSchema: Option[ResponseSchema[_]] = None,
+      responseSchema: Option[ResponseSchema[?]] = None,
       maxTokens: Option[Int] = None
   ): String = {
     val schema = sttp.apispec.circe.schemaDecoder.decodeJson(parse(rawSchema).value).value
     val tool = AgentTool.dynamic("create-event", "Creates an event", schema)(_ => "ok")
     val backend = newBackend(Seq(tool), systemPrompt, responseSchema, maxTokens)
 
-    val captured = new AtomicReference[GenericRequest[_, _]](null)
+    val captured = new AtomicReference[GenericRequest[?, ?]](null)
     val httpStub = DefaultSyncBackend.stub.whenAnyRequest.thenRespondF { request =>
       captured.set(request)
       ResponseStub.adjust(completedResponse, StatusCode.Ok)

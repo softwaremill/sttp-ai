@@ -20,7 +20,7 @@ class AgentCompositionSpec extends AnyFlatSpec with Matchers {
   class RecordingBackend(responses: AgentResponse*) extends AgentBackend[Identity] {
     private var callCount = 0
     var receivedHistories: Seq[ConversationHistory] = Seq.empty
-    override def tools: Seq[AgentTool[Identity, _]] = Seq.empty
+    override def tools: Seq[AgentTool[Identity, ?]] = Seq.empty
     override def systemPrompt: Option[String] = None
     override def sendRequest(
         history: ConversationHistory,

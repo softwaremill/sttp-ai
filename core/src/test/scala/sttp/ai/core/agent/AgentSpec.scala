@@ -26,7 +26,7 @@ class AgentSpec extends AnyFlatSpec with Matchers with OptionValues {
     var receivedIncludeTools: Seq[Boolean] = Seq.empty
     var iterationInfos: Vector[IterationInfo] = Vector.empty
 
-    override def tools: Seq[AgentTool[Identity, _]] = Seq.empty
+    override def tools: Seq[AgentTool[Identity, ?]] = Seq.empty
     override def systemPrompt: Option[String] = None
 
     override def sendRequest(

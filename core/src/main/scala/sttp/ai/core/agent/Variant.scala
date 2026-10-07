@@ -14,7 +14,7 @@ final class Variant[A] private (
     private[agent] val tapirSchema: TapirSchema[A],
     private[agent] val encoder: Encoder[A],
     private[agent] val decoder: Decoder[A],
-    private[agent] val runtimeClass: Class[_]
+    private[agent] val runtimeClass: Class[?]
 )
 
 object Variant {
@@ -29,7 +29,7 @@ object Variant {
   // local/nested classes (JVM 2.13 says "Strict$1", JVM 3 "Strict", Scala Native just "1"). getName is identical
   // everywhere; the last non-numeric '$'-segment is the declared class name (numeric segments are local-class
   // counters, a trailing "$" marks a module class).
-  private def defaultName(cls: Class[_]): String = {
+  private def defaultName(cls: Class[?]): String = {
     val base = cls.getName
     val afterPkg = base.substring(base.lastIndexOf('.') + 1)
     val segments = afterPkg.split('$').filter(s => s.nonEmpty && !s.forall(_.isDigit))

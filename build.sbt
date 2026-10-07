@@ -23,14 +23,7 @@ scalacOptions ++= Def.uncached {
     Seq("-java-output-version", javaOutputVersion.value)
   else Seq.empty
 }
-// TODO(scala-3.9): the shared (2.12/2.13/3) sources use `_` type wildcards and `with` intersection types, deprecated since
-// Scala 3.4; their replacements (`?`, `&`) don't compile on Scala 2 without -Xsource:3, so silence these on Scala 3 only
-scalacOptions ++= (if (ScalaArtifacts.isScala3(scalaVersion.value))
-                     Seq(
-                       "-Wconf:msg=is deprecated for wildcard arguments of types:silent",
-                       "-Wconf:msg=with as a type operator has been deprecated:silent"
-                     )
-                   else Seq.empty)
+scalacOptions ++= (if (scalaVersion.value.startsWith("2.")) Seq("-Xsource:3") else Seq.empty)
 // Suppress ScalaTest Assertion unused value warnings in tests; Scala 3 names the type org.scalatest.compatible.Assertion, and
 // the compile-check assertions (assertDoesNotCompile etc.) expand to a Succeeded literal on Scala 2
 Test / scalacOptions += "-Wconf:msg=unused value of type org.scalatest.(compatible.Assertion|Assertion|Succeeded.type):silent"
@@ -269,9 +262,7 @@ lazy val examples = (projectMatrix in file("examples"))
       "com.softwaremill.sttp.tapir" %% "tapir-netty-server-sync" % V.tapir,
       "ch.qos.logback" % "logback-classic" % "1.6.5"
     ) ++ Libraries.sttpClientOx,
-    publish / skip := true,
-    // TODO(scala-3.9): the examples extend `App`, deprecated since Scala 3.8; migrate them to `@main` / `def main`
-    scalacOptions += "-Wconf:msg=trait App in package scala is deprecated:silent"
+    publish / skip := true
   )
   .dependsOn(ox, jev)
 

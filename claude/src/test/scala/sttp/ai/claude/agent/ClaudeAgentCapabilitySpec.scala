@@ -11,7 +11,7 @@ import sttp.shared.Identity
 
 object ClaudeAgentCapabilitySpecFixtures {
   val client: ClaudeClient = ClaudeClient(ClaudeConfig(apiKey = "test-key"))
-  val echoTool: AgentTool[Identity, _] = {
+  val echoTool: AgentTool[Identity, ?] = {
     val schema = sttp.apispec.circe.schemaDecoder.decodeJson(parse("""{"type":"object"}""").toOption.get).toOption.get
     AgentTool.dynamic("echo", "Echoes input", schema)(_ => "ok")
   }

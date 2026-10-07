@@ -12,9 +12,9 @@ import sttp.monad.IdentityMonad
 private[openai] class OpenAIAgentBackend[F[_]](
     openAI: OpenAI,
     modelForIteration: IterationInfo => ChatCompletionModel,
-    val tools: Seq[AgentTool[F, _]],
+    val tools: Seq[AgentTool[F, ?]],
     val systemPrompt: Option[String],
-    responseSchema: Option[ResponseSchema[_]],
+    responseSchema: Option[ResponseSchema[?]],
     strictTools: Boolean,
     maxTokens: Option[Int] = None
 )(implicit monad: sttp.monad.MonadError[F])
@@ -31,7 +31,7 @@ private[openai] class OpenAIAgentBackend[F[_]](
     )
   }
 
-  private def convertTool(tool: AgentTool[F, _]): Tool.Function = {
+  private def convertTool(tool: AgentTool[F, ?]): Tool.Function = {
     val schemaJson =
       if (strictTools) SchemaSupport.normalizeForStrict(tool.rawJsonSchema)
       else tool.rawJsonSchema

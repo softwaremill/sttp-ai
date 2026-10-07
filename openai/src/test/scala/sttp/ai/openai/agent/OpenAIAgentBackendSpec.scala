@@ -24,7 +24,7 @@ class OpenAIAgentBackendSpec extends AnyFlatSpec with Matchers with EitherValues
   private val rawSchema =
     """{"type":"object","properties":{"title":{"type":"string"},"note":{"type":"string"}},"required":["title"]}"""
 
-  private def testTool: AgentTool[Identity, _] = {
+  private def testTool: AgentTool[Identity, ?] = {
     val schema = sttp.apispec.circe.schemaDecoder.decodeJson(parse(rawSchema).value).value
     AgentTool.dynamic("create", "Creates a thing", schema)(_ => "ok")
   }
@@ -59,7 +59,7 @@ class OpenAIAgentBackendSpec extends AnyFlatSpec with Matchers with EitherValues
   }
 
   private def captureRequestBody(includeTools: Boolean, maxTokens: Option[Int] = None): String = {
-    val captured = new AtomicReference[GenericRequest[_, _]](null)
+    val captured = new AtomicReference[GenericRequest[?, ?]](null)
     val httpStub = DefaultSyncBackend.stub.whenAnyRequest.thenRespondF { request =>
       captured.set(request)
       ResponseStub.adjust(sttp.ai.openai.fixtures.CompletionsFixture.structuredOutputsResponse, StatusCode.Ok)

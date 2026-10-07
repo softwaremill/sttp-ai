@@ -17,13 +17,13 @@ object AgentBuilderCapabilitySpecFixtures {
   case object FullModel extends TestModel("full") with Capability.ToolCalling with Capability.StructuredOutput
   case object BareModel extends TestModel("bare")
 
-  val echoTool: AgentTool[Identity, _] = {
+  val echoTool: AgentTool[Identity, ?] = {
     val schema = sttp.apispec.circe.schemaDecoder.decodeJson(parse("""{"type":"object"}""").toOption.get).toOption.get
     AgentTool.dynamic("echo", "Echoes input", schema)(_ => "ok")
   }
 
   private val noopBackend: AgentBackend[Identity] = new AgentBackend[Identity] {
-    val tools: Seq[AgentTool[Identity, _]] = Seq.empty
+    val tools: Seq[AgentTool[Identity, ?]] = Seq.empty
     val systemPrompt: Option[String] = None
     def sendRequest(
         history: ConversationHistory,
