@@ -58,7 +58,7 @@ lazy val root = (project in file("."))
     // defined on the root project only: in sbt 2, bare settings in build.sbt apply to every subproject
     compileDocumentation := (docs.jvm(scala3.head) / mdoc).toTask(" --out target/sttp-ai-docs").value,
     verifyExamplesCompileUsingScalaCli :=
-      Def.uncached(VerifyExamplesCompileUsingScalaCli(sLog.value, (examples.jvm(scala3.head) / sourceDirectory).value)),
+      Def.uncached(VerifyExamplesCompileUsingScalaCli(sLog.value, (examples.jvm(scala3.head) / Compile / sourceDirectory).value)),
     verifyModelUpdateScriptsCompileUsingScalaCli :=
       Def.uncached(VerifyExamplesCompileUsingScalaCli(sLog.value, file("model_update_scripts")))
   )
