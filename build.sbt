@@ -260,10 +260,10 @@ lazy val examples = (projectMatrix in file("examples"))
     libraryDependencies ++= Seq(
       "com.softwaremill.sttp.tapir" %% "tapir-netty-server-sync" % V.tapir,
       "ch.qos.logback" % "logback-classic" % "1.6.5"
-    ) ++ Libraries.sttpClientOx,
+    ) ++ Libraries.sttpClientOx ++ Seq(Libraries.scalaTest.value, Libraries.chimpServer),
     publish / skip := true
   )
-  .dependsOn(ox, jev)
+  .dependsOn(ox, jev, mcp)
 
 lazy val compileDocumentation: TaskKey[Unit] = taskKey[Unit]("Compiles docs module throwing away its output")
 
