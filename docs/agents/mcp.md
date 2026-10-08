@@ -93,6 +93,76 @@ finally
   claudeClient.close()
 ```
 
+## HTTP example: Parallel Search
+
+[Parallel Search MCP](https://docs.parallel.ai/integrations/mcp/search-mcp) exposes `web_search` and
+`web_fetch` over Streamable HTTP at `https://search.parallel.ai/mcp`. Its anonymous free tier needs no
+Parallel API key and is intended for exploration and light use; rate limits apply.
+
+This standalone example discovers the tools through `McpTools.fromClient` and calls the resulting
+`AgentTool`s directly, printing search results and excerpts from a specific documentation URL. It does
+not call an LLM. Save it as `ParallelSearch.scala` and run `scala-cli run ParallelSearch.scala --server=false`
+with [Scala CLI](https://scala-cli.virtuslab.org/) installed (it can download JDK 21):
+
+```scala mdoc:compile-only
+//> using scala 3.3.8
+//> using jvm 21
+//> using dep com.softwaremill.sttp.ai::mcp:@VERSION@
+
+import chimp.client.McpClient
+import chimp.client.transport.ClientHttpTransport
+import chimp.protocol.Implementation
+import io.circe.Json
+import sttp.ai.core.agent.mcp.McpTools
+import sttp.client4.DefaultSyncBackend
+import sttp.model.Header
+import sttp.model.Uri.UriContext
+import sttp.monad.{IdentityMonad, MonadError}
+import sttp.shared.Identity
+
+object ParallelSearch {
+  def main(args: Array[String]): Unit = {
+    given MonadError[Identity] = IdentityMonad
+
+    val backend = DefaultSyncBackend()
+    try {
+      val transport = ClientHttpTransport[Identity](
+        backend,
+        uri"https://search.parallel.ai/mcp",
+        headers = Seq(Header("User-Agent", "sttp-ai-parallel-example/@VERSION@"))
+      )
+      val client = McpClient[Identity](transport, Implementation("sttp-ai-parallel-example", "@VERSION@"))
+      try {
+        val tools = McpTools.fromClient(client, namePrefix = Some("parallel")).map(t => t.name -> t).toMap
+        // Reuse one session identifier across related search and fetch calls.
+        val sessionId = Json.fromString(java.util.UUID.randomUUID().toString)
+        val search = tools("parallel_web_search").execute(
+          Map(
+            "objective" -> Json.fromString("Find sttp-ai's documentation for loading MCP tools."),
+            "search_queries" -> Json.arr(Json.fromString("sttp-ai MCP tools documentation")),
+            "session_id" -> sessionId
+          )
+        )
+        println(search)
+
+        // Fetch when you need the content of a specific URL.
+        val fetched = tools("parallel_web_fetch").execute(
+          Map(
+            "urls" -> Json.arr(Json.fromString("https://sttp-ai.softwaremill.com/agents/mcp.html")),
+            "objective" -> Json.fromString("How are MCP tools loaded and executed?"),
+            "session_id" -> sessionId
+          )
+        )
+        println(fetched)
+      } finally client.close()
+    } finally backend.close()
+  }
+}
+```
+
+The HTTP transport sends the project `User-Agent` on every MCP request. Keep the client and backend open
+until all tool calls finish. Server errors and transport failures follow the behavior described below.
+
 ## Lifecycle
 
 * You own the client: keep it open while the agent runs, and close it afterwards.
