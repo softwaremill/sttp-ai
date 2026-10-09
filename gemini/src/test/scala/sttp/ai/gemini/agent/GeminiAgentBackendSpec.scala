@@ -41,19 +41,19 @@ class GeminiAgentBackendSpec extends AnyFlatSpec with Matchers with EitherValues
       |"required":["title","location"]}""".stripMargin
 
   private def newBackend(
-      tools: Seq[AgentTool[Identity, _]],
+      tools: Seq[AgentTool[Identity, ?]],
       systemPrompt: Option[String] = None,
-      responseSchema: Option[ResponseSchema[_]] = None,
+      responseSchema: Option[ResponseSchema[?]] = None,
       maxTokens: Option[Int] = None
   ): GeminiAgentBackend[Identity] = {
     val client = GeminiClient(GeminiConfig(apiKey = "test-key"))
-    new GeminiAgentBackend[Identity](client, _ => GeminiModel.CustomModel(testModel), tools, systemPrompt, responseSchema, maxTokens)(
+    new GeminiAgentBackend[Identity](client, _ => GeminiModel.CustomModel(testModel), tools, systemPrompt, responseSchema, maxTokens)(using
       IdentityMonad
     )
   }
 
   "GeminiAgentBackend" should "pass the full tool schema through, preserving nested structure" in {
-    val schema = parse(rawSchema).value.as[Schema](sttp.apispec.circe.schemaDecoder).value
+    val schema = parse(rawSchema).value.as[Schema](using sttp.apispec.circe.schemaDecoder).value
     val tool = AgentTool.dynamic("create-event", "Creates an event", schema)(_ => "ok")
 
     newBackend(Seq(tool)).convertedTools.head match {
@@ -69,7 +69,7 @@ class GeminiAgentBackendSpec extends AnyFlatSpec with Matchers with EitherValues
     val tool = new AgentTool[Identity, Map[String, Json]] {
       override def name: String = "any-input-tool"
       override def description: String = "Accepts any input"
-      override def jsonSchema: Schema = parse("""{"type":"object"}""").value.as[Schema](sttp.apispec.circe.schemaDecoder).value
+      override def jsonSchema: Schema = parse("""{"type":"object"}""").value.as[Schema](using sttp.apispec.circe.schemaDecoder).value
       override def codec: io.circe.Codec[Map[String, Json]] = io.circe.Codec.implied
       override def execute(input: Map[String, Json]): Identity[String] = "ok"
       override def rawJsonSchema: Json = Json.True
@@ -93,14 +93,14 @@ class GeminiAgentBackendSpec extends AnyFlatSpec with Matchers with EitherValues
       includeTools: Boolean,
       history: ConversationHistory,
       systemPrompt: Option[String] = None,
-      responseSchema: Option[ResponseSchema[_]] = None,
+      responseSchema: Option[ResponseSchema[?]] = None,
       maxTokens: Option[Int] = None
   ): String = {
-    val schema = parse(rawSchema).value.as[Schema](sttp.apispec.circe.schemaDecoder).value
+    val schema = parse(rawSchema).value.as[Schema](using sttp.apispec.circe.schemaDecoder).value
     val tool = AgentTool.dynamic("create-event", "Creates an event", schema)(_ => "ok")
     val backend = newBackend(Seq(tool), systemPrompt, responseSchema, maxTokens)
 
-    val captured = new AtomicReference[GenericRequest[_, _]](null)
+    val captured = new AtomicReference[GenericRequest[?, ?]](null)
     val httpStub = DefaultSyncBackend.stub.whenAnyRequest.thenRespondF { request =>
       captured.set(request)
       ResponseStub.adjust(completedResponse, StatusCode.Ok)
@@ -260,7 +260,7 @@ class GeminiAgentBackendSpec extends AnyFlatSpec with Matchers with EitherValues
     val tool = new AgentTool[Identity, Map[String, Json]] {
       override def name: String = "no-type-tool"
       override def description: String = "Accepts anything, schema omits type"
-      override def jsonSchema: Schema = parse("""{"type":"object"}""").value.as[Schema](sttp.apispec.circe.schemaDecoder).value
+      override def jsonSchema: Schema = parse("""{"type":"object"}""").value.as[Schema](using sttp.apispec.circe.schemaDecoder).value
       override def codec: io.circe.Codec[Map[String, Json]] = io.circe.Codec.implied
       override def execute(input: Map[String, Json]): Identity[String] = "ok"
       override def rawJsonSchema: Json = Json.obj()
@@ -326,7 +326,7 @@ class GeminiAgentBackendSpec extends AnyFlatSpec with Matchers with EitherValues
       Seq.empty,
       None,
       None
-    )(IdentityMonad)
+    )(using IdentityMonad)
 
     backend.sendRequest(ConversationHistory.withInitialPrompt("hello"), httpStub, includeTools = false, IterationInfo(1, 3)): Unit
     backend.sendRequest(ConversationHistory.withInitialPrompt("hello"), httpStub, includeTools = false, IterationInfo(3, 3)): Unit

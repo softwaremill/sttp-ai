@@ -8,7 +8,7 @@ import sttp.shared.Identity
 class LoggingInterceptorSpec extends AnyFlatSpec with Matchers {
 
   private def newLogger(log: collection.mutable.Buffer[(LogLevel, String)]): LoggingInterceptor[Identity] =
-    new LoggingInterceptor[Identity]((level, msg) => { log += ((level, msg)); () })(sttp.monad.IdentityMonad)
+    new LoggingInterceptor[Identity]((level, msg) => { log += ((level, msg)); () })(using sttp.monad.IdentityMonad)
 
   "LoggingInterceptor" should "log iteration start and end at Debug" in {
     val log = collection.mutable.Buffer.empty[(LogLevel, String)]

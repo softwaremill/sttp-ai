@@ -16,6 +16,9 @@ class RetryingBackendSpec extends AnyFlatSpec with Matchers {
 
   /** Returns responses (status, headers) in order; the last entry repeats forever. Counts attempts. */
   private def stubReturning(attempts: AtomicInteger, responses: (StatusCode, Seq[Header])*): SyncBackend =
+    stubReturningSeq(attempts, responses)
+
+  private def stubReturningSeq(attempts: AtomicInteger, responses: Seq[(StatusCode, Seq[Header])]): SyncBackend =
     DefaultSyncBackend.stub.whenAnyRequest.thenRespondF { _ =>
       val i = attempts.getAndIncrement()
       val (code, headers) = responses(math.min(i, responses.size - 1))
@@ -29,7 +32,7 @@ class RetryingBackendSpec extends AnyFlatSpec with Matchers {
   "RetryingBackend" should "return a successful response without retrying" in {
     val attempts = new AtomicInteger(0)
     val sleeps = ListBuffer[Long]()
-    val backend = RetryingBackend(stubReturning(attempts, noHeaders(StatusCode.Ok): _*), maxRetries = 3, recording(sleeps))
+    val backend = RetryingBackend(stubReturningSeq(attempts, noHeaders(StatusCode.Ok)), maxRetries = 3, recording(sleeps))
     request.send(backend).code shouldBe StatusCode.Ok
     attempts.get() shouldBe 1
     sleeps shouldBe empty
@@ -39,7 +42,7 @@ class RetryingBackendSpec extends AnyFlatSpec with Matchers {
     val attempts = new AtomicInteger(0)
     val sleeps = ListBuffer[Long]()
     val backend =
-      RetryingBackend(stubReturning(attempts, noHeaders(StatusCode.TooManyRequests, StatusCode.Ok): _*), maxRetries = 3, recording(sleeps))
+      RetryingBackend(stubReturningSeq(attempts, noHeaders(StatusCode.TooManyRequests, StatusCode.Ok)), maxRetries = 3, recording(sleeps))
     request.send(backend).code shouldBe StatusCode.Ok
     attempts.get() shouldBe 2
     sleeps.toList shouldBe List(500L)
@@ -48,9 +51,9 @@ class RetryingBackendSpec extends AnyFlatSpec with Matchers {
   it should "retry 408, 409 and 5xx statuses" in {
     val attempts = new AtomicInteger(0)
     val backend = RetryingBackend(
-      stubReturning(
+      stubReturningSeq(
         attempts,
-        noHeaders(StatusCode.RequestTimeout, StatusCode.Conflict, StatusCode.InternalServerError, StatusCode.BadGateway, StatusCode.Ok): _*
+        noHeaders(StatusCode.RequestTimeout, StatusCode.Conflict, StatusCode.InternalServerError, StatusCode.BadGateway, StatusCode.Ok)
       ),
       maxRetries = 4,
       _ => ()
@@ -63,7 +66,7 @@ class RetryingBackendSpec extends AnyFlatSpec with Matchers {
     val attempts = new AtomicInteger(0)
     val sleeps = ListBuffer[Long]()
     val backend =
-      RetryingBackend(stubReturning(attempts, noHeaders(StatusCode.BadRequest, StatusCode.Ok): _*), maxRetries = 3, recording(sleeps))
+      RetryingBackend(stubReturningSeq(attempts, noHeaders(StatusCode.BadRequest, StatusCode.Ok)), maxRetries = 3, recording(sleeps))
     request.send(backend).code shouldBe StatusCode.BadRequest
     attempts.get() shouldBe 1
     sleeps shouldBe empty
@@ -71,7 +74,7 @@ class RetryingBackendSpec extends AnyFlatSpec with Matchers {
 
   it should "return the last response after exhausting retries" in {
     val attempts = new AtomicInteger(0)
-    val backend = RetryingBackend(stubReturning(attempts, noHeaders(StatusCode.InternalServerError): _*), maxRetries = 3, _ => ())
+    val backend = RetryingBackend(stubReturningSeq(attempts, noHeaders(StatusCode.InternalServerError)), maxRetries = 3, _ => ())
     request.send(backend).code shouldBe StatusCode.InternalServerError
     attempts.get() shouldBe 4
   }
@@ -79,7 +82,7 @@ class RetryingBackendSpec extends AnyFlatSpec with Matchers {
   it should "make exactly one attempt when maxRetries is 0" in {
     val attempts = new AtomicInteger(0)
     val backend =
-      RetryingBackend(stubReturning(attempts, noHeaders(StatusCode.TooManyRequests, StatusCode.Ok): _*), maxRetries = 0, _ => ())
+      RetryingBackend(stubReturningSeq(attempts, noHeaders(StatusCode.TooManyRequests, StatusCode.Ok)), maxRetries = 0, _ => ())
     request.send(backend).code shouldBe StatusCode.TooManyRequests
     attempts.get() shouldBe 1
   }
@@ -87,7 +90,7 @@ class RetryingBackendSpec extends AnyFlatSpec with Matchers {
   it should "back off exponentially, capped at 8 seconds" in {
     val attempts = new AtomicInteger(0)
     val sleeps = ListBuffer[Long]()
-    val backend = RetryingBackend(stubReturning(attempts, noHeaders(StatusCode.InternalServerError): _*), maxRetries = 6, recording(sleeps))
+    val backend = RetryingBackend(stubReturningSeq(attempts, noHeaders(StatusCode.InternalServerError)), maxRetries = 6, recording(sleeps))
     request.send(backend): Unit
     sleeps.toList shouldBe List(500L, 1000L, 2000L, 4000L, 8000L, 8000L)
   }
@@ -193,7 +196,7 @@ class RetryingBackendSpec extends AnyFlatSpec with Matchers {
   it should "not retry requests whose body cannot be re-sent" in {
     val attempts = new AtomicInteger(0)
     val backend =
-      RetryingBackend(stubReturning(attempts, noHeaders(StatusCode.TooManyRequests, StatusCode.Ok): _*), maxRetries = 3, _ => ())
+      RetryingBackend(stubReturningSeq(attempts, noHeaders(StatusCode.TooManyRequests, StatusCode.Ok)), maxRetries = 3, _ => ())
     val streamingBodyRequest = basicRequest.post(uri"http://example.org/test").body(new java.io.ByteArrayInputStream("x".getBytes))
     streamingBodyRequest.send(backend).code shouldBe StatusCode.TooManyRequests
     attempts.get() shouldBe 1
@@ -216,7 +219,7 @@ class RetryingBackendSpec extends AnyFlatSpec with Matchers {
 
   it should "restore the interrupt flag and abort retrying when the default sleep is interrupted" in {
     val attempts = new AtomicInteger(0)
-    val backend = RetryingBackend(stubReturning(attempts, noHeaders(StatusCode.TooManyRequests, StatusCode.Ok): _*), maxRetries = 3)
+    val backend = RetryingBackend(stubReturningSeq(attempts, noHeaders(StatusCode.TooManyRequests, StatusCode.Ok)), maxRetries = 3)
     Thread.currentThread().interrupt()
     try {
       an[InterruptedException] should be thrownBy request.send(backend)

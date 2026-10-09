@@ -286,7 +286,7 @@ class SchemaSupportSpec extends AnyFlatSpec with Matchers with EitherValues {
 
   "the faithful codec" should "no longer inject additionalProperties or rewrite required" in {
     val rawSchema = """{"type":"object","properties":{"a":{"type":"string"},"b":{"type":"integer"}},"required":["a"]}"""
-    val schema = parse(rawSchema).value.as[Schema](sttp.apispec.circe.schemaDecoder).value
+    val schema = parse(rawSchema).value.as[Schema](using sttp.apispec.circe.schemaDecoder).value
 
     val result = SchemaSupport.schemaCodec(schema)
 

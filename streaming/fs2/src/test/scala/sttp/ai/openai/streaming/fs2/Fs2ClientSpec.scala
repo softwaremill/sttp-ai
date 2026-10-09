@@ -103,7 +103,7 @@ class Fs2ClientSpec extends AsyncFlatSpec with AsyncIOSpec with Matchers with Ei
       .flatMap(_.compile.drain)
 
     // then
-    response.attempt.asserting(_ shouldBe a[Left[DeserializationOpenAIException, _]])
+    response.attempt.asserting(_ shouldBe a[Left[DeserializationOpenAIException, ?]])
   }
 
   "Creating chat completions with successful response" should "ignore empty events and return properly deserialized list of chunks" in {
@@ -212,7 +212,7 @@ class Fs2ClientSpec extends AsyncFlatSpec with AsyncIOSpec with Matchers with Ei
       .flatMap(_.compile.drain)
 
     // then
-    response.attempt.asserting(_ shouldBe a[Left[DeserializationOpenAIException, _]])
+    response.attempt.asserting(_ shouldBe a[Left[DeserializationOpenAIException, ?]])
   }
 
   "Creating a streamed model response" should "ignore empty events and return properly deserialized events" in {
@@ -238,7 +238,7 @@ class Fs2ClientSpec extends AsyncFlatSpec with AsyncIOSpec with Matchers with Ei
 
   "createStreamedModelResponse" should "send stream = true in the request body" in {
     // given
-    val capturedRequest = new AtomicReference[GenericRequest[_, _]](null)
+    val capturedRequest = new AtomicReference[GenericRequest[?, ?]](null)
     val fs2BackendStub = HttpClientFs2Backend.stub[IO].whenAnyRequest.thenRespondF { request =>
       capturedRequest.set(request)
       IO(ResponseStub.adjust(sseBytes(Seq(doneEvent))))
@@ -262,7 +262,7 @@ class Fs2ClientSpec extends AsyncFlatSpec with AsyncIOSpec with Matchers with Ei
 
   "resumeStreamedModelResponse" should "request the stored response with stream = true and starting_after" in {
     // given
-    val capturedRequest = new AtomicReference[GenericRequest[_, _]](null)
+    val capturedRequest = new AtomicReference[GenericRequest[?, ?]](null)
     val fs2BackendStub = HttpClientFs2Backend.stub[IO].whenAnyRequest.thenRespondF { request =>
       capturedRequest.set(request)
       IO(ResponseStub.adjust(sseBytes(Seq(doneEvent))))

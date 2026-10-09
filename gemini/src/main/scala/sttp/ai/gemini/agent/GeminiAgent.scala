@@ -17,9 +17,9 @@ import sttp.monad.IdentityMonad
 private[gemini] class GeminiAgentBackend[F[_]](
     client: GeminiClient,
     modelForIteration: IterationInfo => GeminiModel,
-    val tools: Seq[AgentTool[F, _]],
+    val tools: Seq[AgentTool[F, ?]],
     val systemPrompt: Option[String],
-    responseSchema: Option[ResponseSchema[_]],
+    responseSchema: Option[ResponseSchema[?]],
     maxTokens: Option[Int] = None
 )(implicit monad: sttp.monad.MonadError[F])
     extends AgentBackend[F] {
@@ -31,7 +31,7 @@ private[gemini] class GeminiAgentBackend[F[_]](
   private val responseFormat: Option[ResponseFormat] =
     responseSchema.map(rs => ResponseFormat.JsonSchema(rs.schema.asJson.deepDropNullValues))
 
-  private def convertTool(tool: AgentTool[F, _]): Tool =
+  private def convertTool(tool: AgentTool[F, ?]): Tool =
     Tool.Function(
       name = tool.name,
       description = Some(tool.description),
@@ -202,26 +202,26 @@ object GeminiAgent {
   }
 
   def synchronous[M <: GeminiModel](client: GeminiClient, model: M): AgentBuilder[Identity, M, String, String] =
-    builder[Identity](client, model)(IdentityMonad)
+    builder[Identity](client, model)(using IdentityMonad)
 
   def synchronous[M <: GeminiModel](
       client: GeminiClient,
       modelForIteration: IterationInfo => M
   ): AgentBuilder[Identity, M, String, String] =
-    builder[Identity](client, modelForIteration)(IdentityMonad)
+    builder[Identity](client, modelForIteration)(using IdentityMonad)
 
   def synchronous(client: GeminiClient, modelName: String): AgentBuilder[Identity, GeminiModel.CustomModel, String, String] =
-    builder[Identity](client, modelName)(IdentityMonad)
+    builder[Identity](client, modelName)(using IdentityMonad)
 
   def synchronous[M <: GeminiModel](geminiConfig: GeminiConfig, model: M): AgentBuilder[Identity, M, String, String] =
-    builder[Identity](geminiConfig, model)(IdentityMonad)
+    builder[Identity](geminiConfig, model)(using IdentityMonad)
 
   def synchronous[M <: GeminiModel](
       geminiConfig: GeminiConfig,
       modelForIteration: IterationInfo => M
   ): AgentBuilder[Identity, M, String, String] =
-    builder[Identity](geminiConfig, modelForIteration)(IdentityMonad)
+    builder[Identity](geminiConfig, modelForIteration)(using IdentityMonad)
 
   def synchronous(geminiConfig: GeminiConfig, modelName: String): AgentBuilder[Identity, GeminiModel.CustomModel, String, String] =
-    builder[Identity](geminiConfig, modelName)(IdentityMonad)
+    builder[Identity](geminiConfig, modelName)(using IdentityMonad)
 }

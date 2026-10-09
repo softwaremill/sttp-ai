@@ -24,8 +24,8 @@ class OpenAIAgentBackendSpec extends AnyFlatSpec with Matchers with EitherValues
   private val rawSchema =
     """{"type":"object","properties":{"title":{"type":"string"},"note":{"type":"string"}},"required":["title"]}"""
 
-  private def testTool: AgentTool[Identity, _] = {
-    val schema = parse(rawSchema).value.as[Schema](sttp.apispec.circe.schemaDecoder).value
+  private def testTool: AgentTool[Identity, ?] = {
+    val schema = parse(rawSchema).value.as[Schema](using sttp.apispec.circe.schemaDecoder).value
     AgentTool.dynamic("create", "Creates a thing", schema)(_ => "ok")
   }
 
@@ -38,7 +38,7 @@ class OpenAIAgentBackendSpec extends AnyFlatSpec with Matchers with EitherValues
       None,
       strictTools,
       maxTokens
-    )(IdentityMonad)
+    )(using IdentityMonad)
 
   "OpenAIAgentBackend" should "register tools as strict with normalized schemas when strictTools is true" in {
     val fn = backend(strictTools = true).convertedTools.head
@@ -59,7 +59,7 @@ class OpenAIAgentBackendSpec extends AnyFlatSpec with Matchers with EitherValues
   }
 
   private def captureRequestBody(includeTools: Boolean, maxTokens: Option[Int] = None): String = {
-    val captured = new AtomicReference[GenericRequest[_, _]](null)
+    val captured = new AtomicReference[GenericRequest[?, ?]](null)
     val httpStub = DefaultSyncBackend.stub.whenAnyRequest.thenRespondF { request =>
       captured.set(request)
       ResponseStub.adjust(sttp.ai.openai.fixtures.CompletionsFixture.structuredOutputsResponse, StatusCode.Ok)
@@ -112,7 +112,7 @@ class OpenAIAgentBackendSpec extends AnyFlatSpec with Matchers with EitherValues
       None,
       None,
       strictTools = true
-    )(IdentityMonad)
+    )(using IdentityMonad)
 
     backend.sendRequest(ConversationHistory.withInitialPrompt("hello"), httpStub, includeTools = false, IterationInfo(1, 3)): Unit
     backend.sendRequest(ConversationHistory.withInitialPrompt("hello"), httpStub, includeTools = false, IterationInfo(3, 3)): Unit

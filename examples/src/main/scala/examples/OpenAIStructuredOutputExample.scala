@@ -11,27 +11,29 @@ import sttp.ai.openai.requests.completions.chat.ChatRequestBody.{ChatBody, ChatC
 import sttp.ai.openai.requests.completions.chat.message.{Content, Message}
 import sttp.tapir.Schema
 
-object OpenAIStructuredOutputExample extends App {
+object OpenAIStructuredOutputExample {
 
   case class Language(name: String, paradigm: String, summary: String) derives io.circe.Codec.AsObject, Schema
 
   case class LanguageList(languages: List[Language]) derives io.circe.Codec.AsObject, Schema
 
-  val openai = OpenAISyncClient.fromEnv
-  try {
-    val chatBody = ChatBody(
-      model = ChatCompletionModel.GPT4oMini,
-      messages = Seq(
-        Message.User(
-          Content.TextContent(
-            "List 10 well-known programming languages. For each, give the dominant paradigm and a one-sentence summary."
+  def main(args: Array[String]): Unit = {
+    val openai = OpenAISyncClient.fromEnv
+    try {
+      val chatBody = ChatBody(
+        model = ChatCompletionModel.GPT4oMini,
+        messages = Seq(
+          Message.User(
+            Content.TextContent(
+              "List 10 well-known programming languages. For each, give the dominant paradigm and a one-sentence summary."
+            )
           )
         )
       )
-    )
-    val result: LanguageList = openai.createChatCompletionAs[LanguageList](chatBody)
-    result.languages.foreach { l =>
-      println(s"${l.name} [${l.paradigm}] — ${l.summary}")
-    }
-  } finally openai.close()
+      val result: LanguageList = openai.createChatCompletionAs[LanguageList](chatBody)
+      result.languages.foreach { l =>
+        println(s"${l.name} [${l.paradigm}] — ${l.summary}")
+      }
+    } finally openai.close()
+  }
 }

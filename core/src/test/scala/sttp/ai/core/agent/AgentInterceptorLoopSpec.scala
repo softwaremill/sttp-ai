@@ -22,7 +22,7 @@ class AgentInterceptorLoopSpec extends AnyFlatSpec with Matchers {
     var receivedIncludeTools: Seq[Boolean] = Seq.empty
     var receivedIterationInfos: Seq[IterationInfo] = Seq.empty
 
-    override def tools: Seq[AgentTool[Identity, _]] = Seq.empty
+    override def tools: Seq[AgentTool[Identity, ?]] = Seq.empty
     override def systemPrompt: Option[String] = None
 
     override def sendRequest(
@@ -58,7 +58,7 @@ class AgentInterceptorLoopSpec extends AnyFlatSpec with Matchers {
     AgentResponse(text, Seq.empty, StopReason.EndTurn, usage = u, model = Some("test-model"))
 
   private def build(stub: StubAgentBackend, interceptors: Seq[AgentInterceptor[Identity]]): Agent[Identity, String, String] =
-    AgentBuilder[Identity, TestModel.type](_ => stub)(IdentityMonad)
+    AgentBuilder[Identity, TestModel.type](_ => stub)(using IdentityMonad)
       .maxIterations(5)
       .tools(dummyTool)
       .interceptors(interceptors)
@@ -185,7 +185,7 @@ class AgentInterceptorLoopSpec extends AnyFlatSpec with Matchers {
       )
     )
     val steer = finishAfter(1, FinishReason.BudgetExceeded, "answer now")
-    val agent = AgentBuilder[Identity, TestModel.type](_ => stub)(IdentityMonad)
+    val agent = AgentBuilder[Identity, TestModel.type](_ => stub)(using IdentityMonad)
       .maxIterations(2) // iteration 2 is the forced last iteration AND the FinishNow iteration
       .tools(dummyTool)
       .interceptors(Seq(steer))
@@ -256,7 +256,7 @@ class AgentInterceptorLoopSpec extends AnyFlatSpec with Matchers {
       )
     )
     val budget = new BudgetInterceptor[Identity](maxTotalTokens = Some(Tokens(100L)))
-    val result = AgentBuilder[Identity, TestModel.type](_ => stub)(IdentityMonad)
+    val result = AgentBuilder[Identity, TestModel.type](_ => stub)(using IdentityMonad)
       .maxIterations(5)
       .tools(dummyTool)
       .interceptors(Seq(budget))
@@ -277,7 +277,7 @@ class AgentInterceptorLoopSpec extends AnyFlatSpec with Matchers {
 
     class FutureStubBackend(responses: Seq[AgentResponse]) extends AgentBackend[Future] {
       private var callCount = 0
-      override def tools: Seq[AgentTool[Future, _]] = Seq.empty
+      override def tools: Seq[AgentTool[Future, ?]] = Seq.empty
       override def systemPrompt: Option[String] = None
       override def sendRequest(
           history: ConversationHistory,

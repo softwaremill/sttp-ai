@@ -312,7 +312,7 @@ object OpenAIDerivedCodecs {
 
   // finetuning
   implicit val finetuningTypeCodec: Codec[FtType] =
-    OpenAIManualCodecs.typeCodec(Map("wandb" -> FtIntegration.Wandb, "supervised" -> FtMethod.Supervised, "dpo" -> FtMethod.Dpo))
+    OpenAIManualCodecs.typeCodec(using Map("wandb" -> FtIntegration.Wandb, "supervised" -> FtMethod.Supervised, "dpo" -> FtMethod.Dpo))
   implicit val hyperparametersCodec: Codec[Hyperparameters] = ConfiguredCodec.derived
   implicit val wandbCodec: Codec[Wandb] = ConfiguredCodec.derived
   implicit val ftIntegrationCodec: Codec[FtIntegration] = ConfiguredCodec.derived

@@ -17,7 +17,7 @@ class InputRenderingSpec extends AnyFlatSpec with Matchers {
 
   class RecordingBackend extends AgentBackend[Identity] {
     var receivedHistories: Seq[ConversationHistory] = Seq.empty
-    override def tools: Seq[AgentTool[Identity, _]] = Seq.empty
+    override def tools: Seq[AgentTool[Identity, ?]] = Seq.empty
     override def systemPrompt: Option[String] = None
     override def sendRequest(
         history: ConversationHistory,
@@ -38,7 +38,7 @@ class InputRenderingSpec extends AnyFlatSpec with Matchers {
 
   "input[In] (JSON default)" should "render the input as JSON inside the standard envelope" in {
     val stub = new RecordingBackend
-    val agent = AgentBuilder[Identity, TestModel.type](_ => stub)(IdentityMonad).input[CityQuery].build
+    val agent = AgentBuilder[Identity, TestModel.type](_ => stub)(using IdentityMonad).input[CityQuery].build
 
     agent.run(CityQuery("Paris", 3))(SyncBackendStub): Unit
 
@@ -50,7 +50,7 @@ class InputRenderingSpec extends AnyFlatSpec with Matchers {
 
   "String input (default)" should "render identically with no envelope" in {
     val stub = new RecordingBackend
-    val agent = AgentBuilder[Identity, TestModel.type](_ => stub)(IdentityMonad).build
+    val agent = AgentBuilder[Identity, TestModel.type](_ => stub)(using IdentityMonad).build
 
     agent.run("plain prompt")(SyncBackendStub): Unit
 
@@ -59,7 +59,7 @@ class InputRenderingSpec extends AnyFlatSpec with Matchers {
 
   "inputRenderer" should "use the explicit rendering" in {
     val stub = new RecordingBackend
-    val agent = AgentBuilder[Identity, TestModel.type](_ => stub)(IdentityMonad)
+    val agent = AgentBuilder[Identity, TestModel.type](_ => stub)(using IdentityMonad)
       .inputRenderer[CityQuery](q => s"Weather for ${q.city} over ${q.days} days, please.")
       .build
 
