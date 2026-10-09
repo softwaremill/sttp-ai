@@ -11,7 +11,6 @@ import sttp.shared.Identity
 import sttp.tapir.Schema
 
 class AgentInterceptorLoopSpec extends AnyFlatSpec with Matchers {
-  private implicit val identityMonad: sttp.monad.MonadError[Identity] = IdentityMonad
 
   case object TestModel extends AIModel with Capability.ToolCalling with Capability.StructuredOutput {
     val value: String = "test-model"
@@ -59,7 +58,7 @@ class AgentInterceptorLoopSpec extends AnyFlatSpec with Matchers {
     AgentResponse(text, Seq.empty, StopReason.EndTurn, usage = u, model = Some("test-model"))
 
   private def build(stub: StubAgentBackend, interceptors: Seq[AgentInterceptor[Identity]]): Agent[Identity, String, String] =
-    AgentBuilder[Identity, TestModel.type](_ => stub)
+    AgentBuilder[Identity, TestModel.type](_ => stub)(using IdentityMonad)
       .maxIterations(5)
       .tools(dummyTool)
       .interceptors(interceptors)
@@ -186,7 +185,7 @@ class AgentInterceptorLoopSpec extends AnyFlatSpec with Matchers {
       )
     )
     val steer = finishAfter(1, FinishReason.BudgetExceeded, "answer now")
-    val agent = AgentBuilder[Identity, TestModel.type](_ => stub)
+    val agent = AgentBuilder[Identity, TestModel.type](_ => stub)(using IdentityMonad)
       .maxIterations(2) // iteration 2 is the forced last iteration AND the FinishNow iteration
       .tools(dummyTool)
       .interceptors(Seq(steer))
@@ -257,7 +256,7 @@ class AgentInterceptorLoopSpec extends AnyFlatSpec with Matchers {
       )
     )
     val budget = new BudgetInterceptor[Identity](maxTotalTokens = Some(Tokens(100L)))
-    val result = AgentBuilder[Identity, TestModel.type](_ => stub)
+    val result = AgentBuilder[Identity, TestModel.type](_ => stub)(using IdentityMonad)
       .maxIterations(5)
       .tools(dummyTool)
       .interceptors(Seq(budget))

@@ -29,7 +29,6 @@ object GeminiAgentWeatherSummary {
 }
 
 class GeminiAgentBackendSpec extends AnyFlatSpec with Matchers with EitherValues {
-  private implicit val identityMonad: sttp.monad.MonadError[Identity] = IdentityMonad
 
   private val testModel = GeminiModel.Gemini35FlashLite.value
 
@@ -48,11 +47,13 @@ class GeminiAgentBackendSpec extends AnyFlatSpec with Matchers with EitherValues
       maxTokens: Option[Int] = None
   ): GeminiAgentBackend[Identity] = {
     val client = GeminiClient(GeminiConfig(apiKey = "test-key"))
-    new GeminiAgentBackend[Identity](client, _ => GeminiModel.CustomModel(testModel), tools, systemPrompt, responseSchema, maxTokens)
+    new GeminiAgentBackend[Identity](client, _ => GeminiModel.CustomModel(testModel), tools, systemPrompt, responseSchema, maxTokens)(using
+      IdentityMonad
+    )
   }
 
   "GeminiAgentBackend" should "pass the full tool schema through, preserving nested structure" in {
-    val schema = sttp.apispec.circe.schemaDecoder.decodeJson(parse(rawSchema).value).value
+    val schema = parse(rawSchema).value.as[Schema](using sttp.apispec.circe.schemaDecoder).value
     val tool = AgentTool.dynamic("create-event", "Creates an event", schema)(_ => "ok")
 
     newBackend(Seq(tool)).convertedTools.head match {
@@ -68,7 +69,7 @@ class GeminiAgentBackendSpec extends AnyFlatSpec with Matchers with EitherValues
     val tool = new AgentTool[Identity, Map[String, Json]] {
       override def name: String = "any-input-tool"
       override def description: String = "Accepts any input"
-      override def jsonSchema: Schema = sttp.apispec.circe.schemaDecoder.decodeJson(parse("""{"type":"object"}""").value).value
+      override def jsonSchema: Schema = parse("""{"type":"object"}""").value.as[Schema](using sttp.apispec.circe.schemaDecoder).value
       override def codec: io.circe.Codec[Map[String, Json]] = io.circe.Codec.implied
       override def execute(input: Map[String, Json]): Identity[String] = "ok"
       override def rawJsonSchema: Json = Json.True
@@ -95,7 +96,7 @@ class GeminiAgentBackendSpec extends AnyFlatSpec with Matchers with EitherValues
       responseSchema: Option[ResponseSchema[?]] = None,
       maxTokens: Option[Int] = None
   ): String = {
-    val schema = sttp.apispec.circe.schemaDecoder.decodeJson(parse(rawSchema).value).value
+    val schema = parse(rawSchema).value.as[Schema](using sttp.apispec.circe.schemaDecoder).value
     val tool = AgentTool.dynamic("create-event", "Creates an event", schema)(_ => "ok")
     val backend = newBackend(Seq(tool), systemPrompt, responseSchema, maxTokens)
 
@@ -259,7 +260,7 @@ class GeminiAgentBackendSpec extends AnyFlatSpec with Matchers with EitherValues
     val tool = new AgentTool[Identity, Map[String, Json]] {
       override def name: String = "no-type-tool"
       override def description: String = "Accepts anything, schema omits type"
-      override def jsonSchema: Schema = sttp.apispec.circe.schemaDecoder.decodeJson(parse("""{"type":"object"}""").value).value
+      override def jsonSchema: Schema = parse("""{"type":"object"}""").value.as[Schema](using sttp.apispec.circe.schemaDecoder).value
       override def codec: io.circe.Codec[Map[String, Json]] = io.circe.Codec.implied
       override def execute(input: Map[String, Json]): Identity[String] = "ok"
       override def rawJsonSchema: Json = Json.obj()
@@ -325,7 +326,7 @@ class GeminiAgentBackendSpec extends AnyFlatSpec with Matchers with EitherValues
       Seq.empty,
       None,
       None
-    )
+    )(using IdentityMonad)
 
     backend.sendRequest(ConversationHistory.withInitialPrompt("hello"), httpStub, includeTools = false, IterationInfo(1, 3)): Unit
     backend.sendRequest(ConversationHistory.withInitialPrompt("hello"), httpStub, includeTools = false, IterationInfo(3, 3)): Unit

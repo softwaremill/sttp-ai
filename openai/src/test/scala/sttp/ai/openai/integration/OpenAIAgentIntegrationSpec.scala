@@ -13,7 +13,6 @@ import sttp.shared.Identity
 import sttp.tapir.Schema
 
 class OpenAIAgentIntegrationSpec extends AgentIntegrationSpecBase {
-  private implicit val identityMonad: sttp.monad.MonadError[Identity] = IdentityMonad
 
   override def providerName: String = "OpenAI"
   override def apiKeyEnvVar: String = "OPENAI_API_KEY"
@@ -28,8 +27,8 @@ class OpenAIAgentIntegrationSpec extends AgentIntegrationSpecBase {
       agentConfig.systemPrompt,
       agentConfig.responseSchema,
       strictTools = true
-    )
-    Agent(agentBackend, agentConfig)
+    )(using IdentityMonad)
+    Agent(agentBackend, agentConfig)(using IdentityMonad)
   }
 
   override def createTypedAgent[T](

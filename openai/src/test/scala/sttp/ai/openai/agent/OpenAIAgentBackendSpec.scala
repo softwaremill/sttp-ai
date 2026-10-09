@@ -10,6 +10,7 @@ import sttp.ai.core.agent.ConversationHistory
 import sttp.ai.core.agent.IterationInfo
 import sttp.ai.openai.OpenAI
 import sttp.ai.openai.requests.completions.chat.ChatRequestBody.ChatCompletionModel
+import sttp.apispec.Schema
 import sttp.client4._
 import sttp.client4.testing.ResponseStub
 import sttp.model.StatusCode
@@ -19,13 +20,12 @@ import sttp.shared.Identity
 import java.util.concurrent.atomic.AtomicReference
 
 class OpenAIAgentBackendSpec extends AnyFlatSpec with Matchers with EitherValues {
-  private implicit val identityMonad: sttp.monad.MonadError[Identity] = IdentityMonad
 
   private val rawSchema =
     """{"type":"object","properties":{"title":{"type":"string"},"note":{"type":"string"}},"required":["title"]}"""
 
   private def testTool: AgentTool[Identity, ?] = {
-    val schema = sttp.apispec.circe.schemaDecoder.decodeJson(parse(rawSchema).value).value
+    val schema = parse(rawSchema).value.as[Schema](using sttp.apispec.circe.schemaDecoder).value
     AgentTool.dynamic("create", "Creates a thing", schema)(_ => "ok")
   }
 
@@ -38,7 +38,7 @@ class OpenAIAgentBackendSpec extends AnyFlatSpec with Matchers with EitherValues
       None,
       strictTools,
       maxTokens
-    )
+    )(using IdentityMonad)
 
   "OpenAIAgentBackend" should "register tools as strict with normalized schemas when strictTools is true" in {
     val fn = backend(strictTools = true).convertedTools.head
@@ -112,7 +112,7 @@ class OpenAIAgentBackendSpec extends AnyFlatSpec with Matchers with EitherValues
       None,
       None,
       strictTools = true
-    )
+    )(using IdentityMonad)
 
     backend.sendRequest(ConversationHistory.withInitialPrompt("hello"), httpStub, includeTools = false, IterationInfo(1, 3)): Unit
     backend.sendRequest(ConversationHistory.withInitialPrompt("hello"), httpStub, includeTools = false, IterationInfo(3, 3)): Unit

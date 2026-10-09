@@ -159,7 +159,6 @@ private[gemini] object GeminiAgentBackend {
 }
 
 object GeminiAgent {
-  private implicit val identityMonad: sttp.monad.MonadError[Identity] = IdentityMonad
 
   /** Entry point: `GeminiAgent.builder[F](client, model)`. The indirection lets `M` be inferred while `F` is given explicitly. */
   def builder[F[_]]: BuilderPartiallyApplied[F] = new BuilderPartiallyApplied[F]
@@ -203,26 +202,26 @@ object GeminiAgent {
   }
 
   def synchronous[M <: GeminiModel](client: GeminiClient, model: M): AgentBuilder[Identity, M, String, String] =
-    builder[Identity](client, model)
+    builder[Identity](client, model)(using IdentityMonad)
 
   def synchronous[M <: GeminiModel](
       client: GeminiClient,
       modelForIteration: IterationInfo => M
   ): AgentBuilder[Identity, M, String, String] =
-    builder[Identity](client, modelForIteration)
+    builder[Identity](client, modelForIteration)(using IdentityMonad)
 
   def synchronous(client: GeminiClient, modelName: String): AgentBuilder[Identity, GeminiModel.CustomModel, String, String] =
-    builder[Identity](client, modelName)
+    builder[Identity](client, modelName)(using IdentityMonad)
 
   def synchronous[M <: GeminiModel](geminiConfig: GeminiConfig, model: M): AgentBuilder[Identity, M, String, String] =
-    builder[Identity](geminiConfig, model)
+    builder[Identity](geminiConfig, model)(using IdentityMonad)
 
   def synchronous[M <: GeminiModel](
       geminiConfig: GeminiConfig,
       modelForIteration: IterationInfo => M
   ): AgentBuilder[Identity, M, String, String] =
-    builder[Identity](geminiConfig, modelForIteration)
+    builder[Identity](geminiConfig, modelForIteration)(using IdentityMonad)
 
   def synchronous(geminiConfig: GeminiConfig, modelName: String): AgentBuilder[Identity, GeminiModel.CustomModel, String, String] =
-    builder[Identity](geminiConfig, modelName)
+    builder[Identity](geminiConfig, modelName)(using IdentityMonad)
 }

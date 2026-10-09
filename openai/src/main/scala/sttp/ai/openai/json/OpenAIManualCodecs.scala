@@ -195,12 +195,12 @@ object OpenAIManualCodecs {
       else
         c.value.asObject match {
           case Some(o) if o.isEmpty => Right(None)
-          case _                    => toolResourcesCodec.tryDecode(c).map(Some(_))
+          case _                    => c.as[ToolResources](using toolResourcesCodec).map(Some(_))
         }
     },
     Encoder.instance {
       case None     => Json.Null
-      case Some(tr) => toolResourcesCodec(tr)
+      case Some(tr) => tr.asJson(using toolResourcesCodec)
     }
   )
 

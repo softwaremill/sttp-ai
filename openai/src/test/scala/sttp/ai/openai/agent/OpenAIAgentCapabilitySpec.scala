@@ -6,12 +6,13 @@ import org.scalatest.matchers.should.Matchers
 import sttp.ai.openai.OpenAI
 import sttp.ai.core.agent.{AgentTool, IterationInfo}
 import sttp.ai.openai.requests.completions.chat.ChatRequestBody.ChatCompletionModel
+import sttp.apispec.Schema
 import sttp.shared.Identity
 
 object OpenAIAgentCapabilitySpecFixtures {
   val openAI: OpenAI = new OpenAI("test-key")
   val echoTool: AgentTool[Identity, ?] = {
-    val schema = sttp.apispec.circe.schemaDecoder.decodeJson(parse("""{"type":"object"}""").toOption.get).toOption.get
+    val schema = parse("""{"type":"object"}""").toOption.get.as[Schema](using sttp.apispec.circe.schemaDecoder).toOption.get
     AgentTool.dynamic("echo", "Echoes input", schema)(_ => "ok")
   }
 }

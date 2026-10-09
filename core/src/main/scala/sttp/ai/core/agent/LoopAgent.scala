@@ -1,6 +1,6 @@
 package sttp.ai.core.agent
 
-import io.circe.parser.parse
+import io.circe.parser.decode
 import sttp.client4.Backend
 import sttp.monad.MonadError
 import sttp.monad.syntax.MonadErrorOps
@@ -173,7 +173,7 @@ private[agent] class LoopAgent[F[_], In, Out](
   }
 
   private def executeTool[T](tool: AgentTool[F, T], toolCall: ToolCall): F[String] =
-    parse(toolCall.input).flatMap(tool.codec.decodeJson) match {
+    decode[T](toolCall.input)(using tool.codec) match {
       case Left(parseError) =>
         config.exceptionHandler.handleParseError(toolCall.toolName, toolCall.input, parseError) match {
           case Left(errorMessage) => monad.unit(errorMessage)

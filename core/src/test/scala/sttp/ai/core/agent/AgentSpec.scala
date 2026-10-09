@@ -12,7 +12,6 @@ import sttp.shared.Identity
 import sttp.tapir.Schema
 
 class AgentSpec extends AnyFlatSpec with Matchers with OptionValues {
-  private implicit val identityMonad: sttp.monad.MonadError[Identity] = IdentityMonad
 
   // Test-only model claiming ToolCalling and StructuredOutput, so builder methods requiring those capability
   // evidences are usable in these tests.
@@ -62,7 +61,7 @@ class AgentSpec extends AnyFlatSpec with Matchers with OptionValues {
   }
 
   private def agentBuilder(responses: AgentResponse*): AgentBuilder[Identity, TestModel.type, String, String] =
-    AgentBuilder[Identity, TestModel.type](_ => new StubAgentBackend(responses))
+    AgentBuilder[Identity, TestModel.type](_ => new StubAgentBackend(responses))(using IdentityMonad)
 
   private def runLoop(builder: AgentBuilder[Identity, TestModel.type, String, String]): AgentResult[Either[AgentFailure, String]] =
     builder.build.run("Test")(backend)
@@ -110,7 +109,7 @@ class AgentSpec extends AnyFlatSpec with Matchers with OptionValues {
       )
     )
 
-    val result = runLoop(AgentBuilder[Identity, TestModel.type](_ => stubBackend).maxIterations(3).tools(dummyTool))
+    val result = runLoop(AgentBuilder[Identity, TestModel.type](_ => stubBackend)(using IdentityMonad).maxIterations(3).tools(dummyTool))
 
     stubBackend.receivedIncludeTools shouldBe Seq(true, true, false)
     result.toolCalls should have size 2
@@ -239,7 +238,7 @@ class AgentSpec extends AnyFlatSpec with Matchers with OptionValues {
         AgentResponse("Done", Seq.empty, StopReason.EndTurn)
       )
     )
-    runLoop(AgentBuilder[Identity, TestModel.type](_ => stubBackend).tools(dummyTool)): Unit
+    runLoop(AgentBuilder[Identity, TestModel.type](_ => stubBackend)(using IdentityMonad).tools(dummyTool)): Unit
 
     stubBackend.receivedHistories should have size 2
     val firstHistory = stubBackend.receivedHistories.head
@@ -262,7 +261,7 @@ class AgentSpec extends AnyFlatSpec with Matchers with OptionValues {
       )
     )
 
-    runLoop(AgentBuilder[Identity, TestModel.type](_ => stubBackend).maxIterations(3).tools(dummyTool)): Unit
+    runLoop(AgentBuilder[Identity, TestModel.type](_ => stubBackend)(using IdentityMonad).maxIterations(3).tools(dummyTool)): Unit
 
     stubBackend.iterationInfos.map(_.iteration) shouldBe Vector(1, 2, 3)
     stubBackend.iterationInfos.map(_.maxIterations).distinct shouldBe Vector(3)
@@ -689,7 +688,7 @@ class AgentSpec extends AnyFlatSpec with Matchers with OptionValues {
       .addUserPrompt("What is 2+2?")
       .addAssistantResponse("4", Seq.empty)
 
-    val result = AgentBuilder[Identity, TestModel.type](_ => stubBackend).build.run("Now times 10?", seed)(backend)
+    val result = AgentBuilder[Identity, TestModel.type](_ => stubBackend)(using IdentityMonad).build.run("Now times 10?", seed)(backend)
 
     stubBackend.receivedHistories.head.entries shouldBe (seed.entries :+ ConversationEntry.UserPrompt("Now times 10?")): Unit
     result.history.entries shouldBe (seed.entries ++ Seq(
@@ -705,7 +704,7 @@ class AgentSpec extends AnyFlatSpec with Matchers with OptionValues {
         AgentResponse("Second answer", Seq.empty, StopReason.EndTurn)
       )
     )
-    val agent = AgentBuilder[Identity, TestModel.type](_ => stubBackend).build
+    val agent = AgentBuilder[Identity, TestModel.type](_ => stubBackend)(using IdentityMonad).build
 
     val first = agent.run("First question")(backend)
     val second = agent.run("Second question", first.history)(backend)
