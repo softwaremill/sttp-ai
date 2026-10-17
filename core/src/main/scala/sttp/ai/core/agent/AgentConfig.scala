@@ -10,9 +10,9 @@ case class AgentConfig[F[_]](
     maxIterations: Int = 10,
     maxTokens: Option[Int] = None,
     systemPromptBuilder: Option[SystemPromptParameters => String] = Some(AgentConfig.buildSystemPrompt),
-    userTools: Seq[AgentTool[F, _]] = Seq.empty[AgentTool[F, _]],
+    userTools: Seq[AgentTool[F, ?]] = Seq.empty[AgentTool[F, ?]],
     exceptionHandler: ExceptionHandler = ExceptionHandler.default,
-    responseSchema: Option[ResponseSchema[_]] = None,
+    responseSchema: Option[ResponseSchema[?]] = None,
     interceptors: Seq[AgentInterceptor[F]] = Seq.empty[AgentInterceptor[F]]
 ) {
   val systemPrompt: Option[String] = systemPromptBuilder.map(_.apply(SystemPromptParameters(maxIterations)))

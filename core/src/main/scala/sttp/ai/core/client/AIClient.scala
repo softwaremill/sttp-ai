@@ -28,7 +28,7 @@ trait AIClient[Req, Resp, E <: AIException] {
   def createRequest(request: Req): Request[Either[E, Resp]]
 
   /** List available models */
-  def listModels(): Request[Either[E, _]]
+  def listModels(): Request[Either[E, ?]]
 
   /** Create a streaming request returning a binary stream
     *

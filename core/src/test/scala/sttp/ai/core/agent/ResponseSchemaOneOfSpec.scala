@@ -40,7 +40,7 @@ class ResponseSchemaOneOfSpec extends AnyFlatSpec with Matchers with OptionValue
   private val rs: ResponseSchema[Intent] =
     ResponseSchema.oneOf[Intent](Variant[Refund], Variant[Complaint], Variant[GeneralQuery])
 
-  private def schemaJson(r: ResponseSchema[_]): Json =
+  private def schemaJson(r: ResponseSchema[?]): Json =
     sttp.apispec.circe.encoderSchema(r.schema).deepDropNullValues
 
   behavior of "ResponseSchema.oneOf"

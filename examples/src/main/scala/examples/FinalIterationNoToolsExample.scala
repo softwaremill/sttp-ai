@@ -31,7 +31,7 @@ import sttp.tapir.Schema
   * OPENAI_API_KEY=sk-... sbt "examples/runMain examples.FinalIterationNoToolsExample"
   * }}}
   */
-object FinalIterationNoToolsExample extends App {
+object FinalIterationNoToolsExample {
 
   /** Logs, per real LLM call, whether the serialized request body declared any tools. */
   class ToolVisibilityLoggingBackend(delegate: SyncBackend) extends DelegateBackend[Identity, Any](delegate) with Backend[Identity] {
@@ -50,57 +50,59 @@ object FinalIterationNoToolsExample extends App {
 
   case class CalculatorInput(operation: String, a: Double, b: Double) derives io.circe.Codec.AsObject, Schema
 
-  val calculatorTool = AgentTool.fromFunction(
-    "calculate",
-    "Perform a single arithmetic operation (one of: add, subtract, multiply, divide)"
-  ) { (input: CalculatorInput) =>
-    val result = input.operation match {
-      case "add"      => input.a + input.b
-      case "subtract" => input.a - input.b
-      case "multiply" => input.a * input.b
-      case "divide"   => if (input.b != 0) input.a / input.b else Double.NaN
-      case _          => 0.0
+  def main(args: Array[String]): Unit = {
+    val calculatorTool = AgentTool.fromFunction(
+      "calculate",
+      "Perform a single arithmetic operation (one of: add, subtract, multiply, divide)"
+    ) { (input: CalculatorInput) =>
+      val result = input.operation match {
+        case "add"      => input.a + input.b
+        case "subtract" => input.a - input.b
+        case "multiply" => input.a * input.b
+        case "divide"   => if (input.b != 0) input.a / input.b else Double.NaN
+        case _          => 0.0
+      }
+      s"${input.a} ${input.operation} ${input.b} = $result"
     }
-    s"${input.a} ${input.operation} ${input.b} = $result"
+
+    val prompt =
+      """Use the calculate tool for EVERY arithmetic step (never compute in your head):
+        |1. add 17 and 25
+        |2. multiply that sum by 3
+        |3. subtract 6 from that result
+        |Then state the final number in one sentence.""".stripMargin
+
+    val maxIterations = 3
+
+    println("=== Final-iteration no-tools example ===\n")
+    println(s"maxIterations = $maxIterations")
+    println(s"User: $prompt\n")
+
+    val openai = OpenAI.fromEnv
+    val backend = new ToolVisibilityLoggingBackend(DefaultSyncBackend())
+    try {
+      val agent = OpenAIAgent
+        .synchronous(openai, "gpt-4o-mini")
+        .maxIterations(maxIterations)
+        .tools(calculatorTool)
+        .build
+
+      val result = agent.run(prompt)(backend)
+
+      println("\n=== Result ===")
+      println(s"Finish reason: ${result.finishReason}")
+      println(s"Iterations:    ${result.iterations}")
+      println(s"Tool calls (${result.toolCalls.length}):")
+      result.toolCalls.foreach { tc =>
+        println(s"  [iteration ${tc.iteration}] ${tc.toolName}(${tc.input}) -> ${tc.output}")
+      }
+      println(s"Final answer:  ${result.finalAnswer}")
+
+      val lastIterationHadTools = result.toolCalls.exists(_.iteration >= maxIterations)
+      println("\n=== Interpretation ===")
+      println(s"- No tool call executed on the final iteration ($maxIterations): ${!lastIterationHadTools}")
+      println(s"- Run completed without an API error and reached ${result.finishReason}")
+      println("- Expect the LLM-call log above to read: tools offered = true, true, false")
+    } finally backend.close()
   }
-
-  val prompt =
-    """Use the calculate tool for EVERY arithmetic step (never compute in your head):
-      |1. add 17 and 25
-      |2. multiply that sum by 3
-      |3. subtract 6 from that result
-      |Then state the final number in one sentence.""".stripMargin
-
-  val maxIterations = 3
-
-  println("=== Final-iteration no-tools example ===\n")
-  println(s"maxIterations = $maxIterations")
-  println(s"User: $prompt\n")
-
-  val openai = OpenAI.fromEnv
-  val backend = new ToolVisibilityLoggingBackend(DefaultSyncBackend())
-  try {
-    val agent = OpenAIAgent
-      .synchronous(openai, "gpt-4o-mini")
-      .maxIterations(maxIterations)
-      .tools(calculatorTool)
-      .build
-
-    val result = agent.run(prompt)(backend)
-
-    println("\n=== Result ===")
-    println(s"Finish reason: ${result.finishReason}")
-    println(s"Iterations:    ${result.iterations}")
-    println(s"Tool calls (${result.toolCalls.length}):")
-    result.toolCalls.foreach { tc =>
-      println(s"  [iteration ${tc.iteration}] ${tc.toolName}(${tc.input}) -> ${tc.output}")
-    }
-    println(s"Final answer:  ${result.finalAnswer}")
-
-    val lastIterationHadTools = result.toolCalls.exists(_.iteration >= maxIterations)
-    println("\n=== Interpretation ===")
-    println(s"- No tool call executed on the final iteration ($maxIterations): ${!lastIterationHadTools}")
-    println(s"- Run completed without an API error and reached ${result.finishReason}")
-    println("- Expect the LLM-call log above to read: tools offered = true, true, false")
-  } finally backend.close()
 }

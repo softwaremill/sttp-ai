@@ -52,9 +52,9 @@ abstract class RetryingBackend[F[_], P] private (
 ) extends DelegateBackend(delegate) {
   import RetryingBackend._
 
-  override def send[T](request: GenericRequest[T, P with Effect[F]]): F[Response[T]] = sendWithRetries(request, attemptNo = 0)
+  override def send[T](request: GenericRequest[T, P & Effect[F]]): F[Response[T]] = sendWithRetries(request, attemptNo = 0)
 
-  private def sendWithRetries[T](request: GenericRequest[T, P with Effect[F]], attemptNo: Int): F[Response[T]] = {
+  private def sendWithRetries[T](request: GenericRequest[T, P & Effect[F]], attemptNo: Int): F[Response[T]] = {
     val canRetry = maxRetries - attemptNo > 0 && RetryWhen.isBodyRetryable(request.body)
 
     val attempted: F[Either[SttpClientException.ConnectException, Response[T]]] =
@@ -118,7 +118,7 @@ object RetryingBackend {
   private def shouldRetry(code: StatusCode): Boolean =
     code == StatusCode.RequestTimeout || code == StatusCode.Conflict || code == StatusCode.TooManyRequests || code.isServerError
 
-  private def retryAfter(response: Response[_]): Option[FiniteDuration] =
+  private def retryAfter(response: Response[?]): Option[FiniteDuration] =
     response
       .header(HeaderNames.RetryAfter)
       .flatMap(s => scala.util.Try(s.trim.toLong).toOption)

@@ -11,26 +11,28 @@ import sttp.ai.claude.models.Message
 import sttp.ai.claude.requests.MessageRequest
 import sttp.tapir.Schema
 
-object ClaudeStructuredOutputExample extends App {
+object ClaudeStructuredOutputExample {
 
   case class Language(name: String, paradigm: String, summary: String) derives io.circe.Codec.AsObject, Schema
 
   case class LanguageList(languages: List[Language]) derives io.circe.Codec.AsObject, Schema
 
-  val claude = ClaudeSyncClient.fromEnv
-  try {
-    val request = MessageRequest.simple(
-      model = "claude-haiku-4-5-20251001",
-      messages = List(
-        Message.user(
-          "List 10 well-known programming languages. For each, give the dominant paradigm and a one-sentence summary."
-        )
-      ),
-      maxTokens = 1500
-    )
-    val result: LanguageList = claude.createMessageAs[LanguageList](request)
-    result.languages.foreach { l =>
-      println(s"${l.name} [${l.paradigm}] — ${l.summary}")
-    }
-  } finally claude.close()
+  def main(args: Array[String]): Unit = {
+    val claude = ClaudeSyncClient.fromEnv
+    try {
+      val request = MessageRequest.simple(
+        model = "claude-haiku-4-5-20251001",
+        messages = List(
+          Message.user(
+            "List 10 well-known programming languages. For each, give the dominant paradigm and a one-sentence summary."
+          )
+        ),
+        maxTokens = 1500
+      )
+      val result: LanguageList = claude.createMessageAs[LanguageList](request)
+      result.languages.foreach { l =>
+        println(s"${l.name} [${l.paradigm}] — ${l.summary}")
+      }
+    } finally claude.close()
+  }
 }

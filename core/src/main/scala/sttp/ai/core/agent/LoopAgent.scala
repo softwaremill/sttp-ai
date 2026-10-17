@@ -14,7 +14,7 @@ private[agent] class LoopAgent[F[_], In, Out](
     extends Agent[F, In, Out] {
   import LoopAgent.{ContinueLoop, Finished, IterationOutcome}
 
-  private val toolMap: Map[String, AgentTool[F, _]] = config.userTools.map(t => (t.name, t: AgentTool[F, _])).toMap
+  private val toolMap: Map[String, AgentTool[F, ?]] = config.userTools.map(t => (t.name, t: AgentTool[F, ?])).toMap
 
   private val interceptor: AgentInterceptor[F] = AgentInterceptor.compose(config.interceptors)
 
@@ -173,7 +173,7 @@ private[agent] class LoopAgent[F[_], In, Out](
   }
 
   private def executeTool[T](tool: AgentTool[F, T], toolCall: ToolCall): F[String] =
-    decode[T](toolCall.input)(tool.codec) match {
+    decode[T](toolCall.input)(using tool.codec) match {
       case Left(parseError) =>
         config.exceptionHandler.handleParseError(toolCall.toolName, toolCall.input, parseError) match {
           case Left(errorMessage) => monad.unit(errorMessage)

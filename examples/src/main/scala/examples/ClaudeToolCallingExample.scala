@@ -12,110 +12,112 @@ import sttp.ai.claude.models.*
 import sttp.ai.claude.requests.MessageRequest
 import sttp.client4.{DefaultSyncBackend, SyncBackend}
 
-object ClaudeToolCallingExample extends App {
+object ClaudeToolCallingExample {
 
-  val config = ClaudeConfig.fromEnv
-  val backend: SyncBackend = DefaultSyncBackend()
-  val client = ClaudeClient(config)
+  def main(args: Array[String]): Unit = {
+    val config = ClaudeConfig.fromEnv
+    val backend: SyncBackend = DefaultSyncBackend()
+    val client = ClaudeClient(config)
 
-  // Define tools for Claude to use
-  val weatherTool = Tool(
-    name = "get_weather",
-    description = "Get current weather information for a specific location",
-    inputSchema = ToolInputSchema.forObject(
-      properties = Map(
-        "location" -> PropertySchema.string("The city name or location"),
-        "unit" -> PropertySchema.stringEnum("Temperature unit", List("celsius", "fahrenheit"))
-      ),
-      required = Some(List("location"))
+    // Define tools for Claude to use
+    val weatherTool = Tool(
+      name = "get_weather",
+      description = "Get current weather information for a specific location",
+      inputSchema = ToolInputSchema.forObject(
+        properties = Map(
+          "location" -> PropertySchema.string("The city name or location"),
+          "unit" -> PropertySchema.stringEnum("Temperature unit", List("celsius", "fahrenheit"))
+        ),
+        required = Some(List("location"))
+      )
     )
-  )
 
-  val calculatorTool = Tool(
-    name = "calculate",
-    description = "Perform basic mathematical calculations",
-    inputSchema = ToolInputSchema.forObject(
-      properties = Map(
-        "operation" -> PropertySchema.stringEnum("The mathematical operation to perform", List("add", "subtract", "multiply", "divide")),
-        "a" -> PropertySchema("number", Some("First number")),
-        "b" -> PropertySchema("number", Some("Second number"))
-      ),
-      required = Some(List("operation", "a", "b"))
+    val calculatorTool = Tool(
+      name = "calculate",
+      description = "Perform basic mathematical calculations",
+      inputSchema = ToolInputSchema.forObject(
+        properties = Map(
+          "operation" -> PropertySchema.stringEnum("The mathematical operation to perform", List("add", "subtract", "multiply", "divide")),
+          "a" -> PropertySchema("number", Some("First number")),
+          "b" -> PropertySchema("number", Some("Second number"))
+        ),
+        required = Some(List("operation", "a", "b"))
+      )
     )
-  )
 
-  val tools = List(weatherTool, calculatorTool)
+    val tools = List(weatherTool, calculatorTool)
 
-  println("=== Claude Tool Calling Example ===")
+    println("=== Claude Tool Calling Example ===")
 
-  val messages = List(
-    Message.user("What's the weather like in Paris? Also, what's 15 multiplied by 23?")
-  )
+    val messages = List(
+      Message.user("What's the weather like in Paris? Also, what's 15 multiplied by 23?")
+    )
 
-  val request = MessageRequest.withTools(
-    model = "claude-3-haiku-20240307", // Use a more capable model for tool calling
-    messages = messages,
-    maxTokens = 1000,
-    tools = tools
-  )
+    val request = MessageRequest.withTools(
+      model = "claude-3-haiku-20240307", // Use a more capable model for tool calling
+      messages = messages,
+      maxTokens = 1000,
+      tools = tools
+    )
 
-  val response = client.createMessage(request).send(backend)
+    val response = client.createMessage(request).send(backend)
 
-  response.body match {
-    case Right(messageResponse) =>
-      println("Claude's response:")
-      messageResponse.content.foreach {
-        case ContentBlock.Text(text, _, _) =>
-          println(s"Text: $text")
-        case ContentBlock.ToolUse(id, name, input) =>
-          println(s"Tool called: $name")
-          println(s"Tool ID: $id")
-          println(s"Tool input: $input")
-          // Simulate tool execution
-          val toolResult = simulateToolExecution(name, input)
-          println(s"Tool result: $toolResult")
-        case _ => // Handle other content types if needed
-      }
+    response.body match {
+      case Right(messageResponse) =>
+        println("Claude's response:")
+        messageResponse.content.foreach {
+          case ContentBlock.Text(text, _, _) =>
+            println(s"Text: $text")
+          case ContentBlock.ToolUse(id, name, input) =>
+            println(s"Tool called: $name")
+            println(s"Tool ID: $id")
+            println(s"Tool input: $input")
+            // Simulate tool execution
+            val toolResult = simulateToolExecution(name, input)
+            println(s"Tool result: $toolResult")
+          case _ => // Handle other content types if needed
+        }
 
-      println(s"\nStop reason: ${messageResponse.stopReason}")
-      println(s"Usage: ${messageResponse.usage}")
+        println(s"\nStop reason: ${messageResponse.stopReason}")
+        println(s"Usage: ${messageResponse.usage}")
 
-    case Left(error) =>
-      println(s"Error: ${error.getMessage}")
+      case Left(error) =>
+        println(s"Error: ${error.getMessage}")
+    }
+
+    // Example of tool result handling (would normally involve another API call with tool results)
+    println("\n=== Tool Result Follow-up Example ===")
+
+    val toolResultMessages = List(
+      Message.user("What's 25 + 17?")
+    )
+
+    val toolResultRequest = MessageRequest.withTools(
+      model = "claude-3-haiku-20240307",
+      messages = toolResultMessages,
+      maxTokens = 500,
+      tools = List(calculatorTool)
+    )
+
+    val toolResultResponse = client.createMessage(toolResultRequest).send(backend)
+
+    toolResultResponse.body match {
+      case Right(messageResponse) =>
+        println("Claude's tool-assisted calculation:")
+        messageResponse.content.foreach {
+          case ContentBlock.Text(text, _, _) =>
+            println(text)
+          case ContentBlock.ToolUse(id, name, input) =>
+            val result = simulateToolExecution(name, input)
+            println(s"Calculated result: $result")
+          case _ => // Handle other content types if needed
+        }
+      case Left(error) =>
+        println(s"Error: ${error.getMessage}")
+    }
+
+    backend.close()
   }
-
-  // Example of tool result handling (would normally involve another API call with tool results)
-  println("\n=== Tool Result Follow-up Example ===")
-
-  val toolResultMessages = List(
-    Message.user("What's 25 + 17?")
-  )
-
-  val toolResultRequest = MessageRequest.withTools(
-    model = "claude-3-haiku-20240307",
-    messages = toolResultMessages,
-    maxTokens = 500,
-    tools = List(calculatorTool)
-  )
-
-  val toolResultResponse = client.createMessage(toolResultRequest).send(backend)
-
-  toolResultResponse.body match {
-    case Right(messageResponse) =>
-      println("Claude's tool-assisted calculation:")
-      messageResponse.content.foreach {
-        case ContentBlock.Text(text, _, _) =>
-          println(text)
-        case ContentBlock.ToolUse(id, name, input) =>
-          val result = simulateToolExecution(name, input)
-          println(s"Calculated result: $result")
-        case _ => // Handle other content types if needed
-      }
-    case Left(error) =>
-      println(s"Error: ${error.getMessage}")
-  }
-
-  backend.close()
 
   // Simulate tool execution (in a real implementation, these would call actual services)
   private def simulateToolExecution(toolName: String, input: Map[String, io.circe.Json]): String =
