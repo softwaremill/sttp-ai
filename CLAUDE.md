@@ -33,6 +33,7 @@ sbt test                                 # Unit tests (excludes integration)
 sbt "testOnly *OpenAIIntegrationSpec"   # OpenAI integration (requires OPENAI_API_KEY)
 sbt "testOnly *ClaudeIntegrationSpec"   # Claude integration (requires ANTHROPIC_API_KEY)
 sbt "testOnly *GeminiIntegrationSpec"   # Gemini integration (requires GEMINI_API_KEY)
+sbt "testOnly *GeminiVertexIntegrationSpec" # Gemini on Vertex AI (requires GEMINI_VERTEX_PROJECT, GEMINI_VERTEX_ACCESS_TOKEN)
 ./run-integration-tests.sh              # All integration tests
 
 # Format (CRITICAL - always run after changes!)
@@ -66,7 +67,7 @@ sbt scalafmtAll                                                           # 3. F
 | **Return Type** | `Either[OpenAIException, A]` | `Either[ClaudeException, A]` | `Either[GeminiException, A]` |
 | **Message Content** | Simple strings | `ContentBlock` arrays (rich content) | `Step`/`Content` arrays |
 | **System Messages** | Role-based in messages array | Separate `system` parameter | Separate `system_instruction` parameter |
-| **Authentication** | `Authorization: Bearer <key>` | `x-api-key: <key>` + `anthropic-version` | `x-goog-api-key: <key>` |
+| **Authentication** | `Authorization: Bearer <key>` | `x-api-key: <key>` + `anthropic-version` | `x-goog-api-key: <key>`, or `Authorization: Bearer <token>` on Vertex AI |
 | **Package Structure** | `sttp.ai.openai.*` | `sttp.ai.claude.*` | `sttp.ai.gemini.*` |
 
 **Jev** (`jev/`, package `sttp.ai.jev`, Scala 3 only): `JevClient` / `JevSyncClient`, `Either[JevException, A]`, `Authorization: Bearer <key>`. No messages or streaming: a request is a state plus typed questions (`Noul`, `Choice`, `Score`), answered with typed answers.

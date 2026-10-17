@@ -80,12 +80,31 @@ case class GeminiConfig(
   baseUrl: Uri = Uri.unsafeParse("https://generativelanguage.googleapis.com"),
   timeout: Duration = 10.minutes,                                        // Request timeout
   maxRetries: Int = 3,                                                   // Max retry attempts, honored by GeminiSyncClient
-  organization: Option[String] = None                                    // Unused by Gemini, present for parity
+  organization: Option[String] = None,                                   // Unused by Gemini, present for parity
+  endpoint: GeminiEndpoint = GeminiEndpoint.DeveloperApi,                // Set by GeminiConfig.vertex, with auth and baseUrl
+  auth: GeminiAuth = GeminiAuth.ApiKey                                   // Set by GeminiConfig.vertex
 )
 ```
 
 **Environment Variables:**
 - `GEMINI_API_KEY` — Your API key (required)
 - `GEMINI_BASE_URL` — Custom base URL (optional)
+
+## Vertex AI
+
+The Interactions API is also available on Vertex AI, in Preview. `GeminiConfig.vertex` points the client at the interactions resource of a Google Cloud project, `https://aiplatform.googleapis.com/v1beta1/projects/{project}/locations/{location}/interactions`, and authenticates every request with an OAuth 2 access token (`Authorization: Bearer <token>`) instead of an API key. The token function is called each time the client builds a request, so it can return a refreshed token:
+
+```scala mdoc:compile-only
+//> using dep com.softwaremill.sttp.ai::gemini:@VERSION@
+
+import sttp.ai.gemini.GeminiSyncClient
+import sttp.ai.gemini.config.GeminiConfig
+
+val client = GeminiSyncClient(
+  GeminiConfig.vertex(project = "my-project", accessToken = () => sys.env("GEMINI_VERTEX_ACCESS_TOKEN"))
+)
+```
+
+In production, return the token of google-auth-library's `GoogleCredentials` (Application Default Credentials) after `refreshIfExpired()`. The location defaults to `global`, the only one that serves the Interactions API while it is in Preview. `GeminiSyncClient.fromEnv` reads only the Developer API settings.
 
 **Next steps:** see [Interactions](interactions.md) for the conversation lifecycle and multi-turn patterns, [Tool calling](tool-calling.md) and [Structured outputs](structured-outputs.md) for advanced request features, [Streaming](streaming.md) for SSE support, and [Models and errors](models-and-errors.md) for the model catalogue and exception hierarchy.

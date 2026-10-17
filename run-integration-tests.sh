@@ -26,6 +26,7 @@ OPENAI_SET=false
 ANTHROPIC_SET=false
 GEMINI_SET=false
 AZURE_SET=false
+GEMINI_VERTEX_SET=false
 JEV_SET=false
 
 if [ -n "${OPENAI_API_KEY}" ]; then
@@ -49,6 +50,13 @@ else
     echo "⚠️  GEMINI_API_KEY is not set - Gemini tests will be skipped"
 fi
 
+if [ -n "${GEMINI_VERTEX_PROJECT}" ] && [ -n "${GEMINI_VERTEX_ACCESS_TOKEN}" ]; then
+    GEMINI_VERTEX_SET=true
+    echo "✓ GEMINI_VERTEX_PROJECT and GEMINI_VERTEX_ACCESS_TOKEN are set"
+else
+    echo "⚠️  GEMINI_VERTEX_PROJECT/GEMINI_VERTEX_ACCESS_TOKEN are not set - Gemini on Vertex AI tests will be skipped"
+fi
+
 if [ -n "${AZURE_OPENAI_API_KEY}" ] && [ -n "${AZURE_OPENAI_ENDPOINT}" ]; then
     AZURE_SET=true
     echo "✓ AZURE_OPENAI_API_KEY and AZURE_OPENAI_ENDPOINT are set"
@@ -63,7 +71,7 @@ else
     echo "⚠️  TYPESAFE_API_KEY / JEV_API_KEY is not set - Jev tests will be skipped"
 fi
 
-if [ "$OPENAI_SET" = false ] && [ "$ANTHROPIC_SET" = false ] && [ "$GEMINI_SET" = false ] && [ "$AZURE_SET" = false ] && [ "$JEV_SET" = false ]; then
+if [ "$OPENAI_SET" = false ] && [ "$ANTHROPIC_SET" = false ] && [ "$GEMINI_SET" = false ] && [ "$GEMINI_VERTEX_SET" = false ] && [ "$AZURE_SET" = false ] && [ "$JEV_SET" = false ]; then
     echo ""
     echo "Usage:"
     echo "  1. Create .env file with OPENAI_API_KEY, ANTHROPIC_API_KEY, GEMINI_API_KEY, TYPESAFE_API_KEY and AZURE_OPENAI_API_KEY/AZURE_OPENAI_ENDPOINT"
@@ -78,10 +86,10 @@ echo ""
 echo "🧪 Running integration tests..."
 
 # Run the integration tests (including agent tests)
-sbt "testOnly *OpenAIIntegrationSpec *ClaudeIntegrationSpec *GeminiIntegrationSpec *JevIntegrationSpec *AzureOpenAIIntegrationSpec *OpenAIAgentIntegrationSpec *ClaudeAgentIntegrationSpec *GeminiAgentIntegrationSpec"
+sbt "testOnly *OpenAIIntegrationSpec *ClaudeIntegrationSpec *GeminiIntegrationSpec *GeminiVertexIntegrationSpec *JevIntegrationSpec *AzureOpenAIIntegrationSpec *OpenAIAgentIntegrationSpec *ClaudeAgentIntegrationSpec *GeminiAgentIntegrationSpec"
 
 echo ""
-if [ "$OPENAI_SET" = true ] || [ "$ANTHROPIC_SET" = true ] || [ "$GEMINI_SET" = true ] || [ "$AZURE_SET" = true ] || [ "$JEV_SET" = true ]; then
+if [ "$OPENAI_SET" = true ] || [ "$ANTHROPIC_SET" = true ] || [ "$GEMINI_SET" = true ] || [ "$GEMINI_VERTEX_SET" = true ] || [ "$AZURE_SET" = true ] || [ "$JEV_SET" = true ]; then
     echo "✅ Integration tests completed!"
 else
     echo "✅ Integration tests skipped (no API keys provided)"
