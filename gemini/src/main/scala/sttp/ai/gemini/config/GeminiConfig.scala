@@ -8,26 +8,29 @@ import scala.concurrent.duration.Duration
 /** Configuration for the Google Gemini (Interactions API) client.
   *
   * @param apiKey
-  *   Gemini API key for authentication
+  *   Gemini API key for authentication (not used with [[GeminiApi.Vertex]])
   * @param baseUrl
-  *   Base URL for the Gemini API (defaults to the official endpoint; the `v1beta` version path is appended by the client)
+  *   Base URL for the Gemini API (defaults to the Developer API; the `api` path is appended by the client)
   * @param timeout
   *   Request timeout duration, applied to every request (defaults to 10 minutes)
   * @param maxRetries
   *   Maximum number of retry attempts for transient failures, honored by the sync client (defaults to 3)
   * @param organization
   *   Optional organization identifier (unused by the Gemini API, present for [[AIClientConfig]] parity)
+  * @param api
+  *   The API the client calls: the Developer API (default) or Vertex AI. See [[GeminiConfig.vertex]] for Vertex AI.
   */
 case class GeminiConfig(
     apiKey: String,
     baseUrl: Uri = GeminiConfig.DefaultBaseUrl,
     timeout: Duration = GeminiConfig.DefaultTimeout,
     maxRetries: Int = GeminiConfig.DefaultMaxRetries,
-    organization: Option[String] = None
+    organization: Option[String] = None,
+    api: GeminiApi = GeminiApi.DeveloperApi
 ) extends AIClientConfig {
 
   override def authHeaders: Map[String, String] = Map(
-    "x-goog-api-key" -> apiKey,
+    api.authHeader(apiKey),
     "content-type" -> "application/json"
   )
 }
@@ -35,9 +38,34 @@ case class GeminiConfig(
 object GeminiConfig {
   val DefaultBaseUrl: Uri = Uri.unsafeParse("https://generativelanguage.googleapis.com")
 
+  private val VertexBaseUrl: Uri = Uri.unsafeParse("https://aiplatform.googleapis.com")
+
   /** Matches the default request timeout of the official OpenAI/Anthropic SDKs. */
   val DefaultTimeout: Duration = AIClientConfig.DefaultTimeout
   val DefaultMaxRetries: Int = AIClientConfig.DefaultMaxRetries
+
+  /** Configuration for the Interactions API on Vertex AI (`global` location), authenticated with an OAuth 2 access token. `apiKey` is
+    * empty: [[AIClientConfig]] requires it, and [[GeminiApi.Vertex]] does not use it.
+    *
+    * @param project
+    *   Google Cloud project ID
+    * @param accessToken
+    *   See [[GeminiApi.Vertex]]; e.g. `() => { credentials.refreshIfExpired(); credentials.getAccessToken.getTokenValue }` with
+    *   google-auth-library's `GoogleCredentials`
+    */
+  def vertex(
+      project: String,
+      accessToken: () => String,
+      timeout: Duration = DefaultTimeout,
+      maxRetries: Int = DefaultMaxRetries
+  ): GeminiConfig =
+    GeminiConfig(
+      apiKey = "",
+      baseUrl = VertexBaseUrl,
+      timeout = timeout,
+      maxRetries = maxRetries,
+      api = GeminiApi.Vertex(project, accessToken)
+    )
 
   /** Creates GeminiConfig from environment variables.
     *

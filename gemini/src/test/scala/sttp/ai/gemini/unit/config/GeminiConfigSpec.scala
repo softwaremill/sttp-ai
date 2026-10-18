@@ -2,7 +2,7 @@ package sttp.ai.gemini.unit.config
 
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
-import sttp.ai.gemini.config.GeminiConfig
+import sttp.ai.gemini.config.{GeminiApi, GeminiConfig}
 import sttp.model.Uri
 
 class GeminiConfigSpec extends AnyFlatSpec with Matchers {
@@ -29,5 +29,13 @@ class GeminiConfigSpec extends AnyFlatSpec with Matchers {
     val config = GeminiConfig("test-api-key", baseUrl = Uri.unsafeParse("http://localhost:8080"))
 
     config.baseUrl shouldBe Uri.unsafeParse("http://localhost:8080")
+  }
+
+  it should "call the Developer API by default" in {
+    GeminiConfig("test-api-key").api shouldBe GeminiApi.DeveloperApi
+  }
+
+  "GeminiApi.Vertex" should "refuse an empty project" in {
+    an[IllegalArgumentException] should be thrownBy GeminiApi.Vertex("", () => "token")
   }
 }
