@@ -38,7 +38,7 @@ class GeminiFs2ClientSpec extends AsyncFlatSpec with AsyncIOSpec with Matchers w
        |  }
        |}""".stripMargin
 
-  private val testData: Seq[(StatusCode, String, Class[_ <: GeminiException])] = List(
+  private val testData: Seq[(StatusCode, String, Class[? <: GeminiException])] = List(
     (Unauthorized, "UNAUTHENTICATED", classOf[GeminiException.AuthenticationException]),
     (TooManyRequests, "RESOURCE_EXHAUSTED", classOf[GeminiException.RateLimitException]),
     (BadRequest, "INVALID_ARGUMENT", classOf[GeminiException.InvalidRequestException]),
@@ -88,7 +88,7 @@ class GeminiFs2ClientSpec extends AsyncFlatSpec with AsyncIOSpec with Matchers w
       .flatMap(_.compile.drain)
 
     // then
-    response.attempt.asserting(_ shouldBe a[Left[DeserializationGeminiException, _]])
+    response.attempt.asserting(_ shouldBe a[Left[DeserializationGeminiException, ?]])
   }
 
   "Creating interactions with successful response" should "ignore empty events and return properly deserialized list of events" in {

@@ -103,7 +103,7 @@ class GeminiClientSerializationSpec extends AnyFlatSpec with Matchers with Eithe
       .thenRespondF(_ => ResponseStub.adjust(errorBody, StatusCode.BadRequest))
     val result = client.createInteraction(InteractionRequest.simple(testModel, "hi")).send(stub).body
 
-    result shouldBe a[Left[_, _]]
+    result shouldBe a[Left[?, ?]]
     result.left.toOption.get shouldBe a[GeminiException.InvalidRequestException]
     result.left.toOption.get.getMessage shouldBe "API key not valid. Please pass a valid API key."
   }

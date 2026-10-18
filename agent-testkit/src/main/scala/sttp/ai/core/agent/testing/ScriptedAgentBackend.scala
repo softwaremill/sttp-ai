@@ -18,9 +18,9 @@ final class ScriptExhaustedException(requestNumber: Int, scriptSize: Int)
   */
 final class ScriptedAgentBackend[F[_]](
     script: Seq[AgentResponse],
-    val tools: Seq[AgentTool[F, _]],
+    val tools: Seq[AgentTool[F, ?]],
     val systemPrompt: Option[String],
-    responseSchema: Option[ResponseSchema[_]] = None
+    responseSchema: Option[ResponseSchema[?]] = None
 )(implicit monad: MonadError[F])
     extends AgentBackend[F]
     with RecordedInteractions {

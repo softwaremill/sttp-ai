@@ -50,7 +50,7 @@ trait AgentMatchers {
   }
 
   /** Asserts that the agent called tool `name` at least once. */
-  def haveCalledTool(name: String): Matcher[AgentResult[_]] = Matcher { result =>
+  def haveCalledTool(name: String): Matcher[AgentResult[?]] = Matcher { result =>
     val names = result.toolCalls.map(_.toolName)
     MatchResult(
       names.contains(name),
@@ -62,7 +62,7 @@ trait AgentMatchers {
   /** Asserts that the agent called tool `name` with the given arguments. Both sides are parsed and compared as JSON, so whitespace and
     * field order don't matter.
     */
-  def haveCalledToolWith(name: String, expectedArgsJson: String): Matcher[AgentResult[_]] = Matcher { result =>
+  def haveCalledToolWith(name: String, expectedArgsJson: String): Matcher[AgentResult[?]] = Matcher { result =>
     parse(expectedArgsJson) match {
       case Left(error) =>
         MatchResult(
@@ -81,7 +81,7 @@ trait AgentMatchers {
   }
 
   /** Asserts on the agent's finish reason. */
-  def haveFinishedWith(expected: FinishReason): Matcher[AgentResult[_]] = Matcher { result =>
+  def haveFinishedWith(expected: FinishReason): Matcher[AgentResult[?]] = Matcher { result =>
     MatchResult(
       result.finishReason == expected,
       s"agent finished with ${result.finishReason}, expected $expected",

@@ -17,12 +17,12 @@ private[jev] object ErrorBody:
   // `loc` starts with the request part (`body`), which is dropped: `questions.2.score.criteria: Field required`
   private val validationError: Decoder[String] =
     Decoder.forProduct2("loc", "msg")((loc: List[String], msg: String) => s"${loc.drop(1).mkString(".")}: $msg")(using
-      Decoder.decodeList(locationPart),
+      Decoder.decodeList(using locationPart),
       Decoder.decodeString
     )
 
   private val validationList: Decoder[ErrorBody] =
-    Decoder.decodeList(validationError).map(errors => ErrorBody(errors.mkString("; "), None))
+    Decoder.decodeList(using validationError).map(errors => ErrorBody(errors.mkString("; "), None))
 
   private val detail: Decoder[ErrorBody] = messageWithType.or(validationList).or(plainString).at("detail")
 

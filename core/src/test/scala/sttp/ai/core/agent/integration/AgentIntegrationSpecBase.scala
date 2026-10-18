@@ -14,11 +14,11 @@ abstract class AgentIntegrationSpecBase extends AnyFlatSpec with Matchers {
 
   def providerName: String
   def apiKeyEnvVar: String
-  def createAgent(maxIterations: Int, tools: Seq[AgentTool[Identity, _]]): Agent[Identity, String, String]
+  def createAgent(maxIterations: Int, tools: Seq[AgentTool[Identity, ?]]): Agent[Identity, String, String]
 
   def createTypedAgent[T](
       maxIterations: Int,
-      tools: Seq[AgentTool[Identity, _]],
+      tools: Seq[AgentTool[Identity, ?]],
       responseSchema: ResponseSchema[T]
   ): Agent[Identity, String, T] =
     cancel(s"$providerName typed agent factory not implemented for this spec")
@@ -70,7 +70,7 @@ abstract class AgentIntegrationSpecBase extends AnyFlatSpec with Matchers {
   protected def answerOrFail(result: AgentResult[Either[AgentFailure, String]]): String =
     result.finalAnswer.fold(f => fail(s"agent did not produce a final answer: $f"), identity)
 
-  protected def assertToolCalled(result: AgentResult[_], toolName: String, minTimes: Int = 1)(implicit
+  protected def assertToolCalled(result: AgentResult[?], toolName: String, minTimes: Int = 1)(implicit
       prettifier: Prettifier,
       pos: source.Position
   ): Unit = {
@@ -81,13 +81,13 @@ abstract class AgentIntegrationSpecBase extends AnyFlatSpec with Matchers {
     )
   }
 
-  protected def assertMinIterations(result: AgentResult[_], min: Int)(implicit prettifier: Prettifier, pos: source.Position): Unit =
+  protected def assertMinIterations(result: AgentResult[?], min: Int)(implicit prettifier: Prettifier, pos: source.Position): Unit =
     assert(
       result.iterations >= min,
       s"Should have at least $min iterations, but had ${result.iterations}"
     )
 
-  def withAgent[T](maxIter: Int, tools: Seq[AgentTool[Identity, _]])(
+  def withAgent[T](maxIter: Int, tools: Seq[AgentTool[Identity, ?]])(
       test: (Agent[Identity, String, String], Backend[Identity]) => T
   ): T = {
     if (maybeApiKey.isEmpty) {

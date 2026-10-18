@@ -161,7 +161,7 @@ class SyncClientSpec extends AnyFlatSpec with Matchers with EitherValues {
 
   "Customizing the request" should "be additive" in {
     // given
-    val capturedRequest = new AtomicReference[GenericRequest[_, _]](null)
+    val capturedRequest = new AtomicReference[GenericRequest[?, ?]](null)
     val syncBackendStub = DefaultSyncBackend.stub.whenAnyRequest.thenRespondF { request =>
       capturedRequest.set(request)
       ResponseStub.adjust(sttp.ai.openai.fixtures.ModelsGetResponse.singleModelResponse, StatusCode.Ok)
@@ -197,7 +197,7 @@ class SyncClientSpec extends AnyFlatSpec with Matchers with EitherValues {
 
   "typed createChatCompletion" should "be ok" in {
     // given
-    val capturedRequest = new AtomicReference[GenericRequest[_, _]](null)
+    val capturedRequest = new AtomicReference[GenericRequest[?, ?]](null)
     val syncBackendStub = DefaultSyncBackend.stub.whenAnyRequest.thenRespondF { request =>
       capturedRequest.set(request)
       ResponseStub.adjust(sttp.ai.openai.fixtures.CompletionsFixture.structuredOutputsResponse, StatusCode.Ok)
@@ -217,7 +217,7 @@ class SyncClientSpec extends AnyFlatSpec with Matchers with EitherValues {
 
   "typed createChatCompletion" should "throw exception with parsed error" in {
     // given
-    val capturedRequest = new AtomicReference[GenericRequest[_, _]](null)
+    val capturedRequest = new AtomicReference[GenericRequest[?, ?]](null)
     val syncBackendStub = DefaultSyncBackend.stub.whenAnyRequest.thenRespondF { request =>
       capturedRequest.set(request)
       ResponseStub.adjust(sttp.ai.openai.fixtures.CompletionsFixture.structuredOutputsResponse, StatusCode.Ok)
@@ -274,7 +274,7 @@ class SyncClientSpec extends AnyFlatSpec with Matchers with EitherValues {
 
   "typed createChatCompletion" should "throw exception without choices" in {
     // given
-    val capturedRequest = new AtomicReference[GenericRequest[_, _]](null)
+    val capturedRequest = new AtomicReference[GenericRequest[?, ?]](null)
     val syncBackendStub = DefaultSyncBackend.stub.whenAnyRequest.thenRespondF { request =>
       capturedRequest.set(request)
       ResponseStub.adjust(sttp.ai.openai.fixtures.CompletionsFixture.structuredOutputsResponseWithoutChoices, StatusCode.Ok)
@@ -302,7 +302,7 @@ class SyncClientSpec extends AnyFlatSpec with Matchers with EitherValues {
   "OpenAISyncClient with AuthScheme.AzureApiKey" should "send the api-key header and no Authorization header" in {
     // given
     val azureBase = uri"https://my-res.openai.azure.com/openai/deployments/gpt-4o?api-version=2024-10-21"
-    val capturedRequest = new AtomicReference[GenericRequest[_, _]](null)
+    val capturedRequest = new AtomicReference[GenericRequest[?, ?]](null)
     val syncBackendStub = DefaultSyncBackend.stub.whenAnyRequest.thenRespondF { request =>
       capturedRequest.set(request)
       ResponseStub.adjust("""{"object":"list","data":[]}""", StatusCode.Ok)
@@ -356,7 +356,7 @@ class SyncClientSpec extends AnyFlatSpec with Matchers with EitherValues {
 
   "OpenAISyncClient(config)" should "apply the configured timeout to requests" in {
     // given
-    val capturedRequest = new AtomicReference[GenericRequest[_, _]](null)
+    val capturedRequest = new AtomicReference[GenericRequest[?, ?]](null)
     val backend = DefaultSyncBackend.stub.whenAnyRequest.thenRespondF { request =>
       capturedRequest.set(request)
       ResponseStub.adjust(sttp.ai.openai.fixtures.ModelsGetResponse.singleModelResponse, StatusCode.Ok)

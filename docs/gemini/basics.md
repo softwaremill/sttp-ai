@@ -80,12 +80,30 @@ case class GeminiConfig(
   baseUrl: Uri = Uri.unsafeParse("https://generativelanguage.googleapis.com"),
   timeout: Duration = 10.minutes,                                        // Request timeout
   maxRetries: Int = 3,                                                   // Max retry attempts, honored by GeminiSyncClient
-  organization: Option[String] = None                                    // Unused by Gemini, present for parity
+  organization: Option[String] = None,                                   // Unused by Gemini, present for parity
+  api: GeminiApi = GeminiApi.DeveloperApi                                // Developer API or Vertex AI; see GeminiConfig.vertex
 )
 ```
 
 **Environment Variables:**
 - `GEMINI_API_KEY` — Your API key (required)
 - `GEMINI_BASE_URL` — Custom base URL (optional)
+
+## Vertex AI
+
+`GeminiConfig.vertex` targets the Interactions API on Vertex AI (Preview, `global` location only), authenticating with an OAuth 2 access token instead of an API key:
+
+```scala mdoc:compile-only
+//> using dep com.softwaremill.sttp.ai::gemini:@VERSION@
+
+import sttp.ai.gemini.GeminiSyncClient
+import sttp.ai.gemini.config.GeminiConfig
+
+val client = GeminiSyncClient(
+  GeminiConfig.vertex(project = "my-project", accessToken = () => sys.env("GEMINI_VERTEX_ACCESS_TOKEN"))
+)
+```
+
+The token is read when a request is built, and stays fixed in it: build a new request for each send. `fromEnv` reads only the Developer API settings.
 
 **Next steps:** see [Interactions](interactions.md) for the conversation lifecycle and multi-turn patterns, [Tool calling](tool-calling.md) and [Structured outputs](structured-outputs.md) for advanced request features, [Streaming](streaming.md) for SSE support, and [Models and errors](models-and-errors.md) for the model catalogue and exception hierarchy.

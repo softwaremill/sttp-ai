@@ -18,124 +18,126 @@ import java.io.ByteArrayOutputStream
 import java.util.Base64
 import javax.imageio.ImageIO
 
-object ClaudeImageAnalysisExample extends App {
+object ClaudeImageAnalysisExample {
 
-  val config = ClaudeConfig.fromEnv
-  val backend: SyncBackend = DefaultSyncBackend()
-  val client = ClaudeClient(config)
+  def main(args: Array[String]): Unit = {
+    val config = ClaudeConfig.fromEnv
+    val backend: SyncBackend = DefaultSyncBackend()
+    val client = ClaudeClient(config)
 
-  println("=== Claude Image Analysis Example ===")
+    println("=== Claude Image Analysis Example ===")
 
-  // Create a simple test image programmatically (since we can't rely on external files)
-  val testImageBase64 = createTestImage()
+    // Create a simple test image programmatically (since we can't rely on external files)
+    val testImageBase64 = createTestImage()
 
-  // Single image analysis
-  val messages = List(
-    Message.user(
-      List(
-        ContentBlock.Text("What do you see in this image? Please describe it in detail."),
-        ContentBlock.Image(
-          source = ContentBlock.ImageSource.base64("image/png", testImageBase64)
+    // Single image analysis
+    val messages = List(
+      Message.user(
+        List(
+          ContentBlock.Text("What do you see in this image? Please describe it in detail."),
+          ContentBlock.Image(
+            source = ContentBlock.ImageSource.base64("image/png", testImageBase64)
+          )
         )
       )
     )
-  )
 
-  val request = MessageRequest.simple(
-    model = "claude-3-haiku-20240307", // Use a vision-capable model
-    messages = messages,
-    maxTokens = 500
-  )
+    val request = MessageRequest.simple(
+      model = "claude-3-haiku-20240307", // Use a vision-capable model
+      messages = messages,
+      maxTokens = 500
+    )
 
-  val response = client.createMessage(request).send(backend)
+    val response = client.createMessage(request).send(backend)
 
-  response.body match {
-    case Right(messageResponse) =>
-      println("Claude's image analysis:")
-      messageResponse.content.foreach {
-        case ContentBlock.Text(text, _, _) => println(text)
-        case _                             => // Handle other content types if needed
-      }
-      println(s"\nUsage: ${messageResponse.usage}")
-    case Left(error) =>
-      println(s"Error: ${error.getMessage}")
-  }
+    response.body match {
+      case Right(messageResponse) =>
+        println("Claude's image analysis:")
+        messageResponse.content.foreach {
+          case ContentBlock.Text(text, _, _) => println(text)
+          case _                             => // Handle other content types if needed
+        }
+        println(s"\nUsage: ${messageResponse.usage}")
+      case Left(error) =>
+        println(s"Error: ${error.getMessage}")
+    }
 
-  // Multiple images with comparison
-  println("\n=== Multiple Image Comparison ===")
+    // Multiple images with comparison
+    println("\n=== Multiple Image Comparison ===")
 
-  val testImage2Base64 = createTestImage(Color.BLUE)
+    val testImage2Base64 = createTestImage(Color.BLUE)
 
-  val multiImageMessages = List(
-    Message.user(
-      List(
-        ContentBlock.Text("Compare these two images and tell me the differences:"),
-        ContentBlock.Text("First image:"),
-        ContentBlock.Image(
-          source = ContentBlock.ImageSource.base64("image/png", testImageBase64)
-        ),
-        ContentBlock.Text("Second image:"),
-        ContentBlock.Image(
-          source = ContentBlock.ImageSource.base64("image/png", testImage2Base64)
+    val multiImageMessages = List(
+      Message.user(
+        List(
+          ContentBlock.Text("Compare these two images and tell me the differences:"),
+          ContentBlock.Text("First image:"),
+          ContentBlock.Image(
+            source = ContentBlock.ImageSource.base64("image/png", testImageBase64)
+          ),
+          ContentBlock.Text("Second image:"),
+          ContentBlock.Image(
+            source = ContentBlock.ImageSource.base64("image/png", testImage2Base64)
+          )
         )
       )
     )
-  )
 
-  val multiImageRequest = MessageRequest.simple(
-    model = "claude-3-haiku-20240307",
-    messages = multiImageMessages,
-    maxTokens = 600
-  )
+    val multiImageRequest = MessageRequest.simple(
+      model = "claude-3-haiku-20240307",
+      messages = multiImageMessages,
+      maxTokens = 600
+    )
 
-  val multiImageResponse = client.createMessage(multiImageRequest).send(backend)
+    val multiImageResponse = client.createMessage(multiImageRequest).send(backend)
 
-  multiImageResponse.body match {
-    case Right(messageResponse) =>
-      println("Claude's comparison:")
-      messageResponse.content.foreach {
-        case ContentBlock.Text(text, _, _) => println(text)
-        case _                             => // Handle other content types if needed
-      }
-    case Left(error) =>
-      println(s"Error: ${error.getMessage}")
-  }
+    multiImageResponse.body match {
+      case Right(messageResponse) =>
+        println("Claude's comparison:")
+        messageResponse.content.foreach {
+          case ContentBlock.Text(text, _, _) => println(text)
+          case _                             => // Handle other content types if needed
+        }
+      case Left(error) =>
+        println(s"Error: ${error.getMessage}")
+    }
 
-  // Image with specific analysis request
-  println("\n=== Specific Image Analysis Task ===")
+    // Image with specific analysis request
+    println("\n=== Specific Image Analysis Task ===")
 
-  val specificMessages = List(
-    Message.user(
-      List(
-        ContentBlock.Text("Analyze this image for any geometric shapes and their properties (color, size, position):"),
-        ContentBlock.Image(
-          source = ContentBlock.ImageSource.base64("image/png", testImageBase64)
+    val specificMessages = List(
+      Message.user(
+        List(
+          ContentBlock.Text("Analyze this image for any geometric shapes and their properties (color, size, position):"),
+          ContentBlock.Image(
+            source = ContentBlock.ImageSource.base64("image/png", testImageBase64)
+          )
         )
       )
     )
-  )
 
-  val specificRequest = MessageRequest.withSystem(
-    model = "claude-3-haiku-20240307",
-    system = "You are an expert in image analysis. Provide detailed technical descriptions of visual elements.",
-    messages = specificMessages,
-    maxTokens = 400
-  )
+    val specificRequest = MessageRequest.withSystem(
+      model = "claude-3-haiku-20240307",
+      system = "You are an expert in image analysis. Provide detailed technical descriptions of visual elements.",
+      messages = specificMessages,
+      maxTokens = 400
+    )
 
-  val specificResponse = client.createMessage(specificRequest).send(backend)
+    val specificResponse = client.createMessage(specificRequest).send(backend)
 
-  specificResponse.body match {
-    case Right(messageResponse) =>
-      println("Claude's technical analysis:")
-      messageResponse.content.foreach {
-        case ContentBlock.Text(text, _, _) => println(text)
-        case _                             => // Handle other content types if needed
-      }
-    case Left(error) =>
-      println(s"Error: ${error.getMessage}")
+    specificResponse.body match {
+      case Right(messageResponse) =>
+        println("Claude's technical analysis:")
+        messageResponse.content.foreach {
+          case ContentBlock.Text(text, _, _) => println(text)
+          case _                             => // Handle other content types if needed
+        }
+      case Left(error) =>
+        println(s"Error: ${error.getMessage}")
+    }
+
+    backend.close()
   }
-
-  backend.close()
 
   // Helper method to create a test image programmatically
   private def createTestImage(color: Color = Color.RED): String = {

@@ -6,10 +6,12 @@ import org.scalatest.matchers.should.Matchers
 import io.circe.Codec
 import io.circe.generic.semiauto.deriveCodec
 import sttp.ai.core.model.{AIModel, Capability}
-import sttp.client4.testing.SyncBackendStub
-import sttp.monad.IdentityMonad
+import sttp.client4.testing.{BackendStub, SyncBackendStub}
+import sttp.monad.{IdentityMonad, TryMonad}
 import sttp.shared.Identity
 import sttp.tapir.Schema
+
+import scala.util.Try
 
 class AgentSpec extends AnyFlatSpec with Matchers with OptionValues {
 
@@ -25,7 +27,7 @@ class AgentSpec extends AnyFlatSpec with Matchers with OptionValues {
     var receivedIncludeTools: Seq[Boolean] = Seq.empty
     var iterationInfos: Vector[IterationInfo] = Vector.empty
 
-    override def tools: Seq[AgentTool[Identity, _]] = Seq.empty
+    override def tools: Seq[AgentTool[Identity, ?]] = Seq.empty
     override def systemPrompt: Option[String] = None
 
     override def sendRequest(
@@ -61,7 +63,7 @@ class AgentSpec extends AnyFlatSpec with Matchers with OptionValues {
   }
 
   private def agentBuilder(responses: AgentResponse*): AgentBuilder[Identity, TestModel.type, String, String] =
-    AgentBuilder[Identity, TestModel.type](_ => new StubAgentBackend(responses))(IdentityMonad)
+    AgentBuilder[Identity, TestModel.type](_ => new StubAgentBackend(responses))(using IdentityMonad)
 
   private def runLoop(builder: AgentBuilder[Identity, TestModel.type, String, String]): AgentResult[Either[AgentFailure, String]] =
     builder.build.run("Test")(backend)
@@ -109,7 +111,7 @@ class AgentSpec extends AnyFlatSpec with Matchers with OptionValues {
       )
     )
 
-    val result = runLoop(AgentBuilder[Identity, TestModel.type](_ => stubBackend)(IdentityMonad).maxIterations(3).tools(dummyTool))
+    val result = runLoop(AgentBuilder[Identity, TestModel.type](_ => stubBackend)(using IdentityMonad).maxIterations(3).tools(dummyTool))
 
     stubBackend.receivedIncludeTools shouldBe Seq(true, true, false)
     result.toolCalls should have size 2
@@ -238,7 +240,7 @@ class AgentSpec extends AnyFlatSpec with Matchers with OptionValues {
         AgentResponse("Done", Seq.empty, StopReason.EndTurn)
       )
     )
-    runLoop(AgentBuilder[Identity, TestModel.type](_ => stubBackend)(IdentityMonad).tools(dummyTool)): Unit
+    runLoop(AgentBuilder[Identity, TestModel.type](_ => stubBackend)(using IdentityMonad).tools(dummyTool)): Unit
 
     stubBackend.receivedHistories should have size 2
     val firstHistory = stubBackend.receivedHistories.head
@@ -261,7 +263,7 @@ class AgentSpec extends AnyFlatSpec with Matchers with OptionValues {
       )
     )
 
-    runLoop(AgentBuilder[Identity, TestModel.type](_ => stubBackend)(IdentityMonad).maxIterations(3).tools(dummyTool)): Unit
+    runLoop(AgentBuilder[Identity, TestModel.type](_ => stubBackend)(using IdentityMonad).maxIterations(3).tools(dummyTool)): Unit
 
     stubBackend.iterationInfos.map(_.iteration) shouldBe Vector(1, 2, 3)
     stubBackend.iterationInfos.map(_.maxIterations).distinct shouldBe Vector(3)
@@ -688,7 +690,7 @@ class AgentSpec extends AnyFlatSpec with Matchers with OptionValues {
       .addUserPrompt("What is 2+2?")
       .addAssistantResponse("4", Seq.empty)
 
-    val result = AgentBuilder[Identity, TestModel.type](_ => stubBackend)(IdentityMonad).build.run("Now times 10?", seed)(backend)
+    val result = AgentBuilder[Identity, TestModel.type](_ => stubBackend)(using IdentityMonad).build.run("Now times 10?", seed)(backend)
 
     stubBackend.receivedHistories.head.entries shouldBe (seed.entries :+ ConversationEntry.UserPrompt("Now times 10?")): Unit
     result.history.entries shouldBe (seed.entries ++ Seq(
@@ -704,7 +706,7 @@ class AgentSpec extends AnyFlatSpec with Matchers with OptionValues {
         AgentResponse("Second answer", Seq.empty, StopReason.EndTurn)
       )
     )
-    val agent = AgentBuilder[Identity, TestModel.type](_ => stubBackend)(IdentityMonad).build
+    val agent = AgentBuilder[Identity, TestModel.type](_ => stubBackend)(using IdentityMonad).build
 
     val first = agent.run("First question")(backend)
     val second = agent.run("Second question", first.history)(backend)
@@ -715,6 +717,22 @@ class AgentSpec extends AnyFlatSpec with Matchers with OptionValues {
       ConversationEntry.UserPrompt("Second question")
     ): Unit
     second.history.entries.last shouldBe ConversationEntry.AssistantResponse("Second answer", Seq.empty)
+  }
+
+  it should "fail the returned effect, not throw, when building the first request throws" in {
+    val throwingBackend = new AgentBackend[Try] {
+      override def tools: Seq[AgentTool[Try, _]] = Seq.empty
+      override def systemPrompt: Option[String] = None
+      override def sendRequest(
+          history: ConversationHistory,
+          backend: sttp.client4.Backend[Try],
+          includeTools: Boolean,
+          iterationInfo: IterationInfo
+      ): Try[AgentResponse] = throw new IllegalStateException("no token")
+    }
+    val agent = AgentBuilder[Try, TestModel.type](_ => throwingBackend)(TryMonad).build
+
+    agent.run("Test")(BackendStub(TryMonad)).failed.get shouldBe an[IllegalStateException]
   }
 
   "AgentBuilder" should "append with addInterceptor() and replace with interceptors()" in {

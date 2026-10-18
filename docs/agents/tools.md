@@ -111,25 +111,27 @@ import sttp.tapir.Schema
 case class TripSummary(weather: String, calculation: String, conclusion: String) derives io.circe.Codec.AsObject, Schema
 case class WeatherInput(location: String) derives io.circe.Codec.AsObject, Schema
 
-object TypedAgentExample extends App {
+object TypedAgentExample {
   val weatherTool = AgentTool.fromFunction("get_weather", "Get the current weather for a location") {
     (input: WeatherInput) => s"The weather in ${input.location} is 22°C, sunny"
   }
 
-  val backend = DefaultSyncBackend()
-  try {
-    val agent = OpenAIAgent
-      .synchronous(OpenAI.fromEnv, "gpt-4o-mini")
-      .maxIterations(5)
-      .tools(weatherTool)
-      .deriveResponseSchema[TripSummary]
-      .build
-    agent.run("What's the weather in Paris?")(backend).finalAnswer match {
-      case Right(summary)                              => println(s"Weather: ${summary.weather}")
-      case Left(AgentParseError(raw, cause))           => println(s"Parse failed: ${cause.getMessage}; raw=$raw")
-      case Left(AgentIncomplete(raw, finishReason, _)) => println(s"Run incomplete ($finishReason); raw=$raw")
-    }
-  } finally backend.close()
+  def main(args: Array[String]): Unit = {
+    val backend = DefaultSyncBackend()
+    try {
+      val agent = OpenAIAgent
+        .synchronous(OpenAI.fromEnv, "gpt-4o-mini")
+        .maxIterations(5)
+        .tools(weatherTool)
+        .deriveResponseSchema[TripSummary]
+        .build
+      agent.run("What's the weather in Paris?")(backend).finalAnswer match {
+        case Right(summary)                              => println(s"Weather: ${summary.weather}")
+        case Left(AgentParseError(raw, cause))           => println(s"Parse failed: ${cause.getMessage}; raw=$raw")
+        case Left(AgentIncomplete(raw, finishReason, _)) => println(s"Run incomplete ($finishReason); raw=$raw")
+      }
+    } finally backend.close()
+  }
 }
 ```
 
