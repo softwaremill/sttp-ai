@@ -19,7 +19,7 @@ class AgentCompositionSpec extends AnyFlatSpec with Matchers {
   class RecordingBackend(responses: AgentResponse*) extends AgentBackend[Identity] {
     private var callCount = 0
     var receivedHistories: Seq[ConversationHistory] = Seq.empty
-    override def tools: Seq[AgentTool[Identity, _]] = Seq.empty
+    override def tools: Seq[AgentTool[Identity, ?]] = Seq.empty
     override def systemPrompt: Option[String] = None
     override def sendRequest(
         history: ConversationHistory,
@@ -42,7 +42,7 @@ class AgentCompositionSpec extends AnyFlatSpec with Matchers {
 
   private def usage(in: Long, out: Long): TokenUsage = TokenUsage(Tokens(in), Tokens(out), Tokens.Zero, Tokens.Zero)
 
-  private def builder(stub: RecordingBackend) = AgentBuilder[Identity, TestModel.type](_ => stub)(IdentityMonad)
+  private def builder(stub: RecordingBackend) = AgentBuilder[Identity, TestModel.type](_ => stub)(using IdentityMonad)
 
   "andThen" should "feed A's typed output to B as a fresh conversation" in {
     val stubA = new RecordingBackend(

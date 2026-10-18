@@ -21,7 +21,7 @@ class ScriptedAgentBackendSpec extends AnyFlatSpec with Matchers {
   private val history = ConversationHistory.withInitialPrompt("hello")
 
   private def newBackend(script: AgentResponse*): ScriptedAgentBackend[Identity] =
-    new ScriptedAgentBackend[Identity](script, Seq(echoTool), Some("be helpful"))(IdentityMonad)
+    new ScriptedAgentBackend[Identity](script, Seq(echoTool), Some("be helpful"))(using IdentityMonad)
 
   "ScriptedAgentBackend" should "return the scripted responses in order" in {
     val backend = newBackend(ScriptedResponse.text("first"), ScriptedResponse.text("second"))

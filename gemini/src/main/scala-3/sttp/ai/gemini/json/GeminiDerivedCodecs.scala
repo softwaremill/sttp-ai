@@ -60,7 +60,7 @@ object GeminiDerivedCodecs {
     },
     Encoder.instance {
       case InteractionInput.TextInput(text)   => Json.fromString(text)
-      case InteractionInput.StepsInput(steps) => Json.fromValues(steps.map(_.asJson(stepCodec)))
+      case InteractionInput.StepsInput(steps) => Json.fromValues(steps.map(_.asJson(using stepCodec)))
     }
   )
 

@@ -105,7 +105,7 @@ class ZioClientSpec extends AnyFlatSpec with Matchers with EitherValues {
     val response = unsafeRun(responseEffect.either)
 
     // then
-    response shouldBe a[Left[DeserializationOpenAIException, _]]
+    response shouldBe a[Left[DeserializationOpenAIException, ?]]
   }
 
   "Creating chat completions with successful response" should "ignore empty events and return properly deserialized list of chunks" in {
@@ -212,7 +212,7 @@ class ZioClientSpec extends AnyFlatSpec with Matchers with EitherValues {
       .flatMap(_.body.value.runDrain)
 
     // then
-    unsafeRun(responseEffect.either) shouldBe a[Left[DeserializationOpenAIException, _]]
+    unsafeRun(responseEffect.either) shouldBe a[Left[DeserializationOpenAIException, ?]]
   }
 
   "Creating a streamed model response" should "ignore empty events and return properly deserialized events" in {
@@ -238,7 +238,7 @@ class ZioClientSpec extends AnyFlatSpec with Matchers with EitherValues {
 
   "createStreamedModelResponse" should "send stream = true in the request body" in {
     // given
-    val capturedRequest = new AtomicReference[GenericRequest[_, _]](null)
+    val capturedRequest = new AtomicReference[GenericRequest[?, ?]](null)
     val zioBackendStub = HttpClientZioBackend.stub.whenAnyRequest.thenRespondF { request =>
       capturedRequest.set(request)
       ZIO.succeed(ResponseStub.adjust(sseBytes(Seq(doneEvent))))
@@ -262,7 +262,7 @@ class ZioClientSpec extends AnyFlatSpec with Matchers with EitherValues {
 
   "resumeStreamedModelResponse" should "request the stored response with stream = true and starting_after" in {
     // given
-    val capturedRequest = new AtomicReference[GenericRequest[_, _]](null)
+    val capturedRequest = new AtomicReference[GenericRequest[?, ?]](null)
     val zioBackendStub = HttpClientZioBackend.stub.whenAnyRequest.thenRespondF { request =>
       capturedRequest.set(request)
       ZIO.succeed(ResponseStub.adjust(sseBytes(Seq(doneEvent))))

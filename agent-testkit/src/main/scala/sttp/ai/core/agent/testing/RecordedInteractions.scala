@@ -26,7 +26,7 @@ final case class RecordedRequest(
     includeTools: Boolean,
     toolsOffered: Seq[OfferedTool],
     systemPrompt: Option[String],
-    responseSchema: Option[ResponseSchema[_]],
+    responseSchema: Option[ResponseSchema[?]],
     iterationInfo: IterationInfo
 )
 
@@ -67,5 +67,5 @@ trait RecordedInteractions {
   final def systemPromptSent: Option[String] = requests.headOption.flatMap(_.systemPrompt)
 
   /** The structured-output schema configured for the agent, from the first request. */
-  final def responseSchemaSent: Option[ResponseSchema[_]] = requests.headOption.flatMap(_.responseSchema)
+  final def responseSchemaSent: Option[ResponseSchema[?]] = requests.headOption.flatMap(_.responseSchema)
 }

@@ -23,7 +23,7 @@ import sttp.ai.openai.requests.completions.chat.ChatRequestBody.ChatCompletionMo
 import sttp.client4.DefaultSyncBackend
 import sttp.tapir.Schema
 
-object BasicExample extends App {
+object BasicExample {
   case class WeatherInput(location: String) derives io.circe.Codec.AsObject, Schema
 
   val weatherTool = AgentTool.fromFunction(
@@ -33,22 +33,24 @@ object BasicExample extends App {
     s"The weather in ${input.location} is 22°C, sunny"
   }
 
-  val backend = DefaultSyncBackend()
-  try {
-    val agent = OpenAIAgent
-      .synchronous(OpenAI.fromEnv, ChatCompletionModel.GPT4oMini)
-      .maxIterations(5)
-      .tools(weatherTool)
-      .build
+  def main(args: Array[String]): Unit = {
+    val backend = DefaultSyncBackend()
+    try {
+      val agent = OpenAIAgent
+        .synchronous(OpenAI.fromEnv, ChatCompletionModel.GPT4oMini)
+        .maxIterations(5)
+        .tools(weatherTool)
+        .build
 
-    val result = agent.run("What's the weather in Paris?")(backend)
+      val result = agent.run("What's the weather in Paris?")(backend)
 
-    result.finalAnswer match {
-      case Right(answer) => println(s"Answer: $answer")
-      case Left(failure) => println(s"Agent did not finish cleanly: $failure")
-    }
-    println(s"Iterations: ${result.iterations}")
-  } finally backend.close()
+      result.finalAnswer match {
+        case Right(answer) => println(s"Answer: $answer")
+        case Left(failure) => println(s"Agent did not finish cleanly: $failure")
+      }
+      println(s"Iterations: ${result.iterations}")
+    } finally backend.close()
+  }
 }
 ```
 
@@ -65,21 +67,23 @@ import sttp.ai.openai.agent.OpenAIAgent
 import sttp.ai.openai.requests.completions.chat.ChatRequestBody.ChatCompletionModel
 import sttp.client4.DefaultSyncBackend
 
-object ChatExample extends App {
-  val backend = DefaultSyncBackend()
-  try {
-    val agent = OpenAIAgent.synchronous(OpenAI.fromEnv, ChatCompletionModel.GPT4oMini).build
+object ChatExample {
+  def main(args: Array[String]): Unit = {
+    val backend = DefaultSyncBackend()
+    try {
+      val agent = OpenAIAgent.synchronous(OpenAI.fromEnv, ChatCompletionModel.GPT4oMini).build
 
-    val first = agent.run("My name is John Doe. What is 2+2?")(backend)
-    println(first.finalAnswer)
+      val first = agent.run("My name is John Doe. What is 2+2?")(backend)
+      println(first.finalAnswer)
 
-    // seed the next run with the previous history: the model sees the whole conversation
-    val second = agent.run("Multiply that by 10, and remind me of my name.", first.history)(backend)
-    println(second.finalAnswer)
+      // seed the next run with the previous history: the model sees the whole conversation
+      val second = agent.run("Multiply that by 10, and remind me of my name.", first.history)(backend)
+      println(second.finalAnswer)
 
-    // second.history extends first.history — inspect it, persist it, or feed it into another run
-    second.history.entries.foreach(println)
-  } finally backend.close()
+      // second.history extends first.history — inspect it, persist it, or feed it into another run
+      second.history.entries.foreach(println)
+    } finally backend.close()
+  }
 }
 ```
 

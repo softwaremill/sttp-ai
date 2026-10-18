@@ -11,7 +11,7 @@ package examples
   *
   * Run from the project root folder with: OPENAI_API_KEY=… sbt "examples3/runMain examples.StrictStructuredFunctionCallingExample"
   */
-object StrictStructuredFunctionCallingExample extends App {
+object StrictStructuredFunctionCallingExample {
   import io.circe.Json
   import io.circe.syntax.*
   import sttp.client4.{DefaultSyncBackend, SyncBackend}
@@ -20,63 +20,65 @@ object StrictStructuredFunctionCallingExample extends App {
   import sttp.ai.openai.requests.completions.chat.message.{Content, Message, ToolChoice}
   import sttp.ai.openai.requests.completions.chat.message.Tool.Function
 
-  val apiKey = sys.env.getOrElse("OPENAI_API_KEY", sys.error("OPENAI_API_KEY env variable not set"))
+  def main(args: Array[String]): Unit = {
+    val apiKey = sys.env.getOrElse("OPENAI_API_KEY", sys.error("OPENAI_API_KEY env variable not set"))
 
-  val getNumberTool = Function(
-    description = Some("Convert given text to upper-case"),
-    name = "uppercase_text",
-    parameters = Some(
-      Map(
-        "type" := "object",
-        "properties" -> Json.obj(
-          "text" -> Json.obj("type" := "number")
-        ),
-        "required" := Seq("text"),
-        "additionalProperties" := false
-      )
-    ),
-    strict = Some(true)
-  )
+    val getNumberTool = Function(
+      description = Some("Convert given text to upper-case"),
+      name = "uppercase_text",
+      parameters = Some(
+        Map(
+          "type" := "object",
+          "properties" -> Json.obj(
+            "text" -> Json.obj("type" := "number")
+          ),
+          "required" := Seq("text"),
+          "additionalProperties" := false
+        )
+      ),
+      strict = Some(true)
+    )
 
-  val chatBody = ChatBody(
-    model = ChatCompletionModel.GPT4oMini,
-    messages = Seq(Message.User(Content.TextContent("Please uppercase the word 'hello'"))),
-    tools = Some(Seq(getNumberTool)),
-    toolChoice = Some(ToolChoice.Function("uppercase_text"))
-  )
+    val chatBody = ChatBody(
+      model = ChatCompletionModel.GPT4oMini,
+      messages = Seq(Message.User(Content.TextContent("Please uppercase the word 'hello'"))),
+      tools = Some(Seq(getNumberTool)),
+      toolChoice = Some(ToolChoice.Function("uppercase_text"))
+    )
 
-  val backend: SyncBackend = DefaultSyncBackend()
-  val openAI = new OpenAI(apiKey)
+    val backend: SyncBackend = DefaultSyncBackend()
+    val openAI = new OpenAI(apiKey)
 
-  println("Sending request …")
-  val responseEither = openAI.createChatCompletion(chatBody).send(backend).body
+    println("Sending request …")
+    val responseEither = openAI.createChatCompletion(chatBody).send(backend).body
 
-  responseEither match {
-    case Left(err) =>
-      System.err.println(s"OpenAI returned an error: $err")
-    case Right(resp) =>
-      val choice = resp.choices.head
+    responseEither match {
+      case Left(err) =>
+        System.err.println(s"OpenAI returned an error: $err")
+      case Right(resp) =>
+        val choice = resp.choices.head
 
-      val maybeArgsRaw: Option[String] = choice.message.toolCalls.collectFirst {
-        case sttp.ai.openai.requests.completions.chat.ToolCall.FunctionToolCall(_, fn) => fn.arguments
-      }
+        val maybeArgsRaw: Option[String] = choice.message.toolCalls.collectFirst {
+          case sttp.ai.openai.requests.completions.chat.ToolCall.FunctionToolCall(_, fn) => fn.arguments
+        }
 
-      maybeArgsRaw match {
-        case Some(jsonStr) =>
-          println(s"Function call arguments: $jsonStr")
-          val parsed = io.circe.parser.parse(jsonStr).getOrElse(Json.Null)
-          val maybeNum = parsed.asObject.flatMap(_("text")).flatMap(_.asNumber.map(_.toDouble))
+        maybeArgsRaw match {
+          case Some(jsonStr) =>
+            println(s"Function call arguments: $jsonStr")
+            val parsed = io.circe.parser.parse(jsonStr).getOrElse(Json.Null)
+            val maybeNum = parsed.asObject.flatMap(_("text")).flatMap(_.asNumber.map(_.toDouble))
 
-          maybeNum match {
-            case Some(n) => println(s"Success, numeric value provided: $n")
-            case None    => println("Failure: arguments didn't contain numeric 'text' field.")
-          }
+            maybeNum match {
+              case Some(n) => println(s"Success, numeric value provided: $n")
+              case None    => println("Failure: arguments didn't contain numeric 'text' field.")
+            }
 
-        case None =>
-          println("Model did not return a function call. Full message: ")
-          println(choice.message)
-      }
+          case None =>
+            println("Model did not return a function call. Full message: ")
+            println(choice.message)
+        }
+    }
+
+    backend.close()
   }
-
-  backend.close()
 }

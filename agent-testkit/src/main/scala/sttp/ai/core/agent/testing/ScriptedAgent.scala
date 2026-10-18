@@ -46,5 +46,5 @@ object ScriptedAgent {
     new ScriptedAgent[F](responses)
 
   def synchronous(responses: AgentResponse*): ScriptedAgent[Identity] =
-    apply[Identity](responses: _*)(IdentityMonad)
+    apply[Identity](responses*)(using IdentityMonad)
 }

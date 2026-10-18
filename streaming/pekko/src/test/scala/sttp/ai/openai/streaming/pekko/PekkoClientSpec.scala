@@ -236,7 +236,7 @@ class PekkoClientSpec extends AsyncFlatSpec with Matchers with EitherValues {
 
   "createStreamedModelResponse" should "send stream = true in the request body" in {
     // given
-    val capturedRequest = new AtomicReference[GenericRequest[_, _]](null)
+    val capturedRequest = new AtomicReference[GenericRequest[?, ?]](null)
     val pekkoBackendStub = PekkoHttpBackend.stub.whenAnyRequest.thenRespondF { request =>
       capturedRequest.set(request)
       Future.successful(ResponseStub.adjust(sseBytes(Seq(doneEvent))))
@@ -260,7 +260,7 @@ class PekkoClientSpec extends AsyncFlatSpec with Matchers with EitherValues {
 
   "resumeStreamedModelResponse" should "request the stored response with stream = true and starting_after" in {
     // given
-    val capturedRequest = new AtomicReference[GenericRequest[_, _]](null)
+    val capturedRequest = new AtomicReference[GenericRequest[?, ?]](null)
     val pekkoBackendStub = PekkoHttpBackend.stub.whenAnyRequest.thenRespondF { request =>
       capturedRequest.set(request)
       Future.successful(ResponseStub.adjust(sseBytes(Seq(doneEvent))))
