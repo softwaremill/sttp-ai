@@ -19,7 +19,6 @@ class GeminiClientEndpointSpec extends AnyFlatSpec with Matchers {
 
   private val request = InteractionRequest.simple("gemini-3.6-flash", "hi")
 
-  private val developer = new GeminiClientImpl(GeminiConfig(apiKey = "test-key"))
   private val vertex = new GeminiClientImpl(GeminiConfig.vertex(project = "my-project", accessToken = () => "token"))
 
   private val vertexInteractions = "https://aiplatform.googleapis.com/v1beta1/projects/my-project/locations/global/interactions"
@@ -27,12 +26,7 @@ class GeminiClientEndpointSpec extends AnyFlatSpec with Matchers {
   private def headers(request: GenericRequest[_, _]): Map[String, String] =
     request.headers.map(h => h.name.toLowerCase -> h.value).toMap
 
-  "GeminiClientImpl" should "call the Developer API interactions resource by default" in {
-    developer.createInteraction(request).uri shouldBe Uri.unsafeParse("https://generativelanguage.googleapis.com/v1beta/interactions")
-    developer.getInteraction("int_1").uri shouldBe Uri.unsafeParse("https://generativelanguage.googleapis.com/v1beta/interactions/int_1")
-  }
-
-  it should "call the Vertex AI interactions resource of the project for every method" in {
+  "GeminiClientImpl" should "call the Vertex AI interactions resource of the project for every method" in {
     vertex.createInteraction(request).uri shouldBe Uri.unsafeParse(vertexInteractions)
     vertex.createInteractionAsInputStream(request).uri shouldBe Uri.unsafeParse(vertexInteractions)
     vertex.createInteractionAsBinaryStream(TestStreams, request).uri shouldBe Uri.unsafeParse(vertexInteractions)
@@ -54,12 +48,5 @@ class GeminiClientEndpointSpec extends AnyFlatSpec with Matchers {
 
     headers(client.createInteraction(request)).get("authorization") shouldBe Some("Bearer first")
     headers(client.getInteraction("int_1")).get("authorization") shouldBe Some("Bearer second")
-  }
-
-  it should "authenticate Developer API requests with the API key" in {
-    val sent = headers(developer.createInteraction(request))
-
-    sent.get("x-goog-api-key") shouldBe Some("test-key")
-    sent.keySet should not contain "authorization"
   }
 }

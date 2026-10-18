@@ -6,10 +6,12 @@ import org.scalatest.matchers.should.Matchers
 import io.circe.Codec
 import io.circe.generic.semiauto.deriveCodec
 import sttp.ai.core.model.{AIModel, Capability}
-import sttp.client4.testing.SyncBackendStub
-import sttp.monad.IdentityMonad
+import sttp.client4.testing.{BackendStub, SyncBackendStub}
+import sttp.monad.{IdentityMonad, TryMonad}
 import sttp.shared.Identity
 import sttp.tapir.Schema
+
+import scala.util.Try
 
 class AgentSpec extends AnyFlatSpec with Matchers with OptionValues {
 
@@ -715,6 +717,22 @@ class AgentSpec extends AnyFlatSpec with Matchers with OptionValues {
       ConversationEntry.UserPrompt("Second question")
     ): Unit
     second.history.entries.last shouldBe ConversationEntry.AssistantResponse("Second answer", Seq.empty)
+  }
+
+  it should "fail the returned effect, not throw, when building the first request throws" in {
+    val throwingBackend = new AgentBackend[Try] {
+      override def tools: Seq[AgentTool[Try, _]] = Seq.empty
+      override def systemPrompt: Option[String] = None
+      override def sendRequest(
+          history: ConversationHistory,
+          backend: sttp.client4.Backend[Try],
+          includeTools: Boolean,
+          iterationInfo: IterationInfo
+      ): Try[AgentResponse] = throw new IllegalStateException("no token")
+    }
+    val agent = AgentBuilder[Try, TestModel.type](_ => throwingBackend)(TryMonad).build
+
+    agent.run("Test")(BackendStub(TryMonad)).failed.get shouldBe an[IllegalStateException]
   }
 
   "AgentBuilder" should "append with addInterceptor() and replace with interceptors()" in {

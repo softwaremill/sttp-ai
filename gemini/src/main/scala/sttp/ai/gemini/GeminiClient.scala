@@ -1,7 +1,7 @@
 package sttp.ai.gemini
 
 import sttp.ai.gemini.GeminiExceptions.GeminiException
-import sttp.ai.gemini.config.{GeminiConfig, GeminiEndpoint}
+import sttp.ai.gemini.config.{GeminiApi, GeminiConfig}
 import sttp.ai.gemini.requests.InteractionRequest
 import sttp.ai.gemini.responses.InteractionResponse
 import sttp.ai.core.http.ResponseHandlers
@@ -30,7 +30,7 @@ trait GeminiClient {
 
 private[gemini] class GeminiClientImpl(config: GeminiConfig) extends GeminiClient with ResponseHandlers[GeminiException, Decoder] {
 
-  private val geminiUris = new GeminiUris(config.baseUrl, config.endpoint)
+  private val geminiUris = new GeminiUris(config.baseUrl, config.api)
 
   private def geminiAuthRequest =
     config.authHeaders.foldLeft(basicRequest.readTimeout(config.timeout)) { case (request, (name, value)) =>
@@ -167,10 +167,10 @@ private[gemini] class GeminiClientImpl(config: GeminiConfig) extends GeminiClien
       )
 }
 
-private[gemini] class GeminiUris(baseUri: Uri, endpoint: GeminiEndpoint) {
-  val Interactions: Uri = baseUri.addPath(endpoint.interactionsPath)
-  def interaction(id: String): Uri = baseUri.addPath(endpoint.interactionsPath :+ id)
-  def cancel(id: String): Uri = baseUri.addPath(endpoint.interactionsPath ++ List(id, "cancel"))
+private[gemini] class GeminiUris(baseUri: Uri, api: GeminiApi) {
+  val Interactions: Uri = baseUri.addPath(api.interactionsPath)
+  def interaction(id: String): Uri = baseUri.addPath(api.interactionsPath :+ id)
+  def cancel(id: String): Uri = baseUri.addPath(api.interactionsPath ++ List(id, "cancel"))
 }
 
 object GeminiClient {

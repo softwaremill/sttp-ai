@@ -62,7 +62,9 @@ private[agent] class LoopAgent[F[_], In, Out](
           }
       }
 
-    loop(initialHistory, 0, Seq.empty, TokenUsage.Zero, Seq.empty)
+    // Suspended, as building the first iteration's request may run code (e.g. fetch an access token) that must happen, and fail,
+    // when the effect runs.
+    monad.suspend(loop(initialHistory, 0, Seq.empty, TokenUsage.Zero, Seq.empty))
   }
 
   private def runIteration(
