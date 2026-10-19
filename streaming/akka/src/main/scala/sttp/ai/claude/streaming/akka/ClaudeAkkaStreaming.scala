@@ -47,7 +47,7 @@ object ClaudeAkkaStreaming {
   private def deserializeEvent(metadata: ResponseMetadata): Flow[ServerSentEvent, MessageStreamResponse, Any] =
     Flow[ServerSentEvent]
       .filter(event => event.data.exists(data => data.trim.nonEmpty && data != DoneEvent))
-      .collect { case ServerSentEvent(Some(data), _, _, _) =>
+      .collect { case ServerSentEvent(Some(data), _, _, _, _) =>
         decode[MessageStreamResponse](data).fold(e => throw ClaudeException.DeserializationClaudeException(e, metadata), identity)
       }
 }

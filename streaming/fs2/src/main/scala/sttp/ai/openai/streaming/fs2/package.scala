@@ -106,7 +106,7 @@ package object fs2 {
 
   private def deserializeEvent[F[_]](metadata: ResponseMetadata): Pipe[F, ServerSentEvent, Either[Exception, ChatChunkResponse]] =
     _.takeWhile(_ != DoneEvent)
-      .collect { case ServerSentEvent(Some(data), _, _, _) =>
+      .collect { case ServerSentEvent(Some(data), _, _, _, _) =>
         deserializeJsonSnake[ChatChunkResponse].apply(data, metadata)
       }
 
@@ -124,7 +124,7 @@ package object fs2 {
       metadata: ResponseMetadata
   ): Pipe[F, ServerSentEvent, Either[Exception, ResponsesStreamEvent]] =
     _.collect {
-      case ServerSentEvent(Some(data), _, _, _) if ResponsesStreamEvent.isEventData(data) =>
+      case ServerSentEvent(Some(data), _, _, _, _) if ResponsesStreamEvent.isEventData(data) =>
         deserializeJsonSnake[ResponsesStreamEvent].apply(data, metadata)
     }
 }

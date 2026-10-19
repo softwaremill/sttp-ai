@@ -46,7 +46,7 @@ object GeminiZioStreaming {
 
   private def deserializeEvent(metadata: ResponseMetadata): ZioStreams.Pipe[ServerSentEvent, InteractionStreamEvent] =
     _.filter(_.data.exists(data => data.trim.nonEmpty && data != DoneEvent))
-      .collectZIO { case ServerSentEvent(Some(data), _, _, _) =>
+      .collectZIO { case ServerSentEvent(Some(data), _, _, _, _) =>
         ZIO.fromEither(
           decode[InteractionStreamEvent](data).left.map(GeminiException.DeserializationGeminiException(_, metadata))
         )

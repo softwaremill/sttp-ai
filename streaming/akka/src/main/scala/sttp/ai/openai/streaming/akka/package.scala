@@ -105,7 +105,7 @@ package object akka {
   private def deserializeEvent(metadata: ResponseMetadata): Flow[ServerSentEvent, ChatChunkResponse, Any] =
     Flow[ServerSentEvent]
       .takeWhile(_ != DoneEvent)
-      .collect { case ServerSentEvent(Some(data), _, _, _) =>
+      .collect { case ServerSentEvent(Some(data), _, _, _, _) =>
         deserializeJsonSnake[ChatChunkResponse].apply(data, metadata) match {
           case Left(exception) => throw exception
           case Right(value)    => value
@@ -124,7 +124,7 @@ package object akka {
   private def deserializeResponsesEvent(metadata: ResponseMetadata): Flow[ServerSentEvent, ResponsesStreamEvent, Any] =
     Flow[ServerSentEvent]
       .collect {
-        case ServerSentEvent(Some(data), _, _, _) if ResponsesStreamEvent.isEventData(data) =>
+        case ServerSentEvent(Some(data), _, _, _, _) if ResponsesStreamEvent.isEventData(data) =>
           deserializeJsonSnake[ResponsesStreamEvent].apply(data, metadata) match {
             case Left(exception) => throw exception
             case Right(value)    => value
