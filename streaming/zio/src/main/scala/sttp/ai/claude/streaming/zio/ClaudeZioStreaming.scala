@@ -46,7 +46,7 @@ object ClaudeZioStreaming {
 
   private def deserializeEvent(metadata: ResponseMetadata): ZioStreams.Pipe[ServerSentEvent, MessageStreamResponse] =
     _.filter(event => event.data.exists(data => data.trim.nonEmpty && data != DoneEvent))
-      .collectZIO { case ServerSentEvent(Some(data), _, _, _) =>
+      .collectZIO { case ServerSentEvent(Some(data), _, _, _, _) =>
         ZIO.fromEither(
           decode[MessageStreamResponse](data).left.map(ClaudeException.DeserializationClaudeException(_, metadata))
         )

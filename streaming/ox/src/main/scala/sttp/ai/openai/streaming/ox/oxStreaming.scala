@@ -82,7 +82,7 @@ private def mapEventToResponse(
     OxServerSentEvents
       .parse(s)
       .takeWhile(_ != DoneEvent)
-      .collect { case ServerSentEvent(Some(data), _, _, _) =>
+      .collect { case ServerSentEvent(Some(data), _, _, _, _) =>
         deserializeJsonSnake[ChatChunkResponse].apply(data, metadata)
       }
   )
@@ -95,7 +95,7 @@ private def mapResponsesEventToResponse(
     OxServerSentEvents
       .parse(s)
       .collect {
-        case ServerSentEvent(Some(data), _, _, _) if ResponsesStreamEvent.isEventData(data) =>
+        case ServerSentEvent(Some(data), _, _, _, _) if ResponsesStreamEvent.isEventData(data) =>
           deserializeJsonSnake[ResponsesStreamEvent].apply(data, metadata)
       }
   )

@@ -39,7 +39,7 @@ private def mapEventToResponse(
     OxServerSentEvents
       .parse(s)
       .filter(event => event.data.exists(data => data.trim.nonEmpty && data != DoneEvent))
-      .collect { case ServerSentEvent(Some(data), _, _, _) =>
+      .collect { case ServerSentEvent(Some(data), _, _, _, _) =>
         decode[MessageStreamResponse](data).left.map(ClaudeException.DeserializationClaudeException(_, metadata))
       }
   )

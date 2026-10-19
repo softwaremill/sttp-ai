@@ -101,7 +101,7 @@ package object zio {
 
   private def deserializeEvent(metadata: ResponseMetadata): ZioStreams.Pipe[ServerSentEvent, ChatChunkResponse] =
     _.takeWhile(_ != DoneEvent)
-      .collectZIO { case ServerSentEvent(Some(data), _, _, _) =>
+      .collectZIO { case ServerSentEvent(Some(data), _, _, _, _) =>
         ZIO.fromEither(deserializeJsonSnake[ChatChunkResponse].apply(data, metadata))
       }
 
@@ -116,7 +116,7 @@ package object zio {
 
   private def deserializeResponsesEvent(metadata: ResponseMetadata): ZioStreams.Pipe[ServerSentEvent, ResponsesStreamEvent] =
     _.collectZIO {
-      case ServerSentEvent(Some(data), _, _, _) if ResponsesStreamEvent.isEventData(data) =>
+      case ServerSentEvent(Some(data), _, _, _, _) if ResponsesStreamEvent.isEventData(data) =>
         ZIO.fromEither(deserializeJsonSnake[ResponsesStreamEvent].apply(data, metadata))
     }
 }
