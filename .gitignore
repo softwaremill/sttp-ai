@@ -41,3 +41,6 @@ docs/superpowers/
 .superpowers/
 
 CLAUDE.local.md
+
+# TraceVault — local only, do not commit
+.tracevault/
