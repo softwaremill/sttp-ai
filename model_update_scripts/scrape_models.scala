@@ -5,7 +5,7 @@
 //> using dep ch.qos.logback:logback-classic:1.5.19
 //> using dep com.github.scopt::scopt::4.1.0
 //> using dep com.github.plokhotnyuk.jsoniter-scala::jsoniter-scala-core::2.42.3
-//> using dep com.github.plokhotnyuk.jsoniter-scala::jsoniter-scala-macros::2.42.3
+//> using dep com.github.plokhotnyuk.jsoniter-scala::jsoniter-scala-macros::2.43.0
 
 import cats.effect.{IO, IOApp, Resource}
 import cats.syntax.all.*
