@@ -1,32 +1,6 @@
 {
   "v1/assistants": [
     {
-      "name": "GPT-4",
-      "snapshots": [
-        "gpt-4",
-        "gpt-4-0314",
-        "gpt-4-0613"
-      ]
-    },
-    {
-      "name": "GPT-4 Turbo",
-      "snapshots": [
-        "gpt-4-0125-preview",
-        "gpt-4-1106-vision-preview",
-        "gpt-4-turbo",
-        "gpt-4-turbo-2024-04-09",
-        "gpt-4-turbo-preview"
-      ]
-    },
-    {
-      "name": "GPT-4 Turbo Preview",
-      "snapshots": [
-        "gpt-4-0125-preview",
-        "gpt-4-1106-vision-preview",
-        "gpt-4-turbo-preview"
-      ]
-    },
-    {
       "name": "GPT-4.1",
       "snapshots": [
         "gpt-4.1",
@@ -41,24 +15,9 @@
       ]
     },
     {
-      "name": "GPT-4.1 nano",
-      "snapshots": [
-        "gpt-4.1-nano",
-        "gpt-4.1-nano-2025-04-14"
-      ]
-    },
-    {
-      "name": "GPT-4.5 Preview (Deprecated)",
-      "snapshots": [
-        "gpt-4.5-preview",
-        "gpt-4.5-preview-2025-02-27"
-      ]
-    },
-    {
       "name": "GPT-4o",
       "snapshots": [
         "gpt-4o",
-        "gpt-4o-2024-05-13",
         "gpt-4o-2024-08-06",
         "gpt-4o-2024-11-20"
       ]
@@ -68,36 +27,6 @@
       "snapshots": [
         "gpt-4o-mini",
         "gpt-4o-mini-2024-07-18"
-      ]
-    },
-    {
-      "name": "o1",
-      "snapshots": [
-        "o1",
-        "o1-2024-12-17",
-        "o1-preview",
-        "o1-preview-2024-09-12"
-      ]
-    },
-    {
-      "name": "o1 Preview",
-      "snapshots": [
-        "o1-preview",
-        "o1-preview-2024-09-12"
-      ]
-    },
-    {
-      "name": "o1-mini",
-      "snapshots": [
-        "o1-mini",
-        "o1-mini-2024-09-12"
-      ]
-    },
-    {
-      "name": "o3-mini",
-      "snapshots": [
-        "o3-mini",
-        "o3-mini-2025-01-31"
       ]
     }
   ],
@@ -151,33 +80,6 @@
   ],
   "v1/batch": [
     {
-      "name": "GPT-3.5 Turbo",
-      "snapshots": [
-        "gpt-3.5-turbo",
-        "gpt-3.5-turbo-0125",
-        "gpt-3.5-turbo-1106",
-        "gpt-3.5-turbo-instruct"
-      ]
-    },
-    {
-      "name": "GPT-4",
-      "snapshots": [
-        "gpt-4",
-        "gpt-4-0314",
-        "gpt-4-0613"
-      ]
-    },
-    {
-      "name": "GPT-4 Turbo",
-      "snapshots": [
-        "gpt-4-0125-preview",
-        "gpt-4-1106-vision-preview",
-        "gpt-4-turbo",
-        "gpt-4-turbo-2024-04-09",
-        "gpt-4-turbo-preview"
-      ]
-    },
-    {
       "name": "GPT-4.1",
       "snapshots": [
         "gpt-4.1",
@@ -192,24 +94,9 @@
       ]
     },
     {
-      "name": "GPT-4.1 nano",
-      "snapshots": [
-        "gpt-4.1-nano",
-        "gpt-4.1-nano-2025-04-14"
-      ]
-    },
-    {
-      "name": "GPT-4.5 Preview (Deprecated)",
-      "snapshots": [
-        "gpt-4.5-preview",
-        "gpt-4.5-preview-2025-02-27"
-      ]
-    },
-    {
       "name": "GPT-4o",
       "snapshots": [
         "gpt-4o",
-        "gpt-4o-2024-05-13",
         "gpt-4o-2024-08-06",
         "gpt-4o-2024-11-20"
       ]
@@ -222,34 +109,6 @@
       ]
     },
     {
-      "name": "GPT-5",
-      "snapshots": [
-        "gpt-5",
-        "gpt-5-2025-08-07"
-      ]
-    },
-    {
-      "name": "GPT-5 mini",
-      "snapshots": [
-        "gpt-5-mini",
-        "gpt-5-mini-2025-08-07"
-      ]
-    },
-    {
-      "name": "GPT-5 nano",
-      "snapshots": [
-        "gpt-5-nano",
-        "gpt-5-nano-2025-08-07"
-      ]
-    },
-    {
-      "name": "computer-use-preview",
-      "snapshots": [
-        "computer-use-preview",
-        "computer-use-preview-2025-03-11"
-      ]
-    },
-    {
       "name": "gpt-oss-120b",
       "snapshots": [
         "gpt-oss-120b"
@@ -259,64 +118,6 @@
       "name": "gpt-oss-20b",
       "snapshots": [
         "gpt-oss-20b"
-      ]
-    },
-    {
-      "name": "o1",
-      "snapshots": [
-        "o1",
-        "o1-2024-12-17",
-        "o1-preview",
-        "o1-preview-2024-09-12"
-      ]
-    },
-    {
-      "name": "o1-pro",
-      "snapshots": [
-        "o1-pro",
-        "o1-pro-2025-03-19"
-      ]
-    },
-    {
-      "name": "o3",
-      "snapshots": [
-        "o3",
-        "o3-2025-04-16"
-      ]
-    },
-    {
-      "name": "o3-deep-research",
-      "snapshots": [
-        "o3-deep-research",
-        "o3-deep-research-2025-06-26"
-      ]
-    },
-    {
-      "name": "o3-mini",
-      "snapshots": [
-        "o3-mini",
-        "o3-mini-2025-01-31"
-      ]
-    },
-    {
-      "name": "o3-pro",
-      "snapshots": [
-        "o3-pro",
-        "o3-pro-2025-06-10"
-      ]
-    },
-    {
-      "name": "o4-mini",
-      "snapshots": [
-        "o4-mini",
-        "o4-mini-2025-04-16"
-      ]
-    },
-    {
-      "name": "o4-mini-deep-research",
-      "snapshots": [
-        "o4-mini-deep-research",
-        "o4-mini-deep-research-2025-06-26"
       ]
     },
     {
@@ -340,47 +141,6 @@
   ],
   "v1/chat/completions": [
     {
-      "name": "ChatGPT-4o",
-      "snapshots": [
-        "chatgpt-4o-latest"
-      ]
-    },
-    {
-      "name": "GPT-3.5 Turbo",
-      "snapshots": [
-        "gpt-3.5-turbo",
-        "gpt-3.5-turbo-0125",
-        "gpt-3.5-turbo-1106",
-        "gpt-3.5-turbo-instruct"
-      ]
-    },
-    {
-      "name": "GPT-4",
-      "snapshots": [
-        "gpt-4",
-        "gpt-4-0314",
-        "gpt-4-0613"
-      ]
-    },
-    {
-      "name": "GPT-4 Turbo",
-      "snapshots": [
-        "gpt-4-0125-preview",
-        "gpt-4-1106-vision-preview",
-        "gpt-4-turbo",
-        "gpt-4-turbo-2024-04-09",
-        "gpt-4-turbo-preview"
-      ]
-    },
-    {
-      "name": "GPT-4 Turbo Preview",
-      "snapshots": [
-        "gpt-4-0125-preview",
-        "gpt-4-1106-vision-preview",
-        "gpt-4-turbo-preview"
-      ]
-    },
-    {
       "name": "GPT-4.1",
       "snapshots": [
         "gpt-4.1",
@@ -395,42 +155,11 @@
       ]
     },
     {
-      "name": "GPT-4.1 nano",
-      "snapshots": [
-        "gpt-4.1-nano",
-        "gpt-4.1-nano-2025-04-14"
-      ]
-    },
-    {
-      "name": "GPT-4.5 Preview (Deprecated)",
-      "snapshots": [
-        "gpt-4.5-preview",
-        "gpt-4.5-preview-2025-02-27"
-      ]
-    },
-    {
       "name": "GPT-4o",
       "snapshots": [
         "gpt-4o",
-        "gpt-4o-2024-05-13",
         "gpt-4o-2024-08-06",
         "gpt-4o-2024-11-20"
-      ]
-    },
-    {
-      "name": "GPT-4o Audio",
-      "snapshots": [
-        "gpt-4o-audio-preview",
-        "gpt-4o-audio-preview-2024-10-01",
-        "gpt-4o-audio-preview-2024-12-17",
-        "gpt-4o-audio-preview-2025-06-03"
-      ]
-    },
-    {
-      "name": "GPT-4o Search Preview",
-      "snapshots": [
-        "gpt-4o-search-preview",
-        "gpt-4o-search-preview-2025-03-11"
       ]
     },
     {
@@ -439,107 +168,9 @@
         "gpt-4o-mini",
         "gpt-4o-mini-2024-07-18"
       ]
-    },
-    {
-      "name": "GPT-4o mini Audio",
-      "snapshots": [
-        "gpt-4o-mini-audio-preview",
-        "gpt-4o-mini-audio-preview-2024-12-17"
-      ]
-    },
-    {
-      "name": "GPT-4o mini Search Preview",
-      "snapshots": [
-        "gpt-4o-mini-search-preview",
-        "gpt-4o-mini-search-preview-2025-03-11"
-      ]
-    },
-    {
-      "name": "GPT-5",
-      "snapshots": [
-        "gpt-5",
-        "gpt-5-2025-08-07"
-      ]
-    },
-    {
-      "name": "GPT-5 Chat",
-      "snapshots": [
-        "gpt-5-chat-latest"
-      ]
-    },
-    {
-      "name": "GPT-5 mini",
-      "snapshots": [
-        "gpt-5-mini",
-        "gpt-5-mini-2025-08-07"
-      ]
-    },
-    {
-      "name": "GPT-5 nano",
-      "snapshots": [
-        "gpt-5-nano",
-        "gpt-5-nano-2025-08-07"
-      ]
-    },
-    {
-      "name": "o1",
-      "snapshots": [
-        "o1",
-        "o1-2024-12-17",
-        "o1-preview",
-        "o1-preview-2024-09-12"
-      ]
-    },
-    {
-      "name": "o1 Preview",
-      "snapshots": [
-        "o1-preview",
-        "o1-preview-2024-09-12"
-      ]
-    },
-    {
-      "name": "o1-mini",
-      "snapshots": [
-        "o1-mini",
-        "o1-mini-2024-09-12"
-      ]
-    },
-    {
-      "name": "o3",
-      "snapshots": [
-        "o3",
-        "o3-2025-04-16"
-      ]
-    },
-    {
-      "name": "o3-mini",
-      "snapshots": [
-        "o3-mini",
-        "o3-mini-2025-01-31"
-      ]
-    },
-    {
-      "name": "o4-mini",
-      "snapshots": [
-        "o4-mini",
-        "o4-mini-2025-04-16"
-      ]
     }
   ],
-  "v1/completions": [
-    {
-      "name": "babbage-002",
-      "snapshots": [
-        "babbage-002"
-      ]
-    },
-    {
-      "name": "davinci-002",
-      "snapshots": [
-        "davinci-002"
-      ]
-    }
-  ],
+  "v1/completions": [],
   "v1/embeddings": [
     {
       "name": "text-embedding-3-large",
@@ -562,23 +193,6 @@
   ],
   "v1/fine-tuning": [
     {
-      "name": "GPT-3.5 Turbo",
-      "snapshots": [
-        "gpt-3.5-turbo",
-        "gpt-3.5-turbo-0125",
-        "gpt-3.5-turbo-1106",
-        "gpt-3.5-turbo-instruct"
-      ]
-    },
-    {
-      "name": "GPT-4",
-      "snapshots": [
-        "gpt-4",
-        "gpt-4-0314",
-        "gpt-4-0613"
-      ]
-    },
-    {
       "name": "GPT-4.1",
       "snapshots": [
         "gpt-4.1",
@@ -593,17 +207,9 @@
       ]
     },
     {
-      "name": "GPT-4.1 nano",
-      "snapshots": [
-        "gpt-4.1-nano",
-        "gpt-4.1-nano-2025-04-14"
-      ]
-    },
-    {
       "name": "GPT-4o",
       "snapshots": [
         "gpt-4o",
-        "gpt-4o-2024-05-13",
         "gpt-4o-2024-08-06",
         "gpt-4o-2024-11-20"
       ]
@@ -614,70 +220,16 @@
         "gpt-4o-mini",
         "gpt-4o-mini-2024-07-18"
       ]
-    },
-    {
-      "name": "o4-mini",
-      "snapshots": [
-        "o4-mini",
-        "o4-mini-2025-04-16"
-      ]
     }
   ],
-  "v1/images/edits": [
-    {
-      "name": "DALL·E 2",
-      "snapshots": [
-        "dall-e-2"
-      ]
-    },
-    {
-      "name": "GPT Image 1",
-      "snapshots": [
-        "gpt-image-1"
-      ]
-    }
-  ],
-  "v1/images/generations": [
-    {
-      "name": "DALL·E 2",
-      "snapshots": [
-        "dall-e-2"
-      ]
-    },
-    {
-      "name": "DALL·E 3",
-      "snapshots": [
-        "dall-e-3"
-      ]
-    },
-    {
-      "name": "GPT Image 1",
-      "snapshots": [
-        "gpt-image-1"
-      ]
-    }
-  ],
+  "v1/images/edits": [],
+  "v1/images/generations": [],
   "v1/moderations": [
     {
       "name": "omni-moderation",
       "snapshots": [
         "omni-moderation-2024-09-26",
         "omni-moderation-latest"
-      ]
-    },
-    {
-      "name": "text-moderation",
-      "snapshots": [
-        "text-moderation-007",
-        "text-moderation-latest",
-        "text-moderation-stable"
-      ]
-    },
-    {
-      "name": "text-moderation-stable",
-      "snapshots": [
-        "text-moderation-007",
-        "text-moderation-stable"
       ]
     }
   ],
@@ -713,47 +265,6 @@
   ],
   "v1/responses": [
     {
-      "name": "ChatGPT-4o",
-      "snapshots": [
-        "chatgpt-4o-latest"
-      ]
-    },
-    {
-      "name": "GPT-3.5 Turbo",
-      "snapshots": [
-        "gpt-3.5-turbo",
-        "gpt-3.5-turbo-0125",
-        "gpt-3.5-turbo-1106",
-        "gpt-3.5-turbo-instruct"
-      ]
-    },
-    {
-      "name": "GPT-4",
-      "snapshots": [
-        "gpt-4",
-        "gpt-4-0314",
-        "gpt-4-0613"
-      ]
-    },
-    {
-      "name": "GPT-4 Turbo",
-      "snapshots": [
-        "gpt-4-0125-preview",
-        "gpt-4-1106-vision-preview",
-        "gpt-4-turbo",
-        "gpt-4-turbo-2024-04-09",
-        "gpt-4-turbo-preview"
-      ]
-    },
-    {
-      "name": "GPT-4 Turbo Preview",
-      "snapshots": [
-        "gpt-4-0125-preview",
-        "gpt-4-1106-vision-preview",
-        "gpt-4-turbo-preview"
-      ]
-    },
-    {
       "name": "GPT-4.1",
       "snapshots": [
         "gpt-4.1",
@@ -768,24 +279,9 @@
       ]
     },
     {
-      "name": "GPT-4.1 nano",
-      "snapshots": [
-        "gpt-4.1-nano",
-        "gpt-4.1-nano-2025-04-14"
-      ]
-    },
-    {
-      "name": "GPT-4.5 Preview (Deprecated)",
-      "snapshots": [
-        "gpt-4.5-preview",
-        "gpt-4.5-preview-2025-02-27"
-      ]
-    },
-    {
       "name": "GPT-4o",
       "snapshots": [
         "gpt-4o",
-        "gpt-4o-2024-05-13",
         "gpt-4o-2024-08-06",
         "gpt-4o-2024-11-20"
       ]
@@ -798,46 +294,6 @@
       ]
     },
     {
-      "name": "GPT-5",
-      "snapshots": [
-        "gpt-5",
-        "gpt-5-2025-08-07"
-      ]
-    },
-    {
-      "name": "GPT-5 Chat",
-      "snapshots": [
-        "gpt-5-chat-latest"
-      ]
-    },
-    {
-      "name": "GPT-5 mini",
-      "snapshots": [
-        "gpt-5-mini",
-        "gpt-5-mini-2025-08-07"
-      ]
-    },
-    {
-      "name": "GPT-5 nano",
-      "snapshots": [
-        "gpt-5-nano",
-        "gpt-5-nano-2025-08-07"
-      ]
-    },
-    {
-      "name": "codex-mini-latest",
-      "snapshots": [
-        "codex-mini-latest"
-      ]
-    },
-    {
-      "name": "computer-use-preview",
-      "snapshots": [
-        "computer-use-preview",
-        "computer-use-preview-2025-03-11"
-      ]
-    },
-    {
       "name": "gpt-oss-120b",
       "snapshots": [
         "gpt-oss-120b"
@@ -847,64 +303,6 @@
       "name": "gpt-oss-20b",
       "snapshots": [
         "gpt-oss-20b"
-      ]
-    },
-    {
-      "name": "o1",
-      "snapshots": [
-        "o1",
-        "o1-2024-12-17",
-        "o1-preview",
-        "o1-preview-2024-09-12"
-      ]
-    },
-    {
-      "name": "o1-pro",
-      "snapshots": [
-        "o1-pro",
-        "o1-pro-2025-03-19"
-      ]
-    },
-    {
-      "name": "o3",
-      "snapshots": [
-        "o3",
-        "o3-2025-04-16"
-      ]
-    },
-    {
-      "name": "o3-deep-research",
-      "snapshots": [
-        "o3-deep-research",
-        "o3-deep-research-2025-06-26"
-      ]
-    },
-    {
-      "name": "o3-mini",
-      "snapshots": [
-        "o3-mini",
-        "o3-mini-2025-01-31"
-      ]
-    },
-    {
-      "name": "o3-pro",
-      "snapshots": [
-        "o3-pro",
-        "o3-pro-2025-06-10"
-      ]
-    },
-    {
-      "name": "o4-mini",
-      "snapshots": [
-        "o4-mini",
-        "o4-mini-2025-04-16"
-      ]
-    },
-    {
-      "name": "o4-mini-deep-research",
-      "snapshots": [
-        "o4-mini-deep-research",
-        "o4-mini-deep-research-2025-06-26"
       ]
     }
   ]

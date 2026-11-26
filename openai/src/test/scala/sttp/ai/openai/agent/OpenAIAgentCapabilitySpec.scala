@@ -25,12 +25,12 @@ class OpenAIAgentCapabilitySpec extends AnyFlatSpec with Matchers {
     succeed
   }
 
-  it should "reject tools for o1-mini (no ToolCalling) at compile time" in {
+  it should "reject tools for a model widened to the base type at compile time" in {
     assertDoesNotCompile(
       """sttp.ai.openai.agent.OpenAIAgent
         .synchronous(
           sttp.ai.openai.agent.OpenAIAgentCapabilitySpecFixtures.openAI,
-          sttp.ai.openai.requests.completions.chat.ChatRequestBody.ChatCompletionModel.O1Mini
+          sttp.ai.openai.requests.completions.chat.ChatRequestBody.ChatCompletionModel.GPT4o: sttp.ai.openai.requests.completions.chat.ChatRequestBody.ChatCompletionModel
         )
         .tools(sttp.ai.openai.agent.OpenAIAgentCapabilitySpecFixtures.echoTool)"""
     )

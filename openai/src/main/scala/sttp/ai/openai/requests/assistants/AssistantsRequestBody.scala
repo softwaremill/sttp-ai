@@ -14,8 +14,8 @@ object AssistantsRequestBody {
     * @param instructions
     *   The system instructions that the assistant uses. The maximum length is 32768 characters.
     * @param reasoningEffort
-    *   o1 and o3-mini models only Constrains effort on reasoning for reasoning models. Currently supported values are low, medium, and
-    *   high. Reducing reasoning effort can result in faster responses and fewer tokens used on reasoning in a response.
+    *   Constrains effort on reasoning for reasoning models. Currently supported values are low, medium, and high. Reducing reasoning effort
+    *   can result in faster responses and fewer tokens used on reasoning in a response.
     * @param tools
     *   A list of tool enabled on the assistant. There can be a maximum of 128 tools per assistant. Tools can be of types code_interpreter,
     *   file_search, or function.
@@ -58,10 +58,8 @@ object AssistantsRequestBody {
     * @param instructions
     *   The system instructions that the assistant uses. The maximum length is 32768 characters.
     * @param reasoningEffort
-    *   o1 and o3-mini models only
-    *
-    * Constrains effort on reasoning for reasoning models. Currently supported values are low, medium, and high. Reducing reasoning effort
-    * can result in faster responses and fewer tokens used on reasoning in a response.
+    *   Constrains effort on reasoning for reasoning models. Currently supported values are low, medium, and high. Reducing reasoning effort
+    *   can result in faster responses and fewer tokens used on reasoning in a response.
     * @param tools
     *   A list of tool enabled on the assistant. There can be a maximum of 128 tools per assistant. Tools can be of types code_interpreter,
     *   file_search, or function.

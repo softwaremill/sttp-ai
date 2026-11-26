@@ -27,7 +27,7 @@ trait ImageEditsFixture {
     background = Some("transparent"),
     inputFidelity = Some("high"),
     mask = Some(testMask),
-    model = Some(ImageEditsModel.GPTImage1),
+    model = Some(ImageEditsModel.GPTImage26Sunburst),
     n = Some(2),
     outputCompression = Some(80),
     outputFormat = Some("png"),

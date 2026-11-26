@@ -75,7 +75,7 @@ object ChatChunkFixture {
       |      "tool_call_id": "tool_call_id_2"
       |    }
       |  ],
-      |  "model": "gpt-3.5-turbo",
+      |  "model": "gpt-4o-mini",
       |  "frequency_penalty": 0,
       |  "max_tokens": 7,
       |  "n": 1,

@@ -38,7 +38,7 @@ class ImageCreationDataSpec extends AnyFlatSpec with Matchers with EitherValues 
     val givenRequest: ImageCreationBody = ImageCreationBody(
       "cute fish", // prompt
       Some("transparent"), // background
-      ImageCreationModel.DALLE3,
+      ImageCreationModel.GPTImage26Sunburst,
       Some("strict"), // moderation
       Some(1), // n
       Some(80), // outputCompression
@@ -68,7 +68,7 @@ class ImageCreationDataSpec extends AnyFlatSpec with Matchers with EitherValues 
     val givenRequest: ImageCreationBody = ImageCreationBody(
       "cute fish", // prompt
       Some("transparent"), // background
-      ImageCreationModel.DALLE3, // model
+      ImageCreationModel.GPTImage26Sunburst, // model
       None, // moderation
       Some(1), // n
       Some(80), // outputCompression
@@ -98,7 +98,7 @@ class ImageCreationDataSpec extends AnyFlatSpec with Matchers with EitherValues 
     val givenRequest: ImageCreationBody = ImageCreationBody(
       "cute fish", // prompt
       Some("transparent"), // background
-      ImageCreationModel.DALLE3, // model
+      ImageCreationModel.GPTImage26Sunburst, // model
       Some("strict"), // moderation
       Some(1), // n
       Some(80), // outputCompression
@@ -128,7 +128,7 @@ class ImageCreationDataSpec extends AnyFlatSpec with Matchers with EitherValues 
     val givenRequest: ImageCreationBody = ImageCreationBody(
       "cute fish", // prompt
       Some("transparent"), // background
-      ImageCreationModel.DALLE2,
+      ImageCreationModel.GPTImage26Flare,
       Some("strict"), // moderation
       Some(1), // n
       Some(80), // outputCompression
@@ -142,7 +142,7 @@ class ImageCreationDataSpec extends AnyFlatSpec with Matchers with EitherValues 
       Some("user1") // user
     )
 
-    val jsonRequest = parse(fixtures.ImageCreationFixture.jsonRequestDalle2).value
+    val jsonRequest = parse(fixtures.ImageCreationFixture.jsonRequestDifferentModel).value
 
     // when
     val serializedJson: io.circe.Json = givenRequest.asJson.deepDropNullValues

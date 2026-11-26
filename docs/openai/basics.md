@@ -77,7 +77,7 @@ import sttp.ai.openai.requests.completions.chat.ChatRequestBody.{ChatBody, ChatC
 import sttp.ai.openai.requests.completions.chat.message.*
 
 val chatRequestBody = ChatBody(
-  model = ChatCompletionModel.GPT5,
+  model = ChatCompletionModel.GPT62Sol,
   messages = Seq(Message.User(Content.TextContent("Hello!"))),
   maxCompletionTokens = Some(1000)
 )
@@ -106,7 +106,7 @@ val openAI = OpenAISyncClient(System.getenv("OPENAI_KEY"))
 
 def userMessage(text: String): Input = Input.InputMessage(List(InputText(text)), role = "user", status = None)
 def request(input: List[Input]) =
-  ResponsesRequestBody(model = Some(ResponsesModel.GPT5), store = Some(false), input = Some(Right(input)))
+  ResponsesRequestBody(model = Some(ResponsesModel.GPT62Sol), store = Some(false), input = Some(Right(input)))
 
 val history: List[Input] = List(userMessage("Let's plan the database migration."))
 
@@ -123,6 +123,6 @@ val automatic = request(history).copy(
 )
 
 // standalone: compact without generating a response
-val window = openAI.compactConversation(CompactRequestBody(model = ResponsesModel.GPT5, input = Some(Right(history))))
+val window = openAI.compactConversation(CompactRequestBody(model = ResponsesModel.GPT62Sol, input = Some(Right(history))))
 val afterWindow = openAI.createModelResponse(request(window.toInput :+ userMessage("What is the first step?")))
 ```

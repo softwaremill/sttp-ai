@@ -268,7 +268,7 @@ object Tool {
     * @param inputImageMask
     *   Optional mask for inpainting.
     * @param model
-    *   The image generation model to use.
+    *   The image generation model to use. If not set, the API default is used.
     * @param moderation
     *   Moderation level for the generated image.
     * @param outputCompression
@@ -286,7 +286,7 @@ object Tool {
       background: Option[String] = Some("auto"),
       inputFidelity: Option[String] = Some("low"),
       inputImageMask: Option[ImageGeneration.InputImageMask] = None,
-      model: Option[String] = Some("gpt-image-1"),
+      model: Option[String] = None,
       moderation: Option[String] = Some("auto"),
       outputCompression: Option[Int] = Some(100),
       outputFormat: Option[String] = Some("png"),

@@ -56,7 +56,7 @@ class Fs2ClientSpec extends AsyncFlatSpec with AsyncIOSpec with Matchers with Ei
       val client = new OpenAI("test-token")
 
       val givenRequest = ChatBody(
-        model = ChatCompletionModel.GPT35Turbo,
+        model = ChatCompletionModel.GPT4oMini,
         messages = Seq.empty
       )
 
@@ -91,7 +91,7 @@ class Fs2ClientSpec extends AsyncFlatSpec with AsyncIOSpec with Matchers with Ei
     val client = new OpenAI(authToken = "test-token")
 
     val givenRequest = ChatBody(
-      model = ChatCompletionModel.GPT35Turbo,
+      model = ChatCompletionModel.GPT4oMini,
       messages = Seq.empty
     )
 
@@ -148,7 +148,7 @@ class Fs2ClientSpec extends AsyncFlatSpec with AsyncIOSpec with Matchers with Ei
     val client = new OpenAI(authToken = "test-token")
 
     val givenRequest = ChatBody(
-      model = ChatCompletionModel.GPT35Turbo,
+      model = ChatCompletionModel.GPT4oMini,
       messages = Seq.empty
     )
 

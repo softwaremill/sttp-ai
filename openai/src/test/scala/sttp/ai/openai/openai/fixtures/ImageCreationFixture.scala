@@ -4,7 +4,7 @@ object ImageCreationFixture {
   val jsonRequest: String = """{
       |"prompt": "cute fish",
       |"background": "transparent",
-      |"model": "dall-e-3",
+      |"model": "gpt-image-2.6-sunburst",
       |"moderation": "strict",
       |"n": 1,
       |"output_compression": 80,
@@ -21,7 +21,7 @@ object ImageCreationFixture {
   val jsonRequestWithSomeOptionalsSetToNone: String = """{
       |"prompt": "cute fish",
       |"background": "transparent",
-      |"model": "dall-e-3",
+      |"model": "gpt-image-2.6-sunburst",
       |"n": 1,
       |"output_compression": 80,
       |"output_format": "png",
@@ -33,10 +33,10 @@ object ImageCreationFixture {
       |"user": "user1"
       |}""".stripMargin
 
-  val jsonRequestDalle2: String = """{
+  val jsonRequestDifferentModel: String = """{
       |"prompt": "cute fish",
       |"background": "transparent",
-      |"model": "dall-e-2",
+      |"model": "gpt-image-2.6-flare",
       |"moderation": "strict",
       |"n": 1,
       |"output_compression": 80,

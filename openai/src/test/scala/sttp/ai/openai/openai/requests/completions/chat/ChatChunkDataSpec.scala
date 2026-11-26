@@ -59,7 +59,7 @@ class ChatChunkDataSpec extends AnyFlatSpec with Matchers with EitherValues {
     // given
     val givenRequest = ChatRequestBody.ChatBody(
       messages = messages,
-      model = ChatCompletionModel.GPT35Turbo,
+      model = ChatCompletionModel.GPT4oMini,
       frequencyPenalty = Some(0),
       maxTokens = Some(7),
       n = Some(1),
