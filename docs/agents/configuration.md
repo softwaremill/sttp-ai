@@ -76,10 +76,10 @@ check intact — unlike falling back to a raw model-name string, which disables 
 
 ```scala mdoc:compile-only
 import sttp.ai.core.model.{Capability, Supports}
-import sttp.ai.claude.models.ClaudeModel
+import sttp.ai.openai.requests.completions.chat.ChatRequestBody.ChatCompletionModel
 
 // you have verified the model really supports this, even though its constant isn't tagged with it
-given Supports[ClaudeModel.ClaudeSonnet4_0.type, Capability.StructuredOutput] = Supports.assume
+given Supports[ChatCompletionModel.GPT4o.type, Capability.Reasoning] = Supports.assume
 ```
 
 Note that capability checks work on the model's singleton type: ascribing a constant to the base type

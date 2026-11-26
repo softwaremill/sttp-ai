@@ -43,7 +43,7 @@ object ClaudeImageAnalysisExample {
     )
 
     val request = MessageRequest.simple(
-      model = "claude-3-haiku-20240307", // Use a vision-capable model
+      model = "claude-haiku-5-5", // Use a vision-capable model
       messages = messages,
       maxTokens = 500
     )
@@ -84,7 +84,7 @@ object ClaudeImageAnalysisExample {
     )
 
     val multiImageRequest = MessageRequest.simple(
-      model = "claude-3-haiku-20240307",
+      model = "claude-haiku-5-5",
       messages = multiImageMessages,
       maxTokens = 600
     )
@@ -117,7 +117,7 @@ object ClaudeImageAnalysisExample {
     )
 
     val specificRequest = MessageRequest.withSystem(
-      model = "claude-3-haiku-20240307",
+      model = "claude-haiku-5-5",
       system = "You are an expert in image analysis. Provide detailed technical descriptions of visual elements.",
       messages = specificMessages,
       maxTokens = 400

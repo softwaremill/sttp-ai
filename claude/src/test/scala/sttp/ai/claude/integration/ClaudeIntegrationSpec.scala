@@ -6,7 +6,7 @@ import org.scalatest.concurrent.Eventually
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.time.{Millis, Seconds, Span}
-import sttp.ai.claude.ClaudeExceptions.{ClaudeException, UnsupportedModelForStructuredOutputException}
+import sttp.ai.claude.ClaudeExceptions.ClaudeException
 import sttp.ai.claude.ClaudeSyncClient
 import sttp.ai.claude.config.ClaudeConfig
 import sttp.ai.claude.models._
@@ -401,26 +401,6 @@ class ClaudeIntegrationSpec extends AnyFlatSpec with Matchers with BeforeAndAfte
       val person = circeDecode[Person](textContent.get).fold(throw _, identity)
       person.name shouldBe "Alice"
       person.age shouldBe 30
-      ()
-    }
-
-  it should "throw UnsupportedModelForStructuredOutputException for legacy models" in
-    withClient { _ =>
-      val outputFormat = OutputFormat.JsonSchema.withTapirSchema[Person]
-
-      val exception = intercept[UnsupportedModelForStructuredOutputException] {
-        val client = ClaudeSyncClient.fromEnv
-        try {
-          val request = MessageRequest
-            .simple("claude-3-5-sonnet-20241022", List(Message.user("Test")), 10)
-            .withStructuredOutput(outputFormat)
-
-          client.createMessage(request)
-        } finally client.close()
-      }
-
-      exception.getMessage should include("claude-3-5-sonnet-20241022")
-      exception.getMessage should include("does not support structured output")
       ()
     }
 

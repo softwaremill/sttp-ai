@@ -14,17 +14,6 @@ object ClaudeExceptions {
       cause: ResponseException[String]
   ) extends AIException(message, `type`, param, code, cause)
 
-  class UnsupportedModelForStructuredOutputException(val modelId: String)
-      extends AIException(
-        message = Some(
-          s"Model '$modelId' does not support structured output. " +
-            "Structured output is only supported by Claude 4.1+ models (e.g., claude-sonnet-4-5, claude-opus-4-1-20250805)."
-        ),
-        `type` = Some("unsupported_model_for_structured_output"),
-        param = Some("model"),
-        code = Some("model_not_supported")
-      )
-
   object ClaudeException {
     class DeserializationClaudeException(
         message: String,

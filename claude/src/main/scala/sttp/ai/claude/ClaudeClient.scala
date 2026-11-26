@@ -1,8 +1,7 @@
 package sttp.ai.claude
 
-import sttp.ai.claude.ClaudeExceptions.{ClaudeException, UnsupportedModelForStructuredOutputException}
+import sttp.ai.claude.ClaudeExceptions.ClaudeException
 import sttp.ai.claude.config.ClaudeConfig
-import sttp.ai.claude.models.ClaudeModel
 import sttp.ai.claude.requests.MessageRequest
 import sttp.ai.claude.responses.{MessageResponse, ModelsResponse}
 import sttp.ai.core.http.ResponseHandlers
@@ -37,18 +36,6 @@ class ClaudeClientImpl(config: ClaudeConfig) extends ClaudeClient with ResponseH
       .header("x-api-key", config.apiKey)
       .header("anthropic-version", config.anthropicVersion)
       .header("content-type", "application/json")
-
-  private def claudeAuthRequestForMessage(request: MessageRequest): PartialRequest[Either[String, String]] = {
-    if (request.usesStructuredOutput) {
-      validateModelForStructuredOutput(request.model)
-    }
-    claudeAuthRequest
-  }
-
-  private def validateModelForStructuredOutput(modelId: String): Unit =
-    if (!ClaudeModel.modelSupportsStructuredOutput(modelId)) {
-      throw new UnsupportedModelForStructuredOutputException(modelId)
-    }
 
   override def read[T: Decoder](s: String): Either[Exception, T] = decode[T](s)
 
@@ -113,7 +100,7 @@ class ClaudeClientImpl(config: ClaudeConfig) extends ClaudeClient with ResponseH
   }
 
   override def createMessage(request: MessageRequest): Request[Either[ClaudeException, MessageResponse]] =
-    claudeAuthRequestForMessage(request)
+    claudeAuthRequest
       .post(claudeUris.Messages)
       .body(serializeMessageRequest(request))
       .response(asJson_parseErrors[MessageResponse])
@@ -129,7 +116,7 @@ class ClaudeClientImpl(config: ClaudeConfig) extends ClaudeClient with ResponseH
   ): StreamRequest[Either[ClaudeException, streams.BinaryStream], S] = {
     val streamingRequest = messageRequest.copy(stream = Some(true))
 
-    claudeAuthRequestForMessage(streamingRequest)
+    claudeAuthRequest
       .post(claudeUris.Messages)
       .body(serializeMessageRequest(streamingRequest))
       .response(asStreamUnsafe_parseErrors(streams))
@@ -138,7 +125,7 @@ class ClaudeClientImpl(config: ClaudeConfig) extends ClaudeClient with ResponseH
   override def createMessageAsInputStream(messageRequest: MessageRequest): Request[Either[ClaudeException, InputStream]] = {
     val streamingRequest = messageRequest.copy(stream = Some(true))
 
-    claudeAuthRequestForMessage(streamingRequest)
+    claudeAuthRequest
       .post(claudeUris.Messages)
       .body(serializeMessageRequest(streamingRequest))
       .response(asInputStreamUnsafe_parseErrors)

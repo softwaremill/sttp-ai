@@ -54,7 +54,7 @@ object ClaudeToolCallingExample {
     )
 
     val request = MessageRequest.withTools(
-      model = "claude-3-haiku-20240307", // Use a more capable model for tool calling
+      model = "claude-haiku-5-5", // Use a more capable model for tool calling
       messages = messages,
       maxTokens = 1000,
       tools = tools
@@ -93,7 +93,7 @@ object ClaudeToolCallingExample {
     )
 
     val toolResultRequest = MessageRequest.withTools(
-      model = "claude-3-haiku-20240307",
+      model = "claude-haiku-5-5",
       messages = toolResultMessages,
       maxTokens = 500,
       tools = List(calculatorTool)

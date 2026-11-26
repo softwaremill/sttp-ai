@@ -38,7 +38,7 @@ import sttp.client4.httpclient.fs2.HttpClientFs2Backend
 object FS2StreamingExample:
   def main(args: Array[String]): Unit =
     val client = GeminiClient.fromEnv
-    val request = InteractionRequest.simple("gemini-2.5-flash", "Write a haiku about the sea.")
+    val request = InteractionRequest.simple("gemini-3.6-flash", "Write a haiku about the sea.")
 
     val program = HttpClientFs2Backend.resource[IO]().use { backend =>
       client
@@ -78,7 +78,7 @@ import sttp.client4.DefaultSyncBackend
 object OxStreamingExample:
   def main(args: Array[String]): Unit =
     val client = GeminiClient.fromEnv
-    val request = InteractionRequest.simple("gemini-2.5-flash", "Write a haiku about the sea.")
+    val request = InteractionRequest.simple("gemini-3.6-flash", "Write a haiku about the sea.")
 
     val backend = DefaultSyncBackend()
     try

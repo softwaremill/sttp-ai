@@ -91,6 +91,6 @@ A history can also be built (or restored, e.g. from a database) by hand via `Con
 
 **For Claude:** Use `ClaudeAgent.synchronous(ClaudeConfig.fromEnv, ClaudeModel.ClaudeHaiku4_5.value)` instead.
 
-**For Gemini:** Use `GeminiAgent.synchronous(GeminiConfig.fromEnv, "gemini-2.5-flash")` — see [Gemini tool calling](../gemini/tool-calling.md) for a full example.
+**For Gemini:** Use `GeminiAgent.synchronous(GeminiConfig.fromEnv, "gemini-3.6-flash")` — see [Gemini tool calling](../gemini/tool-calling.md) for a full example.
 
 **For effect systems:** use `OpenAIAgent.builder[F]` / `ClaudeAgent.builder[F]` / `GeminiAgent.builder[F]` (e.g. `builder[IO]`), then add configuration and `.build`.

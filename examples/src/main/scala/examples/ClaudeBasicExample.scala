@@ -28,7 +28,7 @@ object ClaudeBasicExample {
     )
 
     val request = MessageRequest.simple(
-      model = "claude-3-haiku-20240307", // Using fastest model for example
+      model = "claude-haiku-5-5", // Using fastest model for example
       messages = messages,
       maxTokens = 500
     )
@@ -59,7 +59,7 @@ object ClaudeBasicExample {
     )
 
     val multiTurnRequest = MessageRequest.simple(
-      model = "claude-3-haiku-20240307",
+      model = "claude-haiku-5-5",
       messages = multiTurnMessages,
       maxTokens = 300
     )
@@ -81,7 +81,7 @@ object ClaudeBasicExample {
     println("\n=== With System Message ===")
 
     val systemRequest = MessageRequest.withSystem(
-      model = "claude-3-haiku-20240307",
+      model = "claude-haiku-5-5",
       system = "You are a helpful assistant that always responds with exactly one sentence.",
       messages = List(Message.user("Explain quantum computing.")),
       maxTokens = 100
@@ -104,7 +104,7 @@ object ClaudeBasicExample {
     println("\n=== With Advanced Parameters ===")
 
     val advancedRequest = MessageRequest(
-      model = "claude-3-haiku-20240307",
+      model = "claude-haiku-5-5",
       messages = List(Message.user("Write a creative short poem about programming.")),
       maxTokens = 200,
       temperature = Some(0.8), // More creative

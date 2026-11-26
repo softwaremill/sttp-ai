@@ -13,7 +13,7 @@ import sttp.ai.gemini.models.GeminiModel
 
 object ModelsExample:
   def main(args: Array[String]): Unit =
-    println(GeminiModel.Gemini25Flash.value) // "gemini-2.5-flash"
+    println(GeminiModel.Gemini36Flash.value) // "gemini-3.6-flash"
     GeminiModel.values.foreach(m => println(m.value))
 
     val custom = GeminiModel.CustomModel("gemini-future-model")
@@ -22,13 +22,15 @@ object ModelsExample:
 
 **Known models** (`GeminiModel.values`):
 
+- `Gemini4Argon` (`gemini-4-argon`)
+- `Gemini4Carbon` (`gemini-4-carbon`)
+- `Gemini4Hydrogen` (`gemini-4-hydrogen`)
+- `Gemini4Neon` (`gemini-4-neon`)
+- `Gemini38Flash` (`gemini-3.8-flash`)
 - `Gemini36Flash` (`gemini-3.6-flash`)
-- `Gemini35Flash` (`gemini-3.5-flash`)
 - `Gemini35FlashLite` (`gemini-3.5-flash-lite`)
 - `Gemini31FlashLite` (`gemini-3.1-flash-lite`)
-- `Gemini25Pro` (`gemini-2.5-pro`) — highest-capability, best for complex reasoning
-- `Gemini25Flash` (`gemini-2.5-flash`) — balanced performance and speed
-- `Gemini25FlashLite` (`gemini-2.5-flash-lite`) — fastest and cheapest
+- `Gemini25FlashLite` (`gemini-2.5-flash-lite`)
 
 `GeminiModel.fromString(s)` parses a raw model name back into a known `GeminiModel` case object, falling back to `CustomModel(s)`.
 
@@ -60,7 +62,7 @@ object ErrorHandlingExample:
   def main(args: Array[String]): Unit =
     val gemini = GeminiSyncClient.fromEnv
     try {
-      val request = InteractionRequest.simple("gemini-2.5-flash", "Hello!")
+      val request = InteractionRequest.simple("gemini-3.6-flash", "Hello!")
 
       try {
         val response = gemini.createInteraction(request)
