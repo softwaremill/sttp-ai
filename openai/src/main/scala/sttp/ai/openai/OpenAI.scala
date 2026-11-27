@@ -33,7 +33,6 @@ import sttp.ai.openai.requests.images.ResponseFormat
 import sttp.ai.openai.requests.images.ImageResponseData.ImageResponse
 import sttp.ai.openai.requests.images.creation.ImageCreationRequestBody.ImageCreationBody
 import sttp.ai.openai.requests.images.edit.ImageEditsConfig
-import sttp.ai.openai.requests.images.variations.ImageVariationsConfig
 import sttp.ai.openai.requests.models.ModelsResponseData.{DeletedModelData, ModelData, ModelsResponse}
 import sttp.ai.openai.requests.moderations.ModerationsRequestBody.ModerationsBody
 import sttp.ai.openai.requests.moderations.ModerationsResponseData.ModerationData
@@ -213,68 +212,6 @@ class OpenAI(
           responseFormat.map(format => multipart("response_format", ResponseFormat.asString(format))),
           stream.map(s => multipart("stream", s.toString)),
           user.map(u => multipart("user", u))
-        ).flatten.toList
-      }
-      .response(asJson_parseErrors[ImageResponse])
-
-  /** Creates a variation of a given image.
-    *
-    * [[https://platform.openai.com/docs/api-reference/images/create-variation]]
-    *
-    * @param image
-    *   The image to use as the basis for the variation.
-    *
-    * Must be a valid PNG file, less than 4MB, and square.
-    */
-  def imageVariations(
-      image: File
-  ): Request[Either[OpenAIException, ImageResponse]] =
-    openAIAuthRequest
-      .post(openAIUris.VariationsImage)
-      .multipartBody(
-        multipartFile("image", image)
-      )
-      .response(asJson_parseErrors[ImageResponse])
-
-  /** Creates a variation of a given image.
-    *
-    * [[https://platform.openai.com/docs/api-reference/images/create-variation]]
-    *
-    * @param systemPath
-    *   Path to the image to use as the basis for the variation.
-    *
-    * Must be a valid PNG file, less than 4MB, and square.
-    */
-  def imageVariations(
-      systemPath: String
-  ): Request[Either[OpenAIException, ImageResponse]] =
-    openAIAuthRequest
-      .post(openAIUris.VariationsImage)
-      .multipartBody(
-        multipartFile("image", Paths.get(systemPath).toFile)
-      )
-      .response(asJson_parseErrors[ImageResponse])
-
-  /** Creates a variation of a given image.
-    *
-    * [[https://platform.openai.com/docs/api-reference/images/create-variation]]
-    *
-    * @param imageVariationsConfig
-    *   An instance of the case class ImageVariationsConfig containing the necessary parameters for the image variation.
-    */
-  def imageVariations(
-      imageVariationsConfig: ImageVariationsConfig
-  ): Request[Either[OpenAIException, ImageResponse]] =
-    openAIAuthRequest
-      .post(openAIUris.VariationsImage)
-      .multipartBody {
-        import imageVariationsConfig._
-        Seq(
-          Some(multipartFile("image", image)),
-          n.map(i => multipart("n", i.toString)),
-          size.map(s => multipart("size", s.value)),
-          responseFormat.map(format => multipart("response_format", ResponseFormat.asString(format))),
-          user.map(multipart("user", _))
         ).flatten.toList
       }
       .response(asJson_parseErrors[ImageResponse])
@@ -1833,7 +1770,6 @@ private class OpenAIUris(val baseUri: Uri) {
   val Transcriptions: Uri = audioBase.addPath("transcriptions")
   val Translations: Uri = audioBase.addPath("translations")
   val Speech: Uri = audioBase.addPath("speech")
-  val VariationsImage: Uri = imageBase.addPath("variations")
   val Responses: Uri = baseUri.addPath("responses")
   val ResponsesCompact: Uri = Responses.addPath("compact")
 

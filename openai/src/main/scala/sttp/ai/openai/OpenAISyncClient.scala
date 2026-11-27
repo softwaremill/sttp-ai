@@ -33,7 +33,6 @@ import sttp.ai.openai.requests.finetuning._
 import sttp.ai.openai.requests.images.ImageResponseData.ImageResponse
 import sttp.ai.openai.requests.images.creation.ImageCreationRequestBody.ImageCreationBody
 import sttp.ai.openai.requests.images.edit.ImageEditsConfig
-import sttp.ai.openai.requests.images.variations.ImageVariationsConfig
 import sttp.ai.openai.requests.models.ModelsResponseData.{DeletedModelData, ModelData, ModelsResponse}
 import sttp.ai.openai.requests.moderations.ModerationsRequestBody.ModerationsBody
 import sttp.ai.openai.requests.moderations.ModerationsResponseData.ModerationData
@@ -166,40 +165,6 @@ class OpenAISyncClient private (
     */
   def imageEdits(imageEditsConfig: ImageEditsConfig): ImageResponse =
     sendOrThrow(openAI.imageEdits(imageEditsConfig))
-
-  /** Creates a variation of a given image.
-    *
-    * [[https://platform.openai.com/docs/api-reference/images/create-variation]]
-    *
-    * @param image
-    *   The image to use as the basis for the variation.
-    *
-    * Must be a valid PNG file, less than 4MB, and square.
-    */
-  def imageVariations(image: File): ImageResponse =
-    sendOrThrow(openAI.imageVariations(image))
-
-  /** Creates a variation of a given image.
-    *
-    * [[https://platform.openai.com/docs/api-reference/images/create-variation]]
-    *
-    * @param systemPath
-    *   Path to the image to use as the basis for the variation.
-    *
-    * Must be a valid PNG file, less than 4MB, and square.
-    */
-  def imageVariations(systemPath: String): ImageResponse =
-    sendOrThrow(openAI.imageVariations(systemPath))
-
-  /** Creates a variation of a given image.
-    *
-    * [[https://platform.openai.com/docs/api-reference/images/create-variation]]
-    *
-    * @param imageVariationsConfig
-    *   An instance of the case class ImageVariationsConfig containing the necessary parameters for the image variation.
-    */
-  def imageVariations(imageVariationsConfig: ImageVariationsConfig): ImageResponse =
-    sendOrThrow(openAI.imageVariations(imageVariationsConfig))
 
   /** Creates a model response for the given chat conversation defined in chatBody.
     *
