@@ -52,7 +52,7 @@ object ChatRequestBody {
     * @param logitBias
     *   Modify the likelihood of specified tokens appearing in the completion.
     * @param maxTokens
-    *   The maximum number of tokens to generate in the chat completion. Note: newer reasoning models (GPT-5, o1, o3, ...) reject
+    *   The maximum number of tokens to generate in the chat completion. Note: newer reasoning models (GPT-5.x, GPT-6, ...) reject
     *   `max_tokens` and return "Unsupported parameter: 'max_tokens'...". For those models leave this as `None` and set
     *   `maxCompletionTokens` instead.
     * @param n
@@ -100,11 +100,11 @@ object ChatRequestBody {
     *   log probability. logprobs must be set to true if this parameter is used.
     * @param maxCompletionTokens
     *   An upper bound for the number of tokens that can be generated for a completion, including visible output tokens and reasoning
-    *   tokens. Use this instead of `maxTokens` for reasoning models (GPT-5, o1, o3, ...), which reject `max_tokens`.
+    *   tokens. Use this instead of `maxTokens` for reasoning models (GPT-5.x, GPT-6, ...), which reject `max_tokens`.
     * @param modalities
     *   Output types that you would like the model to generate for this request. Most models are capable of generating text, which is the
-    *   default: ["text"]. The gpt-4o-audio-preview model can also be used to generate audio. To request that this model generate both text
-    *   and audio responses, you can use: ["text", "audio"].
+    *   default: ["text"]. Audio-capable models can also generate audio. To request both text and audio responses, you can use: ["text",
+    *   "audio"].
     * @param serviceTier
     *   Specifies the latency tier to use for processing the request. This parameter is relevant for customers subscribed to the scale tier
     *   service:

@@ -78,7 +78,7 @@ check intact — unlike falling back to a raw model-name string, which disables 
 import sttp.ai.core.model.{Capability, Supports}
 import sttp.ai.openai.requests.completions.chat.ChatRequestBody.ChatCompletionModel
 
-// you have verified the model really supports this, even though its constant isn't tagged with it
+// illustration: opt GPT4o into a capability its constant isn't tagged with
 given Supports[ChatCompletionModel.GPT4o.type, Capability.Reasoning] = Supports.assume
 ```
 

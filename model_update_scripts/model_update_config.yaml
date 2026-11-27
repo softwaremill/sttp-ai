@@ -11,12 +11,6 @@ endpoints:
     insertBeforeMarker: "case class CustomChatCompletionModel"
     valuesSetName: "values"
 
-  "v1/completions":
-    file: "openai/src/main/scala/sttp/ai/openai/requests/completions/CompletionsRequestBody.scala"
-    className: "CompletionModel"
-    insertBeforeMarker: "case class CustomCompletionModel"
-    valuesSetName: "values"
-
   "v1/embeddings":
     file: "openai/src/main/scala/sttp/ai/openai/requests/embeddings/EmbeddingsRequestBody.scala"
     className: "EmbeddingsModel"

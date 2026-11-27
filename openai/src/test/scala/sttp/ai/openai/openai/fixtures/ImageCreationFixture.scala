@@ -33,23 +33,6 @@ object ImageCreationFixture {
       |"user": "user1"
       |}""".stripMargin
 
-  val jsonRequestDifferentModel: String = """{
-      |"prompt": "cute fish",
-      |"background": "transparent",
-      |"model": "gpt-image-2.6-flare",
-      |"moderation": "strict",
-      |"n": 1,
-      |"output_compression": 80,
-      |"output_format": "png",
-      |"partial_images": 2,
-      |"quality": "high",
-      |"size": "1024x1024",
-      |"response_format": "url",
-      |"stream": false,
-      |"style": "vivid",
-      |"user": "user1"
-      |}""".stripMargin
-
   val jsonResponse: String = """{
       |"created": 1681893694,
       |"data": [

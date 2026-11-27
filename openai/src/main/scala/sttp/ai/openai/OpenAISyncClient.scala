@@ -568,7 +568,7 @@ class OpenAISyncClient private (
     * @param file
     *   The audio file to transcribe, in one of these formats: mp3, mp4, mpeg, mpga, m4a, wav, or webm.
     * @param model
-    *   ID of the model to use. Only whisper-1 is currently available.
+    *   ID of the model to use. For example `TranscriptionModel.GPTTranscribe`.
     */
   def createTranscription(file: File, model: TranscriptionModel): AudioResponse =
     sendOrThrow(openAI.createTranscription(file, model))
@@ -580,7 +580,7 @@ class OpenAISyncClient private (
     * @param systemPath
     *   The audio systemPath to transcribe, in one of these formats: mp3, mp4, mpeg, mpga, m4a, wav, or webm.
     * @param model
-    *   ID of the model to use. Only whisper-1 is currently available.
+    *   ID of the model to use. For example `TranscriptionModel.GPTTranscribe`.
     */
   def createTranscription(systemPath: String, model: TranscriptionModel): AudioResponse =
     sendOrThrow(openAI.createTranscription(systemPath, model))

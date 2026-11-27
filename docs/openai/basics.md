@@ -66,9 +66,9 @@ object Main:
     */
 ```
 
-## Token limits on reasoning models (GPT-5, o-series)
+## Token limits on reasoning models (GPT-5.x, GPT-6)
 
-Newer OpenAI reasoning models (GPT-5, o1, o3, ...) reject the `max_tokens` parameter with `Unsupported parameter: 'max_tokens' is not supported with this model. Use 'max_completion_tokens' instead.` For these models leave `maxTokens = None` and set `maxCompletionTokens`:
+Newer OpenAI reasoning models (GPT-5.x, GPT-6, ...) reject the `max_tokens` parameter with `Unsupported parameter: 'max_tokens' is not supported with this model. Use 'max_completion_tokens' instead.` For these models leave `maxTokens = None` and set `maxCompletionTokens`:
 
 ```scala mdoc:compile-only
 //> using dep com.softwaremill.sttp.ai::openai:@VERSION@

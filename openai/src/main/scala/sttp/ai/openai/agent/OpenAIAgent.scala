@@ -92,7 +92,7 @@ private[openai] class OpenAIAgentBackend[F[_]](
       messages = messages,
       tools = if (includeTools && convertedTools.nonEmpty) Some(convertedTools) else None,
       responseFormat = responseFormat,
-      // maxCompletionTokens rather than the legacy maxTokens: reasoning models (GPT-5, o-series) reject max_tokens.
+      // maxCompletionTokens rather than the legacy maxTokens: reasoning models (GPT-5.x, GPT-6) reject max_tokens.
       maxCompletionTokens = maxTokens
     )
     monad.flatMap(monad.map(openAI.createChatCompletion(request).send(backend))(_.body)) {

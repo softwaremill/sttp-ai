@@ -68,6 +68,12 @@
       "snapshots": [
         "whisper-1"
       ]
+    },
+    {
+      "name": "GPT Transcribe",
+      "snapshots": [
+        "gpt-transcribe"
+      ]
     }
   ],
   "v1/audio/translations": [
@@ -168,6 +174,90 @@
         "gpt-4o-mini",
         "gpt-4o-mini-2024-07-18"
       ]
+    },
+    {
+      "name": "GPT-5.2",
+      "snapshots": [
+        "gpt-5.2"
+      ]
+    },
+    {
+      "name": "GPT-5.4",
+      "snapshots": [
+        "gpt-5.4"
+      ]
+    },
+    {
+      "name": "GPT-5.4 mini",
+      "snapshots": [
+        "gpt-5.4-mini"
+      ]
+    },
+    {
+      "name": "GPT-5.4 nano",
+      "snapshots": [
+        "gpt-5.4-nano"
+      ]
+    },
+    {
+      "name": "GPT-5.5",
+      "snapshots": [
+        "gpt-5.5"
+      ]
+    },
+    {
+      "name": "GPT-5.6 Luna",
+      "snapshots": [
+        "gpt-5.6-luna"
+      ]
+    },
+    {
+      "name": "GPT-5.6 Sol",
+      "snapshots": [
+        "gpt-5.6-sol"
+      ]
+    },
+    {
+      "name": "GPT-5.6 Terra",
+      "snapshots": [
+        "gpt-5.6-terra"
+      ]
+    },
+    {
+      "name": "GPT-6 Luna",
+      "snapshots": [
+        "gpt-6-luna"
+      ]
+    },
+    {
+      "name": "GPT-6 Sol",
+      "snapshots": [
+        "gpt-6-sol"
+      ]
+    },
+    {
+      "name": "GPT-6.1 Sol",
+      "snapshots": [
+        "gpt-6.1-sol"
+      ]
+    },
+    {
+      "name": "GPT-6.1 Terra",
+      "snapshots": [
+        "gpt-6.1-terra"
+      ]
+    },
+    {
+      "name": "GPT-6.2 Astra",
+      "snapshots": [
+        "gpt-6.2-astra"
+      ]
+    },
+    {
+      "name": "GPT-6.2 Sol",
+      "snapshots": [
+        "gpt-6.2-sol"
+      ]
     }
   ],
   "v1/completions": [],
@@ -222,8 +312,62 @@
       ]
     }
   ],
-  "v1/images/edits": [],
-  "v1/images/generations": [],
+  "v1/images/edits": [
+    {
+      "name": "GPT Image 2.5 Sunburst",
+      "snapshots": [
+        "gpt-image-2.5-sunburst",
+        "gpt-image-2.5-sunburst-2026-09-08"
+      ]
+    },
+    {
+      "name": "GPT Image 2.5 Flare",
+      "snapshots": [
+        "gpt-image-2.5-flare",
+        "gpt-image-2.5-flare-2026-09-08"
+      ]
+    },
+    {
+      "name": "GPT Image 2.6 Sunburst",
+      "snapshots": [
+        "gpt-image-2.6-sunburst"
+      ]
+    },
+    {
+      "name": "GPT Image 2.6 Flare",
+      "snapshots": [
+        "gpt-image-2.6-flare"
+      ]
+    }
+  ],
+  "v1/images/generations": [
+    {
+      "name": "GPT Image 2.5 Sunburst",
+      "snapshots": [
+        "gpt-image-2.5-sunburst",
+        "gpt-image-2.5-sunburst-2026-09-08"
+      ]
+    },
+    {
+      "name": "GPT Image 2.5 Flare",
+      "snapshots": [
+        "gpt-image-2.5-flare",
+        "gpt-image-2.5-flare-2026-09-08"
+      ]
+    },
+    {
+      "name": "GPT Image 2.6 Sunburst",
+      "snapshots": [
+        "gpt-image-2.6-sunburst"
+      ]
+    },
+    {
+      "name": "GPT Image 2.6 Flare",
+      "snapshots": [
+        "gpt-image-2.6-flare"
+      ]
+    }
+  ],
   "v1/moderations": [
     {
       "name": "omni-moderation",
@@ -303,6 +447,90 @@
       "name": "gpt-oss-20b",
       "snapshots": [
         "gpt-oss-20b"
+      ]
+    },
+    {
+      "name": "GPT-5.2",
+      "snapshots": [
+        "gpt-5.2"
+      ]
+    },
+    {
+      "name": "GPT-5.4",
+      "snapshots": [
+        "gpt-5.4"
+      ]
+    },
+    {
+      "name": "GPT-5.4 mini",
+      "snapshots": [
+        "gpt-5.4-mini"
+      ]
+    },
+    {
+      "name": "GPT-5.4 nano",
+      "snapshots": [
+        "gpt-5.4-nano"
+      ]
+    },
+    {
+      "name": "GPT-5.5",
+      "snapshots": [
+        "gpt-5.5"
+      ]
+    },
+    {
+      "name": "GPT-5.6 Luna",
+      "snapshots": [
+        "gpt-5.6-luna"
+      ]
+    },
+    {
+      "name": "GPT-5.6 Sol",
+      "snapshots": [
+        "gpt-5.6-sol"
+      ]
+    },
+    {
+      "name": "GPT-5.6 Terra",
+      "snapshots": [
+        "gpt-5.6-terra"
+      ]
+    },
+    {
+      "name": "GPT-6 Luna",
+      "snapshots": [
+        "gpt-6-luna"
+      ]
+    },
+    {
+      "name": "GPT-6 Sol",
+      "snapshots": [
+        "gpt-6-sol"
+      ]
+    },
+    {
+      "name": "GPT-6.1 Sol",
+      "snapshots": [
+        "gpt-6.1-sol"
+      ]
+    },
+    {
+      "name": "GPT-6.1 Terra",
+      "snapshots": [
+        "gpt-6.1-terra"
+      ]
+    },
+    {
+      "name": "GPT-6.2 Astra",
+      "snapshots": [
+        "gpt-6.2-astra"
+      ]
+    },
+    {
+      "name": "GPT-6.2 Sol",
+      "snapshots": [
+        "gpt-6.2-sol"
       ]
     }
   ]

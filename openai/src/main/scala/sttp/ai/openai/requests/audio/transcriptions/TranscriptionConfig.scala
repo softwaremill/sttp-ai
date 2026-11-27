@@ -8,7 +8,7 @@ import java.nio.file.Paths
 /** @param file
   *   The audio file to transcribe, in one of these formats: mp3, mp4, mpeg, mpga, m4a, wav, or webm.
   * @param model
-  *   ID of the model to use. Only whisper-1 is currently available.
+  *   ID of the model to use. For example `TranscriptionModel.GPTTranscribe`.
   * @param prompt
   *   An optional text to guide the model's style or continue a previous audio segment. The prompt should match the audio language.
   * @param responseFormat

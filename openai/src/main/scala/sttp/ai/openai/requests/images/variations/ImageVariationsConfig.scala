@@ -10,7 +10,8 @@ import java.nio.file.Paths
   * @param n
   *   The number of images to generate. Must be between 1 and 10.
   * @param size
-  *   The size of the generated images. Must be one of `256x256`, `512x512`, or `1024x1024`.
+  *   The size of the generated images. Must be one of `256x256`, `512x512` (use `Size.Custom` for these), or `1024x1024`. The variations
+  *   endpoint only supports `dall-e-2`.
   * @param responseFormat
   *   The format in which the generated images are returned. Must be one of `url` or `b64_json`.
   * @param user
