@@ -15,6 +15,11 @@ object ResponsesModel {
       GPT4o20241120,
       GPT4oMini,
       GPT4oMini20240718,
+      GPT52,
+      GPT54,
+      GPT54Mini,
+      GPT54Nano,
+      GPT55,
       GPT56Luna,
       GPT56Terra,
       GPT56Sol,
@@ -37,6 +42,11 @@ object ResponsesModel {
   case object GPT4o20241120 extends ResponsesModel("gpt-4o-2024-11-20")
   case object GPT4oMini extends ResponsesModel("gpt-4o-mini")
   case object GPT4oMini20240718 extends ResponsesModel("gpt-4o-mini-2024-07-18")
+  case object GPT52 extends ResponsesModel("gpt-5.2")
+  case object GPT54 extends ResponsesModel("gpt-5.4")
+  case object GPT54Mini extends ResponsesModel("gpt-5.4-mini")
+  case object GPT54Nano extends ResponsesModel("gpt-5.4-nano")
+  case object GPT55 extends ResponsesModel("gpt-5.5")
   case object GPT56Luna extends ResponsesModel("gpt-5.6-luna")
   case object GPT56Terra extends ResponsesModel("gpt-5.6-terra")
   case object GPT56Sol extends ResponsesModel("gpt-5.6-sol")
