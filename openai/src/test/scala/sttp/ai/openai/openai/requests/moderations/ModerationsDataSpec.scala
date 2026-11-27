@@ -15,7 +15,7 @@ class ModerationsDataSpec extends AnyFlatSpec with Matchers with EitherValues {
     val createModerationResponse = fixtures.ModerationsFixture.jsonCreateModerationResponse
     val expectedResponse = ModerationData(
       id = "modr-5MWoLO",
-      model = ModerationModel.TextModerationStable,
+      model = ModerationModel.OmniModerationLatest,
       results = Seq(
         Result(
           flagged = true,
@@ -55,7 +55,7 @@ class ModerationsDataSpec extends AnyFlatSpec with Matchers with EitherValues {
       decode[ModerationData](createModerationResponse)
 
     // then
-    givenResponse.value.model shouldBe ModerationModel.TextModeration007
+    givenResponse.value.model shouldBe ModerationModel.CustomModerationModel("text-moderation-007")
   }
 
 }

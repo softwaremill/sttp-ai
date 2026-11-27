@@ -19,7 +19,7 @@ class AssistantsDataSpec extends AnyFlatSpec with Matchers with EitherValues {
       instructions = Some("You are a personal math tutor. When asked a question, write and run Python code to answer the question."),
       name = Some("Math Tutor"),
       tools = Seq(CodeInterpreter),
-      model = AssistantsModel.GPT4,
+      model = AssistantsModel.GPT4o,
       reasoningEffort = Some(ReasoningEffort.Low),
       temperature = Some(1.0f),
       topP = Some(1.0f)
@@ -45,7 +45,7 @@ class AssistantsDataSpec extends AnyFlatSpec with Matchers with EitherValues {
       createdAt = 1698984975,
       name = Some("Math Tutor"),
       description = None,
-      model = AssistantsModel.GPT4,
+      model = AssistantsModel.GPT4o,
       instructions = Some("You are a personal math tutor. When asked a question, write and run Python code to answer the question."),
       tools = Seq(
         CodeInterpreter
@@ -76,7 +76,7 @@ class AssistantsDataSpec extends AnyFlatSpec with Matchers with EitherValues {
           createdAt = 1698982736,
           name = Some("Coding Tutor"),
           description = None,
-          AssistantsModel.GPT4,
+          AssistantsModel.GPT4o,
           instructions = Some("You are a helpful assistant designed to make me better at coding!"),
           tools = Seq(),
           toolResources = None,
@@ -88,7 +88,7 @@ class AssistantsDataSpec extends AnyFlatSpec with Matchers with EitherValues {
           createdAt = 1698982718,
           name = Some("My Assistant"),
           description = None,
-          AssistantsModel.GPT4,
+          AssistantsModel.GPT4o,
           instructions = Some("You are a helpful assistant designed to make me better at coding!"),
           tools = Seq(),
           toolResources = None,
@@ -100,7 +100,7 @@ class AssistantsDataSpec extends AnyFlatSpec with Matchers with EitherValues {
           createdAt = 1698982643,
           name = None,
           description = None,
-          AssistantsModel.GPT4,
+          AssistantsModel.GPT4o,
           instructions = None,
           tools = Seq(),
           toolResources = None,
@@ -134,7 +134,7 @@ class AssistantsDataSpec extends AnyFlatSpec with Matchers with EitherValues {
           createdAt = 1698982736,
           name = Some("Coding Tutor"),
           description = None,
-          AssistantsModel.GPT4,
+          AssistantsModel.GPT4o,
           instructions = Some("You are a helpful assistant designed to make me better at coding!"),
           tools = Seq(),
           toolResources = None,
@@ -146,7 +146,7 @@ class AssistantsDataSpec extends AnyFlatSpec with Matchers with EitherValues {
           createdAt = 1698982718,
           name = Some("My Assistant"),
           description = None,
-          AssistantsModel.GPT4,
+          AssistantsModel.GPT4o,
           instructions = Some("You are a helpful assistant designed to make me better at coding!"),
           tools = Seq(),
           toolResources = None,
@@ -158,7 +158,7 @@ class AssistantsDataSpec extends AnyFlatSpec with Matchers with EitherValues {
           createdAt = 1698982643,
           name = None,
           description = None,
-          AssistantsModel.GPT4,
+          AssistantsModel.GPT4o,
           instructions = None,
           tools = Seq(),
           toolResources = None,
@@ -189,7 +189,7 @@ class AssistantsDataSpec extends AnyFlatSpec with Matchers with EitherValues {
       createdAt = 1699009709,
       name = Some("HR Helper"),
       description = None,
-      AssistantsModel.GPT4,
+      AssistantsModel.GPT4o,
       instructions = Some("You are an HR bot, and you have access to files to answer employee questions about company policies."),
       tools = Seq(
         FileSearch
@@ -212,7 +212,7 @@ class AssistantsDataSpec extends AnyFlatSpec with Matchers with EitherValues {
         "You are an HR bot, and you have access to files to answer employee questions about company policies. Always response with info from either of the files."
       ),
       tools = Seq(FileSearch),
-      model = Some("gpt-4"),
+      model = Some("gpt-4o"),
       toolResources = Some(ToolResources(None, Some(FileSearchToolResource(Some(Seq("vs_1", "vs_3")))))),
       reasoningEffort = Some(ReasoningEffort.Low),
       temperature = Some(1.0f),
@@ -239,7 +239,7 @@ class AssistantsDataSpec extends AnyFlatSpec with Matchers with EitherValues {
       createdAt = 1699009709,
       name = Some("HR Helper"),
       description = None,
-      AssistantsModel.GPT4,
+      AssistantsModel.GPT4o,
       instructions = Some(
         "You are an HR bot, and you have access to files to answer employee questions about company policies. Always response with info from either of the files."
       ),

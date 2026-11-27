@@ -7,7 +7,7 @@ object AssistantsFixture {
       |  "instructions": "You are a personal math tutor. When asked a question, write and run Python code to answer the question.",
       |  "name": "Math Tutor",
       |  "tools": [{"type": "code_interpreter"}],
-      |  "model": "gpt-4",
+      |  "model": "gpt-4o",
       |  "reasoning_effort": "low",
       |  "temperature": 1.0,
       |  "top_p": 1.0
@@ -21,7 +21,7 @@ object AssistantsFixture {
       |  "created_at": 1698984975,
       |  "name": "Math Tutor",
       |  "description": null,
-      |  "model": "gpt-4",
+      |  "model": "gpt-4o",
       |  "instructions": "You are a personal math tutor. When asked a question, write and run Python code to answer the question.",
       |  "tools": [
       |    {
@@ -44,7 +44,7 @@ object AssistantsFixture {
       |      "created_at": 1698982736,
       |      "name": "Coding Tutor",
       |      "description": null,
-      |      "model": "gpt-4",
+      |      "model": "gpt-4o",
       |      "instructions": "You are a helpful assistant designed to make me better at coding!",
       |      "tools": [],
       |      "tool_resources": {},
@@ -56,7 +56,7 @@ object AssistantsFixture {
       |      "created_at": 1698982718,
       |      "name": "My Assistant",
       |      "description": null,
-      |      "model": "gpt-4",
+      |      "model": "gpt-4o",
       |      "instructions": "You are a helpful assistant designed to make me better at coding!",
       |      "tools": [],
       |      "tool_resources": {},
@@ -68,7 +68,7 @@ object AssistantsFixture {
       |      "created_at": 1698982643,
       |      "name": null,
       |      "description": null,
-      |      "model": "gpt-4",
+      |      "model": "gpt-4o",
       |      "instructions": null,
       |      "tools": [],
       |      "tool_resources": {},
@@ -89,7 +89,7 @@ object AssistantsFixture {
       |  "created_at": 1699009709,
       |  "name": "HR Helper",
       |  "description": null,
-      |  "model": "gpt-4",
+      |  "model": "gpt-4o",
       |  "instructions": "You are an HR bot, and you have access to files to answer employee questions about company policies.",
       |  "tools": [
       |    {
@@ -111,7 +111,7 @@ object AssistantsFixture {
       |{
       |  "instructions": "You are an HR bot, and you have access to files to answer employee questions about company policies. Always response with info from either of the files.",
       |  "tools": [{"type": "file_search"}],
-      |  "model": "gpt-4",
+      |  "model": "gpt-4o",
       |  "tool_resources": {
       |     "file_search": {
       |        "vector_store_ids": ["vs_1", "vs_3"]
@@ -131,7 +131,7 @@ object AssistantsFixture {
        |  "created_at": 1699009709,
        |  "name": "HR Helper",
        |  "description": null,
-       |  "model": "gpt-4",
+       |  "model": "gpt-4o",
        |  "instructions": "You are an HR bot, and you have access to files to answer employee questions about company policies. Always response with info from either of the files.",
        |  "tools": [
        |    {

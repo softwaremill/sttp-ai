@@ -55,5 +55,3 @@ object ErrorHandlingExample:
       }
     } finally claude.close()
 ```
-
-Additionally, [structured outputs](structured-outputs.md) on an unsupported model throw `UnsupportedModelForStructuredOutputException` (also under `ClaudeExceptions`). Note that it extends `AIException` directly rather than `ClaudeException`, so a `case e: ClaudeException` catch-all will not catch it.

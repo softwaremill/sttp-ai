@@ -21,7 +21,7 @@ object ClaudeAgentCapabilitySpecFixtures {
 class ClaudeAgentCapabilitySpec extends AnyFlatSpec with Matchers {
   import ClaudeAgentCapabilitySpecFixtures._
 
-  "ClaudeAgent" should "reject deriveResponseSchema for Claude 3 Haiku (no StructuredOutput) at compile time" in {
+  "ClaudeAgent" should "reject deriveResponseSchema for a widened model type (no StructuredOutput) at compile time" in {
     assertDoesNotCompile(
       """import io.circe.Codec
         import io.circe.generic.semiauto.deriveCodec
@@ -32,7 +32,7 @@ class ClaudeAgentCapabilitySpec extends AnyFlatSpec with Matchers {
           implicit val schema: Schema[Out] = Schema.derived
         }
         sttp.ai.claude.agent.ClaudeAgent
-          .synchronous(sttp.ai.claude.agent.ClaudeAgentCapabilitySpecFixtures.client, sttp.ai.claude.models.ClaudeModel.Claude3Haiku)
+          .synchronous(sttp.ai.claude.agent.ClaudeAgentCapabilitySpecFixtures.client, (sttp.ai.claude.models.ClaudeModel.ClaudeSonnet5: sttp.ai.claude.models.ClaudeModel))
           .deriveResponseSchema[Out]"""
     )
     assertCompiles(

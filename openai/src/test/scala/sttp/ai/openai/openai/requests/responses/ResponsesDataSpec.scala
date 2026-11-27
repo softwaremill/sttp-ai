@@ -477,7 +477,7 @@ class ResponsesDataSpec extends AnyFlatSpec with Matchers with EitherValues {
 
     // given
     val givenRequest = ResponsesRequestBody(
-      model = Some(ResponsesModel.GPT5),
+      model = Some(ResponsesModel.GPT62Sol),
       input = Some(
         Right(
           List(
@@ -541,7 +541,7 @@ class ResponsesDataSpec extends AnyFlatSpec with Matchers with EitherValues {
 
     // given
     val givenRequest = CompactRequestBody(
-      model = ResponsesModel.GPT5,
+      model = ResponsesModel.GPT62Sol,
       input = Some(Right(List(InputMessage(List(InputContentItem.InputText("My name is Ada.")), role = "user", status = None)))),
       previousResponseId = Some("resp_123")
     )

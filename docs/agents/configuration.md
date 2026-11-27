@@ -50,8 +50,6 @@ val agent = OpenAIAgent
   .synchronous(OpenAI.fromEnv, ChatCompletionModel.GPT4o) // GPT4o mixes in ToolCalling
   .tools(myTool)
   .build
-
-// OpenAIAgent.synchronous(OpenAI.fromEnv, ChatCompletionModel.O1Mini).tools(myTool) // does not compile: o1-mini has no ToolCalling
 ```
 
 String model names keep working and skip capability checking — they wrap into the provider's custom model class,
@@ -80,8 +78,8 @@ check intact — unlike falling back to a raw model-name string, which disables 
 import sttp.ai.core.model.{Capability, Supports}
 import sttp.ai.openai.requests.completions.chat.ChatRequestBody.ChatCompletionModel
 
-// you have verified the model really supports this, even though its constant isn't tagged with it
-given Supports[ChatCompletionModel.GPT4o20240513.type, Capability.StructuredOutput] = Supports.assume
+// illustration: opt GPT4o into a capability its constant isn't tagged with
+given Supports[ChatCompletionModel.GPT4o.type, Capability.Reasoning] = Supports.assume
 ```
 
 Note that capability checks work on the model's singleton type: ascribing a constant to the base type
@@ -103,7 +101,7 @@ import sttp.shared.Identity
 def myTool: AgentTool[Identity, ?] = ???
 
 val mixedAgent = OpenAIAgent
-  .synchronous(OpenAI.fromEnv, (info: IterationInfo) => if info.isLastIteration then ChatCompletionModel.GPT5 else ChatCompletionModel.GPT4oMini)
+  .synchronous(OpenAI.fromEnv, (info: IterationInfo) => if info.isLastIteration then ChatCompletionModel.GPT62Sol else ChatCompletionModel.GPT4oMini)
   .tools(myTool)
   .build
 ```
@@ -117,7 +115,7 @@ import sttp.ai.core.model.Capability
 import sttp.ai.openai.requests.completions.chat.ChatRequestBody.ChatCompletionModel
 
 val pick: IterationInfo => ChatCompletionModel & Capability.ToolCalling =
-  info => if info.isLastIteration then ChatCompletionModel.GPT5 else ChatCompletionModel.GPT4oMini
+  info => if info.isLastIteration then ChatCompletionModel.GPT62Sol else ChatCompletionModel.GPT4oMini
 ```
 
 Note: `isLastIteration` is true on the *forced* last iteration (`maxIterations` reached) and on an

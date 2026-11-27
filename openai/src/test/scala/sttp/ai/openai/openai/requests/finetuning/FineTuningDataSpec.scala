@@ -4,7 +4,7 @@ import org.scalatest.EitherValues
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
 import sttp.ai.openai.fixtures.FineTuningJobFixture
-import sttp.ai.openai.requests.finetuning.FineTuningModel.GPT35Turbo0125
+import sttp.ai.openai.requests.finetuning.FineTuningModel.GPT4oMini20240718
 import io.circe.parser.{decode, parse}
 import io.circe.syntax._
 import sttp.ai.openai.json.OpenAIDerivedCodecs._
@@ -14,7 +14,7 @@ class FineTuningDataSpec extends AnyFlatSpec with Matchers with EitherValues {
   "Given create fine tuning job request as case class" should "be properly serialized to Json" in {
     // given
     val givenRequest = FineTuningJobRequestBody(
-      model = GPT35Turbo0125,
+      model = GPT4oMini20240718,
       trainingFile = "file-train231",
       suffix = Some("sml-model-name"),
       validationFile = Some("file-valid2"),

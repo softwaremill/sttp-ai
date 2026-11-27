@@ -16,7 +16,7 @@ import sttp.ai.openai.requests.finetuning.{
 object FineTuningJobFixture {
 
   val jsonCreateFineTuneJobRequest: String = """{
-                                            |  "model": "gpt-3.5-turbo-0125",
+                                            |  "model": "gpt-4o-mini-2024-07-18",
                                             |  "training_file": "file-train231",
                                             |  "suffix": "sml-model-name",
                                             |  "validation_file": "file-valid2",

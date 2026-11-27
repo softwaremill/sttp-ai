@@ -40,7 +40,7 @@ object Main:
     )
 
     val chatRequestBody: ChatBody = ChatBody(
-      model = ChatCompletionModel.GPT35Turbo,
+      model = ChatCompletionModel.GPT4oMini,
       messages = bodyMessages
     )
 
@@ -65,7 +65,7 @@ object Main:
       "chatcmpl-8HEZFNDmu2AYW8jVvNKyRO4W4KcO8",
       "chat.completion.chunk",
       1699118265,
-      "gpt-3.5-turbo-0613",
+      "gpt-4o-mini-2024-07-18",
       List(
         Choices(
           Delta(None, Some("Hi"), None),
@@ -79,7 +79,7 @@ object Main:
       "chatcmpl-8HEZFNDmu2AYW8jVvNKyRO4W4KcO8",
       "chat.completion.chunk",
       1699118265,
-      "gpt-3.5-turbo-0613",
+      "gpt-4o-mini-2024-07-18",
       List(
         Choices(
           Delta(None, Some(" there"), None),
@@ -175,7 +175,7 @@ object Main:
     )
 
     val chatRequestBody: ChatBody = ChatBody(
-      model = ChatCompletionModel.GPT35Turbo,
+      model = ChatCompletionModel.GPT4oMini,
       messages = bodyMessages
     )
 
@@ -242,7 +242,7 @@ object Main extends OxApp:
     )
     
     val chatRequestBody: ChatBody = ChatBody(
-      model = ChatCompletionModel.GPT35Turbo,
+      model = ChatCompletionModel.GPT4oMini,
       messages = bodyMessages
     )
     

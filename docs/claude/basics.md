@@ -8,7 +8,7 @@ This module provides **native support for Anthropic's [Claude API](https://docs.
 - ✅ **ContentBlock structure** — rich message content blocks (text, images); see [Messages API](messages.md)
 - ✅ **Streaming** — [server-sent events streaming](streaming.md) for fs2, ZIO, Akka, Pekko, and Ox
 - ✅ **Tool calling** — [native Claude tools](tool-calling.md), custom and predefined
-- ✅ **Structured outputs** — [beta JSON-schema validation](structured-outputs.md) (Claude 4.1+ models)
+- ✅ **Structured outputs** — [beta JSON-schema validation](structured-outputs.md)
 - ✅ **Models API** — [list available models](models-and-errors.md) via `/v1/models`
 - ✅ **Error handling** — [Claude-specific exception hierarchy](models-and-errors.md)
 - ✅ **Agent loop** — [autonomous tool-calling agents](../agents/quickstart.md) via `ClaudeAgent`

@@ -23,7 +23,7 @@ object Main:
     val gemini = GeminiSyncClient.fromEnv
     try {
       val request = InteractionRequest.simple(
-        model = "gemini-2.5-flash",
+        model = "gemini-3.6-flash",
         text = "List 10 well-known programming languages. For each, give the dominant paradigm and a one-sentence summary."
       )
       val result: LanguageList = gemini.createInteractionAs[LanguageList](request)
@@ -66,7 +66,7 @@ object ManualSchemaExample:
       )
 
       val request = InteractionRequest
-        .simple("gemini-2.5-flash", "Extract information about John, a 30-year-old software engineer who knows Python and Scala.")
+        .simple("gemini-3.6-flash", "Extract information about John, a 30-year-old software engineer who knows Python and Scala.")
         .withStructuredOutput(ResponseFormat.JsonSchema(schema))
 
       val response = gemini.createInteraction(request)

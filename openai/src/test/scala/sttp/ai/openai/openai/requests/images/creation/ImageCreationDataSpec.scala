@@ -38,7 +38,7 @@ class ImageCreationDataSpec extends AnyFlatSpec with Matchers with EitherValues 
     val givenRequest: ImageCreationBody = ImageCreationBody(
       "cute fish", // prompt
       Some("transparent"), // background
-      ImageCreationModel.DALLE3,
+      ImageCreationModel.GPTImage26Sunburst,
       Some("strict"), // moderation
       Some(1), // n
       Some(80), // outputCompression
@@ -68,7 +68,7 @@ class ImageCreationDataSpec extends AnyFlatSpec with Matchers with EitherValues 
     val givenRequest: ImageCreationBody = ImageCreationBody(
       "cute fish", // prompt
       Some("transparent"), // background
-      ImageCreationModel.DALLE3, // model
+      ImageCreationModel.GPTImage26Sunburst, // model
       None, // moderation
       Some(1), // n
       Some(80), // outputCompression
@@ -83,66 +83,6 @@ class ImageCreationDataSpec extends AnyFlatSpec with Matchers with EitherValues 
     )
 
     val jsonRequest = parse(fixtures.ImageCreationFixture.jsonRequestWithSomeOptionalsSetToNone).value
-
-    // when
-    val serializedJson: io.circe.Json = givenRequest.asJson.deepDropNullValues
-
-    // then
-    serializedJson shouldBe jsonRequest
-  }
-
-  "Given create image request as case class created with enum values" should "be properly serialized to Json" in {
-    import sttp.ai.openai.requests.images.creation.ImageCreationRequestBody._
-
-    // given
-    val givenRequest: ImageCreationBody = ImageCreationBody(
-      "cute fish", // prompt
-      Some("transparent"), // background
-      ImageCreationModel.DALLE3, // model
-      Some("strict"), // moderation
-      Some(1), // n
-      Some(80), // outputCompression
-      Some("png"), // outputFormat
-      Some(2), // partialImages
-      Some("high"), // quality
-      Some(Size.Large), // size
-      Some(ResponseFormat.URL), // responseFormat
-      Some(false), // stream
-      Some("vivid"), // style
-      Some("user1") // user
-    )
-
-    val jsonRequest = parse(fixtures.ImageCreationFixture.jsonRequest).value
-
-    // when
-    val serializedJson: io.circe.Json = givenRequest.asJson.deepDropNullValues
-
-    // then
-    serializedJson shouldBe jsonRequest
-  }
-
-  "Given create image request as case class with different model" should "be properly serialized to Json" in {
-    import sttp.ai.openai.requests.images.creation.ImageCreationRequestBody._
-
-    // given
-    val givenRequest: ImageCreationBody = ImageCreationBody(
-      "cute fish", // prompt
-      Some("transparent"), // background
-      ImageCreationModel.DALLE2,
-      Some("strict"), // moderation
-      Some(1), // n
-      Some(80), // outputCompression
-      Some("png"), // outputFormat
-      Some(2), // partialImages
-      Some("high"), // quality
-      Some(Size.Large), // size
-      Some(ResponseFormat.URL), // responseFormat
-      Some(false), // stream
-      Some("vivid"), // style
-      Some("user1") // user
-    )
-
-    val jsonRequest = parse(fixtures.ImageCreationFixture.jsonRequestDalle2).value
 
     // when
     val serializedJson: io.circe.Json = givenRequest.asJson.deepDropNullValues

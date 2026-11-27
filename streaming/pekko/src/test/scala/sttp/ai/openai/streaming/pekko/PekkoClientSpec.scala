@@ -59,7 +59,7 @@ class PekkoClientSpec extends AsyncFlatSpec with Matchers with EitherValues {
       val client = new OpenAI("test-token")
 
       val givenRequest = ChatBody(
-        model = ChatCompletionModel.GPT35Turbo,
+        model = ChatCompletionModel.GPT4oMini,
         messages = Seq.empty
       )
 
@@ -93,7 +93,7 @@ class PekkoClientSpec extends AsyncFlatSpec with Matchers with EitherValues {
     val client = new OpenAI(authToken = "test-token")
 
     val givenRequest = ChatBody(
-      model = ChatCompletionModel.GPT35Turbo,
+      model = ChatCompletionModel.GPT4oMini,
       messages = Seq.empty
     )
 
@@ -146,7 +146,7 @@ class PekkoClientSpec extends AsyncFlatSpec with Matchers with EitherValues {
     val client = new OpenAI(authToken = "test-token")
 
     val givenRequest = ChatBody(
-      model = ChatCompletionModel.GPT35Turbo,
+      model = ChatCompletionModel.GPT4oMini,
       messages = Seq.empty
     )
 

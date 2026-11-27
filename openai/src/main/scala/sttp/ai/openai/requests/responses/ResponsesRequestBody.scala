@@ -30,7 +30,7 @@ import sttp.tapir.{Schema => TSchema}
   *   Set of 16 key-value pairs that can be attached to an object. Keys are strings with a maximum length of 64 characters. Values are
   *   strings with a maximum length of 512 characters.
   * @param model
-  *   Model ID used to generate the response, like gpt-4o or o3.
+  *   Model ID used to generate the response, like gpt-4o or gpt-6.2-sol.
   * @param parallelToolCalls
   *   Whether to allow the model to run tool calls in parallel. Defaults to true.
   * @param previousResponseId
@@ -40,7 +40,7 @@ import sttp.tapir.{Schema => TSchema}
   * @param promptCacheKey
   *   Used by OpenAI to cache responses for similar requests to optimize your cache hit rates.
   * @param reasoning
-  *   Configuration options for reasoning models (o-series models only).
+  *   Configuration options for reasoning models.
   * @param safetyIdentifier
   *   A stable identifier used to help detect users of your application that may be violating OpenAI's usage policies.
   * @param serviceTier

@@ -16,7 +16,7 @@ object LifecycleExample:
     try {
       // Create
       val created = gemini.createInteraction(
-        InteractionRequest.simple("gemini-2.5-flash", "Reply with exactly one word: ping")
+        InteractionRequest.simple("gemini-3.6-flash", "Reply with exactly one word: ping")
       )
       println(s"status: ${created.status}")
 
@@ -49,11 +49,11 @@ import sttp.ai.gemini.requests.InteractionRequest
 object StoreExample:
   def main(args: Array[String]): Unit =
     val request = InteractionRequest
-      .simple("gemini-2.5-flash", "Reply with exactly one word: stored")
+      .simple("gemini-3.6-flash", "Reply with exactly one word: stored")
       .copy(store = Some(true)) // the default; shown here for clarity
 
     val ephemeral = InteractionRequest
-      .simple("gemini-2.5-flash", "Reply with exactly one word: ephemeral")
+      .simple("gemini-3.6-flash", "Reply with exactly one word: ephemeral")
       .copy(store = Some(false))
 ```
 
@@ -76,10 +76,10 @@ object MultiTurnExample:
     val gemini = GeminiSyncClient.fromEnv
     try {
       // Server-side: continue via previousInteractionId
-      val first = gemini.createInteraction(InteractionRequest.simple("gemini-2.5-flash", "My name is Ada."))
+      val first = gemini.createInteraction(InteractionRequest.simple("gemini-3.6-flash", "My name is Ada."))
       val second = gemini.createInteraction(
         InteractionRequest
-          .simple("gemini-2.5-flash", "What is my name?")
+          .simple("gemini-3.6-flash", "What is my name?")
           .copy(previousInteractionId = first.id)
       )
       println(second.outputText)
@@ -92,7 +92,7 @@ object MultiTurnExample:
       )
       val replayed = gemini.createInteraction(
         InteractionRequest(
-          model = "gemini-2.5-flash",
+          model = "gemini-3.6-flash",
           input = InteractionInput.StepsInput(steps),
           store = Some(false)
         )

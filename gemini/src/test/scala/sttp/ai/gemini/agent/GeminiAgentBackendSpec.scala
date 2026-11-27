@@ -322,7 +322,7 @@ class GeminiAgentBackendSpec extends AnyFlatSpec with Matchers with EitherValues
     val client = GeminiClient(GeminiConfig(apiKey = "test-key"))
     val backend = new GeminiAgentBackend[Identity](
       client,
-      info => if (info.isLastIteration) GeminiModel.Gemini25Pro else GeminiModel.Gemini25FlashLite,
+      info => if (info.isLastIteration) GeminiModel.Gemini38Flash else GeminiModel.Gemini25FlashLite,
       Seq.empty,
       None,
       None
@@ -331,7 +331,7 @@ class GeminiAgentBackendSpec extends AnyFlatSpec with Matchers with EitherValues
     backend.sendRequest(ConversationHistory.withInitialPrompt("hello"), httpStub, includeTools = false, IterationInfo(1, 3)): Unit
     backend.sendRequest(ConversationHistory.withInitialPrompt("hello"), httpStub, includeTools = false, IterationInfo(3, 3)): Unit
 
-    capturedModels.get() shouldBe Vector("gemini-2.5-flash-lite", "gemini-2.5-pro")
+    capturedModels.get() shouldBe Vector("gemini-2.5-flash-lite", "gemini-3.8-flash")
   }
 
   it should "surface provider-reported usage and model on AgentResponse" in {
@@ -339,7 +339,7 @@ class GeminiAgentBackendSpec extends AnyFlatSpec with Matchers with EitherValues
       """{
         |  "id": "int_1",
         |  "status": "completed",
-        |  "model": "gemini-2.5-flash",
+        |  "model": "gemini-3.6-flash",
         |  "steps": [],
         |  "usage": {
         |    "total_input_tokens": 100,
@@ -358,7 +358,7 @@ class GeminiAgentBackendSpec extends AnyFlatSpec with Matchers with EitherValues
       IterationInfo(1, 10)
     )
 
-    response.model shouldBe Some("gemini-2.5-flash")
+    response.model shouldBe Some("gemini-3.6-flash")
     response.usage shouldBe Some(
       TokenUsage(
         inputTokens = Tokens(100L),
@@ -372,10 +372,10 @@ class GeminiAgentBackendSpec extends AnyFlatSpec with Matchers with EitherValues
   }
 
   it should "build typed and mixed-model agents through GeminiAgent" in {
-    GeminiAgent.synchronous(GeminiConfig(apiKey = "test-key"), GeminiModel.Gemini25Flash): Unit
+    GeminiAgent.synchronous(GeminiConfig(apiKey = "test-key"), GeminiModel.Gemini36Flash): Unit
     GeminiAgent.synchronous(
       GeminiConfig(apiKey = "test-key"),
-      (info: IterationInfo) => if (info.isLastIteration) GeminiModel.Gemini25Pro else GeminiModel.Gemini25FlashLite
+      (info: IterationInfo) => if (info.isLastIteration) GeminiModel.Gemini38Flash else GeminiModel.Gemini25FlashLite
     ): Unit
     GeminiAgent.synchronous(GeminiConfig(apiKey = "test-key"), "gemini-experimental"): Unit
     succeed

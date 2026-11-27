@@ -54,7 +54,7 @@ class ClaudeOxClientSpec extends AnyFlatSpec with Matchers with EitherValues {
       val client = ClaudeClient(ClaudeConfig("test-token"))
 
       val givenRequest = MessageRequest.simple(
-        model = ClaudeModel.Claude3_5Sonnet.value,
+        model = ClaudeModel.ClaudeHaiku5_5.value,
         messages = List(Message.user("Hello")),
         maxTokens = 100
       )
@@ -82,7 +82,7 @@ class ClaudeOxClientSpec extends AnyFlatSpec with Matchers with EitherValues {
     val client = ClaudeClient(ClaudeConfig("test-token"))
 
     val givenRequest = MessageRequest.simple(
-      model = ClaudeModel.Claude3_5Sonnet.value,
+      model = ClaudeModel.ClaudeHaiku5_5.value,
       messages = List(Message.user("Hello")),
       maxTokens = 100
     )
@@ -162,7 +162,7 @@ class ClaudeOxClientSpec extends AnyFlatSpec with Matchers with EitherValues {
     val client = ClaudeClient(ClaudeConfig("test-token"))
 
     val givenRequest = MessageRequest.simple(
-      model = ClaudeModel.Claude3_5Sonnet.value,
+      model = ClaudeModel.ClaudeHaiku5_5.value,
       messages = List(Message.user("Hello")),
       maxTokens = 100
     )

@@ -37,7 +37,7 @@ object ToolCallingExample:
       )
 
       val request = InteractionRequest.withTools(
-        model = "gemini-2.5-flash",
+        model = "gemini-3.6-flash",
         input = InteractionInput.TextInput("What's the weather in Paris?"),
         tools = List(weatherTool)
       )
@@ -77,7 +77,7 @@ object ToolReplyExample:
 
       val first = gemini.createInteraction(
         InteractionRequest
-          .withTools("gemini-2.5-flash", InteractionInput.TextInput("What's the weather in Paris?"), List(weatherTool))
+          .withTools("gemini-3.6-flash", InteractionInput.TextInput("What's the weather in Paris?"), List(weatherTool))
           .copy(store = Some(false))
       )
 
@@ -93,7 +93,7 @@ object ToolReplyExample:
 
         val second = gemini.createInteraction(
           InteractionRequest(
-            model = "gemini-2.5-flash",
+            model = "gemini-3.6-flash",
             input = InteractionInput.StepsInput(steps),
             tools = Some(List(weatherTool)),
             store = Some(false)
@@ -123,7 +123,7 @@ object BuiltinToolsExample:
     val gemini = GeminiSyncClient.fromEnv
     try {
       val request = InteractionRequest.withTools(
-        model = "gemini-2.5-flash",
+        model = "gemini-3.6-flash",
         input = InteractionInput.TextInput("What was the most recent SpaceX launch?"),
         tools = List(Tool.GoogleSearch)
       )
@@ -161,7 +161,7 @@ object AgentExample:
     val backend = DefaultSyncBackend()
     try {
       val agent = GeminiAgent
-        .synchronous(GeminiConfig.fromEnv, "gemini-2.5-flash")
+        .synchronous(GeminiConfig.fromEnv, "gemini-3.6-flash")
         .maxIterations(5)
         .tools(weatherTool)
         .build

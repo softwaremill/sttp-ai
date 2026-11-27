@@ -104,7 +104,7 @@ object GeminiHello:
   def main(args: Array[String]): Unit =
     val gemini = GeminiSyncClient.fromEnv
     try {
-      val response = gemini.createInteraction(InteractionRequest.simple("gemini-2.5-flash", "Hello!"))
+      val response = gemini.createInteraction(InteractionRequest.simple("gemini-3.6-flash", "Hello!"))
       println(response.outputText)
     } finally gemini.close()
 ```

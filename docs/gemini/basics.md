@@ -28,7 +28,7 @@ object Main:
     val gemini = GeminiSyncClient.fromEnv
     try {
       val request = InteractionRequest.simple(
-        model = "gemini-2.5-flash",
+        model = "gemini-3.6-flash",
         text = "Hello Gemini! What's the weather like today?"
       )
 
@@ -58,7 +58,7 @@ object AsyncMain:
     val backend: SyncBackend = DefaultSyncBackend()
     val client = GeminiClient.fromEnv
 
-    val request = InteractionRequest.simple("gemini-2.5-flash", "Say hello in one sentence.")
+    val request = InteractionRequest.simple("gemini-3.6-flash", "Say hello in one sentence.")
 
     val response = client.createInteraction(request).send(backend)
 

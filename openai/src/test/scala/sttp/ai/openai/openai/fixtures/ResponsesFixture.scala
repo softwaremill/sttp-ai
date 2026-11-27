@@ -326,7 +326,7 @@ object ResponsesFixture {
 
   val jsonRequestWithCompaction: String =
     """{
-      |  "model": "gpt-5",
+      |  "model": "gpt-6.2-sol",
       |  "input": [
       |    {
       |      "type": "compaction",
@@ -358,7 +358,7 @@ object ResponsesFixture {
       |  "object": "response",
       |  "created_at": 1741476777,
       |  "status": "completed",
-      |  "model": "gpt-5",
+      |  "model": "gpt-6.2-sol",
       |  "output": [
       |    {
       |      "type": "compaction",
@@ -389,7 +389,7 @@ object ResponsesFixture {
 
   val jsonCompactRequest: String =
     """{
-      |  "model": "gpt-5",
+      |  "model": "gpt-6.2-sol",
       |  "input": [
       |    {
       |      "type": "message",

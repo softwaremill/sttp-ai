@@ -31,7 +31,7 @@ import sttp.tapir.{Schema => TSchema}
   *
   * Keys are strings with a maximum length of 64 characters. Values are strings with a maximum length of 512 characters.
   * @param model
-  *   Model ID used to generate the response, like gpt-4o or o3. OpenAI offers a wide range of models with different capabilities,
+  *   Model ID used to generate the response, like gpt-4o or gpt-6.2-sol. OpenAI offers a wide range of models with different capabilities,
   *   performance characteristics, and price points. Refer to the model guide to browse and compare available models.
   * @param `object`
   *   The object type of this resource - always set to response.
@@ -50,7 +50,7 @@ import sttp.tapir.{Schema => TSchema}
   * @param promptCacheKey
   *   Used by OpenAI to cache responses for similar requests to optimize your cache hit rates. Replaces the user field.
   * @param reasoning
-  *   Configuration options for reasoning models. o-series models only
+  *   Configuration options for reasoning models.
   * @param safetyIdentifier
   *   A stable identifier used to help detect users of your application that may be violating OpenAI's usage policies. The IDs should be a
   *   string that uniquely identifies each user. We recommend hashing their username or email address, in order to avoid sending us any
@@ -158,7 +158,7 @@ object ResponsesResponseBody {
     *   Constrains effort on reasoning for reasoning models. Currently supported values are low, medium, and high. Reducing reasoning effort
     *   can result in faster responses and fewer tokens used on reasoning in a response.
     *
-    * o-series models only
+    * Reasoning models only
     * @param generateSummary
     *   A summary of the reasoning performed by the model. This can be useful for debugging and understanding the model's reasoning process.
     *   One of auto, concise, or detailed. Deprecated: use summary instead.

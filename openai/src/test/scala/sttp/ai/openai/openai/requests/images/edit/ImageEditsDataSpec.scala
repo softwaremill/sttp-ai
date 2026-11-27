@@ -62,7 +62,7 @@ class ImageEditsDataSpec extends AnyFlatSpec with Matchers with ImageEditsFixtur
     checkStringPart(parts, "prompt", config.prompt)
     checkStringPart(parts, "background", "transparent")
     checkStringPart(parts, "input_fidelity", "high")
-    checkStringPart(parts, "model", "gpt-image-1")
+    checkStringPart(parts, "model", "gpt-image-2.6-sunburst")
     checkStringPart(parts, "n", "2")
     checkStringPart(parts, "output_compression", "80")
     checkStringPart(parts, "output_format", "png")
