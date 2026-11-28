@@ -1,5 +1,5 @@
 val sbtSoftwareMillVersion = "3.0.2"
 addSbtPlugin("com.softwaremill.sbt-softwaremill" % "sbt-softwaremill-common" % sbtSoftwareMillVersion)
 addSbtPlugin("com.softwaremill.sbt-softwaremill" % "sbt-softwaremill-publish" % sbtSoftwareMillVersion)
-addSbtPlugin("org.scalameta" % "sbt-mdoc" % "2.9.2")
+addSbtPlugin("org.scalameta" % "sbt-mdoc" % "2.9.3")
 addSbtPlugin("org.scala-native" % "sbt-scala-native" % "0.5.12")
